@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { userSchema } from '@/lib/validation';
+import { z } from 'zod';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -21,30 +23,42 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
     nombre_completo: '',
     role: 'consultor' as 'administrador' | 'consultor' | 'cliente'
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    
+    // Validate form data
+    try {
+      userSchema.parse(formData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        toast.error('Por favor corrige los errores en el formulario');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        `https://svozqrjhwaohfmbkhpig.supabase.co/functions/v1/create-user`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
-          },
-          body: JSON.stringify(formData)
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: formData,
+      });
 
-      const result = await response.json();
+      if (error) {
+        throw new Error(error.message || 'Error al crear usuario');
+      }
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Error al crear usuario');
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
       toast.success('Usuario creado exitosamente');
@@ -76,8 +90,10 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
                 value={formData.nombre_completo}
                 onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
                 required
+                maxLength={100}
                 className="font-body"
               />
+              {errors.nombre_completo && <p className="text-sm text-destructive font-body">{errors.nombre_completo}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="font-heading">Correo Electrónico</Label>
@@ -87,8 +103,10 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
+                maxLength={255}
                 className="font-body"
               />
+              {errors.email && <p className="text-sm text-destructive font-body">{errors.email}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="font-heading">Contraseña</Label>
@@ -98,9 +116,12 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
-                minLength={6}
+                minLength={8}
+                maxLength={100}
                 className="font-body"
               />
+              {errors.password && <p className="text-sm text-destructive font-body">{errors.password}</p>}
+              <p className="text-xs text-muted-foreground font-body">Mínimo 8 caracteres con mayúscula, minúscula y número</p>
             </div>
             <div className="space-y-2">
               <Label className="font-heading">Rol</Label>

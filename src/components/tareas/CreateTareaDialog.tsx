@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { tareaSchema } from '@/lib/validation';
+import { z } from 'zod';
 
 interface CreateTareaDialogProps {
   open: boolean;
@@ -28,6 +30,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
     empresa_id: '',
     consultor_asignado_id: ''
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (open) {
@@ -71,13 +74,37 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    
+    // Validate form data
+    try {
+      tareaSchema.parse(formData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        toast.error('Por favor corrige los errores en el formulario');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       const { error } = await supabase
         .from('tareas')
         .insert({
-          ...formData,
+          titulo: formData.titulo.trim(),
+          descripcion: formData.descripcion.trim() || null,
+          prioridad: formData.prioridad,
+          empresa_id: formData.empresa_id,
+          consultor_asignado_id: formData.consultor_asignado_id || null,
+          fecha_vencimiento: formData.fecha_vencimiento || null,
           creado_por: user?.id
         });
 
@@ -119,8 +146,10 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
                 value={formData.titulo}
                 onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                 required
+                maxLength={200}
                 className="font-body"
               />
+              {errors.titulo && <p className="text-sm text-destructive font-body">{errors.titulo}</p>}
             </div>
 
             <div className="space-y-2">
@@ -129,9 +158,11 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
                 id="descripcion"
                 value={formData.descripcion}
                 onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                maxLength={2000}
                 className="font-body"
                 rows={3}
               />
+              {errors.descripcion && <p className="text-sm text-destructive font-body">{errors.descripcion}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

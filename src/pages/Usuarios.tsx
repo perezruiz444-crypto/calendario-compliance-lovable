@@ -29,25 +29,18 @@ export default function Usuarios() {
   const fetchUsuarios = async () => {
     try {
       setLoadingUsers(true);
-      const { data: { session } } = await supabase.auth.getSession();
       
-      const response = await fetch(
-        `https://svozqrjhwaohfmbkhpig.supabase.co/functions/v1/list-users`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session?.access_token}`
-          }
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('list-users');
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Error al cargar usuarios');
+      if (error) {
+        throw new Error(error.message || 'Error al cargar usuarios');
       }
 
-      setUsuarios(result.users);
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      setUsuarios(data.users || []);
     } catch (error: any) {
       toast.error('Error al cargar usuarios');
       console.error(error);

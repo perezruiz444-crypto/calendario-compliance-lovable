@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { empresaSchema } from '@/lib/validation';
+import { z } from 'zod';
 
 interface CreateEmpresaDialogProps {
   open: boolean;
@@ -23,16 +25,39 @@ export default function CreateEmpresaDialog({ open, onOpenChange, onEmpresaCreat
     domicilio_fiscal: '',
     telefono: ''
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    
+    // Validate form data
+    try {
+      empresaSchema.parse(formData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        toast.error('Por favor corrige los errores en el formulario');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       const { error } = await supabase
         .from('empresas')
         .insert({
-          ...formData,
+          razon_social: formData.razon_social.trim(),
+          rfc: formData.rfc.trim().toUpperCase(),
+          domicilio_fiscal: formData.domicilio_fiscal.trim(),
+          telefono: formData.telefono.trim() || null,
           created_by: user?.id
         });
 
@@ -67,8 +92,10 @@ export default function CreateEmpresaDialog({ open, onOpenChange, onEmpresaCreat
                 value={formData.razon_social}
                 onChange={(e) => setFormData({ ...formData, razon_social: e.target.value })}
                 required
+                maxLength={200}
                 className="font-body"
               />
+              {errors.razon_social && <p className="text-sm text-destructive font-body">{errors.razon_social}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="rfc" className="font-heading">RFC *</Label>
@@ -78,8 +105,10 @@ export default function CreateEmpresaDialog({ open, onOpenChange, onEmpresaCreat
                 onChange={(e) => setFormData({ ...formData, rfc: e.target.value.toUpperCase() })}
                 required
                 maxLength={13}
+                placeholder="AAA123456A12"
                 className="font-body"
               />
+              {errors.rfc && <p className="text-sm text-destructive font-body">{errors.rfc}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="domicilio_fiscal" className="font-heading">Domicilio Fiscal *</Label>
@@ -88,8 +117,10 @@ export default function CreateEmpresaDialog({ open, onOpenChange, onEmpresaCreat
                 value={formData.domicilio_fiscal}
                 onChange={(e) => setFormData({ ...formData, domicilio_fiscal: e.target.value })}
                 required
+                maxLength={500}
                 className="font-body"
               />
+              {errors.domicilio_fiscal && <p className="text-sm text-destructive font-body">{errors.domicilio_fiscal}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="telefono" className="font-heading">Teléfono</Label>
@@ -98,8 +129,11 @@ export default function CreateEmpresaDialog({ open, onOpenChange, onEmpresaCreat
                 type="tel"
                 value={formData.telefono}
                 onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                maxLength={20}
+                placeholder="5512345678"
                 className="font-body"
               />
+              {errors.telefono && <p className="text-sm text-destructive font-body">{errors.telefono}</p>}
             </div>
           </div>
           <DialogFooter>
