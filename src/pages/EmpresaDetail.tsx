@@ -19,6 +19,7 @@ import {
   Phone,
   Hash
 } from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function EmpresaDetail() {
   const { id } = useParams();

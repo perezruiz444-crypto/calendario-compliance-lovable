@@ -9,7 +9,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Send, MessageSquare, Calendar, User } from 'lucide-react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 interface TareaDetailDialogProps {
   open: boolean;
@@ -194,7 +193,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
                 <div>
                   <p className="text-xs font-heading font-medium text-muted-foreground">Vencimiento</p>
                   <p className="font-body text-sm">
-                    {format(new Date(tarea.fecha_vencimiento), 'PPP', { locale: es })}
+                    {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
                   </p>
                 </div>
               </div>
@@ -227,7 +226,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
                           {comentario.profiles?.nombre_completo}
                         </span>
                         <span className="text-xs text-muted-foreground font-body">
-                          {format(new Date(comentario.created_at), 'PPp', { locale: es })}
+                          {format(new Date(comentario.created_at), 'dd/MM/yyyy HH:mm')}
                         </span>
                       </div>
                       <p className="font-body text-sm text-foreground whitespace-pre-wrap">

@@ -9,7 +9,6 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2, CheckSquare, Users, TrendingUp, Calendar, Clock, AlertCircle } from 'lucide-react';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
@@ -316,7 +315,7 @@ export default function Dashboard() {
                           {tarea.fecha_vencimiento && (
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              Vence: {format(new Date(tarea.fecha_vencimiento), 'PPP', { locale: es })}
+                              Vence: {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
                             </span>
                           )}
                         </div>
