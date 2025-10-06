@@ -1,0 +1,152 @@
+import { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { 
+  Building2, 
+  LayoutDashboard, 
+  CheckSquare, 
+  Users, 
+  LogOut,
+  Menu
+} from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
+interface DashboardLayoutProps {
+  children: ReactNode;
+  currentPage?: string;
+}
+
+export default function DashboardLayout({ children, currentPage }: DashboardLayoutProps) {
+  const { user, role, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const navItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['administrador', 'consultor', 'cliente'] },
+    { icon: Building2, label: 'Empresas', path: '/empresas', roles: ['administrador', 'consultor'] },
+    { icon: CheckSquare, label: 'Tareas', path: '/tareas', roles: ['administrador', 'consultor', 'cliente'] },
+    { icon: Users, label: 'Usuarios', path: '/usuarios', roles: ['administrador'] },
+  ];
+
+  const filteredNavItems = navItems.filter(item => 
+    role && item.roles.includes(role)
+  );
+
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full bg-sidebar">
+      <div className="p-6 border-b border-sidebar-border">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-sidebar-primary rounded-xl flex items-center justify-center shadow-elegant">
+            <Building2 className="w-6 h-6 text-sidebar-primary-foreground" />
+          </div>
+          <div>
+            <h2 className="font-heading font-bold text-sidebar-foreground">ERP Consultoría</h2>
+            <p className="text-xs text-sidebar-foreground/60 font-body">{role || 'Usuario'}</p>
+          </div>
+        </div>
+      </div>
+
+      <nav className="flex-1 p-4 space-y-2">
+        {filteredNavItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = currentPage === item.path;
+          
+          return (
+            <Button
+              key={item.path}
+              variant={isActive ? "default" : "ghost"}
+              className={`w-full justify-start gap-3 transition-smooth font-heading ${
+                isActive 
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-elegant' 
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+              }`}
+              onClick={() => navigate(item.path)}
+            >
+              <Icon className="w-5 h-5" />
+              {item.label}
+            </Button>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 border-t border-sidebar-border">
+        <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-sidebar-accent">
+          <Avatar className="w-10 h-10">
+            <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground font-heading">
+              {user?.email ? getInitials(user.email) : 'U'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-sidebar-foreground truncate font-heading">
+              {user?.email}
+            </p>
+            <p className="text-xs text-sidebar-foreground/60 font-body capitalize">
+              {role}
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-smooth font-heading"
+          onClick={handleSignOut}
+        >
+          <LogOut className="w-5 h-5" />
+          Cerrar Sesión
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:block w-72 border-r border-border shadow-elegant">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-md">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <h2 className="font-heading font-bold text-foreground">ERP</h2>
+          </div>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="w-6 h-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-72">
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto lg:pt-0 pt-16">
+        <div className="container mx-auto p-6 max-w-7xl">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}

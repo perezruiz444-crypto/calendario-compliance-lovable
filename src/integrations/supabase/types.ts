@@ -14,16 +14,381 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agentes_aduanales: {
+        Row: {
+          created_at: string | null
+          empresa_id: string
+          estado: string | null
+          id: string
+          nombre_agente: string
+          numero_patente: string
+        }
+        Insert: {
+          created_at?: string | null
+          empresa_id: string
+          estado?: string | null
+          id?: string
+          nombre_agente: string
+          numero_patente: string
+        }
+        Update: {
+          created_at?: string | null
+          empresa_id?: string
+          estado?: string | null
+          id?: string
+          nombre_agente?: string
+          numero_patente?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agentes_aduanales_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comentarios: {
+        Row: {
+          contenido: string
+          created_at: string | null
+          id: string
+          tarea_id: string
+          user_id: string
+        }
+        Insert: {
+          contenido: string
+          created_at?: string | null
+          id?: string
+          tarea_id: string
+          user_id: string
+        }
+        Update: {
+          contenido?: string
+          created_at?: string | null
+          id?: string
+          tarea_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comentarios_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consultor_empresa_asignacion: {
+        Row: {
+          asignado_por: string | null
+          consultor_id: string
+          created_at: string | null
+          empresa_id: string
+        }
+        Insert: {
+          asignado_por?: string | null
+          consultor_id: string
+          created_at?: string | null
+          empresa_id: string
+        }
+        Update: {
+          asignado_por?: string | null
+          consultor_id?: string
+          created_at?: string | null
+          empresa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultor_empresa_asignacion_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      domicilios_operacion: {
+        Row: {
+          created_at: string | null
+          domicilio: string
+          empresa_id: string
+          id: string
+          tipo: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          domicilio: string
+          empresa_id: string
+          id?: string
+          tipo?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          domicilio?: string
+          empresa_id?: string
+          id?: string
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "domicilios_operacion_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empresas: {
+        Row: {
+          anexo24_proveedor_software: string | null
+          created_at: string | null
+          created_by: string | null
+          datos_notario: string | null
+          domicilio_fiscal: string
+          fecha_constitucion: string | null
+          id: string
+          immex_domicilios: string[] | null
+          immex_fecha_fin: string | null
+          immex_fecha_inicio: string | null
+          immex_numero: string | null
+          immex_tipo: string | null
+          numero_escritura: string | null
+          padron_general_estado: string | null
+          padron_general_numero: string | null
+          padrones_sectoriales: Json | null
+          prosec_domicilios: string[] | null
+          prosec_fecha_fin: string | null
+          prosec_fecha_inicio: string | null
+          prosec_numero: string | null
+          prosec_sector: string | null
+          razon_social: string
+          representante_legal_nombre: string | null
+          representante_legal_poder: string | null
+          rfc: string
+          telefono: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          anexo24_proveedor_software?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          datos_notario?: string | null
+          domicilio_fiscal: string
+          fecha_constitucion?: string | null
+          id?: string
+          immex_domicilios?: string[] | null
+          immex_fecha_fin?: string | null
+          immex_fecha_inicio?: string | null
+          immex_numero?: string | null
+          immex_tipo?: string | null
+          numero_escritura?: string | null
+          padron_general_estado?: string | null
+          padron_general_numero?: string | null
+          padrones_sectoriales?: Json | null
+          prosec_domicilios?: string[] | null
+          prosec_fecha_fin?: string | null
+          prosec_fecha_inicio?: string | null
+          prosec_numero?: string | null
+          prosec_sector?: string | null
+          razon_social: string
+          representante_legal_nombre?: string | null
+          representante_legal_poder?: string | null
+          rfc: string
+          telefono?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          anexo24_proveedor_software?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          datos_notario?: string | null
+          domicilio_fiscal?: string
+          fecha_constitucion?: string | null
+          id?: string
+          immex_domicilios?: string[] | null
+          immex_fecha_fin?: string | null
+          immex_fecha_inicio?: string | null
+          immex_numero?: string | null
+          immex_tipo?: string | null
+          numero_escritura?: string | null
+          padron_general_estado?: string | null
+          padron_general_numero?: string | null
+          padrones_sectoriales?: Json | null
+          prosec_domicilios?: string[] | null
+          prosec_fecha_fin?: string | null
+          prosec_fecha_inicio?: string | null
+          prosec_numero?: string | null
+          prosec_sector?: string | null
+          razon_social?: string
+          representante_legal_nombre?: string | null
+          representante_legal_poder?: string | null
+          rfc?: string
+          telefono?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      miembros_socios: {
+        Row: {
+          created_at: string | null
+          empresa_id: string
+          id: string
+          nombre_completo: string
+          rfc: string
+        }
+        Insert: {
+          created_at?: string | null
+          empresa_id: string
+          id?: string
+          nombre_completo: string
+          rfc: string
+        }
+        Update: {
+          created_at?: string | null
+          empresa_id?: string
+          id?: string
+          nombre_completo?: string
+          rfc?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "miembros_socios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          nombre_completo: string
+          notificaciones_activas: boolean | null
+          telefono: string | null
+          tema_visual: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          nombre_completo: string
+          notificaciones_activas?: boolean | null
+          telefono?: string | null
+          tema_visual?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nombre_completo?: string
+          notificaciones_activas?: boolean | null
+          telefono?: string | null
+          tema_visual?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tareas: {
+        Row: {
+          archivos_adjuntos: Json | null
+          consultor_asignado_id: string | null
+          creado_por: string
+          created_at: string | null
+          descripcion: string | null
+          empresa_id: string
+          estado: Database["public"]["Enums"]["estado_tarea"] | null
+          fecha_vencimiento: string | null
+          id: string
+          prioridad: Database["public"]["Enums"]["prioridad_tarea"] | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          archivos_adjuntos?: Json | null
+          consultor_asignado_id?: string | null
+          creado_por: string
+          created_at?: string | null
+          descripcion?: string | null
+          empresa_id: string
+          estado?: Database["public"]["Enums"]["estado_tarea"] | null
+          fecha_vencimiento?: string | null
+          id?: string
+          prioridad?: Database["public"]["Enums"]["prioridad_tarea"] | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          archivos_adjuntos?: Json | null
+          consultor_asignado_id?: string | null
+          creado_por?: string
+          created_at?: string | null
+          descripcion?: string | null
+          empresa_id?: string
+          estado?: Database["public"]["Enums"]["estado_tarea"] | null
+          fecha_vencimiento?: string | null
+          id?: string
+          prioridad?: Database["public"]["Enums"]["prioridad_tarea"] | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tareas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_empresa_id: {
+        Args: { _user_id: string }
+        Returns: string
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "administrador" | "consultor" | "cliente"
+      estado_tarea: "pendiente" | "en_progreso" | "completada" | "cancelada"
+      prioridad_tarea: "alta" | "media" | "baja"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +515,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["administrador", "consultor", "cliente"],
+      estado_tarea: ["pendiente", "en_progreso", "completada", "cancelada"],
+      prioridad_tarea: ["alta", "media", "baja"],
+    },
   },
 } as const
