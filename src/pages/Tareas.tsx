@@ -4,9 +4,10 @@ import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CheckSquare } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
+import TareaDetailDialog from '@/components/tareas/TareaDetailDialog';
 import { Badge } from '@/components/ui/badge';
 
 export default function Tareas() {
@@ -15,6 +16,8 @@ export default function Tareas() {
   const [tareas, setTareas] = useState<any[]>([]);
   const [loadingTareas, setLoadingTareas] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -173,7 +176,14 @@ export default function Tareas() {
             ) : (
               <div className="grid gap-4">
                 {tareas.map((tarea) => (
-                  <div key={tarea.id} className="border rounded-lg p-4 hover:border-primary transition-colors">
+                  <div 
+                    key={tarea.id} 
+                    className="border rounded-lg p-4 hover:border-primary transition-colors cursor-pointer hover-scale"
+                    onClick={() => {
+                      setSelectedTareaId(tarea.id);
+                      setDetailDialogOpen(true);
+                    }}
+                  >
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2">
@@ -186,7 +196,7 @@ export default function Tareas() {
                           </Badge>
                         </div>
                         {tarea.descripcion && (
-                          <p className="text-sm text-muted-foreground font-body">
+                          <p className="text-sm text-muted-foreground font-body line-clamp-2">
                             {tarea.descripcion}
                           </p>
                         )}
@@ -200,6 +210,10 @@ export default function Tareas() {
                           )}
                         </div>
                       </div>
+                      <Button variant="ghost" size="sm" className="gap-2 font-heading">
+                        <MessageSquare className="w-4 h-4" />
+                        Ver Detalles
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -214,6 +228,14 @@ export default function Tareas() {
         onOpenChange={setDialogOpen}
         onTareaCreated={fetchTareas}
       />
+
+      {selectedTareaId && (
+        <TareaDetailDialog
+          open={detailDialogOpen}
+          onOpenChange={setDetailDialogOpen}
+          tareaId={selectedTareaId}
+        />
+      )}
     </DashboardLayout>
   );
 }

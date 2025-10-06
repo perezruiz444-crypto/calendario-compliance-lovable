@@ -1,13 +1,28 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, CheckSquare, Users, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { supabase } from '@/integrations/supabase/client';
+import { Building2, CheckSquare, Users, TrendingUp, Calendar, Clock, AlertCircle } from 'lucide-react';
+import { format, isAfter, isBefore, addDays } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    empresas: 0,
+    tareasPendientes: 0,
+    tareasCompletadas: 0,
+    usuarios: 0,
+    cumplimiento: 0
+  });
+  const [proximasTareas, setProximasTareas] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -15,7 +30,112 @@ export default function Dashboard() {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  useEffect(() => {
+    if (user && role) {
+      fetchDashboardData();
+    }
+  }, [user, role]);
+
+  const fetchDashboardData = async () => {
+    setLoadingData(true);
+    try {
+      // Fetch empresas count
+      const empresasQuery = supabase.from('empresas').select('id', { count: 'exact', head: true });
+      
+      // Fetch tareas
+      const tareasQuery = supabase
+        .from('tareas')
+        .select('*')
+        .order('fecha_vencimiento', { ascending: true })
+        .limit(5);
+
+      // Fetch usuarios count (only for admin)
+      const usuariosQuery = role === 'administrador' 
+        ? supabase.from('profiles').select('id', { count: 'exact', head: true })
+        : null;
+
+      const [empresasRes, tareasRes, usuariosRes] = await Promise.all([
+        empresasQuery,
+        tareasQuery,
+        usuariosQuery
+      ]);
+
+      const tareas = tareasRes.data || [];
+      const pendientes = tareas.filter(t => t.estado === 'pendiente' || t.estado === 'en_progreso');
+      const completadas = tareas.filter(t => t.estado === 'completada');
+      const totalTareas = tareas.length;
+      const cumplimiento = totalTareas > 0 ? Math.round((completadas.length / totalTareas) * 100) : 0;
+
+      setStats({
+        empresas: empresasRes.count || 0,
+        tareasPendientes: pendientes.length,
+        tareasCompletadas: completadas.length,
+        usuarios: usuariosRes?.count || 0,
+        cumplimiento
+      });
+
+      // Set próximas tareas
+      const today = new Date();
+      const nextWeek = addDays(today, 7);
+      const tareasProximas = tareas
+        .filter(t => {
+          if (!t.fecha_vencimiento) return false;
+          const fecha = new Date(t.fecha_vencimiento);
+          return isAfter(fecha, today) && isBefore(fecha, nextWeek);
+        })
+        .slice(0, 5);
+
+      // Fetch empresa names for tareas
+      if (tareasProximas.length > 0) {
+        const { data: empresasData } = await supabase
+          .from('empresas')
+          .select('id, razon_social')
+          .in('id', tareasProximas.map(t => t.empresa_id));
+
+        const empresasMap = empresasData?.reduce((acc, emp) => {
+          acc[emp.id] = emp.razon_social;
+          return acc;
+        }, {} as Record<string, string>) || {};
+
+        setProximasTareas(tareasProximas.map(t => ({
+          ...t,
+          empresa_nombre: empresasMap[t.empresa_id]
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const getPrioridadColor = (prioridad: string) => {
+    switch (prioridad) {
+      case 'alta': return 'bg-destructive text-destructive-foreground';
+      case 'media': return 'bg-warning text-warning-foreground';
+      case 'baja': return 'bg-success text-success-foreground';
+      default: return 'bg-muted';
+    }
+  };
+
+  const getEstadoColor = (estado: string) => {
+    switch (estado) {
+      case 'pendiente': return 'bg-warning text-warning-foreground';
+      case 'en_progreso': return 'bg-primary text-primary-foreground';
+      case 'completada': return 'bg-success text-success-foreground';
+      case 'cancelada': return 'bg-muted';
+      default: return 'bg-muted';
+    }
+  };
+
+  const estadoLabels: Record<string, string> = {
+    pendiente: 'Pendiente',
+    en_progreso: 'En Progreso',
+    completada: 'Completada',
+    cancelada: 'Cancelada'
+  };
+
+  if (loading || loadingData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -23,58 +143,64 @@ export default function Dashboard() {
     );
   }
 
-  const stats = [
+  const statCards = [
     {
       title: 'Empresas',
-      value: '0',
+      value: stats.empresas.toString(),
       description: 'Empresas registradas',
       icon: Building2,
       color: 'text-primary',
-      bgColor: 'bg-primary-light',
+      bgColor: 'bg-primary/10',
+      show: true
     },
     {
-      title: 'Tareas',
-      value: '0',
-      description: 'Tareas pendientes',
-      icon: CheckSquare,
+      title: 'Tareas Pendientes',
+      value: stats.tareasPendientes.toString(),
+      description: 'Requieren atención',
+      icon: AlertCircle,
       color: 'text-warning',
       bgColor: 'bg-warning/10',
+      show: true
+    },
+    {
+      title: 'Completadas',
+      value: stats.tareasCompletadas.toString(),
+      description: 'Tareas finalizadas',
+      icon: CheckSquare,
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+      show: true
     },
     {
       title: 'Usuarios',
-      value: '0',
+      value: stats.usuarios.toString(),
       description: 'Usuarios activos',
       icon: Users,
-      color: 'text-success',
-      bgColor: 'bg-success/10',
-    },
-    {
-      title: 'Cumplimiento',
-      value: '0%',
-      description: 'Promedio de cumplimiento',
-      icon: TrendingUp,
       color: 'text-primary',
-      bgColor: 'bg-primary-light',
+      bgColor: 'bg-primary/10',
+      show: role === 'administrador'
     },
   ];
 
   return (
     <DashboardLayout currentPage="/dashboard">
       <div className="space-y-6">
+        {/* Header */}
         <div>
           <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
             Dashboard
           </h1>
           <p className="text-muted-foreground font-body">
-            Bienvenido al sistema de gestión de consultoría
+            Bienvenido {role === 'administrador' ? 'Administrador' : role === 'consultor' ? 'Consultor' : 'Cliente'}
           </p>
         </div>
 
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat) => {
+          {statCards.filter(stat => stat.show).map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.title} className="gradient-card shadow-elegant hover:shadow-card transition-smooth">
+              <Card key={stat.title} className="gradient-card shadow-elegant hover:shadow-card transition-smooth hover-scale">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-heading font-medium">
                     {stat.title}
@@ -94,18 +220,112 @@ export default function Dashboard() {
           })}
         </div>
 
+        {/* Cumplimiento Progress */}
         <Card className="gradient-card shadow-card">
           <CardHeader>
-            <CardTitle className="font-heading">Actividad Reciente</CardTitle>
+            <CardTitle className="font-heading flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              Progreso de Cumplimiento
+            </CardTitle>
             <CardDescription className="font-body">
-              Las últimas actualizaciones del sistema
+              Porcentaje de tareas completadas
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-center py-12 text-muted-foreground font-body">
-              <p>No hay actividad reciente para mostrar</p>
-              <p className="text-sm mt-2">Las actividades aparecerán aquí cuando comiences a usar el sistema</p>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-heading font-medium">Cumplimiento General</span>
+                <span className="text-2xl font-heading font-bold text-primary">{stats.cumplimiento}%</span>
+              </div>
+              <Progress value={stats.cumplimiento} className="h-3" />
             </div>
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+              <div className="space-y-1">
+                <p className="text-xs font-heading font-medium text-muted-foreground">Completadas</p>
+                <p className="text-lg font-heading font-bold text-success">{stats.tareasCompletadas}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-heading font-medium text-muted-foreground">Pendientes</p>
+                <p className="text-lg font-heading font-bold text-warning">{stats.tareasPendientes}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Próximas Tareas */}
+        <Card className="gradient-card shadow-card">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="font-heading flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Próximas Tareas
+                </CardTitle>
+                <CardDescription className="font-body">
+                  Tareas con vencimiento en los próximos 7 días
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/tareas')}
+                className="font-heading"
+              >
+                Ver Todas
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {proximasTareas.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="mx-auto w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mb-4">
+                  <CheckSquare className="w-8 h-8 text-success" />
+                </div>
+                <p className="text-muted-foreground font-body mb-2">
+                  ¡Excelente! No hay tareas próximas a vencer
+                </p>
+                <p className="text-sm text-muted-foreground font-body">
+                  Todas las tareas urgentes están bajo control
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {proximasTareas.map((tarea) => (
+                  <div 
+                    key={tarea.id} 
+                    className="border rounded-lg p-4 hover:border-primary transition-colors cursor-pointer hover-scale animate-fade-in"
+                    onClick={() => navigate('/tareas')}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-heading font-semibold">{tarea.titulo}</h4>
+                          <Badge className={getPrioridadColor(tarea.prioridad)} variant="secondary">
+                            {tarea.prioridad}
+                          </Badge>
+                          <Badge className={getEstadoColor(tarea.estado)}>
+                            {estadoLabels[tarea.estado]}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground font-body">
+                          {tarea.empresa_nombre && (
+                            <span className="flex items-center gap-1">
+                              <Building2 className="w-3 h-3" />
+                              {tarea.empresa_nombre}
+                            </span>
+                          )}
+                          {tarea.fecha_vencimiento && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              Vence: {format(new Date(tarea.fecha_vencimiento), 'PPP', { locale: es })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

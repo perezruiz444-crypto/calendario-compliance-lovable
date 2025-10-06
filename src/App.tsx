@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Empresas from "./pages/Empresas";
+import EmpresaDetail from "./pages/EmpresaDetail";
 import Tareas from "./pages/Tareas";
 import Usuarios from "./pages/Usuarios";
 import NotFound from "./pages/NotFound";
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/empresas" element={<Empresas />} />
+            <Route path="/empresas/:id" element={<EmpresaDetail />} />
             <Route path="/tareas" element={<Tareas />} />
             <Route path="/usuarios" element={<Usuarios />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

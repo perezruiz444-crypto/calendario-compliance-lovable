@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDropdown';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -21,6 +22,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, currentPage }: DashboardLayoutProps) {
   const { user, role, signOut } = useAuth();
   const navigate = useNavigate();
+  const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
 
   const handleSignOut = async () => {
     await signOut();
@@ -50,7 +52,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-sidebar">
       <div className="p-6 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-sidebar-primary rounded-xl flex items-center justify-center shadow-elegant">
             <Building2 className="w-6 h-6 text-sidebar-primary-foreground" />
           </div>
@@ -59,6 +61,19 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
             <p className="text-xs text-sidebar-foreground/60 font-body">{role || 'Usuario'}</p>
           </div>
         </div>
+        
+        {/* Empresa Selector for Consultores */}
+        {role === 'consultor' && (
+          <div className="mt-4">
+            <label className="text-xs font-heading font-medium text-sidebar-foreground/60 mb-2 block">
+              Empresa Activa
+            </label>
+            <EmpresaSelectorDropdown 
+              selectedEmpresaId={selectedEmpresaId}
+              onEmpresaSelect={setSelectedEmpresaId}
+            />
+          </div>
+        )}
       </div>
 
       <nav className="flex-1 p-4 space-y-2">

@@ -108,9 +108,13 @@ export default function Empresas() {
             ) : (
               <div className="grid gap-4">
                 {empresas.map((empresa) => (
-                  <div key={empresa.id} className="border rounded-lg p-4 hover:border-primary transition-colors">
+                  <div 
+                    key={empresa.id} 
+                    className="border rounded-lg p-4 hover:border-primary transition-colors cursor-pointer hover-scale"
+                    onClick={() => navigate(`/empresas/${empresa.id}`)}
+                  >
                     <div className="flex items-start justify-between">
-                      <div className="space-y-1">
+                      <div className="space-y-1 flex-1">
                         <h3 className="font-heading font-semibold text-lg">{empresa.razon_social}</h3>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
                           <Badge variant="outline">{empresa.rfc}</Badge>
@@ -120,6 +124,9 @@ export default function Empresas() {
                           {empresa.domicilio_fiscal}
                         </p>
                       </div>
+                      <Button variant="ghost" size="sm" className="font-heading">
+                        Ver Detalles
+                      </Button>
                     </div>
                   </div>
                 ))}
