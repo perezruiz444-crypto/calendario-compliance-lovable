@@ -49,6 +49,33 @@ export type Database = {
           },
         ]
       }
+      categorias_tareas: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          created_by: string | null
+          descripcion: string | null
+          id: string
+          nombre: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+        }
+        Relationships: []
+      }
       comentarios: {
         Row: {
           contenido: string
@@ -297,6 +324,7 @@ export type Database = {
       tareas: {
         Row: {
           archivos_adjuntos: Json | null
+          categoria_id: string | null
           consultor_asignado_id: string | null
           creado_por: string
           created_at: string | null
@@ -311,6 +339,7 @@ export type Database = {
         }
         Insert: {
           archivos_adjuntos?: Json | null
+          categoria_id?: string | null
           consultor_asignado_id?: string | null
           creado_por: string
           created_at?: string | null
@@ -325,6 +354,7 @@ export type Database = {
         }
         Update: {
           archivos_adjuntos?: Json | null
+          categoria_id?: string | null
           consultor_asignado_id?: string | null
           creado_por?: string
           created_at?: string | null
@@ -338,6 +368,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tareas_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_tareas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tareas_empresa_id_fkey"
             columns: ["empresa_id"]

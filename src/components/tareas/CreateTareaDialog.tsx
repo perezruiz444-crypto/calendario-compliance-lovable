@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { tareaSchema } from '@/lib/validation';
 import { z } from 'zod';
+import { CategorySelector } from './CategorySelector';
 
 interface CreateTareaDialogProps {
   open: boolean;
@@ -28,7 +29,8 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
     prioridad: 'media' as 'alta' | 'media' | 'baja',
     fecha_vencimiento: '',
     empresa_id: '',
-    consultor_asignado_id: ''
+    consultor_asignado_id: '',
+    categoria_id: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -105,6 +107,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
           empresa_id: formData.empresa_id,
           consultor_asignado_id: formData.consultor_asignado_id || null,
           fecha_vencimiento: formData.fecha_vencimiento || null,
+          categoria_id: formData.categoria_id || null,
           creado_por: user?.id
         });
 
@@ -117,7 +120,8 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
         prioridad: 'media',
         fecha_vencimiento: '',
         empresa_id: '',
-        consultor_asignado_id: ''
+        consultor_asignado_id: '',
+        categoria_id: ''
       });
       onOpenChange(false);
       onTareaCreated();
@@ -193,6 +197,14 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
                   className="font-body"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="categoria" className="font-heading">Categoría</Label>
+              <CategorySelector
+                value={formData.categoria_id}
+                onValueChange={(value) => setFormData({ ...formData, categoria_id: value })}
+              />
             </div>
 
             <div className="space-y-2">

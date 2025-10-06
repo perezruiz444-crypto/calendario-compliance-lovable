@@ -40,7 +40,8 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
           *,
           empresas(razon_social),
           profiles:consultor_asignado_id(nombre_completo),
-          creador:profiles!tareas_creado_por_fkey(nombre_completo)
+          creador:profiles!tareas_creado_por_fkey(nombre_completo),
+          categorias_tareas(nombre, color)
         `)
         .eq('id', tareaId)
         .single();
@@ -153,6 +154,19 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
           <DialogTitle className="font-heading text-2xl pr-8">{tarea.titulo}</DialogTitle>
           <DialogDescription className="font-body">
             <div className="flex flex-wrap items-center gap-2 mt-2">
+              {tarea.categorias_tareas && (
+                <Badge
+                  variant="outline"
+                  className="gap-1"
+                  style={{ borderColor: tarea.categorias_tareas.color }}
+                >
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: tarea.categorias_tareas.color }}
+                  />
+                  {tarea.categorias_tareas.nombre}
+                </Badge>
+              )}
               <Badge className={getPrioridadColor(tarea.prioridad)}>
                 {tarea.prioridad}
               </Badge>

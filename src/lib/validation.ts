@@ -61,7 +61,8 @@ export const tareaSchema = z.object({
   }),
   empresa_id: z.string().uuid({ message: "Empresa inválida" }),
   consultor_asignado_id: z.string().uuid({ message: "Consultor inválido" }).optional().or(z.literal('')),
-  fecha_vencimiento: z.string().optional().or(z.literal(''))
+  fecha_vencimiento: z.string().optional().or(z.literal('')),
+  categoria_id: z.string().uuid({ message: "Categoría inválida" }).optional().or(z.literal(''))
 });
 
 export type UserFormData = z.infer<typeof userSchema>;
