@@ -1,14 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Building2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import CreateEmpresaDialog from '@/components/empresas/CreateEmpresaDialog';
+import { Badge } from '@/components/ui/badge';
 
 export default function Empresas() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
+  const [empresas, setEmpresas] = useState<any[]>([]);
+  const [loadingEmpresas, setLoadingEmpresas] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -18,6 +24,29 @@ export default function Empresas() {
       navigate('/dashboard');
     }
   }, [user, role, loading, navigate]);
+
+  const fetchEmpresas = async () => {
+    setLoadingEmpresas(true);
+    try {
+      const { data, error } = await supabase
+        .from('empresas')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setEmpresas(data || []);
+    } catch (error) {
+      console.error('Error fetching empresas:', error);
+    } finally {
+      setLoadingEmpresas(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchEmpresas();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -39,7 +68,10 @@ export default function Empresas() {
               Administra las empresas y sus datos fiscales
             </p>
           </div>
-          <Button className="gradient-primary shadow-elegant hover:shadow-lg transition-smooth font-heading">
+          <Button 
+            onClick={() => setDialogOpen(true)}
+            className="gradient-primary shadow-elegant hover:shadow-lg transition-smooth font-heading"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Nueva Empresa
           </Button>
@@ -53,21 +85,55 @@ export default function Empresas() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-12">
-              <div className="mx-auto w-20 h-20 bg-primary-light rounded-2xl flex items-center justify-center mb-4">
-                <Building2 className="w-10 h-10 text-primary" />
+            {loadingEmpresas ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-              <p className="text-muted-foreground font-body mb-4">
-                No hay empresas registradas todavía
-              </p>
-              <Button className="gradient-primary shadow-elegant font-heading">
-                <Plus className="w-4 h-4 mr-2" />
-                Registrar Primera Empresa
-              </Button>
-            </div>
+            ) : empresas.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="mx-auto w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+                  <Building2 className="w-10 h-10 text-primary" />
+                </div>
+                <p className="text-muted-foreground font-body mb-4">
+                  No hay empresas registradas todavía
+                </p>
+                <Button 
+                  onClick={() => setDialogOpen(true)}
+                  className="gradient-primary shadow-elegant font-heading"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Registrar Primera Empresa
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {empresas.map((empresa) => (
+                  <div key={empresa.id} className="border rounded-lg p-4 hover:border-primary transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <h3 className="font-heading font-semibold text-lg">{empresa.razon_social}</h3>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
+                          <Badge variant="outline">{empresa.rfc}</Badge>
+                          {empresa.telefono && <span>• {empresa.telefono}</span>}
+                        </div>
+                        <p className="text-sm text-muted-foreground font-body mt-2">
+                          {empresa.domicilio_fiscal}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      <CreateEmpresaDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onEmpresaCreated={fetchEmpresas}
+      />
     </DashboardLayout>
   );
 }
