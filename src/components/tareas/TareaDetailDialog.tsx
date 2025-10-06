@@ -7,8 +7,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Send, MessageSquare, Calendar, User } from 'lucide-react';
+import { Send, MessageSquare, Calendar, User, Paperclip } from 'lucide-react';
 import { format } from 'date-fns';
+import { FileAttachments } from './FileAttachments';
 
 interface TareaDetailDialogProps {
   open: boolean;
@@ -213,6 +214,21 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
               </div>
             )}
           </div>
+
+          {/* Archivos Adjuntos */}
+          {tarea.archivos_adjuntos && tarea.archivos_adjuntos.length > 0 && (
+            <div className="border-t pt-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Paperclip className="w-5 h-5 text-primary" />
+                <h3 className="font-heading font-semibold">Archivos Adjuntos ({tarea.archivos_adjuntos.length})</h3>
+              </div>
+              <FileAttachments
+                attachments={tarea.archivos_adjuntos}
+                onAttachmentsChange={() => {}}
+                readonly={true}
+              />
+            </div>
+          )}
 
           {/* Comentarios */}
           <div className="border-t pt-6">

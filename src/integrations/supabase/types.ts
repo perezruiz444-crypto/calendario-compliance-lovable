@@ -259,6 +259,50 @@ export type Database = {
         }
         Relationships: []
       }
+      mensajes: {
+        Row: {
+          asunto: string
+          contenido: string
+          created_at: string | null
+          destinatario_id: string
+          empresa_id: string | null
+          id: string
+          leido: boolean | null
+          remitente_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          asunto: string
+          contenido: string
+          created_at?: string | null
+          destinatario_id: string
+          empresa_id?: string | null
+          id?: string
+          leido?: boolean | null
+          remitente_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          asunto?: string
+          contenido?: string
+          created_at?: string | null
+          destinatario_id?: string
+          empresa_id?: string | null
+          id?: string
+          leido?: boolean | null
+          remitente_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensajes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       miembros_socios: {
         Row: {
           created_at: string | null

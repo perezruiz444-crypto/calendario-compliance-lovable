@@ -8,7 +8,9 @@ import {
   CheckSquare, 
   Users, 
   LogOut,
-  Menu
+  Menu,
+  Calendar as CalendarIcon,
+  MessageSquare
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -42,6 +44,8 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['administrador', 'consultor', 'cliente'] },
     { icon: Building2, label: 'Empresas', path: '/empresas', roles: ['administrador', 'consultor'] },
     { icon: CheckSquare, label: 'Tareas', path: '/tareas', roles: ['administrador', 'consultor', 'cliente'] },
+    { icon: CalendarIcon, label: 'Calendario', path: '/calendario', roles: ['administrador', 'consultor', 'cliente'] },
+    { icon: MessageSquare, label: 'Mensajes', path: '/mensajes', roles: ['administrador', 'consultor', 'cliente'] },
     { icon: Users, label: 'Usuarios', path: '/usuarios', roles: ['administrador'] },
   ];
 

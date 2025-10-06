@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { tareaSchema } from '@/lib/validation';
 import { z } from 'zod';
 import { CategorySelector } from './CategorySelector';
+import { FileAttachments } from './FileAttachments';
 
 interface CreateTareaDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
     categoria_id: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [attachments, setAttachments] = useState<any[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -108,6 +110,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
           consultor_asignado_id: formData.consultor_asignado_id || null,
           fecha_vencimiento: formData.fecha_vencimiento || null,
           categoria_id: formData.categoria_id || null,
+          archivos_adjuntos: attachments.length > 0 ? attachments : null,
           creado_por: user?.id
         });
 
@@ -123,6 +126,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
         consultor_asignado_id: '',
         categoria_id: ''
       });
+      setAttachments([]);
       onOpenChange(false);
       onTareaCreated();
     } catch (error: any) {
@@ -243,6 +247,14 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-heading">Archivos Adjuntos</Label>
+              <FileAttachments
+                attachments={attachments}
+                onAttachmentsChange={setAttachments}
+              />
             </div>
           </div>
           <DialogFooter>
