@@ -3,16 +3,37 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Building2, CheckSquare, Users, TrendingUp, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   useEffect(() => {
+    // Check if URL contains password recovery or invite hash
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    
+    if (type === 'recovery' || type === 'invite') {
+      navigate('/set-password');
+      return;
+    }
+    
     if (user) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
+
+  // Listen for auth events
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
+        navigate('/set-password');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const features = [
     {

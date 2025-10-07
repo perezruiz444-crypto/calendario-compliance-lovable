@@ -29,8 +29,17 @@ export default function SetPassword() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if there's a recovery/invite session
+    // Check if there's a recovery/invite session or hash params
     const checkSession = async () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const type = hashParams.get('type');
+      
+      // If we have recovery/invite hash params, we're good
+      if (type === 'recovery' || type === 'invite') {
+        return;
+      }
+      
+      // Otherwise check for valid session
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast.error('Sesión inválida o expirada');
