@@ -61,14 +61,6 @@ const Index = () => {
               Iniciar Sesión
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="font-heading shadow-elegant hover:shadow-md transition-smooth"
-              onClick={() => navigate('/auth')}
-            >
-              Registrarse
-            </Button>
           </div>
         </div>
 
