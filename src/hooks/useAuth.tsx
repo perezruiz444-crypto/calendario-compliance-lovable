@@ -64,15 +64,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error fetching user role:', error);
+        await supabase.auth.signOut();
         setRole(null);
         setLoading(false);
         return;
       }
       
-      setRole(data?.role as UserRole || null);
+      // Si no hay rol asignado, cerrar sesión
+      if (!data?.role) {
+        console.log('No role found, signing out');
+        await supabase.auth.signOut();
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+      
+      setRole(data.role as UserRole);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching user role:', error);
+      await supabase.auth.signOut();
       setRole(null);
       setLoading(false);
     }
