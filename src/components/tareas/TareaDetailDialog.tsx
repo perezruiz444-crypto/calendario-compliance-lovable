@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Send, MessageSquare, Calendar, User, Paperclip, Repeat } from 'lucide-react';
 import { format } from 'date-fns';
 import { FileAttachments } from './FileAttachments';
+import SendNotificationDialog from './SendNotificationDialog';
 
 interface TareaDetailDialogProps {
   open: boolean;
@@ -152,32 +153,41 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading text-2xl pr-8">{tarea.titulo}</DialogTitle>
-          <DialogDescription className="font-body">
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              {tarea.categorias_tareas && (
-                <Badge
-                  variant="outline"
-                  className="gap-1"
-                  style={{ borderColor: tarea.categorias_tareas.color }}
-                >
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: tarea.categorias_tareas.color }}
-                  />
-                  {tarea.categorias_tareas.nombre}
-                </Badge>
-              )}
-              <Badge className={getPrioridadColor(tarea.prioridad)}>
-                {tarea.prioridad}
-              </Badge>
-              <Badge className={getEstadoColor(tarea.estado)}>
-                {estadoLabels[tarea.estado]}
-              </Badge>
-              <span className="text-muted-foreground">•</span>
-              <span>{tarea.empresas?.razon_social}</span>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <DialogTitle className="font-heading text-2xl">{tarea.titulo}</DialogTitle>
+              <DialogDescription className="font-body">
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  {tarea.categorias_tareas && (
+                    <Badge
+                      variant="outline"
+                      className="gap-1"
+                      style={{ borderColor: tarea.categorias_tareas.color }}
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: tarea.categorias_tareas.color }}
+                      />
+                      {tarea.categorias_tareas.nombre}
+                    </Badge>
+                  )}
+                  <Badge className={getPrioridadColor(tarea.prioridad)}>
+                    {tarea.prioridad}
+                  </Badge>
+                  <Badge className={getEstadoColor(tarea.estado)}>
+                    {estadoLabels[tarea.estado]}
+                  </Badge>
+                  <span className="text-muted-foreground">•</span>
+                  <span>{tarea.empresas?.razon_social}</span>
+                </div>
+              </DialogDescription>
             </div>
-          </DialogDescription>
+            {tarea.consultor_asignado_id && (
+              <div className="flex-shrink-0">
+                <SendNotificationDialog tareaId={tareaId} />
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">

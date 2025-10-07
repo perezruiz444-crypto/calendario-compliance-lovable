@@ -494,10 +494,43 @@ export default function Reportes() {
               Análisis y estadísticas del sistema
             </p>
           </div>
-          <Button onClick={exportToCSV} className="font-heading">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={exportToCSV} className="font-heading" variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Exportar CSV
+            </Button>
+            {selectedEmpresa && selectedEmpresa !== 'todas' && (
+              <Button 
+                onClick={async () => {
+                  try {
+                    const { error } = await supabase.functions.invoke('send-report-email', {
+                      body: { 
+                        empresaId: selectedEmpresa, 
+                        reportData: reporteData, 
+                        period: selectedPeriod, 
+                        reportType: tipoReporte 
+                      }
+                    });
+                    if (error) throw error;
+                    toast({ 
+                      title: "Reporte enviado", 
+                      description: "El reporte ha sido enviado por email a los clientes" 
+                    });
+                  } catch (err: any) {
+                    toast({ 
+                      title: "Error", 
+                      description: err.message, 
+                      variant: "destructive" 
+                    });
+                  }
+                }}
+                className="font-heading"
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Enviar por Email
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Filtros */}
