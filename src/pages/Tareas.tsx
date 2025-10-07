@@ -4,10 +4,11 @@ import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CheckSquare, MessageSquare } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
 import TareaDetailDialog from '@/components/tareas/TareaDetailDialog';
+import ManageCategoriesDialog from '@/components/tareas/ManageCategoriesDialog';
 import { Badge } from '@/components/ui/badge';
 
 export default function Tareas() {
@@ -17,6 +18,7 @@ export default function Tareas() {
   const [loadingTareas, setLoadingTareas] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [categoriesDialogOpen, setCategoriesDialogOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,7 +98,7 @@ export default function Tareas() {
   return (
     <DashboardLayout currentPage="/tareas">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
               Gestión de Tareas
@@ -105,13 +107,23 @@ export default function Tareas() {
               Administra y da seguimiento a las tareas
             </p>
           </div>
-          <Button 
-            onClick={() => setDialogOpen(true)}
-            className="gradient-primary shadow-elegant hover:shadow-lg transition-smooth font-heading"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Tarea
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setCategoriesDialogOpen(true)}
+              className="font-heading shadow-sm hover:shadow-md transition-smooth"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Categorías
+            </Button>
+            <Button 
+              onClick={() => setDialogOpen(true)}
+              className="gradient-primary shadow-elegant hover:shadow-lg transition-smooth font-heading"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva Tarea
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -250,6 +262,12 @@ export default function Tareas() {
           tareaId={selectedTareaId}
         />
       )}
+
+      <ManageCategoriesDialog
+        open={categoriesDialogOpen}
+        onOpenChange={setCategoriesDialogOpen}
+        onCategoryChange={fetchTareas}
+      />
     </DashboardLayout>
   );
 }
