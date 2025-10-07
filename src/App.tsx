@@ -6,6 +6,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AcceptInvitation from "./pages/AcceptInvitation";
+import SetPassword from "./pages/SetPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Empresas from "./pages/Empresas";
 import EmpresaDetail from "./pages/EmpresaDetail";
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/accept-invitation" element={<AcceptInvitation />} />
+          <Route path="/set-password" element={<SetPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/empresas" element={<Empresas />} />
           <Route path="/empresas/:id" element={<EmpresaDetail />} />

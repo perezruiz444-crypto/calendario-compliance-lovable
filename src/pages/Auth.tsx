@@ -111,7 +111,15 @@ export default function Auth() {
               {loading ? 'Procesando...' : 'Iniciar Sesión'}
             </Button>
 
-            <div className="text-center">
+            <div className="text-center space-y-2">
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => navigate('/reset-password')}
+                className="text-sm font-body"
+              >
+                ¿Olvidaste tu contraseña?
+              </Button>
               <p className="text-sm text-muted-foreground font-body">
                 ¿No tienes acceso? Contacta a tu administrador
               </p>

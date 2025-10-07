@@ -80,7 +80,7 @@ serve(async (req: Request) => {
           empresa_id: empresaId,
           invitation_token: token
         },
-        redirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('https://svozqrjhwaohfmbkhpig.supabase.co', 'https://svozqrjhwaohfmbkhpig.lovableproject.com')}/auth/callback`
+        redirectTo: `https://3fd50525-4957-433e-99b5-f22cb124e7c8.lovableproject.com/set-password`
       }
     );
 
