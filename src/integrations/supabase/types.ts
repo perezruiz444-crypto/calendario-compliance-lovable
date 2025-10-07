@@ -413,6 +413,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          empresa_id: string | null
           id: string
           nombre_completo: string
           notificaciones_activas: boolean | null
@@ -422,6 +423,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          empresa_id?: string | null
           id: string
           nombre_completo: string
           notificaciones_activas?: boolean | null
@@ -431,6 +433,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          empresa_id?: string | null
           id?: string
           nombre_completo?: string
           notificaciones_activas?: boolean | null
@@ -438,7 +441,15 @@ export type Database = {
           tema_visual?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tareas: {
         Row: {
