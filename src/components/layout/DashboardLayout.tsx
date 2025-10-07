@@ -12,6 +12,7 @@ import {
   Calendar as CalendarIcon,
   MessageSquare
 } from 'lucide-react';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDropdown';
@@ -147,21 +148,29 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
             </div>
             <h2 className="font-heading font-bold text-foreground">ERP</h2>
           </div>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="w-6 h-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-72">
-              <SidebarContent />
-            </SheetContent>
-          </Sheet>
+          <div className="flex items-center gap-2">
+            <NotificationDropdown />
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="w-6 h-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-72">
+                <SidebarContent />
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
 
+      {/* Desktop Header with Notifications */}
+      <div className="hidden lg:block fixed top-0 right-0 z-40 p-4" style={{ left: '18rem' }}>
+        <NotificationDropdown />
+      </div>
+
       {/* Main Content */}
-      <main className="flex-1 overflow-auto lg:pt-0 pt-16">
+      <main className="flex-1 overflow-auto lg:pt-16 pt-16">
         <div className="container mx-auto p-6 max-w-7xl">
           {children}
         </div>
