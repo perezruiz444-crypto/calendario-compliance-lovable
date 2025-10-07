@@ -49,7 +49,8 @@ Deno.serve(async (req) => {
     })
 
     if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
+      console.error('Error creating user:', createError)
+      return new Response(JSON.stringify({ error: 'Failed to create user. Please check the provided information.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -61,7 +62,8 @@ Deno.serve(async (req) => {
       .insert({ user_id: newUser.user.id, role })
 
     if (roleError) {
-      return new Response(JSON.stringify({ error: roleError.message }), {
+      console.error('Error assigning role:', roleError)
+      return new Response(JSON.stringify({ error: 'Failed to assign user role.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -72,7 +74,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error in create-user function:', error)
+    return new Response(JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

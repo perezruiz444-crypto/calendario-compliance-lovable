@@ -45,7 +45,8 @@ Deno.serve(async (req) => {
       .order('created_at', { ascending: false })
 
     if (profilesError) {
-      return new Response(JSON.stringify({ error: profilesError.message }), {
+      console.error('Error fetching profiles:', profilesError)
+      return new Response(JSON.stringify({ error: 'Failed to retrieve user list.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -81,7 +82,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error in list-users function:', error)
+    return new Response(JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

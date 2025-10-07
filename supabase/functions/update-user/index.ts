@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
 
     if (emailError) {
       console.error('Error updating email:', emailError)
-      return new Response(JSON.stringify({ error: `Error al actualizar email: ${emailError.message}` }), {
+      return new Response(JSON.stringify({ error: 'Failed to update user email.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
 
     if (profileError) {
       console.error('Error updating profile:', profileError)
-      return new Response(JSON.stringify({ error: `Error al actualizar perfil: ${profileError.message}` }), {
+      return new Response(JSON.stringify({ error: 'Failed to update user profile.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
 
       if (insertError) {
         console.error('Error updating role:', insertError)
-        return new Response(JSON.stringify({ error: `Error al actualizar rol: ${insertError.message}` }), {
+        return new Response(JSON.stringify({ error: 'Failed to update user role.' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     })
   } catch (error: any) {
     console.error('Error in update-user:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
