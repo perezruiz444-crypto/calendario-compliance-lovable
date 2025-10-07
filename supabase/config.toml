@@ -1,1 +1,7 @@
 project_id = "svozqrjhwaohfmbkhpig"
+
+[functions.send-report-email]
+verify_jwt = true
+
+[functions.send-task-notifications]
+verify_jwt = true
