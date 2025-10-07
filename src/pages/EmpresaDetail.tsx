@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import EditEmpresaDialog from '@/components/empresas/EditEmpresaDialog';
 import { 
   Building2, 
   FileText, 
@@ -15,11 +16,12 @@ import {
   Users, 
   Ship, 
   ArrowLeft,
-  Calendar,
   Phone,
-  Hash
+  Hash,
+  Pencil,
+  Shield,
+  Scale
 } from 'lucide-react';
-import { format } from 'date-fns';
 
 export default function EmpresaDetail() {
   const { id } = useParams();
@@ -29,7 +31,9 @@ export default function EmpresaDetail() {
   const [domicilios, setDomicilios] = useState<any[]>([]);
   const [miembros, setMiembros] = useState<any[]>([]);
   const [agentes, setAgentes] = useState<any[]>([]);
+  const [apoderados, setApoderados] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -57,15 +61,17 @@ export default function EmpresaDetail() {
       setEmpresa(empresaData);
 
       // Fetch related data
-      const [domiciliosRes, miembrosRes, agentesRes] = await Promise.all([
+      const [domiciliosRes, miembrosRes, agentesRes, apoderadosRes] = await Promise.all([
         supabase.from('domicilios_operacion').select('*').eq('empresa_id', id),
         supabase.from('miembros_socios').select('*').eq('empresa_id', id),
-        supabase.from('agentes_aduanales').select('*').eq('empresa_id', id)
+        supabase.from('agentes_aduanales').select('*').eq('empresa_id', id),
+        supabase.from('apoderados_legales').select('*').eq('empresa_id', id)
       ]);
 
       setDomicilios(domiciliosRes.data || []);
       setMiembros(miembrosRes.data || []);
       setAgentes(agentesRes.data || []);
+      setApoderados(apoderadosRes.data || []);
     } catch (error: any) {
       toast.error('Error al cargar la empresa');
       console.error(error);
@@ -114,13 +120,20 @@ export default function EmpresaDetail() {
               )}
             </div>
           </div>
+          {(role === 'administrador' || role === 'consultor') && (
+            <Button onClick={() => setEditDialogOpen(true)} className="gradient-primary shadow-elegant">
+              <Pencil className="w-4 h-4 mr-2" />
+              Editar
+            </Button>
+          )}
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="programas">Programas</TabsTrigger>
+            <TabsTrigger value="certificaciones">Certificaciones</TabsTrigger>
             <TabsTrigger value="domicilios">Domicilios</TabsTrigger>
             <TabsTrigger value="relacionados">Relacionados</TabsTrigger>
           </TabsList>
@@ -143,6 +156,12 @@ export default function EmpresaDetail() {
                   <label className="text-sm font-heading font-medium text-muted-foreground">RFC</label>
                   <p className="font-body mt-1">{empresa.rfc}</p>
                 </div>
+                {empresa.actividad_economica && (
+                  <div>
+                    <label className="text-sm font-heading font-medium text-muted-foreground">Actividad Económica</label>
+                    <p className="font-body mt-1">{empresa.actividad_economica}</p>
+                  </div>
+                )}
                 <div>
                   <label className="text-sm font-heading font-medium text-muted-foreground">Domicilio Fiscal</label>
                   <p className="font-body mt-1">{empresa.domicilio_fiscal}</p>
@@ -220,23 +239,21 @@ export default function EmpresaDetail() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-heading font-medium text-muted-foreground">Número</label>
+                        <label className="text-sm font-heading font-medium text-muted-foreground">Número de Registro</label>
                         <p className="font-body mt-1">{empresa.immex_numero}</p>
                       </div>
-                      <div>
-                        <label className="text-sm font-heading font-medium text-muted-foreground">Tipo</label>
-                        <p className="font-body mt-1 capitalize">{empresa.immex_tipo}</p>
-                      </div>
-                      {empresa.immex_fecha_inicio && (
+                      {(empresa.immex_modalidad || empresa.immex_tipo) && (
                         <div>
-                          <label className="text-sm font-heading font-medium text-muted-foreground">Fecha Inicio</label>
-                          <p className="font-body mt-1">{new Date(empresa.immex_fecha_inicio).toLocaleDateString()}</p>
+                          <label className="text-sm font-heading font-medium text-muted-foreground">Modalidad</label>
+                          <p className="font-body mt-1 capitalize">{empresa.immex_modalidad || empresa.immex_tipo}</p>
                         </div>
                       )}
-                      {empresa.immex_fecha_fin && (
+                      {(empresa.immex_fecha_autorizacion || empresa.immex_fecha_inicio) && (
                         <div>
-                          <label className="text-sm font-heading font-medium text-muted-foreground">Fecha Fin</label>
-                          <p className="font-body mt-1">{new Date(empresa.immex_fecha_fin).toLocaleDateString()}</p>
+                          <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Autorización</label>
+                          <p className="font-body mt-1">
+                            {new Date(empresa.immex_fecha_autorizacion || empresa.immex_fecha_inicio).toLocaleDateString('es-MX')}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -257,26 +274,34 @@ export default function EmpresaDetail() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-heading font-medium text-muted-foreground">Número</label>
+                        <label className="text-sm font-heading font-medium text-muted-foreground">Número de Registro</label>
                         <p className="font-body mt-1">{empresa.prosec_numero}</p>
                       </div>
-                      <div>
-                        <label className="text-sm font-heading font-medium text-muted-foreground">Sector</label>
-                        <p className="font-body mt-1">{empresa.prosec_sector}</p>
-                      </div>
-                      {empresa.prosec_fecha_inicio && (
+                      {(empresa.prosec_modalidad) && (
                         <div>
-                          <label className="text-sm font-heading font-medium text-muted-foreground">Fecha Inicio</label>
-                          <p className="font-body mt-1">{new Date(empresa.prosec_fecha_inicio).toLocaleDateString()}</p>
+                          <label className="text-sm font-heading font-medium text-muted-foreground">Modalidad</label>
+                          <p className="font-body mt-1">{empresa.prosec_modalidad}</p>
                         </div>
                       )}
-                      {empresa.prosec_fecha_fin && (
+                      {(empresa.prosec_fecha_autorizacion || empresa.prosec_fecha_inicio) && (
                         <div>
-                          <label className="text-sm font-heading font-medium text-muted-foreground">Fecha Fin</label>
-                          <p className="font-body mt-1">{new Date(empresa.prosec_fecha_fin).toLocaleDateString()}</p>
+                          <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Autorización</label>
+                          <p className="font-body mt-1">
+                            {new Date(empresa.prosec_fecha_autorizacion || empresa.prosec_fecha_inicio).toLocaleDateString('es-MX')}
+                          </p>
                         </div>
                       )}
                     </div>
+                    {(empresa.prosec_sectores && empresa.prosec_sectores.length > 0) && (
+                      <div>
+                        <label className="text-sm font-heading font-medium text-muted-foreground">Sectores</label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {empresa.prosec_sectores.map((sector: string, idx: number) => (
+                            <Badge key={idx} variant="secondary">{sector}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-muted-foreground font-body">No registrado</p>
@@ -304,10 +329,19 @@ export default function EmpresaDetail() {
             {/* Padrón General */}
             <Card className="gradient-card shadow-card">
               <CardHeader>
-                <CardTitle className="font-heading">Padrón de Importadores</CardTitle>
+                <CardTitle className="font-heading">Padrón de Importadores Activos</CardTitle>
               </CardHeader>
               <CardContent>
-                {empresa.padron_general_numero ? (
+                {empresa.padron_importadores_sectores && empresa.padron_importadores_sectores.length > 0 ? (
+                  <div className="space-y-3">
+                    {empresa.padron_importadores_sectores.map((sector: any, idx: number) => (
+                      <div key={idx} className="border rounded-lg p-3">
+                        <p className="font-heading font-medium">{sector.numero_sector}</p>
+                        <p className="text-sm text-muted-foreground font-body">{sector.descripcion_sector}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : empresa.padron_general_numero ? (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-heading font-medium text-muted-foreground">Número</label>
@@ -322,6 +356,156 @@ export default function EmpresaDetail() {
                   </div>
                 ) : (
                   <p className="text-muted-foreground font-body">No registrado</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Certificaciones Tab */}
+          <TabsContent value="certificaciones" className="space-y-4 animate-fade-in">
+            {/* Certificación IVA e IEPS */}
+            <Card className="gradient-card shadow-card">
+              <CardHeader>
+                <CardTitle className="font-heading flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Certificación IVA e IEPS
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {empresa.cert_iva_ieps_oficio ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-heading font-medium text-muted-foreground">Oficio de Autorización</label>
+                      <p className="font-body mt-1">{empresa.cert_iva_ieps_oficio}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {empresa.cert_iva_ieps_fecha_autorizacion && (
+                        <div>
+                          <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Autorización</label>
+                          <p className="font-body mt-1">
+                            {new Date(empresa.cert_iva_ieps_fecha_autorizacion).toLocaleDateString('es-MX')}
+                          </p>
+                        </div>
+                      )}
+                      {empresa.cert_iva_ieps_fecha_ultima_renovacion && (
+                        <div>
+                          <label className="text-sm font-heading font-medium text-muted-foreground">Última Renovación</label>
+                          <p className="font-body mt-1">
+                            {new Date(empresa.cert_iva_ieps_fecha_ultima_renovacion).toLocaleDateString('es-MX')}
+                          </p>
+                        </div>
+                      )}
+                      {empresa.cert_iva_ieps_fecha_vencimiento && (
+                        <div>
+                          <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Vencimiento</label>
+                          <p className="font-body mt-1">
+                            {new Date(empresa.cert_iva_ieps_fecha_vencimiento).toLocaleDateString('es-MX')}
+                          </p>
+                        </div>
+                      )}
+                      {empresa.cert_iva_ieps_fecha_renovar && (
+                        <div>
+                          <label className="text-sm font-heading font-medium text-muted-foreground">Fecha para Renovar</label>
+                          <p className="font-body mt-1">
+                            {new Date(empresa.cert_iva_ieps_fecha_renovar).toLocaleDateString('es-MX')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {empresa.cert_iva_ieps_nota && (
+                      <div>
+                        <label className="text-sm font-heading font-medium text-muted-foreground">Nota</label>
+                        <p className="font-body mt-1">{empresa.cert_iva_ieps_nota}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground font-body">No registrado</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Matriz de Seguridad */}
+            <Card className="gradient-card shadow-card">
+              <CardHeader>
+                <CardTitle className="font-heading flex items-center gap-2">
+                  <Scale className="w-5 h-5" />
+                  Matriz de Seguridad
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {empresa.matriz_seguridad_fecha_vencimiento || empresa.matriz_seguridad_fecha_renovar ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    {empresa.matriz_seguridad_fecha_vencimiento && (
+                      <div>
+                        <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Vencimiento</label>
+                        <p className="font-body mt-1">
+                          {new Date(empresa.matriz_seguridad_fecha_vencimiento).toLocaleDateString('es-MX')}
+                        </p>
+                      </div>
+                    )}
+                    {empresa.matriz_seguridad_fecha_renovar && (
+                      <div>
+                        <label className="text-sm font-heading font-medium text-muted-foreground">Fecha para Renovar</label>
+                        <p className="font-body mt-1">
+                          {new Date(empresa.matriz_seguridad_fecha_renovar).toLocaleDateString('es-MX')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground font-body">No registrado</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Apoderados Legales */}
+            <Card className="gradient-card shadow-card">
+              <CardHeader>
+                <CardTitle className="font-heading flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Apoderados Legales
+                </CardTitle>
+                <CardDescription className="font-body">
+                  {apoderados.length} apoderado(s) registrado(s)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {apoderados.length > 0 ? (
+                  <div className="space-y-3">
+                    {apoderados.map((apoderado: any) => (
+                      <div key={apoderado.id} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-heading font-medium">{apoderado.nombre}</p>
+                            {apoderado.tipo_apoderado && (
+                              <Badge variant="outline" className="mt-1">Tipo {apoderado.tipo_apoderado}</Badge>
+                            )}
+                            {(apoderado.poder_notarial_instrumento || apoderado.poder_notarial_libro || apoderado.poder_notarial_anio) && (
+                              <div className="mt-2 text-sm text-muted-foreground font-body">
+                                <p className="font-medium">Poder Notarial:</p>
+                                <div className="grid grid-cols-3 gap-2 mt-1">
+                                  {apoderado.poder_notarial_instrumento && (
+                                    <span>Inst: {apoderado.poder_notarial_instrumento}</span>
+                                  )}
+                                  {apoderado.poder_notarial_libro && (
+                                    <span>Libro: {apoderado.poder_notarial_libro}</span>
+                                  )}
+                                  {apoderado.poder_notarial_anio && (
+                                    <span>Año: {apoderado.poder_notarial_anio}</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground font-body text-center py-8">
+                    No hay apoderados registrados
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -436,6 +620,13 @@ export default function EmpresaDetail() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <EditEmpresaDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onEmpresaUpdated={fetchEmpresaData}
+        empresaId={id!}
+      />
     </DashboardLayout>
   );
 }
