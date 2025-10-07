@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, User, Filter, Mail, Send } from 'lucide-react';
+import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, User, Filter, Mail, Send, FileDown } from 'lucide-react';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
@@ -500,35 +500,80 @@ export default function Reportes() {
               Exportar CSV
             </Button>
             {selectedEmpresa && selectedEmpresa !== 'todas' && (
-              <Button 
-                onClick={async () => {
-                  try {
-                    const { error } = await supabase.functions.invoke('send-report-email', {
-                      body: { 
-                        empresaId: selectedEmpresa, 
-                        reportData: reporteData, 
-                        period: selectedPeriod, 
-                        reportType: tipoReporte 
-                      }
-                    });
-                    if (error) throw error;
-                    toast({ 
-                      title: "Reporte enviado", 
-                      description: "El reporte ha sido enviado por email a los clientes" 
-                    });
-                  } catch (err: any) {
-                    toast({ 
-                      title: "Error", 
-                      description: err.message, 
-                      variant: "destructive" 
-                    });
-                  }
-                }}
-                className="font-heading"
-              >
-                <Mail className="w-4 h-4 mr-2" />
-                Enviar por Email
-              </Button>
+              <>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      const { data, error } = await supabase.functions.invoke('generate-report-pdf', {
+                        body: { 
+                          empresaId: selectedEmpresa, 
+                          reportData: reporteData, 
+                          period: selectedPeriod, 
+                          reportType: tipoReporte 
+                        }
+                      });
+                      
+                      if (error) throw error;
+                      
+                      // Create blob and download
+                      const blob = new Blob([data], { type: 'application/pdf' });
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `reporte-${selectedPeriod}-${new Date().toISOString().split('T')[0]}.pdf`;
+                      document.body.appendChild(a);
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                      document.body.removeChild(a);
+                      
+                      toast({ 
+                        title: "PDF generado", 
+                        description: "El reporte PDF se ha descargado correctamente" 
+                      });
+                    } catch (err: any) {
+                      toast({ 
+                        title: "Error", 
+                        description: err.message, 
+                        variant: "destructive" 
+                      });
+                    }
+                  }}
+                  className="font-heading"
+                  variant="outline"
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Descargar PDF
+                </Button>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      const { error } = await supabase.functions.invoke('send-report-email', {
+                        body: { 
+                          empresaId: selectedEmpresa, 
+                          reportData: reporteData, 
+                          period: selectedPeriod, 
+                          reportType: tipoReporte 
+                        }
+                      });
+                      if (error) throw error;
+                      toast({ 
+                        title: "Reporte enviado", 
+                        description: "El reporte ha sido enviado por email a los clientes" 
+                      });
+                    } catch (err: any) {
+                      toast({ 
+                        title: "Error", 
+                        description: err.message, 
+                        variant: "destructive" 
+                      });
+                    }
+                  }}
+                  className="font-heading"
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Enviar por Email
+                </Button>
+              </>
             )}
           </div>
         </div>
