@@ -14,23 +14,12 @@ const loginSchema = z.object({
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres').max(100, 'Contraseña muy larga'),
 });
 
-const signupSchema = loginSchema.extend({
-  nombreCompleto: z.string().trim().min(1, 'El nombre es requerido').max(100, 'Nombre muy largo'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Las contraseñas no coinciden',
-  path: ['confirmPassword'],
-});
-
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [nombreCompleto, setNombreCompleto] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,32 +33,17 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const validated = loginSchema.parse({ email, password });
-        const { error } = await signIn(validated.email, validated.password);
-        
-        if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            toast.error('Credenciales incorrectas');
-          } else {
-            toast.error(error.message);
-          }
+      const validated = loginSchema.parse({ email, password });
+      const { error } = await signIn(validated.email, validated.password);
+      
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Credenciales incorrectas');
         } else {
-          toast.success('Bienvenido');
+          toast.error(error.message);
         }
       } else {
-        const validated = signupSchema.parse({ email, password, confirmPassword, nombreCompleto });
-        const { error } = await signUp(validated.email, validated.password, validated.nombreCompleto);
-        
-        if (error) {
-          if (error.message.includes('User already registered')) {
-            toast.error('Este email ya está registrado');
-          } else {
-            toast.error(error.message);
-          }
-        } else {
-          toast.success('Cuenta creada exitosamente. Por favor verifica tu email.');
-        }
+        toast.success('Bienvenido');
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -91,33 +65,15 @@ export default function Auth() {
           </div>
           <div>
             <CardTitle className="text-2xl font-heading">
-              {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+              Iniciar Sesión
             </CardTitle>
             <CardDescription className="font-body">
-              {isLogin 
-                ? 'Ingresa tus credenciales para acceder al sistema' 
-                : 'Completa el formulario para crear tu cuenta'}
+              Ingresa tus credenciales para acceder al sistema
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="nombreCompleto" className="font-heading">Nombre Completo</Label>
-                <Input
-                  id="nombreCompleto"
-                  type="text"
-                  value={nombreCompleto}
-                  onChange={(e) => setNombreCompleto(e.target.value)}
-                  placeholder="Juan Pérez"
-                  required
-                  maxLength={100}
-                  className="font-body"
-                />
-              </div>
-            )}
-            
             <div className="space-y-2">
               <Label htmlFor="email" className="font-heading">Email</Label>
               <Input
@@ -147,40 +103,18 @@ export default function Auth() {
               />
             </div>
 
-            {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="font-heading">Confirmar Contraseña</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  maxLength={100}
-                  className="font-body"
-                />
-              </div>
-            )}
-
             <Button
               type="submit"
               className="w-full gradient-primary shadow-elegant hover:shadow-lg transition-smooth font-heading"
               disabled={loading}
             >
-              {loading ? 'Procesando...' : isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+              {loading ? 'Procesando...' : 'Iniciar Sesión'}
             </Button>
 
             <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-muted-foreground hover:text-primary transition-smooth font-body"
-              >
-                {isLogin 
-                  ? '¿No tienes cuenta? Regístrate' 
-                  : '¿Ya tienes cuenta? Inicia sesión'}
-              </button>
+              <p className="text-sm text-muted-foreground font-body">
+                ¿No tienes acceso? Contacta a tu administrador
+              </p>
             </div>
           </form>
         </CardContent>
