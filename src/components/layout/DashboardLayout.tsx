@@ -10,7 +10,8 @@ import {
   LogOut,
   Menu,
   Calendar as CalendarIcon,
-  MessageSquare
+  MessageSquare,
+  FileText
 } from 'lucide-react';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -47,6 +48,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
     { icon: CheckSquare, label: 'Tareas', path: '/tareas', roles: ['administrador', 'consultor', 'cliente'] },
     { icon: CalendarIcon, label: 'Calendario', path: '/calendario', roles: ['administrador', 'consultor', 'cliente'] },
     { icon: MessageSquare, label: 'Mensajes', path: '/mensajes', roles: ['administrador', 'consultor', 'cliente'] },
+    { icon: FileText, label: 'Reportes', path: '/reportes', roles: ['administrador', 'consultor'] },
     { icon: Users, label: 'Usuarios', path: '/usuarios', roles: ['administrador'] },
   ];
 
