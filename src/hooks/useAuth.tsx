@@ -31,9 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Fetch role when session changes
         if (session?.user) {
-          setTimeout(() => {
-            fetchUserRole(session.user.id);
-          }, 0);
+          fetchUserRole(session.user.id);
         } else {
           setRole(null);
           setLoading(false);
