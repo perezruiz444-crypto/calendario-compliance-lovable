@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CheckSquare, MessageSquare, Settings } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare, Settings, Repeat } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
 import TareaDetailDialog from '@/components/tareas/TareaDetailDialog';
@@ -201,6 +201,12 @@ export default function Tareas() {
                       <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-heading font-semibold text-lg">{tarea.titulo}</h3>
+                          {tarea.es_recurrente && (
+                            <Badge variant="outline" className="gap-1 border-primary/50">
+                              <Repeat className="w-3 h-3" />
+                              Recurrente
+                            </Badge>
+                          )}
                           {tarea.categorias_tareas && (
                             <Badge
                               variant="outline"

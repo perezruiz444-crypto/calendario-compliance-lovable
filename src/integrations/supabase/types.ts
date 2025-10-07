@@ -335,6 +335,42 @@ export type Database = {
           },
         ]
       }
+      notificaciones: {
+        Row: {
+          contenido: string | null
+          created_at: string | null
+          id: string
+          leida: boolean | null
+          referencia_id: string | null
+          referencia_tipo: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          contenido?: string | null
+          created_at?: string | null
+          id?: string
+          leida?: boolean | null
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          contenido?: string | null
+          created_at?: string | null
+          id?: string
+          leida?: boolean | null
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -374,10 +410,17 @@ export type Database = {
           created_at: string | null
           descripcion: string | null
           empresa_id: string
+          es_recurrente: boolean | null
           estado: Database["public"]["Enums"]["estado_tarea"] | null
+          fecha_fin_recurrencia: string | null
+          fecha_inicio_recurrencia: string | null
           fecha_vencimiento: string | null
+          frecuencia_recurrencia: string | null
           id: string
+          intervalo_recurrencia: number | null
           prioridad: Database["public"]["Enums"]["prioridad_tarea"] | null
+          proxima_generacion: string | null
+          tarea_padre_id: string | null
           titulo: string
           updated_at: string | null
         }
@@ -389,10 +432,17 @@ export type Database = {
           created_at?: string | null
           descripcion?: string | null
           empresa_id: string
+          es_recurrente?: boolean | null
           estado?: Database["public"]["Enums"]["estado_tarea"] | null
+          fecha_fin_recurrencia?: string | null
+          fecha_inicio_recurrencia?: string | null
           fecha_vencimiento?: string | null
+          frecuencia_recurrencia?: string | null
           id?: string
+          intervalo_recurrencia?: number | null
           prioridad?: Database["public"]["Enums"]["prioridad_tarea"] | null
+          proxima_generacion?: string | null
+          tarea_padre_id?: string | null
           titulo: string
           updated_at?: string | null
         }
@@ -404,10 +454,17 @@ export type Database = {
           created_at?: string | null
           descripcion?: string | null
           empresa_id?: string
+          es_recurrente?: boolean | null
           estado?: Database["public"]["Enums"]["estado_tarea"] | null
+          fecha_fin_recurrencia?: string | null
+          fecha_inicio_recurrencia?: string | null
           fecha_vencimiento?: string | null
+          frecuencia_recurrencia?: string | null
           id?: string
+          intervalo_recurrencia?: number | null
           prioridad?: Database["public"]["Enums"]["prioridad_tarea"] | null
+          proxima_generacion?: string | null
+          tarea_padre_id?: string | null
           titulo?: string
           updated_at?: string | null
         }
@@ -424,6 +481,13 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_tarea_padre_id_fkey"
+            columns: ["tarea_padre_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
             referencedColumns: ["id"]
           },
         ]

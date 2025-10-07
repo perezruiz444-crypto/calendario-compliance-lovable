@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +13,7 @@ import { tareaSchema } from '@/lib/validation';
 import { z } from 'zod';
 import { CategorySelector } from './CategorySelector';
 import { FileAttachments } from './FileAttachments';
+import { Repeat } from 'lucide-react';
 
 interface CreateTareaDialogProps {
   open: boolean;
@@ -31,7 +33,12 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
     fecha_vencimiento: '',
     empresa_id: '',
     consultor_asignado_id: '',
-    categoria_id: ''
+    categoria_id: '',
+    es_recurrente: false,
+    frecuencia_recurrencia: 'mensual',
+    intervalo_recurrencia: 1,
+    fecha_inicio_recurrencia: '',
+    fecha_fin_recurrencia: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<any[]>([]);
@@ -111,7 +118,12 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
           fecha_vencimiento: formData.fecha_vencimiento || null,
           categoria_id: formData.categoria_id || null,
           archivos_adjuntos: attachments.length > 0 ? attachments : null,
-          creado_por: user?.id
+          creado_por: user?.id,
+          es_recurrente: formData.es_recurrente,
+          frecuencia_recurrencia: formData.es_recurrente ? formData.frecuencia_recurrencia : null,
+          intervalo_recurrencia: formData.es_recurrente ? formData.intervalo_recurrencia : null,
+          fecha_inicio_recurrencia: formData.es_recurrente ? formData.fecha_inicio_recurrencia : null,
+          fecha_fin_recurrencia: formData.es_recurrente ? formData.fecha_fin_recurrencia : null
         });
 
       if (error) throw error;
@@ -124,7 +136,12 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
         fecha_vencimiento: '',
         empresa_id: '',
         consultor_asignado_id: '',
-        categoria_id: ''
+        categoria_id: '',
+        es_recurrente: false,
+        frecuencia_recurrencia: 'mensual',
+        intervalo_recurrencia: 1,
+        fecha_inicio_recurrencia: '',
+        fecha_fin_recurrencia: ''
       });
       setAttachments([]);
       onOpenChange(false);
@@ -255,6 +272,94 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
                 attachments={attachments}
                 onAttachmentsChange={setAttachments}
               />
+            </div>
+
+            <div className="border-t pt-4 space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="es_recurrente"
+                  checked={formData.es_recurrente}
+                  onCheckedChange={(checked) => 
+                    setFormData({ ...formData, es_recurrente: checked as boolean })
+                  }
+                />
+                <Label htmlFor="es_recurrente" className="font-heading flex items-center gap-2 cursor-pointer">
+                  <Repeat className="w-4 h-4" />
+                  Tarea recurrente
+                </Label>
+              </div>
+
+              {formData.es_recurrente && (
+                <div className="space-y-4 pl-6 border-l-2 border-primary/20">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="frecuencia" className="font-heading">Frecuencia</Label>
+                      <Select
+                        value={formData.frecuencia_recurrencia}
+                        onValueChange={(value) => setFormData({ ...formData, frecuencia_recurrencia: value })}
+                      >
+                        <SelectTrigger className="font-body">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="diaria">Diaria</SelectItem>
+                          <SelectItem value="semanal">Semanal</SelectItem>
+                          <SelectItem value="mensual">Mensual</SelectItem>
+                          <SelectItem value="trimestral">Trimestral</SelectItem>
+                          <SelectItem value="anual">Anual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="intervalo" className="font-heading">Cada</Label>
+                      <Input
+                        id="intervalo"
+                        type="number"
+                        min="1"
+                        value={formData.intervalo_recurrencia}
+                        onChange={(e) => setFormData({ ...formData, intervalo_recurrencia: parseInt(e.target.value) || 1 })}
+                        className="font-body"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fecha_inicio_rec" className="font-heading">Fecha Inicio</Label>
+                      <Input
+                        id="fecha_inicio_rec"
+                        type="date"
+                        value={formData.fecha_inicio_recurrencia}
+                        onChange={(e) => setFormData({ ...formData, fecha_inicio_recurrencia: e.target.value })}
+                        className="font-body"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="fecha_fin_rec" className="font-heading">Fecha Fin</Label>
+                      <Input
+                        id="fecha_fin_rec"
+                        type="date"
+                        value={formData.fecha_fin_recurrencia}
+                        onChange={(e) => setFormData({ ...formData, fecha_fin_recurrencia: e.target.value })}
+                        className="font-body"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground font-body">
+                    Esta tarea se repetirá cada {formData.intervalo_recurrencia} 
+                    {formData.frecuencia_recurrencia === 'diaria' && ' día(s)'}
+                    {formData.frecuencia_recurrencia === 'semanal' && ' semana(s)'}
+                    {formData.frecuencia_recurrencia === 'mensual' && ' mes(es)'}
+                    {formData.frecuencia_recurrencia === 'trimestral' && ' trimestre(s)'}
+                    {formData.frecuencia_recurrencia === 'anual' && ' año(s)'}
+                    {formData.fecha_inicio_recurrencia && ` desde ${new Date(formData.fecha_inicio_recurrencia).toLocaleDateString()}`}
+                    {formData.fecha_fin_recurrencia && ` hasta ${new Date(formData.fecha_fin_recurrencia).toLocaleDateString()}`}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
