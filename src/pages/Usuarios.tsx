@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Mail, Shield } from 'lucide-react';
+import { Plus, Mail, Shield, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateUserDialog from '@/components/usuarios/CreateUserDialog';
+import EditUserDialog from '@/components/usuarios/EditUserDialog';
 import { toast } from 'sonner';
 
 interface UserWithRole {
@@ -25,6 +26,8 @@ export default function Usuarios() {
   const [usuarios, setUsuarios] = useState<UserWithRole[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
 
   const fetchUsuarios = async () => {
     try {
@@ -68,6 +71,11 @@ export default function Usuarios() {
       case 'cliente': return 'outline';
       default: return 'outline';
     }
+  };
+
+  const handleEditUser = (usuario: UserWithRole) => {
+    setSelectedUser(usuario);
+    setEditDialogOpen(true);
   };
 
   if (loading || loadingUsers) {
@@ -131,6 +139,7 @@ export default function Usuarios() {
                     <TableHead className="font-heading">Email</TableHead>
                     <TableHead className="font-heading">Rol</TableHead>
                     <TableHead className="font-heading">Fecha de Registro</TableHead>
+                    <TableHead className="font-heading text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -151,6 +160,17 @@ export default function Usuarios() {
                       <TableCell className="font-body">
                         {new Date(usuario.created_at).toLocaleDateString('es-MX')}
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditUser(usuario)}
+                          className="hover:bg-accent transition-smooth font-heading"
+                        >
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Editar
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -164,6 +184,13 @@ export default function Usuarios() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onUserCreated={fetchUsuarios}
+      />
+
+      <EditUserDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onUserUpdated={fetchUsuarios}
+        user={selectedUser}
       />
     </DashboardLayout>
   );
