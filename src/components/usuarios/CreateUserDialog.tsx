@@ -19,7 +19,6 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
     nombre_completo: '',
     role: 'consultor' as 'administrador' | 'consultor' | 'cliente'
   });
@@ -29,9 +28,18 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
     e.preventDefault();
     setErrors({});
     
-    // Validate form data
+    // Validate form data (excluding password for invitations)
     try {
-      userSchema.parse(formData);
+      const invitationSchema = z.object({
+        email: z.string().email('Email inválido'),
+        nombre_completo: z.string().min(1, 'El nombre es requerido').max(100, 'El nombre es muy largo'),
+        role: z.enum(['administrador', 'consultor', 'cliente'])
+      });
+      invitationSchema.parse({
+        email: formData.email,
+        nombre_completo: formData.nombre_completo,
+        role: formData.role
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
@@ -49,24 +57,29 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-user', {
-        body: formData,
+      const { data, error } = await supabase.functions.invoke('send-user-invitation', {
+        body: {
+          email: formData.email,
+          role: formData.role,
+          nombreCompleto: formData.nombre_completo,
+          empresaId: null // You can add empresa selection later if needed
+        },
       });
 
       if (error) {
-        throw new Error(error.message || 'Error al crear usuario');
+        throw new Error(error.message || 'Error al enviar invitación');
       }
 
       if (data?.error) {
         throw new Error(data.error);
       }
 
-      toast.success('Usuario creado exitosamente');
-      setFormData({ email: '', password: '', nombre_completo: '', role: 'consultor' });
+      toast.success('Invitación enviada correctamente por email');
+      setFormData({ email: '', nombre_completo: '', role: 'consultor' });
       onOpenChange(false);
       onUserCreated();
     } catch (error: any) {
-      toast.error(error.message || 'Error al crear usuario');
+      toast.error(error.message || 'Error al enviar invitación');
     } finally {
       setLoading(false);
     }
@@ -76,9 +89,9 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="font-heading">Crear Nuevo Usuario</DialogTitle>
+          <DialogTitle className="font-heading">Invitar Nuevo Usuario</DialogTitle>
           <DialogDescription className="font-body">
-            Ingresa los datos del nuevo usuario y asigna su rol
+            Se enviará un email de invitación con un enlace para que el usuario establezca su contraseña
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -107,21 +120,9 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
                 className="font-body"
               />
               {errors.email && <p className="text-sm text-destructive font-body">{errors.email}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="font-heading">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                minLength={8}
-                maxLength={100}
-                className="font-body"
-              />
-              {errors.password && <p className="text-sm text-destructive font-body">{errors.password}</p>}
-              <p className="text-xs text-muted-foreground font-body">Mínimo 8 caracteres con mayúscula, minúscula y número</p>
+              <p className="text-xs text-muted-foreground font-body">
+                El usuario recibirá un email para establecer su contraseña
+              </p>
             </div>
             <div className="space-y-2">
               <Label className="font-heading">Rol</Label>
@@ -149,7 +150,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
               Cancelar
             </Button>
             <Button type="submit" disabled={loading} className="gradient-primary shadow-elegant font-heading">
-              {loading ? 'Creando...' : 'Crear Usuario'}
+              {loading ? 'Enviando...' : 'Enviar Invitación'}
             </Button>
           </DialogFooter>
         </form>

@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.send-task-notifications]
 verify_jwt = true
+
+[functions.send-user-invitation]
+verify_jwt = true
