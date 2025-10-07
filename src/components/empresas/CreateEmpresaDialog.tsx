@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { empresaSchema } from '@/lib/validation';
 import { z } from 'zod';
+import EmpresaFormGeneral from './EmpresaFormGeneral';
 
 interface CreateEmpresaDialogProps {
   open: boolean;
@@ -23,7 +21,8 @@ export default function CreateEmpresaDialog({ open, onOpenChange, onEmpresaCreat
     razon_social: '',
     rfc: '',
     domicilio_fiscal: '',
-    telefono: ''
+    telefono: '',
+    actividad_economica: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -58,13 +57,14 @@ export default function CreateEmpresaDialog({ open, onOpenChange, onEmpresaCreat
           rfc: formData.rfc.trim().toUpperCase(),
           domicilio_fiscal: formData.domicilio_fiscal.trim(),
           telefono: formData.telefono.trim() || null,
+          actividad_economica: formData.actividad_economica.trim() || null,
           created_by: user?.id
         });
 
       if (error) throw error;
 
       toast.success('Empresa creada exitosamente');
-      setFormData({ razon_social: '', rfc: '', domicilio_fiscal: '', telefono: '' });
+      setFormData({ razon_social: '', rfc: '', domicilio_fiscal: '', telefono: '', actividad_economica: '' });
       onOpenChange(false);
       onEmpresaCreated();
     } catch (error: any) {
@@ -84,57 +84,12 @@ export default function CreateEmpresaDialog({ open, onOpenChange, onEmpresaCreat
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="razon_social" className="font-heading">Razón Social *</Label>
-              <Input
-                id="razon_social"
-                value={formData.razon_social}
-                onChange={(e) => setFormData({ ...formData, razon_social: e.target.value })}
-                required
-                maxLength={200}
-                className="font-body"
-              />
-              {errors.razon_social && <p className="text-sm text-destructive font-body">{errors.razon_social}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="rfc" className="font-heading">RFC *</Label>
-              <Input
-                id="rfc"
-                value={formData.rfc}
-                onChange={(e) => setFormData({ ...formData, rfc: e.target.value.toUpperCase() })}
-                required
-                maxLength={13}
-                placeholder="AAA123456A12"
-                className="font-body"
-              />
-              {errors.rfc && <p className="text-sm text-destructive font-body">{errors.rfc}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="domicilio_fiscal" className="font-heading">Domicilio Fiscal *</Label>
-              <Textarea
-                id="domicilio_fiscal"
-                value={formData.domicilio_fiscal}
-                onChange={(e) => setFormData({ ...formData, domicilio_fiscal: e.target.value })}
-                required
-                maxLength={500}
-                className="font-body"
-              />
-              {errors.domicilio_fiscal && <p className="text-sm text-destructive font-body">{errors.domicilio_fiscal}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="telefono" className="font-heading">Teléfono</Label>
-              <Input
-                id="telefono"
-                type="tel"
-                value={formData.telefono}
-                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                maxLength={20}
-                placeholder="5512345678"
-                className="font-body"
-              />
-              {errors.telefono && <p className="text-sm text-destructive font-body">{errors.telefono}</p>}
-            </div>
+          <div className="py-4">
+            <EmpresaFormGeneral 
+              formData={formData} 
+              setFormData={setFormData}
+              errors={errors}
+            />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-heading">

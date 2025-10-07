@@ -49,6 +49,50 @@ export type Database = {
           },
         ]
       }
+      apoderados_legales: {
+        Row: {
+          created_at: string | null
+          empresa_id: string
+          id: string
+          nombre: string
+          poder_notarial_anio: number | null
+          poder_notarial_instrumento: string | null
+          poder_notarial_libro: string | null
+          tipo_apoderado: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          empresa_id: string
+          id?: string
+          nombre: string
+          poder_notarial_anio?: number | null
+          poder_notarial_instrumento?: string | null
+          poder_notarial_libro?: string | null
+          tipo_apoderado?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          empresa_id?: string
+          id?: string
+          nombre?: string
+          poder_notarial_anio?: number | null
+          poder_notarial_instrumento?: string | null
+          poder_notarial_libro?: string | null
+          tipo_apoderado?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apoderados_legales_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -254,7 +298,14 @@ export type Database = {
       }
       empresas: {
         Row: {
+          actividad_economica: string | null
           anexo24_proveedor_software: string | null
+          cert_iva_ieps_fecha_autorizacion: string | null
+          cert_iva_ieps_fecha_renovar: string | null
+          cert_iva_ieps_fecha_ultima_renovacion: string | null
+          cert_iva_ieps_fecha_vencimiento: string | null
+          cert_iva_ieps_nota: string | null
+          cert_iva_ieps_oficio: string | null
           created_at: string | null
           created_by: string | null
           datos_notario: string | null
@@ -262,19 +313,27 @@ export type Database = {
           fecha_constitucion: string | null
           id: string
           immex_domicilios: string[] | null
+          immex_fecha_autorizacion: string | null
           immex_fecha_fin: string | null
           immex_fecha_inicio: string | null
+          immex_modalidad: string | null
           immex_numero: string | null
           immex_tipo: string | null
+          matriz_seguridad_fecha_renovar: string | null
+          matriz_seguridad_fecha_vencimiento: string | null
           numero_escritura: string | null
           padron_general_estado: string | null
           padron_general_numero: string | null
+          padron_importadores_sectores: Json | null
           padrones_sectoriales: Json | null
           prosec_domicilios: string[] | null
+          prosec_fecha_autorizacion: string | null
           prosec_fecha_fin: string | null
           prosec_fecha_inicio: string | null
+          prosec_modalidad: string | null
           prosec_numero: string | null
           prosec_sector: string | null
+          prosec_sectores: Json | null
           razon_social: string
           representante_legal_nombre: string | null
           representante_legal_poder: string | null
@@ -283,7 +342,14 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          actividad_economica?: string | null
           anexo24_proveedor_software?: string | null
+          cert_iva_ieps_fecha_autorizacion?: string | null
+          cert_iva_ieps_fecha_renovar?: string | null
+          cert_iva_ieps_fecha_ultima_renovacion?: string | null
+          cert_iva_ieps_fecha_vencimiento?: string | null
+          cert_iva_ieps_nota?: string | null
+          cert_iva_ieps_oficio?: string | null
           created_at?: string | null
           created_by?: string | null
           datos_notario?: string | null
@@ -291,19 +357,27 @@ export type Database = {
           fecha_constitucion?: string | null
           id?: string
           immex_domicilios?: string[] | null
+          immex_fecha_autorizacion?: string | null
           immex_fecha_fin?: string | null
           immex_fecha_inicio?: string | null
+          immex_modalidad?: string | null
           immex_numero?: string | null
           immex_tipo?: string | null
+          matriz_seguridad_fecha_renovar?: string | null
+          matriz_seguridad_fecha_vencimiento?: string | null
           numero_escritura?: string | null
           padron_general_estado?: string | null
           padron_general_numero?: string | null
+          padron_importadores_sectores?: Json | null
           padrones_sectoriales?: Json | null
           prosec_domicilios?: string[] | null
+          prosec_fecha_autorizacion?: string | null
           prosec_fecha_fin?: string | null
           prosec_fecha_inicio?: string | null
+          prosec_modalidad?: string | null
           prosec_numero?: string | null
           prosec_sector?: string | null
+          prosec_sectores?: Json | null
           razon_social: string
           representante_legal_nombre?: string | null
           representante_legal_poder?: string | null
@@ -312,7 +386,14 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          actividad_economica?: string | null
           anexo24_proveedor_software?: string | null
+          cert_iva_ieps_fecha_autorizacion?: string | null
+          cert_iva_ieps_fecha_renovar?: string | null
+          cert_iva_ieps_fecha_ultima_renovacion?: string | null
+          cert_iva_ieps_fecha_vencimiento?: string | null
+          cert_iva_ieps_nota?: string | null
+          cert_iva_ieps_oficio?: string | null
           created_at?: string | null
           created_by?: string | null
           datos_notario?: string | null
@@ -320,19 +401,27 @@ export type Database = {
           fecha_constitucion?: string | null
           id?: string
           immex_domicilios?: string[] | null
+          immex_fecha_autorizacion?: string | null
           immex_fecha_fin?: string | null
           immex_fecha_inicio?: string | null
+          immex_modalidad?: string | null
           immex_numero?: string | null
           immex_tipo?: string | null
+          matriz_seguridad_fecha_renovar?: string | null
+          matriz_seguridad_fecha_vencimiento?: string | null
           numero_escritura?: string | null
           padron_general_estado?: string | null
           padron_general_numero?: string | null
+          padron_importadores_sectores?: Json | null
           padrones_sectoriales?: Json | null
           prosec_domicilios?: string[] | null
+          prosec_fecha_autorizacion?: string | null
           prosec_fecha_fin?: string | null
           prosec_fecha_inicio?: string | null
+          prosec_modalidad?: string | null
           prosec_numero?: string | null
           prosec_sector?: string | null
+          prosec_sectores?: Json | null
           razon_social?: string
           representante_legal_nombre?: string | null
           representante_legal_poder?: string | null
