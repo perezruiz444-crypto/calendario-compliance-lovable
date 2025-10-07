@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido').max(255, 'Email muy largo'),
-  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres').max(100, 'Contraseña muy larga'),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(100, 'Contraseña muy larga'),
 });
 
 export default function Auth() {
@@ -97,7 +97,7 @@ export default function Auth() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                minLength={6}
+                minLength={8}
                 maxLength={100}
                 className="font-body"
               />
