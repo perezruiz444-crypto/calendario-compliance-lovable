@@ -12,6 +12,7 @@ import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, Us
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
+import { generateReportPDF } from '@/lib/pdfGenerator';
 
 export default function Reportes() {
   const { user, role, loading } = useAuth();
@@ -504,33 +505,23 @@ export default function Reportes() {
                 <Button 
                   onClick={async () => {
                     try {
-                      const { data, error } = await supabase.functions.invoke('generate-report-pdf', {
-                        body: { 
-                          empresaId: selectedEmpresa, 
-                          reportData: reporteData, 
-                          period: selectedPeriod, 
-                          reportType: tipoReporte 
-                        }
-                      });
+                      // Get empresa data first
+                      const { data: empresa, error: empresaError } = await supabase
+                        .from('empresas')
+                        .select('razon_social, rfc')
+                        .eq('id', selectedEmpresa)
+                        .single();
                       
-                      if (error) throw error;
+                      if (empresaError) throw empresaError;
                       
-                      // Create blob and download
-                      const blob = new Blob([data], { type: 'application/pdf' });
-                      const url = window.URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `reporte-${selectedPeriod}-${new Date().toISOString().split('T')[0]}.pdf`;
-                      document.body.appendChild(a);
-                      a.click();
-                      window.URL.revokeObjectURL(url);
-                      document.body.removeChild(a);
+                      await generateReportPDF(empresa, reporteData, selectedPeriod, tipoReporte);
                       
                       toast({ 
                         title: "PDF generado", 
                         description: "El reporte PDF se ha descargado correctamente" 
                       });
                     } catch (err: any) {
+                      console.error('Error generating PDF:', err);
                       toast({ 
                         title: "Error", 
                         description: err.message, 
