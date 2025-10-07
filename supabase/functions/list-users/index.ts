@@ -38,15 +38,10 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch all profiles with roles
+    // Fetch all profiles
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('profiles')
-      .select(`
-        id,
-        nombre_completo,
-        created_at,
-        user_roles (role)
-      `)
+      .select('id, nombre_completo, created_at')
       .order('created_at', { ascending: false })
 
     if (profilesError) {
@@ -56,7 +51,18 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Get auth users to fetch emails
+    // Fetch all user roles
+    const { data: userRoles } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id, role')
+
+    // Create a map of user roles for quick lookup
+    const rolesMap = new Map()
+    userRoles?.forEach(ur => {
+      rolesMap.set(ur.user_id, ur.role)
+    })
+
+    // Get auth users to fetch emails and combine with roles
     const usersWithEmails = await Promise.all(
       profiles.map(async (profile) => {
         const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(profile.id)
@@ -64,7 +70,7 @@ Deno.serve(async (req) => {
           id: profile.id,
           email: authUser?.email || 'N/A',
           nombre_completo: profile.nombre_completo,
-          role: (profile.user_roles as any)?.[0]?.role || 'sin rol',
+          role: rolesMap.get(profile.id) || 'sin rol',
           created_at: profile.created_at
         }
       })
