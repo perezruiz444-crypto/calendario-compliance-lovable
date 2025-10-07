@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Send, MessageSquare, Calendar, User, Paperclip } from 'lucide-react';
+import { Send, MessageSquare, Calendar, User, Paperclip, Repeat } from 'lucide-react';
 import { format } from 'date-fns';
 import { FileAttachments } from './FileAttachments';
 
@@ -214,6 +214,40 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
               </div>
             )}
           </div>
+
+          {/* Información de Recurrencia */}
+          {tarea.es_recurrente && (
+            <div className="border rounded-lg p-4 bg-primary/5">
+              <div className="flex items-center gap-2 mb-3">
+                <Repeat className="w-5 h-5 text-primary" />
+                <h3 className="font-heading font-semibold">Tarea Recurrente</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm font-body">
+                <div>
+                  <p className="text-muted-foreground">Frecuencia</p>
+                  <p className="font-medium capitalize">
+                    Cada {tarea.intervalo_recurrencia} {tarea.frecuencia_recurrencia}
+                  </p>
+                </div>
+                {tarea.fecha_inicio_recurrencia && (
+                  <div>
+                    <p className="text-muted-foreground">Fecha Inicio</p>
+                    <p className="font-medium">
+                      {format(new Date(tarea.fecha_inicio_recurrencia), 'dd/MM/yyyy')}
+                    </p>
+                  </div>
+                )}
+                {tarea.fecha_fin_recurrencia && (
+                  <div>
+                    <p className="text-muted-foreground">Fecha Fin</p>
+                    <p className="font-medium">
+                      {format(new Date(tarea.fecha_fin_recurrencia), 'dd/MM/yyyy')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Archivos Adjuntos */}
           {tarea.archivos_adjuntos && tarea.archivos_adjuntos.length > 0 && (
