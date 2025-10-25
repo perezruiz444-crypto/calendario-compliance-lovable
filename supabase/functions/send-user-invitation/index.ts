@@ -45,6 +45,26 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Check if user already exists
+    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
+    const userExists = existingUser?.users.some(u => u.email === email);
+    
+    if (userExists) {
+      throw new Error('Ya existe un usuario con este email');
+    }
+
+    // Check for pending invitation
+    const { data: pendingInvitation } = await supabaseClient
+      .from('user_invitations')
+      .select('id, status')
+      .eq('email', email)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    if (pendingInvitation) {
+      throw new Error('Ya existe una invitación pendiente para este email');
+    }
+
     // Generate unique token for tracking
     const token = crypto.randomUUID();
     const expiresAt = new Date();
