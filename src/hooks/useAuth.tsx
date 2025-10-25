@@ -26,6 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Don't interfere with password recovery or invite flows
+        if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -41,6 +49,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      // Check if we're in a password recovery/invite flow
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const type = hashParams.get('type');
+      
+      if (type === 'recovery' || type === 'invite') {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        return;
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -56,6 +75,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserRole = async (userId: string) => {
     try {
+      // Check if we're in a password recovery/invite flow first
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const type = hashParams.get('type');
+      
+      if (type === 'recovery' || type === 'invite') {
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
