@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { userSchema } from '@/lib/validation';
@@ -17,12 +18,35 @@ interface CreateUserDialogProps {
 
 export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUserDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [empresas, setEmpresas] = useState<Array<{ id: string; razon_social: string }>>([]);
   const [formData, setFormData] = useState({
     email: '',
     nombre_completo: '',
-    role: 'consultor' as 'administrador' | 'consultor' | 'cliente'
+    role: 'consultor' as 'administrador' | 'consultor' | 'cliente',
+    empresa_id: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (open) {
+      fetchEmpresas();
+    }
+  }, [open]);
+
+  const fetchEmpresas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('empresas')
+        .select('id, razon_social')
+        .order('razon_social');
+
+      if (error) throw error;
+      setEmpresas(data || []);
+    } catch (error: any) {
+      toast.error('Error al cargar empresas');
+      console.error(error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,13 +57,25 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
       const invitationSchema = z.object({
         email: z.string().email('Email inválido'),
         nombre_completo: z.string().min(1, 'El nombre es requerido').max(100, 'El nombre es muy largo'),
-        role: z.enum(['administrador', 'consultor', 'cliente'])
+        role: z.enum(['administrador', 'consultor', 'cliente']),
+        empresa_id: z.string().optional()
       });
-      invitationSchema.parse({
+      
+      const validationData = {
         email: formData.email,
         nombre_completo: formData.nombre_completo,
-        role: formData.role
-      });
+        role: formData.role,
+        empresa_id: formData.empresa_id || undefined
+      };
+
+      // Validate that cliente role requires empresa_id
+      if (formData.role === 'cliente' && !formData.empresa_id) {
+        setErrors({ empresa_id: 'Debes seleccionar una empresa para el cliente' });
+        toast.error('Debes seleccionar una empresa para el cliente');
+        return;
+      }
+
+      invitationSchema.parse(validationData);
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
@@ -62,7 +98,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
           email: formData.email,
           role: formData.role,
           nombreCompleto: formData.nombre_completo,
-          empresaId: null // You can add empresa selection later if needed
+          empresaId: formData.empresa_id || null
         },
       });
 
@@ -75,7 +111,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
       }
 
       toast.success('Invitación enviada correctamente por email');
-      setFormData({ email: '', nombre_completo: '', role: 'consultor' });
+      setFormData({ email: '', nombre_completo: '', role: 'consultor', empresa_id: '' });
       onOpenChange(false);
       onUserCreated();
     } catch (error: any) {
@@ -144,6 +180,27 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
                 </div>
               </RadioGroup>
             </div>
+            {formData.role === 'cliente' && (
+              <div className="space-y-2">
+                <Label htmlFor="empresa_id" className="font-heading">Empresa *</Label>
+                <Select value={formData.empresa_id} onValueChange={(value) => setFormData({ ...formData, empresa_id: value })}>
+                  <SelectTrigger className="font-body">
+                    <SelectValue placeholder="Selecciona una empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {empresas.map((empresa) => (
+                      <SelectItem key={empresa.id} value={empresa.id} className="font-body">
+                        {empresa.razon_social}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.empresa_id && <p className="text-sm text-destructive font-body">{errors.empresa_id}</p>}
+                <p className="text-xs text-muted-foreground font-body">
+                  El cliente solo podrá ver información de esta empresa
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-heading">

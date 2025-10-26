@@ -91,15 +91,21 @@ serve(async (req: Request) => {
     console.log('Invitation created:', invitation.id);
 
     // Use Supabase native invite - this will send an email automatically
+    const inviteMetadata: any = {
+      nombre_completo: nombreCompleto,
+      role: role,
+      invitation_token: token
+    };
+
+    // Add empresa_id to metadata if provided (for clientes)
+    if (empresaId) {
+      inviteMetadata.empresa_id = empresaId;
+    }
+
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       email,
       {
-        data: {
-          nombre_completo: nombreCompleto,
-          role: role,
-          empresa_id: empresaId,
-          invitation_token: token
-        },
+        data: inviteMetadata,
         redirectTo: `https://3fd50525-4957-433e-99b5-f22cb124e7c8.lovableproject.com/set-password`
       }
     );
