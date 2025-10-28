@@ -102,14 +102,20 @@ serve(async (req: Request) => {
       inviteMetadata.empresa_id = empresaId;
     }
 
-    // Get origin from request headers
-    const origin = req.headers.get('origin') || 'https://svozqrjhwaohfmbkhpig.supabase.co';
+    // Get the correct frontend URL from request origin or referer
+    const origin = req.headers.get('origin') || 
+                   req.headers.get('referer')?.split('/').slice(0, 3).join('/') ||
+                   'https://svozqrjhwaohfmbkhpig.supabase.co';
+    
+    const redirectUrl = `${origin}/set-password`;
+    
+    console.log('Using redirect URL:', redirectUrl);
     
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       email,
       {
         data: inviteMetadata,
-        redirectTo: `${origin}/set-password`
+        redirectTo: redirectUrl
       }
     );
 
