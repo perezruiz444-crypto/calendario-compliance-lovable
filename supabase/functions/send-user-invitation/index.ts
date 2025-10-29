@@ -102,14 +102,35 @@ serve(async (req: Request) => {
       inviteMetadata.empresa_id = empresaId;
     }
 
-    // Get the correct frontend URL from request origin or referer
-    const origin = req.headers.get('origin') || 
-                   req.headers.get('referer')?.split('/').slice(0, 3).join('/') ||
-                   'https://svozqrjhwaohfmbkhpig.supabase.co';
+    // Get the correct frontend URL from request headers
+    // Priority: origin header > referer header > fallback to Lovable preview
+    let origin = req.headers.get('origin');
+    
+    if (!origin) {
+      const referer = req.headers.get('referer');
+      if (referer) {
+        try {
+          const url = new URL(referer);
+          origin = `${url.protocol}//${url.host}`;
+        } catch (e) {
+          console.log('Failed to parse referer:', referer);
+        }
+      }
+    }
+    
+    // Fallback to Lovable preview URL if no origin detected
+    if (!origin) {
+      origin = 'https://svozqrjhwaohfmbkhpig.lovable.app';
+    }
     
     const redirectUrl = `${origin}/set-password`;
     
-    console.log('Using redirect URL:', redirectUrl);
+    console.log('Invitation details:', {
+      origin,
+      redirectUrl,
+      hasOriginHeader: !!req.headers.get('origin'),
+      hasRefererHeader: !!req.headers.get('referer')
+    });
     
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       email,

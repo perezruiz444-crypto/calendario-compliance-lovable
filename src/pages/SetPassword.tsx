@@ -34,15 +34,20 @@ export default function SetPassword() {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const type = hashParams.get('type');
       
+      console.log('SetPassword - Hash type:', type);
+      console.log('SetPassword - Full hash:', window.location.hash);
+      
       // If we have recovery/invite hash params, we're good
       if (type === 'recovery' || type === 'invite') {
+        console.log('Valid recovery/invite session detected');
         return;
       }
       
       // Otherwise check for valid session
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error('Sesión inválida o expirada');
+        console.log('No valid session found, redirecting to auth');
+        toast.error('Sesión inválida o expirada. Por favor, solicita un nuevo enlace de invitación.');
         navigate('/auth');
       }
     };
@@ -92,7 +97,9 @@ export default function SetPassword() {
               Establecer Contraseña
             </CardTitle>
             <CardDescription className="font-body">
-              Crea una contraseña segura para tu cuenta
+              {window.location.hash.includes('type=invite') 
+                ? 'Bienvenido! Establece tu contraseña para acceder al sistema'
+                : 'Crea una contraseña segura para tu cuenta'}
             </CardDescription>
           </div>
         </CardHeader>
