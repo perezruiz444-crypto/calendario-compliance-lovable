@@ -10,6 +10,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Empresas from "./pages/Empresas";
 import EmpresaDetail from "./pages/EmpresaDetail";
+import MiEmpresa from "./pages/MiEmpresa";
 import Tareas from "./pages/Tareas";
 import Usuarios from "./pages/Usuarios";
 import Calendario from "./pages/Calendario";
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/empresas" element={<Empresas />} />
           <Route path="/empresas/:id" element={<EmpresaDetail />} />
+          <Route path="/mi-empresa" element={<MiEmpresa />} />
           <Route path="/tareas" element={<Tareas />} />
           <Route path="/calendario" element={<Calendario />} />
           <Route path="/mensajes" element={<Mensajes />} />

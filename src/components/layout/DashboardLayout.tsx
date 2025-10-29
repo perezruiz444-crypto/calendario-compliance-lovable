@@ -1,7 +1,8 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Building2, 
   LayoutDashboard, 
@@ -27,6 +28,31 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
   const { user, role, signOut } = useAuth();
   const navigate = useNavigate();
   const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
+  const [empresaInfo, setEmpresaInfo] = useState<{ razon_social: string } | null>(null);
+
+  // Fetch empresa info for cliente
+  useEffect(() => {
+    const fetchEmpresaInfo = async () => {
+      if (role === 'cliente' && user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('empresa_id')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.empresa_id) {
+          const { data: empresa } = await supabase
+            .from('empresas')
+            .select('razon_social')
+            .eq('id', profile.empresa_id)
+            .single();
+          
+          setEmpresaInfo(empresa);
+        }
+      }
+    };
+    fetchEmpresaInfo();
+  }, [role, user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -45,6 +71,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['administrador', 'consultor', 'cliente'] },
     { icon: Building2, label: 'Empresas', path: '/empresas', roles: ['administrador', 'consultor'] },
+    { icon: Building2, label: 'Mi Empresa', path: '/mi-empresa', roles: ['cliente'] },
     { icon: CheckSquare, label: 'Tareas', path: '/tareas', roles: ['administrador', 'consultor', 'cliente'] },
     { icon: CalendarIcon, label: 'Calendario', path: '/calendario', roles: ['administrador', 'consultor', 'cliente'] },
     { icon: MessageSquare, label: 'Mensajes', path: '/mensajes', roles: ['administrador', 'consultor', 'cliente'] },
@@ -79,6 +106,18 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
               selectedEmpresaId={selectedEmpresaId}
               onEmpresaSelect={setSelectedEmpresaId}
             />
+          </div>
+        )}
+        
+        {/* Empresa Info for Clientes */}
+        {role === 'cliente' && empresaInfo && (
+          <div className="mt-4 p-3 bg-sidebar-accent rounded-lg">
+            <label className="text-xs font-heading font-medium text-sidebar-foreground/60 mb-1 block">
+              Mi Empresa
+            </label>
+            <p className="text-sm font-body text-sidebar-foreground font-semibold truncate">
+              {empresaInfo.razon_social}
+            </p>
           </div>
         )}
       </div>

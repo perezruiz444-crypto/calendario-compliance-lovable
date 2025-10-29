@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, CheckSquare, Users, TrendingUp, Calendar, Clock, AlertCircle } from 'lucide-react';
-import { format, isAfter, isBefore, addDays } from 'date-fns';
+import { Building2, CheckSquare, Users, TrendingUp, Calendar, Clock, AlertCircle, Shield, FileText } from 'lucide-react';
+import { format, isAfter, isBefore, addDays, differenceInDays, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
@@ -21,6 +22,7 @@ export default function Dashboard() {
     cumplimiento: 0
   });
   const [proximasTareas, setProximasTareas] = useState<any[]>([]);
+  const [empresaCliente, setEmpresaCliente] = useState<any>(null);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
@@ -38,6 +40,25 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     setLoadingData(true);
     try {
+      // For cliente role, fetch their empresa info
+      if (role === 'cliente') {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('empresa_id')
+          .eq('id', user?.id)
+          .single();
+
+        if (profile?.empresa_id) {
+          const { data: empresa } = await supabase
+            .from('empresas')
+            .select('*')
+            .eq('id', profile.empresa_id)
+            .single();
+          
+          setEmpresaCliente(empresa);
+        }
+      }
+
       // Fetch empresas count
       const empresasQuery = supabase.from('empresas').select('id', { count: 'exact', head: true });
       
@@ -181,6 +202,15 @@ export default function Dashboard() {
     },
   ];
 
+  const getVencimientoAlert = (fecha: string | null) => {
+    if (!fecha) return null;
+    const dias = differenceInDays(parseISO(fecha), new Date());
+    
+    if (dias < 0) return { color: 'destructive', text: 'Vencido', dias };
+    if (dias <= 30) return { color: 'warning', text: `${dias} días`, dias };
+    return { color: 'default', text: `${dias} días`, dias };
+  };
+
   return (
     <DashboardLayout currentPage="/dashboard">
       <div className="space-y-6">
@@ -193,6 +223,92 @@ export default function Dashboard() {
             Bienvenido {role === 'administrador' ? 'Administrador' : role === 'consultor' ? 'Consultor' : 'Cliente'}
           </p>
         </div>
+
+        {/* Widget Mi Empresa para Clientes */}
+        {role === 'cliente' && empresaCliente && (
+          <Card className="gradient-card shadow-elegant border-primary/20">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="font-heading flex items-center gap-2">
+                    <Building2 className="w-5 h-5" />
+                    {empresaCliente.razon_social}
+                  </CardTitle>
+                  <CardDescription className="font-body">
+                    RFC: {empresaCliente.rfc}
+                  </CardDescription>
+                </div>
+                <Button 
+                  onClick={() => navigate('/mi-empresa')}
+                  className="gradient-primary shadow-elegant font-heading"
+                >
+                  Ver Detalles
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Alertas de vencimiento */}
+              {(empresaCliente.cert_iva_ieps_fecha_vencimiento || 
+                empresaCliente.matriz_seguridad_fecha_vencimiento || 
+                empresaCliente.immex_fecha_fin) && (
+                <div className="space-y-2">
+                  <p className="text-sm font-heading font-medium flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Próximos Vencimientos
+                  </p>
+                  
+                  {empresaCliente.cert_iva_ieps_fecha_vencimiento && 
+                   (() => {
+                     const alert = getVencimientoAlert(empresaCliente.cert_iva_ieps_fecha_vencimiento);
+                     return alert && alert.dias <= 90 ? (
+                       <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
+                         <div className="flex items-center gap-2">
+                           <Shield className="w-4 h-4 text-muted-foreground" />
+                           <span className="text-xs font-body">Cert. IVA/IEPS</span>
+                         </div>
+                         <Badge variant={alert.color as any} className="text-xs">
+                           {alert.text}
+                         </Badge>
+                       </div>
+                     ) : null;
+                   })()}
+                  
+                  {empresaCliente.matriz_seguridad_fecha_vencimiento && 
+                   (() => {
+                     const alert = getVencimientoAlert(empresaCliente.matriz_seguridad_fecha_vencimiento);
+                     return alert && alert.dias <= 90 ? (
+                       <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
+                         <div className="flex items-center gap-2">
+                           <Shield className="w-4 h-4 text-muted-foreground" />
+                           <span className="text-xs font-body">Matriz Seguridad</span>
+                         </div>
+                         <Badge variant={alert.color as any} className="text-xs">
+                           {alert.text}
+                         </Badge>
+                       </div>
+                     ) : null;
+                   })()}
+                  
+                  {empresaCliente.immex_fecha_fin && 
+                   (() => {
+                     const alert = getVencimientoAlert(empresaCliente.immex_fecha_fin);
+                     return alert && alert.dias <= 90 ? (
+                       <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
+                         <div className="flex items-center gap-2">
+                           <FileText className="w-4 h-4 text-muted-foreground" />
+                           <span className="text-xs font-body">Programa IMMEX</span>
+                         </div>
+                         <Badge variant={alert.color as any} className="text-xs">
+                           {alert.text}
+                         </Badge>
+                       </div>
+                     ) : null;
+                   })()}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
