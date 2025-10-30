@@ -142,13 +142,13 @@ export default function ManageConsultoresDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" aria-describedby="manage-consultores-description">
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2">
             <Users className="w-5 h-5" />
             Gestionar Consultores
           </DialogTitle>
-          <DialogDescription className="font-body">
+          <DialogDescription id="manage-consultores-description" className="font-body">
             Asignar o desasignar consultores para <strong>{empresaNombre}</strong>
           </DialogDescription>
         </DialogHeader>
