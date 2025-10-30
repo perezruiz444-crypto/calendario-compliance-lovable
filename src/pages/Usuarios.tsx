@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Mail, Shield, Pencil } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Plus, Mail, Shield, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateUserDialog from '@/components/usuarios/CreateUserDialog';
 import EditUserDialog from '@/components/usuarios/EditUserDialog';
@@ -28,6 +29,9 @@ export default function Usuarios() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserWithRole | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchUsuarios = async () => {
     try {
@@ -76,6 +80,44 @@ export default function Usuarios() {
   const handleEditUser = (usuario: UserWithRole) => {
     setSelectedUser(usuario);
     setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (usuario: UserWithRole) => {
+    setUserToDelete(usuario);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('No estás autenticado');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId: userToDelete.id },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success('Usuario eliminado correctamente');
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+      fetchUsuarios();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error(error.message || 'Error al eliminar usuario');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading || loadingUsers) {
@@ -161,15 +203,28 @@ export default function Usuarios() {
                         {new Date(usuario.created_at).toLocaleDateString('es-MX')}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditUser(usuario)}
-                          className="hover:bg-accent transition-smooth font-heading"
-                        >
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Editar
-                        </Button>
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditUser(usuario)}
+                            className="hover:bg-accent transition-smooth font-heading"
+                          >
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Editar
+                          </Button>
+                          {role === 'administrador' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(usuario)}
+                              disabled={usuario.id === user?.id}
+                              className="hover:bg-destructive hover:text-destructive-foreground transition-smooth"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -192,6 +247,35 @@ export default function Usuarios() {
         onUserUpdated={fetchUsuarios}
         user={selectedUser}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-heading">¿Eliminar usuario?</AlertDialogTitle>
+            <AlertDialogDescription className="font-body">
+              ¿Estás seguro de que deseas eliminar a <strong>{userToDelete?.nombre_completo}</strong>? 
+              Esta acción no se puede deshacer y eliminará toda la información asociada al usuario.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                'Eliminar'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

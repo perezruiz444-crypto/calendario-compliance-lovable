@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import EditEmpresaDialog from '@/components/empresas/EditEmpresaDialog';
+import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
 import { 
   Building2, 
   FileText, 
@@ -20,7 +21,8 @@ import {
   Hash,
   Pencil,
   Shield,
-  Scale
+  Scale,
+  UserCog
 } from 'lucide-react';
 
 export default function EmpresaDetail() {
@@ -34,6 +36,7 @@ export default function EmpresaDetail() {
   const [apoderados, setApoderados] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [consultoresDialogOpen, setConsultoresDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -130,12 +133,15 @@ export default function EmpresaDetail() {
 
         {/* Tabs */}
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="programas">Programas</TabsTrigger>
             <TabsTrigger value="certificaciones">Certificaciones</TabsTrigger>
             <TabsTrigger value="domicilios">Domicilios</TabsTrigger>
             <TabsTrigger value="relacionados">Relacionados</TabsTrigger>
+            {role === 'administrador' && (
+              <TabsTrigger value="consultores">Consultores</TabsTrigger>
+            )}
           </TabsList>
 
           {/* General Tab */}
@@ -618,6 +624,32 @@ export default function EmpresaDetail() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Consultores Tab (Admin only) */}
+          {role === 'administrador' && (
+            <TabsContent value="consultores" className="space-y-4 animate-fade-in">
+              <Card className="gradient-card shadow-card">
+                <CardHeader>
+                  <CardTitle className="font-heading flex items-center gap-2">
+                    <UserCog className="w-5 h-5" />
+                    Gestión de Consultores
+                  </CardTitle>
+                  <CardDescription className="font-body">
+                    Asigna o desasigna consultores que pueden gestionar esta empresa
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={() => setConsultoresDialogOpen(true)}
+                    className="gradient-primary shadow-elegant"
+                  >
+                    <UserCog className="w-4 h-4 mr-2" />
+                    Gestionar Consultores
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
@@ -626,6 +658,13 @@ export default function EmpresaDetail() {
         onOpenChange={setEditDialogOpen}
         onEmpresaUpdated={fetchEmpresaData}
         empresaId={id!}
+      />
+
+      <ManageConsultoresDialog
+        open={consultoresDialogOpen}
+        onOpenChange={setConsultoresDialogOpen}
+        empresaId={id!}
+        empresaNombre={empresa?.razon_social || ''}
       />
     </DashboardLayout>
   );
