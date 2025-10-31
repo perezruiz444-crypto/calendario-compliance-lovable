@@ -15,6 +15,7 @@ import {
   FileText
 } from 'lucide-react';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
+import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDropdown';
@@ -205,8 +206,9 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
         </div>
       </div>
 
-      {/* Desktop Header with Notifications */}
-      <div className="hidden lg:block fixed top-0 right-0 z-40 p-4" style={{ left: '18rem' }}>
+      {/* Desktop Header with Search and Notifications */}
+      <div className="hidden lg:flex fixed top-0 right-0 z-40 p-4 gap-3 items-center" style={{ left: '18rem' }}>
+        <GlobalSearch />
         <NotificationDropdown />
       </div>
 

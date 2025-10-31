@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { DocumentosManager } from '@/components/documentos/DocumentosManager';
+import { SolicitudesServicio } from '@/components/solicitudes/SolicitudesServicio';
 
 export default function MiEmpresa() {
   const { user, role, loading } = useAuth();
@@ -394,6 +396,31 @@ export default function MiEmpresa() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* New Tabs for Documentos and Solicitudes */}
+        <div className="mt-6 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading">Documentos</CardTitle>
+              <CardDescription>Documentos y archivos de tu empresa</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {empresa && (
+                <DocumentosManager empresaId={empresa.id} empresaNombre={empresa.razon_social} />
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading">Solicitudes de Servicio</CardTitle>
+              <CardDescription>Crea y gestiona tus solicitudes de atención</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {empresa && <SolicitudesServicio empresaId={empresa.id} />}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   );

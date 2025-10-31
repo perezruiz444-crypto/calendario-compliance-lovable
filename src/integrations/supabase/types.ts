@@ -264,6 +264,65 @@ export type Database = {
           },
         ]
       }
+      documentos: {
+        Row: {
+          archivo_nombre: string
+          archivo_tamano: number | null
+          archivo_url: string
+          categoria: string | null
+          created_at: string | null
+          descripcion: string | null
+          empresa_id: string
+          fecha_documento: string | null
+          fecha_vencimiento: string | null
+          id: string
+          nombre: string
+          subido_por: string | null
+          tipo_documento: string
+          updated_at: string | null
+        }
+        Insert: {
+          archivo_nombre: string
+          archivo_tamano?: number | null
+          archivo_url: string
+          categoria?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          empresa_id: string
+          fecha_documento?: string | null
+          fecha_vencimiento?: string | null
+          id?: string
+          nombre: string
+          subido_por?: string | null
+          tipo_documento: string
+          updated_at?: string | null
+        }
+        Update: {
+          archivo_nombre?: string
+          archivo_tamano?: number | null
+          archivo_url?: string
+          categoria?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          empresa_id?: string
+          fecha_documento?: string | null
+          fecha_vencimiento?: string | null
+          id?: string
+          nombre?: string
+          subido_por?: string | null
+          tipo_documento?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       domicilios_operacion: {
         Row: {
           created_at: string | null
@@ -577,6 +636,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solicitudes_servicio: {
+        Row: {
+          asignado_a: string | null
+          asunto: string
+          created_at: string | null
+          descripcion: string
+          empresa_id: string
+          estado: string | null
+          fecha_respuesta: string | null
+          fecha_solicitud: string | null
+          id: string
+          prioridad: string | null
+          respuesta: string | null
+          solicitante_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          asignado_a?: string | null
+          asunto: string
+          created_at?: string | null
+          descripcion: string
+          empresa_id: string
+          estado?: string | null
+          fecha_respuesta?: string | null
+          fecha_solicitud?: string | null
+          id?: string
+          prioridad?: string | null
+          respuesta?: string | null
+          solicitante_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          asignado_a?: string | null
+          asunto?: string
+          created_at?: string | null
+          descripcion?: string
+          empresa_id?: string
+          estado?: string | null
+          fecha_respuesta?: string | null
+          fecha_solicitud?: string | null
+          id?: string
+          prioridad?: string | null
+          respuesta?: string | null
+          solicitante_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitudes_servicio_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
