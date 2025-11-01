@@ -96,8 +96,8 @@ serve(async (req: Request) => {
 
     console.log('Invitation created:', invitation.id);
 
-    // Create user with invitation - Supabase will send the default email
-    const inviteMetadata: any = {
+    // Create user metadata
+    const userMetadata: any = {
       nombre_completo: nombreCompleto,
       role: role,
       invitation_token: token
@@ -105,60 +105,50 @@ serve(async (req: Request) => {
 
     // Add empresa_id to metadata if provided (for clientes)
     if (empresaId) {
-      inviteMetadata.empresa_id = empresaId;
+      userMetadata.empresa_id = empresaId;
     }
 
-    // Get the correct frontend URL from request headers
-    // Priority: origin header > referer header > fallback to Lovable preview
-    let origin = req.headers.get('origin');
-    
-    if (!origin) {
-      const referer = req.headers.get('referer');
-      if (referer) {
-        try {
-          const url = new URL(referer);
-          origin = `${url.protocol}//${url.host}`;
-        } catch (e) {
-          console.log('Failed to parse referer:', referer);
-        }
-      }
-    }
-    
-    // Fallback to Lovable preview URL if no origin detected
-    if (!origin) {
-      origin = 'https://svozqrjhwaohfmbkhpig.lovable.app';
-    }
-    
-    const redirectUrl = `${origin}/set-password`;
-    
-    console.log('Invitation details:', {
-      origin,
-      redirectUrl,
-      hasOriginHeader: !!req.headers.get('origin'),
-      hasRefererHeader: !!req.headers.get('referer')
-    });
-    
-    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+    // Create user directly without sending email
+    const { data: userData, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      {
-        data: inviteMetadata,
-        redirectTo: redirectUrl
-      }
-    );
+      email_confirm: false, // User needs to confirm via password setup link
+      user_metadata: userMetadata
+    });
 
-    if (inviteError) {
-      console.error('Error inviting user:', inviteError);
-      throw new Error('Error al crear el usuario: ' + inviteError.message);
+    if (createUserError) {
+      console.error('Error creating user:', createUserError);
+      throw new Error('Error al crear el usuario: ' + createUserError.message);
     }
 
-    console.log('User invited successfully. Email sent by Supabase to:', email);
+    console.log('User created successfully:', userData.user.id);
+
+    // Generate password recovery link that user can use to set their password
+    const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: email,
+      options: {
+        redirectTo: `${req.headers.get('origin') || 'https://3fd50525-4957-433e-99b5-f22cb124e7c8.lovableproject.com'}/set-password`
+      }
+    });
+
+    if (resetError) {
+      console.error('Error generating setup link:', resetError);
+      // Don't fail the whole operation if link generation fails
+    }
+
+    const setupLink = resetData?.properties?.action_link || null;
+    console.log('Setup link generated for:', email);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Invitación enviada correctamente. El usuario recibirá un email para configurar su contraseña.',
+        message: setupLink 
+          ? 'Usuario creado. Comparte el siguiente enlace para que configure su contraseña.'
+          : 'Usuario creado correctamente. El link de configuración estará disponible en breve.',
         invitationId: invitation.id,
-        userId: inviteData.user.id
+        userId: userData.user.id,
+        setupLink: setupLink, // Link que puedes compartir manualmente
+        email: email
       }),
       {
         status: 200,

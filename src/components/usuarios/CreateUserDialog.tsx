@@ -19,6 +19,8 @@ interface CreateUserDialogProps {
 export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUserDialogProps) {
   const [loading, setLoading] = useState(false);
   const [empresas, setEmpresas] = useState<Array<{ id: string; razon_social: string }>>([]);
+  const [setupLink, setSetupLink] = useState<string | null>(null);
+  const [createdEmail, setCreatedEmail] = useState<string>('');
   const [formData, setFormData] = useState({
     email: '',
     nombre_completo: '',
@@ -110,9 +112,22 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
         throw new Error(data.error);
       }
 
-      toast.success('Invitación enviada correctamente por email');
+      // Store setup link if provided
+      if (data?.setupLink) {
+        setSetupLink(data.setupLink);
+        setCreatedEmail(data.email);
+        toast.success('Usuario creado. Copia el enlace de configuración.');
+      } else {
+        toast.success(data?.message || 'Usuario creado correctamente');
+      }
+      
       setFormData({ email: '', nombre_completo: '', role: 'consultor', empresa_id: '' });
-      onOpenChange(false);
+      
+      // Only close if no setup link to show
+      if (!data?.setupLink) {
+        onOpenChange(false);
+      }
+      
       onUserCreated();
     } catch (error: any) {
       toast.error(error.message || 'Error al enviar invitación');
@@ -120,6 +135,51 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
       setLoading(false);
     }
   };
+
+  const handleCopyLink = () => {
+    if (setupLink) {
+      navigator.clipboard.writeText(setupLink);
+      toast.success('Enlace copiado al portapapeles');
+    }
+  };
+
+  const handleCloseWithLink = () => {
+    setSetupLink(null);
+    setCreatedEmail('');
+    onOpenChange(false);
+  };
+
+  // Show setup link dialog if we have one
+  if (setupLink) {
+    return (
+      <Dialog open={open} onOpenChange={handleCloseWithLink}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Usuario Creado Exitosamente</DialogTitle>
+            <DialogDescription className="font-body">
+              Comparte el siguiente enlace con {createdEmail} para que configure su contraseña
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-4 bg-muted rounded-lg break-all">
+              <code className="text-sm font-mono">{setupLink}</code>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleCopyLink} className="flex-1 font-heading">
+                Copiar Enlace
+              </Button>
+              <Button onClick={handleCloseWithLink} variant="outline" className="font-heading">
+                Cerrar
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground font-body">
+              Este enlace es válido por 7 días. El usuario podrá usarlo para establecer su contraseña y acceder al sistema.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
