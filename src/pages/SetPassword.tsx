@@ -31,24 +31,42 @@ export default function SetPassword() {
   useEffect(() => {
     // Check if there's a recovery/invite session or hash params
     const checkSession = async () => {
+      // First check hash params (for email links)
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const type = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
       
       console.log('SetPassword - Hash type:', type);
-      console.log('SetPassword - Full hash:', window.location.hash);
+      console.log('SetPassword - Has access token:', !!accessToken);
       
-      // If we have recovery/invite hash params, we're good
-      if (type === 'recovery' || type === 'invite') {
-        console.log('Valid recovery/invite session detected');
+      // If we have an access token from the email link, set the session
+      if (accessToken && (type === 'recovery' || type === 'invite')) {
+        console.log('Valid recovery/invite link detected, setting session');
+        try {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: hashParams.get('refresh_token') || '',
+          });
+          
+          if (error) {
+            console.error('Error setting session:', error);
+            toast.error('El enlace es inválido o ha expirado. Por favor, solicita uno nuevo.');
+            setTimeout(() => navigate('/auth'), 2000);
+          }
+        } catch (error) {
+          console.error('Error processing link:', error);
+          toast.error('Error al procesar el enlace.');
+          setTimeout(() => navigate('/auth'), 2000);
+        }
         return;
       }
       
-      // Otherwise check for valid session
+      // If no hash params, check if we have a valid session already
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         console.log('No valid session found, redirecting to auth');
         toast.error('Sesión inválida o expirada. Por favor, solicita un nuevo enlace de invitación.');
-        navigate('/auth');
+        setTimeout(() => navigate('/auth'), 2000);
       }
     };
     checkSession();
@@ -67,11 +85,18 @@ export default function SetPassword() {
 
       if (error) throw error;
 
-      toast.success('Contraseña establecida correctamente');
+      toast.success('Contraseña establecida correctamente. Redirigiendo a inicio de sesión...');
       
       // Sign out to force fresh login with new password
       await supabase.auth.signOut();
-      navigate('/auth');
+      
+      // Clear the hash from URL
+      window.location.hash = '';
+      
+      // Redirect after a brief delay
+      setTimeout(() => {
+        navigate('/auth');
+      }, 1500);
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
