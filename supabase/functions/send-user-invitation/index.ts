@@ -53,16 +53,22 @@ serve(async (req: Request) => {
       throw new Error('Ya existe un usuario con este email');
     }
 
-    // Check for pending invitation
-    const { data: pendingInvitation } = await supabaseClient
+    // Check for pending invitation and delete old ones
+    const { data: pendingInvitations } = await supabaseAdmin
       .from('user_invitations')
-      .select('id, status')
+      .select('id, status, expires_at')
       .eq('email', email)
-      .eq('status', 'pending')
-      .maybeSingle();
+      .eq('status', 'pending');
 
-    if (pendingInvitation) {
-      throw new Error('Ya existe una invitación pendiente para este email');
+    if (pendingInvitations && pendingInvitations.length > 0) {
+      console.log(`Found ${pendingInvitations.length} pending invitations for ${email}, deleting them...`);
+      
+      // Delete old pending invitations to allow new one
+      await supabaseAdmin
+        .from('user_invitations')
+        .delete()
+        .eq('email', email)
+        .eq('status', 'pending');
     }
 
     // Generate unique token for tracking
