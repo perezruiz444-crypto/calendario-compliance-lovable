@@ -122,7 +122,7 @@ serve(async (req: Request) => {
 
     console.log('User created successfully:', userData.user.id);
 
-    // Generate password setup link that user can use to set their password
+    // Generate password setup link first (as backup)
     const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email: email,
@@ -131,25 +131,41 @@ serve(async (req: Request) => {
       }
     });
 
-    if (resetError) {
-      console.error('Error generating setup link:', resetError);
-      // Continue without the link - user can request password reset manually
-    }
-
-    console.log('Link generation response:', JSON.stringify(resetData));
     const setupLink = resetData?.properties?.action_link || null;
-    console.log('Setup link extracted:', setupLink ? 'YES' : 'NO');
+    console.log('Backup setup link:', setupLink ? 'Generated' : 'Failed');
+
+    // Try to send invitation email via Supabase Auth
+    let emailSent = false;
+    try {
+      const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+        email,
+        {
+          data: userMetadata,
+          redirectTo: `${req.headers.get('origin') || 'https://3fd50525-4957-433e-99b5-f22cb124e7c8.lovableproject.com'}/set-password`
+        }
+      );
+
+      if (inviteError) {
+        console.log('Email sending failed:', inviteError.message);
+      } else {
+        emailSent = true;
+        console.log('Invitation email sent successfully to:', email);
+      }
+    } catch (emailError: any) {
+      console.log('Email sending error:', emailError.message);
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: setupLink 
-          ? 'Usuario creado. Comparte el siguiente enlace para que configure su contraseña.'
-          : 'Usuario creado correctamente. El link de configuración estará disponible en breve.',
+        message: emailSent 
+          ? 'Usuario creado y correo enviado exitosamente.'
+          : 'Usuario creado. Comparte el siguiente enlace para que configure su contraseña.',
         invitationId: invitation.id,
         userId: userData.user.id,
-        setupLink: setupLink, // Link que puedes compartir manualmente
-        email: email
+        setupLink: setupLink,
+        email: email,
+        emailSent: emailSent
       }),
       {
         status: 200,

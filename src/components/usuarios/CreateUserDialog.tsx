@@ -116,18 +116,18 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
       if (data?.setupLink) {
         setSetupLink(data.setupLink);
         setCreatedEmail(data.email);
-        toast.success('Usuario creado. Copia el enlace de configuración.');
+        
+        if (data?.emailSent) {
+          toast.success('Usuario creado y correo enviado. También puedes usar el enlace de respaldo.');
+        } else {
+          toast.success('Usuario creado. El correo no se pudo enviar, usa el enlace de configuración.');
+        }
       } else {
         toast.success(data?.message || 'Usuario creado correctamente');
-      }
-      
-      setFormData({ email: '', nombre_completo: '', role: 'consultor', empresa_id: '' });
-      
-      // Only close if no setup link to show
-      if (!data?.setupLink) {
         onOpenChange(false);
       }
       
+      setFormData({ email: '', nombre_completo: '', role: 'consultor', empresa_id: '' });
       onUserCreated();
     } catch (error: any) {
       toast.error(error.message || 'Error al enviar invitación');
@@ -155,26 +155,32 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
       <Dialog open={open} onOpenChange={handleCloseWithLink}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle className="font-heading">Usuario Creado Exitosamente</DialogTitle>
+            <DialogTitle className="font-heading">✅ Usuario Creado Exitosamente</DialogTitle>
             <DialogDescription className="font-body">
-              Comparte el siguiente enlace con {createdEmail} para que configure su contraseña
+              Enlace de configuración para {createdEmail}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="p-4 bg-muted rounded-lg break-all">
-              <code className="text-sm font-mono">{setupLink}</code>
+            <div className="p-4 bg-muted rounded-lg border-2 border-primary/20">
+              <p className="text-xs font-semibold text-muted-foreground mb-2 font-heading">ENLACE DE CONFIGURACIÓN:</p>
+              <code className="text-sm font-mono break-all block">{setupLink}</code>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleCopyLink} className="flex-1 font-heading">
-                Copiar Enlace
+              <Button onClick={handleCopyLink} className="flex-1 gradient-primary shadow-elegant font-heading">
+                📋 Copiar Enlace
               </Button>
               <Button onClick={handleCloseWithLink} variant="outline" className="font-heading">
                 Cerrar
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground font-body">
-              Este enlace es válido por 7 días. El usuario podrá usarlo para establecer su contraseña y acceder al sistema.
-            </p>
+            <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+              <p className="text-sm font-body">
+                <strong>Instrucciones:</strong><br/>
+                1. Copia este enlace<br/>
+                2. Envíalo al usuario por WhatsApp, correo o mensaje<br/>
+                3. El usuario podrá establecer su contraseña (válido 7 días)
+              </p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
