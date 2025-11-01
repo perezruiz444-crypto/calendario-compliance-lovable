@@ -4,9 +4,10 @@ import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Building2 } from 'lucide-react';
+import { Plus, Building2, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateEmpresaDialog from '@/components/empresas/CreateEmpresaDialog';
+import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
 import { Badge } from '@/components/ui/badge';
 
 export default function Empresas() {
@@ -15,6 +16,8 @@ export default function Empresas() {
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [loadingEmpresas, setLoadingEmpresas] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [consultoresDialogOpen, setConsultoresDialogOpen] = useState(false);
+  const [selectedEmpresa, setSelectedEmpresa] = useState<{ id: string; nombre: string } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -110,11 +113,13 @@ export default function Empresas() {
                 {empresas.map((empresa) => (
                   <div 
                     key={empresa.id} 
-                    className="border rounded-lg p-4 hover:border-primary transition-colors cursor-pointer hover-scale"
-                    onClick={() => navigate(`/empresas/${empresa.id}`)}
+                    className="border rounded-lg p-4 hover:border-primary transition-colors hover-scale"
                   >
                     <div className="flex items-start justify-between">
-                      <div className="space-y-1 flex-1">
+                      <div 
+                        className="space-y-1 flex-1 cursor-pointer"
+                        onClick={() => navigate(`/empresas/${empresa.id}`)}
+                      >
                         <h3 className="font-heading font-semibold text-lg">{empresa.razon_social}</h3>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
                           <Badge variant="outline">{empresa.rfc}</Badge>
@@ -124,9 +129,31 @@ export default function Empresas() {
                           {empresa.domicilio_fiscal}
                         </p>
                       </div>
-                      <Button variant="ghost" size="sm" className="font-heading">
-                        Ver Detalles
-                      </Button>
+                      <div className="flex gap-2">
+                        {role === 'administrador' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="font-heading"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedEmpresa({ id: empresa.id, nombre: empresa.razon_social });
+                              setConsultoresDialogOpen(true);
+                            }}
+                          >
+                            <Users className="w-4 h-4 mr-2" />
+                            Consultores
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="font-heading"
+                          onClick={() => navigate(`/empresas/${empresa.id}`)}
+                        >
+                          Ver Detalles
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -141,6 +168,15 @@ export default function Empresas() {
         onOpenChange={setDialogOpen}
         onEmpresaCreated={fetchEmpresas}
       />
+
+      {selectedEmpresa && (
+        <ManageConsultoresDialog
+          open={consultoresDialogOpen}
+          onOpenChange={setConsultoresDialogOpen}
+          empresaId={selectedEmpresa.id}
+          empresaNombre={selectedEmpresa.nombre}
+        />
+      )}
     </DashboardLayout>
   );
 }
