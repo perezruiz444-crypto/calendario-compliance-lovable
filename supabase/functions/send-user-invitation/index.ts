@@ -122,9 +122,9 @@ serve(async (req: Request) => {
 
     console.log('User created successfully:', userData.user.id);
 
-    // Generate password recovery link that user can use to set their password
+    // Generate password setup link that user can use to set their password
     const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
+      type: 'recovery',
       email: email,
       options: {
         redirectTo: `${req.headers.get('origin') || 'https://3fd50525-4957-433e-99b5-f22cb124e7c8.lovableproject.com'}/set-password`
@@ -133,11 +133,12 @@ serve(async (req: Request) => {
 
     if (resetError) {
       console.error('Error generating setup link:', resetError);
-      // Don't fail the whole operation if link generation fails
+      // Continue without the link - user can request password reset manually
     }
 
+    console.log('Link generation response:', JSON.stringify(resetData));
     const setupLink = resetData?.properties?.action_link || null;
-    console.log('Setup link generated for:', email);
+    console.log('Setup link extracted:', setupLink ? 'YES' : 'NO');
 
     return new Response(
       JSON.stringify({ 
