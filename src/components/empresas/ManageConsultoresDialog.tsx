@@ -46,12 +46,12 @@ export default function ManageConsultoresDialog({
     setLoading(true);
     try {
       // Fetch all consultores
-      const { data: consultoresData, error: consultoresError } = await supabase
-        .rpc('list-users' as any);
+      const { data: consultoresData, error: consultoresError } = await supabase.functions.invoke('list-users');
 
       if (consultoresError) throw consultoresError;
+      if (consultoresData?.error) throw new Error(consultoresData.error);
 
-      const consultoresList = consultoresData?.filter((u: any) => u.role === 'consultor') || [];
+      const consultoresList = consultoresData?.users?.filter((u: any) => u.role === 'consultor') || [];
       
       // Fetch assigned consultores for this empresa
       const { data: asignacionesData, error: asignacionesError } = await supabase

@@ -7,10 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Mail, Shield, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Mail, Shield, Pencil, Trash2, Loader2, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateUserDialog from '@/components/usuarios/CreateUserDialog';
 import EditUserDialog from '@/components/usuarios/EditUserDialog';
+import SendTestEmailDialog from '@/components/usuarios/SendTestEmailDialog';
 import { toast } from 'sonner';
 
 interface UserWithRole {
@@ -32,6 +33,8 @@ export default function Usuarios() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserWithRole | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [testEmailDialogOpen, setTestEmailDialogOpen] = useState(false);
+  const [userForEmail, setUserForEmail] = useState<UserWithRole | null>(null);
 
   const fetchUsuarios = async () => {
     try {
@@ -85,6 +88,11 @@ export default function Usuarios() {
   const handleDeleteClick = (usuario: UserWithRole) => {
     setUserToDelete(usuario);
     setDeleteDialogOpen(true);
+  };
+
+  const handleSendTestEmail = (usuario: UserWithRole) => {
+    setUserForEmail(usuario);
+    setTestEmailDialogOpen(true);
   };
 
   const handleDeleteUser = async () => {
@@ -207,6 +215,15 @@ export default function Usuarios() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => handleSendTestEmail(usuario)}
+                            className="hover:bg-accent transition-smooth font-heading"
+                          >
+                            <Send className="w-4 h-4 mr-2" />
+                            Enviar Correo
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleEditUser(usuario)}
                             className="hover:bg-accent transition-smooth font-heading"
                           >
@@ -247,6 +264,16 @@ export default function Usuarios() {
         onUserUpdated={fetchUsuarios}
         user={selectedUser}
       />
+
+      {userForEmail && (
+        <SendTestEmailDialog
+          open={testEmailDialogOpen}
+          onOpenChange={setTestEmailDialogOpen}
+          userId={userForEmail.id}
+          userName={userForEmail.nombre_completo}
+          userEmail={userForEmail.email}
+        />
+      )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
