@@ -59,7 +59,7 @@ export default function SendTestEmailDialog({
         throw new Error(data.error);
       }
 
-      toast.success(`Correo de prueba enviado a tu email (${data.sentTo || 'tu dirección'})`);
+      toast.success(`Correo de prueba enviado a ${userEmail} via SMTP Supabase`);
       onOpenChange(false);
       
       // Reset form
@@ -79,17 +79,17 @@ export default function SendTestEmailDialog({
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2">
             <Mail className="w-5 h-5" />
-            Enviar Correo de Prueba
+            Enviar Correo de Prueba (SMTP Supabase)
           </DialogTitle>
           <DialogDescription id="send-test-email-description" className="font-body">
-            Crear un correo de prueba relacionado con <strong>{userName}</strong> ({userEmail})
+            Enviar un magic link de prueba a <strong>{userName}</strong> ({userEmail})
           </DialogDescription>
         </DialogHeader>
 
-        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
-          <p className="text-sm text-amber-800 dark:text-amber-200">
-            <strong>ℹ️ Nota:</strong> El correo se enviará a tu dirección de email porque Resend está en modo sandbox. 
-            Para enviar a otros destinatarios, <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900">verifica un dominio en Resend</a>.
+        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            <strong>ℹ️ Nota:</strong> Se enviará un magic link de prueba usando el SMTP configurado en Supabase. 
+            Configura tu SMTP en: <a href="https://supabase.com/dashboard/project/svozqrjhwaohfmbkhpig/auth/providers" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900">Auth Settings</a>.
           </p>
         </div>
 
@@ -109,16 +109,20 @@ export default function SendTestEmailDialog({
 
           <div className="space-y-2">
             <Label htmlFor="message" className="font-heading">
-              Mensaje
+              Nota interna (no se envía en el email)
             </Label>
             <Textarea
               id="message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Escribe el mensaje aquí..."
-              rows={8}
+              placeholder="Nota sobre esta prueba de email..."
+              rows={4}
               className="font-body resize-none"
+              disabled
             />
+            <p className="text-xs text-muted-foreground">
+              El email enviado será un magic link estándar de Supabase. Este campo es solo informativo.
+            </p>
           </div>
         </div>
 

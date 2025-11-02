@@ -1,8 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
 import { corsHeaders } from '../_shared/cors.ts'
-import { Resend } from 'https://esm.sh/resend@4.0.0'
-
-const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 
 interface TestEmailRequest {
   userId: string;
@@ -77,63 +74,36 @@ Deno.serve(async (req) => {
 
     const targetUserName = targetProfile?.nombre_completo || targetUser.email
 
-    // Get current user's email (the one who is authenticated)
-    // In sandbox mode, Resend only allows sending to the registered email
-    const { data: { user: currentAuthUser } } = await supabaseAdmin.auth.admin.getUserById(user.id)
-    const senderEmail = currentAuthUser?.email || user.email
-
-    if (!senderEmail) {
-      return new Response(JSON.stringify({ error: 'Could not determine sender email address' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Send test email using Resend - to the authenticated user's email
-    console.log(`Sending test email to ${senderEmail} (about user: ${targetUserName})`)
+    // Use Supabase SMTP to send a magic link as test email
+    console.log(`Sending test email via Supabase SMTP to ${targetUser.email}`)
     
-    const emailResponse = await resend.emails.send({
-      from: 'Sistema de Gestión <onboarding@resend.dev>',
-      to: [senderEmail],
-      subject: `[PRUEBA] ${subject}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <p style="color: #856404; margin: 0; font-size: 14px;">
-              <strong>⚠️ Correo de Prueba</strong><br/>
-              Este correo se envía a tu dirección (${senderEmail}) porque Resend está en modo sandbox.
-              Para enviar a otros destinatarios, verifica un dominio en <a href="https://resend.com/domains">resend.com/domains</a>.
-            </p>
-          </div>
-          <h2 style="color: #333;">Prueba de correo para: ${targetUserName}</h2>
-          <p style="color: #666; font-size: 14px;">Usuario seleccionado: <strong>${targetUser.email}</strong></p>
-          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p style="color: #555; line-height: 1.6; white-space: pre-wrap;">${message}</p>
-          </div>
-          <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;" />
-          <p style="color: #888; font-size: 12px;">
-            Este es un correo de prueba enviado desde el Sistema de Gestión.
-          </p>
-        </div>
-      `,
+    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: targetUser.email,
+      options: {
+        redirectTo: `${Deno.env.get('SUPABASE_URL')}/dashboard`,
+      }
     })
 
-    if (emailResponse.error) {
-      console.error('Resend error:', emailResponse.error)
-      return new Response(JSON.stringify({ error: 'Failed to send email', details: emailResponse.error }), {
+    if (magicLinkError) {
+      console.error('Supabase email error:', magicLinkError)
+      return new Response(JSON.stringify({ 
+        error: 'Failed to send test email via Supabase', 
+        details: magicLinkError.message 
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    console.log('Email sent successfully:', emailResponse)
+    console.log('Test email sent successfully via Supabase SMTP')
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: `Test email sent to ${senderEmail} (sandbox mode)`,
-      emailId: emailResponse.data?.id,
-      sentTo: senderEmail,
-      targetUser: targetUserName
+      message: `Test email sent to ${targetUser.email} via Supabase SMTP`,
+      sentTo: targetUser.email,
+      targetUser: targetUserName,
+      note: 'A magic link email was sent using Supabase configured SMTP'
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
