@@ -59,7 +59,7 @@ export default function SendTestEmailDialog({
         throw new Error(data.error);
       }
 
-      toast.success(`Correo de prueba enviado a ${userEmail}`);
+      toast.success(`Correo de prueba enviado a tu email (${data.sentTo || 'tu dirección'})`);
       onOpenChange(false);
       
       // Reset form
@@ -82,9 +82,16 @@ export default function SendTestEmailDialog({
             Enviar Correo de Prueba
           </DialogTitle>
           <DialogDescription id="send-test-email-description" className="font-body">
-            Enviar un correo de prueba a <strong>{userName}</strong> ({userEmail})
+            Crear un correo de prueba relacionado con <strong>{userName}</strong> ({userEmail})
           </DialogDescription>
         </DialogHeader>
+
+        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
+          <p className="text-sm text-amber-800 dark:text-amber-200">
+            <strong>ℹ️ Nota:</strong> El correo se enviará a tu dirección de email porque Resend está en modo sandbox. 
+            Para enviar a otros destinatarios, <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900">verifica un dominio en Resend</a>.
+          </p>
+        </div>
 
         <div className="space-y-4">
           <div className="space-y-2">
