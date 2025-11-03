@@ -67,18 +67,42 @@ export default function Tareas() {
   const fetchTareas = async () => {
     setLoadingTareas(true);
     try {
-      const { data, error } = await supabase
+      const { data: tareasData, error } = await supabase
         .from('tareas')
         .select(`
           *,
           empresas(razon_social),
-          profiles:consultor_asignado_id(nombre_completo),
           categorias_tareas(nombre, color)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTareas(data || []);
+
+      // Fetch consultant profiles separately
+      if (tareasData && tareasData.length > 0) {
+        const consultorIds = tareasData
+          .map(t => t.consultor_asignado_id)
+          .filter(id => id != null);
+
+        if (consultorIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, nombre_completo')
+            .in('id', consultorIds);
+
+          // Map profiles to tareas
+          const tareasWithProfiles = tareasData.map(tarea => ({
+            ...tarea,
+            consultor_profile: profilesData?.find(p => p.id === tarea.consultor_asignado_id)
+          }));
+
+          setTareas(tareasWithProfiles);
+        } else {
+          setTareas(tareasData);
+        }
+      } else {
+        setTareas([]);
+      }
     } catch (error) {
       console.error('Error fetching tareas:', error);
     } finally {
@@ -357,9 +381,9 @@ export default function Tareas() {
                           {tarea.empresas.razon_social}
                         </span>
                       )}
-                      {tarea.profiles && (
+                      {tarea.consultor_profile && (
                         <span className="text-xs font-body text-muted-foreground">
-                          Asignado a: {tarea.profiles.nombre_completo}
+                          Asignado a: {tarea.consultor_profile.nombre_completo}
                         </span>
                       )}
                     </div>
