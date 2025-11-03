@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, LayoutDashboard, CheckSquare, Users, LogOut, Menu, Calendar as CalendarIcon, MessageSquare, FileText } from 'lucide-react';
+import { Building2, LayoutDashboard, CheckSquare, Users, LogOut, Menu, Calendar as CalendarIcon, MessageSquare, FileText, Settings } from 'lucide-react';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -91,6 +91,11 @@ export default function DashboardLayout({
     icon: Users,
     label: 'Usuarios',
     path: '/usuarios',
+    roles: ['administrador']
+  }, {
+    icon: Settings,
+    label: 'Configuraciones',
+    path: '/configuraciones',
     roles: ['administrador']
   }];
   const filteredNavItems = navItems.filter(item => role && item.roles.includes(role));

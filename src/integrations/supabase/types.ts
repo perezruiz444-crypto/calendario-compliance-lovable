@@ -602,6 +602,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_settings: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          enabled: boolean
+          id: string
+          name: string
+          notification_key: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name: string
+          notification_key: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string
+          notification_key?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
