@@ -41,15 +41,38 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
         .select(`
           *,
           empresas(razon_social),
-          profiles:consultor_asignado_id(nombre_completo),
-          creador:profiles!tareas_creado_por_fkey(nombre_completo),
           categorias_tareas(nombre, color)
         `)
         .eq('id', tareaId)
         .single();
 
       if (tareaError) throw tareaError;
-      setTarea(tareaData);
+
+      // Fetch consultant profile separately
+      let profiles = null;
+      if (tareaData.consultor_asignado_id) {
+        const { data: consultorProfile } = await supabase
+          .from('profiles')
+          .select('id, nombre_completo')
+          .eq('id', tareaData.consultor_asignado_id)
+          .single();
+
+        profiles = consultorProfile;
+      }
+
+      // Fetch creator profile separately
+      let creador = null;
+      if (tareaData.creado_por) {
+        const { data: creadorProfile } = await supabase
+          .from('profiles')
+          .select('id, nombre_completo')
+          .eq('id', tareaData.creado_por)
+          .single();
+
+        creador = creadorProfile;
+      }
+
+      setTarea({ ...tareaData, profiles, creador });
 
       // Fetch comentarios
       const { data: comentariosData, error: comentariosError } = await supabase

@@ -76,7 +76,7 @@ export default function CreateEmpresaDialog({ open, onOpenChange, onEmpresaCreat
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">Nueva Empresa</DialogTitle>
           <DialogDescription className="font-body">

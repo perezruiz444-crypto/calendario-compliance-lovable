@@ -153,7 +153,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
   if (setupLink) {
     return (
       <Dialog open={open} onOpenChange={handleCloseWithLink}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-heading">✅ Usuario Creado Exitosamente</DialogTitle>
             <DialogDescription className="font-body">
@@ -189,7 +189,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">Invitar Nuevo Usuario</DialogTitle>
           <DialogDescription className="font-body">

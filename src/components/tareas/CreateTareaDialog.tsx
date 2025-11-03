@@ -160,15 +160,15 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-heading">Nueva Tarea</DialogTitle>
           <DialogDescription className="font-body">
             Crea una nueva tarea y asígnala a un consultor
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="space-y-4 py-4 overflow-y-auto pr-2">
             <div className="space-y-2">
               <Label htmlFor="titulo" className="font-heading">Título *</Label>
               <Input
