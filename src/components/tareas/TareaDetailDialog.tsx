@@ -55,7 +55,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
           .from('profiles')
           .select('id, nombre_completo')
           .eq('id', tareaData.consultor_asignado_id)
-          .single();
+          .maybeSingle();
 
         profiles = consultorProfile;
       }
@@ -67,7 +67,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
           .from('profiles')
           .select('id, nombre_completo')
           .eq('id', tareaData.creado_por)
-          .single();
+          .maybeSingle();
 
         creador = creadorProfile;
       }
