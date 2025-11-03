@@ -171,7 +171,7 @@ export default function Dashboard() {
       icon: Building2,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
-      show: true
+      show: role !== 'cliente'
     },
     {
       title: 'Tareas Pendientes',
