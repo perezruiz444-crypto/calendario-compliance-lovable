@@ -78,15 +78,29 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
       // Fetch comentarios
       const { data: comentariosData, error: comentariosError } = await supabase
         .from('comentarios')
-        .select(`
-          *,
-          profiles(nombre_completo)
-        `)
+        .select('*')
         .eq('tarea_id', tareaId)
         .order('created_at', { ascending: true });
 
       if (comentariosError) throw comentariosError;
-      setComentarios(comentariosData || []);
+
+      // Fetch profiles for comments
+      if (comentariosData && comentariosData.length > 0) {
+        const userIds = [...new Set(comentariosData.map(c => c.user_id))];
+        const { data: commentProfiles } = await supabase
+          .from('profiles')
+          .select('id, nombre_completo')
+          .in('id', userIds);
+
+        const comentariosConPerfiles = comentariosData.map(comentario => ({
+          ...comentario,
+          profiles: commentProfiles?.find(p => p.id === comentario.user_id)
+        }));
+
+        setComentarios(comentariosConPerfiles);
+      } else {
+        setComentarios([]);
+      }
     } catch (error: any) {
       toast.error('Error al cargar la tarea');
       console.error(error);
