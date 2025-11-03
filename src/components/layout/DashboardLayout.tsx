@@ -3,89 +3,98 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  Building2, 
-  LayoutDashboard, 
-  CheckSquare, 
-  Users, 
-  LogOut,
-  Menu,
-  Calendar as CalendarIcon,
-  MessageSquare,
-  FileText
-} from 'lucide-react';
+import { Building2, LayoutDashboard, CheckSquare, Users, LogOut, Menu, Calendar as CalendarIcon, MessageSquare, FileText } from 'lucide-react';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDropdown';
-
 interface DashboardLayoutProps {
   children: ReactNode;
   currentPage?: string;
 }
-
-export default function DashboardLayout({ children, currentPage }: DashboardLayoutProps) {
-  const { user, role, signOut } = useAuth();
+export default function DashboardLayout({
+  children,
+  currentPage
+}: DashboardLayoutProps) {
+  const {
+    user,
+    role,
+    signOut
+  } = useAuth();
   const navigate = useNavigate();
   const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
-  const [empresaInfo, setEmpresaInfo] = useState<{ razon_social: string } | null>(null);
+  const [empresaInfo, setEmpresaInfo] = useState<{
+    razon_social: string;
+  } | null>(null);
 
   // Fetch empresa info for cliente
   useEffect(() => {
     const fetchEmpresaInfo = async () => {
       if (role === 'cliente' && user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('empresa_id')
-          .eq('id', user.id)
-          .single();
-
+        const {
+          data: profile
+        } = await supabase.from('profiles').select('empresa_id').eq('id', user.id).single();
         if (profile?.empresa_id) {
-          const { data: empresa } = await supabase
-            .from('empresas')
-            .select('razon_social')
-            .eq('id', profile.empresa_id)
-            .single();
-          
+          const {
+            data: empresa
+          } = await supabase.from('empresas').select('razon_social').eq('id', profile.empresa_id).single();
           setEmpresaInfo(empresa);
         }
       }
     };
     fetchEmpresaInfo();
   }, [role, user]);
-
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
   };
-
   const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
-
-  const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['administrador', 'consultor', 'cliente'] },
-    { icon: Building2, label: 'Empresas', path: '/empresas', roles: ['administrador', 'consultor'] },
-    { icon: Building2, label: 'Mi Empresa', path: '/mi-empresa', roles: ['cliente'] },
-    { icon: CheckSquare, label: 'Tareas', path: '/tareas', roles: ['administrador', 'consultor', 'cliente'] },
-    { icon: CalendarIcon, label: 'Calendario', path: '/calendario', roles: ['administrador', 'consultor', 'cliente'] },
-    { icon: MessageSquare, label: 'Mensajes', path: '/mensajes', roles: ['administrador', 'consultor', 'cliente'] },
-    { icon: FileText, label: 'Reportes', path: '/reportes', roles: ['administrador', 'consultor'] },
-    { icon: Users, label: 'Usuarios', path: '/usuarios', roles: ['administrador'] },
-  ];
-
-  const filteredNavItems = navItems.filter(item => 
-    role && item.roles.includes(role)
-  );
-
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-sidebar">
+  const navItems = [{
+    icon: LayoutDashboard,
+    label: 'Dashboard',
+    path: '/dashboard',
+    roles: ['administrador', 'consultor', 'cliente']
+  }, {
+    icon: Building2,
+    label: 'Empresas',
+    path: '/empresas',
+    roles: ['administrador', 'consultor']
+  }, {
+    icon: Building2,
+    label: 'Mi Empresa',
+    path: '/mi-empresa',
+    roles: ['cliente']
+  }, {
+    icon: CheckSquare,
+    label: 'Tareas',
+    path: '/tareas',
+    roles: ['administrador', 'consultor', 'cliente']
+  }, {
+    icon: CalendarIcon,
+    label: 'Calendario',
+    path: '/calendario',
+    roles: ['administrador', 'consultor', 'cliente']
+  }, {
+    icon: MessageSquare,
+    label: 'Mensajes',
+    path: '/mensajes',
+    roles: ['administrador', 'consultor', 'cliente']
+  }, {
+    icon: FileText,
+    label: 'Reportes',
+    path: '/reportes',
+    roles: ['administrador', 'consultor']
+  }, {
+    icon: Users,
+    label: 'Usuarios',
+    path: '/usuarios',
+    roles: ['administrador']
+  }];
+  const filteredNavItems = navItems.filter(item => role && item.roles.includes(role));
+  const SidebarContent = () => <div className="flex flex-col h-full bg-sidebar">
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-sidebar-primary rounded-xl flex items-center justify-center shadow-elegant">
@@ -98,52 +107,33 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
         </div>
         
         {/* Empresa Selector for Consultores */}
-        {role === 'consultor' && (
-          <div className="mt-4">
+        {role === 'consultor' && <div className="mt-4">
             <label className="text-xs font-heading font-medium text-sidebar-foreground/60 mb-2 block">
               Empresa Activa
             </label>
-            <EmpresaSelectorDropdown 
-              selectedEmpresaId={selectedEmpresaId}
-              onEmpresaSelect={setSelectedEmpresaId}
-            />
-          </div>
-        )}
+            <EmpresaSelectorDropdown selectedEmpresaId={selectedEmpresaId} onEmpresaSelect={setSelectedEmpresaId} />
+          </div>}
         
         {/* Empresa Info for Clientes */}
-        {role === 'cliente' && empresaInfo && (
-          <div className="mt-4 p-3 bg-sidebar-accent rounded-lg">
+        {role === 'cliente' && empresaInfo && <div className="mt-4 p-3 bg-sidebar-accent rounded-lg">
             <label className="text-xs font-heading font-medium text-sidebar-foreground/60 mb-1 block">
               Mi Empresa
             </label>
             <p className="text-sm font-body text-sidebar-foreground font-semibold truncate">
               {empresaInfo.razon_social}
             </p>
-          </div>
-        )}
+          </div>}
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
-        {filteredNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentPage === item.path;
-          
-          return (
-            <Button
-              key={item.path}
-              variant={isActive ? "default" : "ghost"}
-              className={`w-full justify-start gap-3 transition-smooth font-heading ${
-                isActive 
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-elegant' 
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              }`}
-              onClick={() => navigate(item.path)}
-            >
+        {filteredNavItems.map(item => {
+        const Icon = item.icon;
+        const isActive = currentPage === item.path;
+        return <Button key={item.path} variant={isActive ? "default" : "ghost"} className={`w-full justify-start gap-3 transition-smooth font-heading ${isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-elegant' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`} onClick={() => navigate(item.path)}>
               <Icon className="w-5 h-5" />
               {item.label}
-            </Button>
-          );
-        })}
+            </Button>;
+      })}
       </nav>
 
       <div className="p-4 border-t border-sidebar-border">
@@ -162,20 +152,13 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
             </p>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-smooth font-heading"
-          onClick={handleSignOut}
-        >
+        <Button variant="ghost" className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-smooth font-heading" onClick={handleSignOut}>
           <LogOut className="w-5 h-5" />
           Cerrar Sesión
         </Button>
       </div>
-    </div>
-  );
-
-  return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    </div>;
+  return <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:block w-72 border-r border-border shadow-elegant">
         <SidebarContent />
@@ -188,7 +171,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Building2 className="w-5 h-5 text-primary-foreground" />
             </div>
-            <h2 className="font-heading font-bold text-foreground">ERP</h2>
+            <h2 className="font-heading font-bold text-foreground">Calendario Compliance </h2>
           </div>
           <div className="flex items-center gap-2">
             <NotificationDropdown />
@@ -207,7 +190,9 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
       </div>
 
       {/* Desktop Header with Search and Notifications */}
-      <div className="hidden lg:flex fixed top-0 right-0 z-40 p-4 gap-3 items-center" style={{ left: '18rem' }}>
+      <div className="hidden lg:flex fixed top-0 right-0 z-40 p-4 gap-3 items-center" style={{
+      left: '18rem'
+    }}>
         <GlobalSearch />
         <NotificationDropdown />
       </div>
@@ -218,6 +203,5 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
           {children}
         </div>
       </main>
-    </div>
-  );
+    </div>;
 }
