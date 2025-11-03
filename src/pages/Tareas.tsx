@@ -23,7 +23,7 @@ export default function Tareas() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [categoriesDialogOpen, setCategoriesDialogOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
-  const [selectedConsultor, setSelectedConsultor] = useState<string>('todos');
+  const [selectedConsultor, setSelectedConsultor] = useState<string>('');
   const [consultores, setConsultores] = useState<any[]>([]);
 
   useEffect(() => {
@@ -137,10 +137,10 @@ export default function Tareas() {
   };
 
   const handleSendBulkNotification = async () => {
-    if (selectedConsultor === 'todos') {
+    if (!selectedConsultor) {
       toast({
         title: "Selecciona un consultor",
-        description: "Debes seleccionar un consultor específico para enviar notificaciones",
+        description: "Primero debes seleccionar un consultor de la lista para enviarle recordatorios de sus tareas pendientes",
         variant: "destructive"
       });
       return;
@@ -252,14 +252,13 @@ export default function Tareas() {
               <div className="flex gap-4 items-end">
                 <div className="flex-1">
                   <label className="text-sm font-heading font-medium mb-2 block">
-                    Seleccionar Consultor
+                    Seleccionar Consultor *
                   </label>
                   <Select value={selectedConsultor} onValueChange={setSelectedConsultor}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Elige un consultor..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todos">Todos los consultores</SelectItem>
                       {consultores.map(consultor => (
                         <SelectItem key={consultor.id} value={consultor.id}>
                           {consultor.nombre_completo}
@@ -267,8 +266,11 @@ export default function Tareas() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1 font-body">
+                    Selecciona un consultor para enviarle recordatorios de sus tareas pendientes
+                  </p>
                 </div>
-                <Button onClick={handleSendBulkNotification} disabled={selectedConsultor === 'todos'}>
+                <Button onClick={handleSendBulkNotification} disabled={!selectedConsultor}>
                   <Bell className="w-4 h-4 mr-2" />
                   Enviar Recordatorio
                 </Button>

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -123,6 +124,23 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
     }
   };
 
+  const handleEstadoChange = async (newEstado: string) => {
+    try {
+      const { error } = await supabase
+        .from('tareas')
+        .update({ estado: newEstado as 'pendiente' | 'en_progreso' | 'completada' | 'cancelada' })
+        .eq('id', tareaId);
+
+      if (error) throw error;
+
+      toast.success('Estado actualizado');
+      fetchTareaData();
+    } catch (error: any) {
+      toast.error('Error al actualizar estado');
+      console.error(error);
+    }
+  };
+
   const getPrioridadColor = (prioridad: string) => {
     switch (prioridad) {
       case 'alta': return 'bg-destructive text-destructive-foreground';
@@ -212,6 +230,24 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
             )}
           </div>
         </DialogHeader>
+
+        {/* Estado Selector */}
+        <div className="border-b pb-4">
+          <label className="text-sm font-heading font-medium mb-2 block">
+            Estado de la Tarea
+          </label>
+          <Select value={tarea.estado} onValueChange={handleEstadoChange}>
+            <SelectTrigger className="font-body">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pendiente">Pendiente</SelectItem>
+              <SelectItem value="en_progreso">En Progreso</SelectItem>
+              <SelectItem value="completada">Completada</SelectItem>
+              <SelectItem value="cancelada">Cancelada</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="space-y-6">
           {/* Descripción */}
