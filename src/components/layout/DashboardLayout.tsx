@@ -101,7 +101,7 @@ export default function DashboardLayout({
             <Building2 className="w-6 h-6 text-sidebar-primary-foreground" />
           </div>
           <div>
-            <h2 className="font-heading font-bold text-sidebar-foreground">ERP Consultoría</h2>
+            <h2 className="font-heading font-bold text-sidebar-foreground">Calendario Compliance</h2>
             <p className="text-xs text-sidebar-foreground/60 font-body">{role || 'Usuario'}</p>
           </div>
         </div>
