@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import EditEmpresaDialog from '@/components/empresas/EditEmpresaDialog';
 import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
+import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
+import TareaDetailDialog from '@/components/tareas/TareaDetailDialog';
 import { 
   Building2, 
   FileText, 
@@ -22,7 +24,10 @@ import {
   Pencil,
   Shield,
   Scale,
-  UserCog
+  UserCog,
+  CheckSquare,
+  Plus,
+  Repeat
 } from 'lucide-react';
 
 export default function EmpresaDetail() {
@@ -34,9 +39,13 @@ export default function EmpresaDetail() {
   const [miembros, setMiembros] = useState<any[]>([]);
   const [agentes, setAgentes] = useState<any[]>([]);
   const [apoderados, setApoderados] = useState<any[]>([]);
+  const [tareas, setTareas] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [consultoresDialogOpen, setConsultoresDialogOpen] = useState(false);
+  const [createTareaDialogOpen, setCreateTareaDialogOpen] = useState(false);
+  const [detailTareaDialogOpen, setDetailTareaDialogOpen] = useState(false);
+  const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -64,17 +73,23 @@ export default function EmpresaDetail() {
       setEmpresa(empresaData);
 
       // Fetch related data
-      const [domiciliosRes, miembrosRes, agentesRes, apoderadosRes] = await Promise.all([
+      const [domiciliosRes, miembrosRes, agentesRes, apoderadosRes, tareasRes] = await Promise.all([
         supabase.from('domicilios_operacion').select('*').eq('empresa_id', id),
         supabase.from('miembros_socios').select('*').eq('empresa_id', id),
         supabase.from('agentes_aduanales').select('*').eq('empresa_id', id),
-        supabase.from('apoderados_legales').select('*').eq('empresa_id', id)
+        supabase.from('apoderados_legales').select('*').eq('empresa_id', id),
+        supabase.from('tareas').select(`
+          *,
+          profiles:consultor_asignado_id(nombre_completo),
+          categorias_tareas(nombre, color)
+        `).eq('empresa_id', id).order('created_at', { ascending: false })
       ]);
 
       setDomicilios(domiciliosRes.data || []);
       setMiembros(miembrosRes.data || []);
       setAgentes(agentesRes.data || []);
       setApoderados(apoderadosRes.data || []);
+      setTareas(tareasRes.data || []);
     } catch (error: any) {
       toast.error('Error al cargar la empresa');
       console.error(error);
@@ -133,8 +148,9 @@ export default function EmpresaDetail() {
 
         {/* Tabs */}
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="tareas">Tareas</TabsTrigger>
             <TabsTrigger value="programas">Programas</TabsTrigger>
             <TabsTrigger value="certificaciones">Certificaciones</TabsTrigger>
             <TabsTrigger value="domicilios">Domicilios</TabsTrigger>
@@ -224,6 +240,172 @@ export default function EmpresaDetail() {
                   <div>
                     <label className="text-sm font-heading font-medium text-muted-foreground">Número de Poder</label>
                     <p className="font-body mt-1">{empresa.representante_legal_poder}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tareas Tab */}
+          <TabsContent value="tareas" className="space-y-4 animate-fade-in">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-heading font-semibold">Tareas de la Empresa</h3>
+                <p className="text-sm text-muted-foreground font-body">
+                  Gestiona las tareas asignadas a {empresa.razon_social}
+                </p>
+              </div>
+              {(role === 'administrador' || role === 'consultor') && (
+                <Button 
+                  onClick={() => setCreateTareaDialogOpen(true)} 
+                  className="gradient-primary shadow-elegant font-heading"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nueva Tarea
+                </Button>
+              )}
+            </div>
+
+            {/* Stats de tareas */}
+            <div className="grid gap-4 md:grid-cols-3 mb-4">
+              <Card className="gradient-card shadow-card">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-heading font-medium">
+                    Pendientes
+                  </CardTitle>
+                  <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-heading font-bold">
+                    {tareas.filter(t => t.estado === 'pendiente').length}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="gradient-card shadow-card">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-heading font-medium">
+                    En Progreso
+                  </CardTitle>
+                  <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-heading font-bold">
+                    {tareas.filter(t => t.estado === 'en_progreso').length}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="gradient-card shadow-card">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-heading font-medium">
+                    Completadas
+                  </CardTitle>
+                  <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-heading font-bold">
+                    {tareas.filter(t => t.estado === 'completada').length}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Lista de tareas */}
+            <Card className="gradient-card shadow-card">
+              <CardHeader>
+                <CardTitle className="font-heading">Lista de Tareas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {tareas.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="mx-auto w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+                      <CheckSquare className="w-8 h-8 text-primary" />
+                    </div>
+                    <p className="text-muted-foreground font-body mb-4">
+                      No hay tareas para esta empresa
+                    </p>
+                    {(role === 'administrador' || role === 'consultor') && (
+                      <Button 
+                        onClick={() => setCreateTareaDialogOpen(true)} 
+                        className="gradient-primary shadow-elegant font-heading"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Crear Primera Tarea
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {tareas.map((tarea) => (
+                      <div
+                        key={tarea.id}
+                        onClick={() => {
+                          setSelectedTareaId(tarea.id);
+                          setDetailTareaDialogOpen(true);
+                        }}
+                        className="flex items-start justify-between p-4 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-heading font-semibold">{tarea.titulo}</h3>
+                            {tarea.es_recurrente && (
+                              <Badge variant="outline" className="text-xs">
+                                <Repeat className="w-3 h-3 mr-1" />
+                                Recurrente
+                              </Badge>
+                            )}
+                          </div>
+                          {tarea.descripcion && (
+                            <p className="text-sm font-body text-muted-foreground mb-2 line-clamp-2">
+                              {tarea.descripcion}
+                            </p>
+                          )}
+                          <div className="flex flex-wrap items-center gap-2">
+                            {tarea.categorias_tareas && (
+                              <Badge
+                                variant="outline"
+                                className="text-xs gap-1"
+                                style={{ borderColor: tarea.categorias_tareas.color }}
+                              >
+                                <div
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: tarea.categorias_tareas.color }}
+                                />
+                                {tarea.categorias_tareas.nombre}
+                              </Badge>
+                            )}
+                            <Badge className={`text-xs ${
+                              tarea.prioridad === 'alta' ? 'bg-destructive text-destructive-foreground' :
+                              tarea.prioridad === 'media' ? 'bg-warning text-warning-foreground' :
+                              'bg-success text-success-foreground'
+                            }`}>
+                              {tarea.prioridad}
+                            </Badge>
+                            <Badge className={`text-xs ${
+                              tarea.estado === 'pendiente' ? 'bg-warning text-warning-foreground' :
+                              tarea.estado === 'en_progreso' ? 'bg-primary text-primary-foreground' :
+                              tarea.estado === 'completada' ? 'bg-success text-success-foreground' :
+                              'bg-muted text-muted-foreground'
+                            }`}>
+                              {tarea.estado === 'pendiente' ? 'Pendiente' :
+                               tarea.estado === 'en_progreso' ? 'En Progreso' :
+                               tarea.estado === 'completada' ? 'Completada' : 'Cancelada'}
+                            </Badge>
+                            {tarea.profiles && (
+                              <span className="text-xs font-body text-muted-foreground">
+                                Asignado a: {tarea.profiles.nombre_completo}
+                              </span>
+                            )}
+                            {tarea.fecha_vencimiento && (
+                              <span className="text-xs font-body text-muted-foreground">
+                                Vence: {new Date(tarea.fecha_vencimiento).toLocaleDateString('es-MX')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -666,6 +848,30 @@ export default function EmpresaDetail() {
         empresaId={id!}
         empresaNombre={empresa?.razon_social || ''}
       />
+
+      <CreateTareaDialog 
+        open={createTareaDialogOpen} 
+        onOpenChange={(open) => {
+          setCreateTareaDialogOpen(open);
+          if (!open) fetchEmpresaData();
+        }}
+        onTareaCreated={fetchEmpresaData}
+        defaultEmpresaId={id}
+      />
+
+      {selectedTareaId && (
+        <TareaDetailDialog
+          open={detailTareaDialogOpen}
+          onOpenChange={(open) => {
+            setDetailTareaDialogOpen(open);
+            if (!open) {
+              fetchEmpresaData();
+              setSelectedTareaId(null);
+            }
+          }}
+          tareaId={selectedTareaId}
+        />
+      )}
     </DashboardLayout>
   );
 }

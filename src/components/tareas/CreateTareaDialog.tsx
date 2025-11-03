@@ -19,9 +19,10 @@ interface CreateTareaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTareaCreated: () => void;
+  defaultEmpresaId?: string;
 }
 
-export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }: CreateTareaDialogProps) {
+export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, defaultEmpresaId }: CreateTareaDialogProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [empresas, setEmpresas] = useState<any[]>([]);
@@ -31,7 +32,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
     descripcion: '',
     prioridad: 'media' as 'alta' | 'media' | 'baja',
     fecha_vencimiento: '',
-    empresa_id: '',
+    empresa_id: defaultEmpresaId || '',
     consultor_asignado_id: '',
     categoria_id: '',
     es_recurrente: false,
@@ -47,8 +48,12 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
     if (open) {
       fetchEmpresas();
       fetchConsultores();
+      // Set empresa_id if provided
+      if (defaultEmpresaId && !formData.empresa_id) {
+        setFormData(prev => ({ ...prev, empresa_id: defaultEmpresaId }));
+      }
     }
-  }, [open]);
+  }, [open, defaultEmpresaId]);
 
   const fetchEmpresas = async () => {
     try {
@@ -134,7 +139,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated }
         descripcion: '',
         prioridad: 'media',
         fecha_vencimiento: '',
-        empresa_id: '',
+        empresa_id: defaultEmpresaId || '',
         consultor_asignado_id: '',
         categoria_id: '',
         es_recurrente: false,
