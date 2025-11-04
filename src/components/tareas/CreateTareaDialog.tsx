@@ -110,8 +110,14 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
 
         const consultoresAsignadosIds = asignacionesData?.map(a => a.consultor_id) || [];
         
-        // Filter to only show consultores assigned to this empresa
-        query = query.in('id', consultoresAsignadosIds);
+        // Only filter if there are assigned consultores
+        if (consultoresAsignadosIds.length > 0) {
+          query = query.in('id', consultoresAsignadosIds);
+        } else {
+          // If no consultores are assigned to this empresa, show none
+          setConsultores([]);
+          return;
+        }
       }
 
       const { data, error } = await query;
