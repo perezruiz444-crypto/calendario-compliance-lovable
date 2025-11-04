@@ -47,13 +47,19 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
   useEffect(() => {
     if (open) {
       fetchEmpresas();
-      fetchConsultores();
       // Set empresa_id if provided
       if (defaultEmpresaId && !formData.empresa_id) {
         setFormData(prev => ({ ...prev, empresa_id: defaultEmpresaId }));
       }
     }
   }, [open, defaultEmpresaId]);
+
+  // Refetch consultores when empresa changes
+  useEffect(() => {
+    if (open) {
+      fetchConsultores();
+    }
+  }, [open, formData.empresa_id]);
 
   const fetchEmpresas = async () => {
     try {
@@ -71,20 +77,50 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
 
   const fetchConsultores = async () => {
     try {
-      const { data, error } = await supabase
+      // First get all user IDs with 'consultor' role
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'consultor');
+
+      if (rolesError) throw rolesError;
+
+      const consultorIds = rolesData?.map(r => r.user_id) || [];
+      
+      if (consultorIds.length === 0) {
+        setConsultores([]);
+        return;
+      }
+
+      // If there's a selected empresa, filter by consultores assigned to that empresa
+      let query = supabase
         .from('profiles')
-        .select(`
-          id,
-          nombre_completo,
-          user_roles!inner(role)
-        `)
-        .eq('user_roles.role', 'consultor')
+        .select('id, nombre_completo')
+        .in('id', consultorIds)
         .order('nombre_completo');
+
+      // If empresa is selected, filter by assigned consultores
+      if (formData.empresa_id) {
+        const { data: asignacionesData, error: asignacionesError } = await supabase
+          .from('consultor_empresa_asignacion')
+          .select('consultor_id')
+          .eq('empresa_id', formData.empresa_id);
+
+        if (asignacionesError) throw asignacionesError;
+
+        const consultoresAsignadosIds = asignacionesData?.map(a => a.consultor_id) || [];
+        
+        // Filter to only show consultores assigned to this empresa
+        query = query.in('id', consultoresAsignadosIds);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setConsultores(data || []);
     } catch (error) {
       console.error('Error fetching consultores:', error);
+      toast.error('Error al cargar consultores');
     }
   };
 
