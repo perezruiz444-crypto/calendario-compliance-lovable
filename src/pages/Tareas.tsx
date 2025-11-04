@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar, AlertCircle, Paperclip, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
 import TareaDetailDialog from '@/components/tareas/TareaDetailDialog';
@@ -12,6 +12,8 @@ import ManageCategoriesDialog from '@/components/tareas/ManageCategoriesDialog';
 import SendNotificationDialog from '@/components/tareas/SendNotificationDialog';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 
 export default function Tareas() {
@@ -25,6 +27,14 @@ export default function Tareas() {
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
   const [selectedConsultor, setSelectedConsultor] = useState<string>('');
   const [consultores, setConsultores] = useState<any[]>([]);
+  const [empresas, setEmpresas] = useState<any[]>([]);
+  
+  // Filtros
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterEstado, setFilterEstado] = useState<string>('all');
+  const [filterPrioridad, setFilterPrioridad] = useState<string>('all');
+  const [filterEmpresa, setFilterEmpresa] = useState<string>('all');
+  const [filterConsultor, setFilterConsultor] = useState<string>('all');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -35,6 +45,7 @@ export default function Tareas() {
   useEffect(() => {
     if (user && role) {
       fetchConsultores();
+      fetchEmpresas();
     }
   }, [user, role]);
 
@@ -61,6 +72,20 @@ export default function Tareas() {
       }
     } catch (error) {
       console.error('Error fetching consultores:', error);
+    }
+  };
+
+  const fetchEmpresas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('empresas')
+        .select('id, razon_social')
+        .order('razon_social');
+
+      if (error) throw error;
+      setEmpresas(data || []);
+    } catch (error) {
+      console.error('Error fetching empresas:', error);
     }
   };
 
@@ -196,6 +221,89 @@ export default function Tareas() {
     cancelada: 'Cancelada'
   };
 
+  const prioridadLabels: { [key: string]: string } = {
+    baja: 'Baja',
+    media: 'Media',
+    alta: 'Alta',
+    urgente: 'Urgente'
+  };
+
+  // Función para obtener tareas filtradas
+  const getFilteredTareas = () => {
+    return tareas.filter(tarea => {
+      // Filtro de búsqueda
+      const matchesSearch = searchQuery === '' || 
+        tarea.titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tarea.descripcion?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tarea.empresas?.razon_social.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tarea.consultor_profile?.nombre_completo.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Filtro de estado
+      const matchesEstado = filterEstado === 'all' || tarea.estado === filterEstado;
+
+      // Filtro de prioridad
+      const matchesPrioridad = filterPrioridad === 'all' || tarea.prioridad === filterPrioridad;
+
+      // Filtro de empresa
+      const matchesEmpresa = filterEmpresa === 'all' || tarea.empresa_id === filterEmpresa;
+
+      // Filtro de consultor
+      const matchesConsultor = filterConsultor === 'all' || 
+        (filterConsultor === 'sin_asignar' && !tarea.consultor_asignado_id) ||
+        tarea.consultor_asignado_id === filterConsultor;
+
+      return matchesSearch && matchesEstado && matchesPrioridad && matchesEmpresa && matchesConsultor;
+    });
+  };
+
+  const hasActiveFilters = searchQuery !== '' || filterEstado !== 'all' || 
+    filterPrioridad !== 'all' || filterEmpresa !== 'all' || filterConsultor !== 'all';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFilterEstado('all');
+    setFilterPrioridad('all');
+    setFilterEmpresa('all');
+    setFilterConsultor('all');
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      'hsl(var(--primary))',
+      'hsl(var(--success))',
+      'hsl(var(--warning))',
+      'hsl(221, 83%, 53%)',
+      'hsl(340, 82%, 52%)',
+      'hsl(291, 47%, 51%)',
+    ];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
+  const isOverdue = (fecha: string) => {
+    if (!fecha) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(fecha);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  };
+
+  const formatDate = (fecha: string) => {
+    if (!fecha) return '';
+    const date = new Date(fecha);
+    return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+  };
+
   if (loading || loadingTareas) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -204,13 +312,15 @@ export default function Tareas() {
     );
   }
 
-  const tareasPendientes = tareas.filter(t => t.estado === 'pendiente');
-  const tareasEnProgreso = tareas.filter(t => t.estado === 'en_progreso');
-  const tareasCompletadas = tareas.filter(t => t.estado === 'completada');
+  const filteredTareas = getFilteredTareas();
+  const tareasPendientes = filteredTareas.filter(t => t.estado === 'pendiente');
+  const tareasEnProgreso = filteredTareas.filter(t => t.estado === 'en_progreso');
+  const tareasCompletadas = filteredTareas.filter(t => t.estado === 'completada');
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
@@ -235,6 +345,112 @@ export default function Tareas() {
             )}
           </div>
         </div>
+
+        {/* Search and Filters */}
+        <Card className="gradient-card shadow-card">
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar tareas por título, descripción, empresa o consultor..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Filters */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                    Estado
+                  </label>
+                  <Select value={filterEstado} onValueChange={setFilterEstado}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="pendiente">Pendiente</SelectItem>
+                      <SelectItem value="en_progreso">En Progreso</SelectItem>
+                      <SelectItem value="completada">Completada</SelectItem>
+                      <SelectItem value="cancelada">Cancelada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                    Prioridad
+                  </label>
+                  <Select value={filterPrioridad} onValueChange={setFilterPrioridad}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="baja">Baja</SelectItem>
+                      <SelectItem value="media">Media</SelectItem>
+                      <SelectItem value="alta">Alta</SelectItem>
+                      <SelectItem value="urgente">Urgente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                    Empresa
+                  </label>
+                  <Select value={filterEmpresa} onValueChange={setFilterEmpresa}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {empresas.map(empresa => (
+                        <SelectItem key={empresa.id} value={empresa.id}>
+                          {empresa.razon_social}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                    Consultor
+                  </label>
+                  <Select value={filterConsultor} onValueChange={setFilterConsultor}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="sin_asignar">Sin Asignar</SelectItem>
+                      {consultores.map(consultor => (
+                        <SelectItem key={consultor.id} value={consultor.id}>
+                          {consultor.nombre_completo}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Clear Filters Button */}
+              {hasActiveFilters && (
+                <div className="flex justify-end">
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    <X className="w-4 h-4 mr-1" />
+                    Limpiar filtros
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Bulk notification section for admins/consultores */}
         {(role === 'administrador' || role === 'consultor') && (
@@ -281,12 +497,15 @@ export default function Tareas() {
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-3">
-          <Card className="gradient-card shadow-card">
+          <Card 
+            className="gradient-card shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            onClick={() => setFilterEstado('pendiente')}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-heading font-medium">
                 Pendientes
               </CardTitle>
-              <CheckSquare className="h-4 w-4 text-muted-foreground" />
+              <CheckSquare className="h-4 w-4 text-muted-foreground group-hover:text-warning transition-colors" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-heading font-bold">{tareasPendientes.length}</div>
@@ -296,12 +515,15 @@ export default function Tareas() {
             </CardContent>
           </Card>
 
-          <Card className="gradient-card shadow-card">
+          <Card 
+            className="gradient-card shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            onClick={() => setFilterEstado('en_progreso')}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-heading font-medium">
                 En Progreso
               </CardTitle>
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <MessageSquare className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-heading font-bold">{tareasEnProgreso.length}</div>
@@ -311,12 +533,15 @@ export default function Tareas() {
             </CardContent>
           </Card>
 
-          <Card className="gradient-card shadow-card">
+          <Card 
+            className="gradient-card shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            onClick={() => setFilterEstado('completada')}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-heading font-medium">
                 Completadas
               </CardTitle>
-              <CheckSquare className="h-4 w-4 text-muted-foreground" />
+              <CheckSquare className="h-4 w-4 text-muted-foreground group-hover:text-success transition-colors" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-heading font-bold">{tareasCompletadas.length}</div>
@@ -330,71 +555,143 @@ export default function Tareas() {
         {/* Tareas List */}
         <Card className="gradient-card shadow-card">
           <CardHeader>
-            <CardTitle className="font-heading">Todas las Tareas</CardTitle>
-            <CardDescription className="font-body">
-              Lista completa de tareas del sistema
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="font-heading">Todas las Tareas</CardTitle>
+                <CardDescription className="font-body">
+                  {filteredTareas.length} de {tareas.length} tareas
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {tareas.map((tarea) => (
+            <div className="space-y-4">
+              {filteredTareas.map((tarea) => (
                 <div
                   key={tarea.id}
                   onClick={() => handleTareaClick(tarea.id)}
-                  className="flex items-start justify-between p-4 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                  className="group relative p-5 border rounded-lg hover:shadow-md hover:scale-[1.01] cursor-pointer transition-all bg-card"
+                  style={{
+                    borderLeft: `3px solid ${
+                      tarea.prioridad === 'urgente' ? 'hsl(var(--destructive))' :
+                      tarea.prioridad === 'alta' ? 'hsl(25, 95%, 53%)' :
+                      tarea.prioridad === 'media' ? 'hsl(var(--warning))' :
+                      'hsl(var(--success))'
+                    }`
+                  }}
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-heading font-semibold">{tarea.titulo}</h3>
-                      {tarea.es_recurrente && (
-                        <Badge variant="outline" className="text-xs">
-                          <Repeat className="w-3 h-3 mr-1" />
-                          Recurrente
-                        </Badge>
+                  <div className="flex items-start gap-4">
+                    {/* Avatar */}
+                    <div className="flex-shrink-0 mt-1">
+                      {tarea.consultor_profile ? (
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback 
+                            style={{ backgroundColor: getAvatarColor(tarea.consultor_profile.nombre_completo) }}
+                            className="text-white text-xs font-medium"
+                          >
+                            {getInitials(tarea.consultor_profile.nombre_completo)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback className="bg-muted">
+                            <User className="h-5 w-5 text-muted-foreground" />
+                          </AvatarFallback>
+                        </Avatar>
                       )}
                     </div>
-                    {tarea.descripcion && (
-                      <p className="text-sm font-body text-muted-foreground mb-2 line-clamp-2">
-                        {tarea.descripcion}
-                      </p>
-                    )}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {tarea.categorias_tareas && (
-                        <Badge
-                          variant="outline"
-                          className="text-xs gap-1"
-                          style={{ borderColor: tarea.categorias_tareas.color }}
-                        >
-                          <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: tarea.categorias_tareas.color }}
-                          />
-                          {tarea.categorias_tareas.nombre}
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      {/* Title and Priority */}
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="font-heading font-semibold text-lg text-foreground line-clamp-1">
+                          {tarea.titulo}
+                        </h3>
+                        <Badge className={`${getPrioridadColor(tarea.prioridad)} flex-shrink-0`}>
+                          {prioridadLabels[tarea.prioridad]}
                         </Badge>
+                      </div>
+
+                      {/* Description */}
+                      {tarea.descripcion && (
+                        <p className="text-sm font-body text-muted-foreground mb-3 line-clamp-2">
+                          {tarea.descripcion}
+                        </p>
                       )}
-                      <Badge className={`text-xs ${getPrioridadColor(tarea.prioridad)}`}>
-                        {tarea.prioridad}
-                      </Badge>
-                      <Badge className={`text-xs ${getEstadoColor(tarea.estado)}`}>
-                        {estadoLabels[tarea.estado]}
-                      </Badge>
-                      {tarea.empresas && (
-                        <span className="text-xs font-body text-muted-foreground">
-                          {tarea.empresas.razon_social}
-                        </span>
-                      )}
-                      {tarea.consultor_profile && (
-                        <span className="text-xs font-body text-muted-foreground">
-                          Asignado a: {tarea.consultor_profile.nombre_completo}
-                        </span>
-                      )}
+
+                      {/* Metadata Row 1: Category and Status */}
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        {tarea.categorias_tareas && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs gap-1.5"
+                            style={{ borderColor: tarea.categorias_tareas.color }}
+                          >
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: tarea.categorias_tareas.color }}
+                            />
+                            {tarea.categorias_tareas.nombre}
+                          </Badge>
+                        )}
+                        <Badge className={`text-xs ${getEstadoColor(tarea.estado)}`}>
+                          {estadoLabels[tarea.estado]}
+                        </Badge>
+                        {tarea.es_recurrente && (
+                          <Badge variant="outline" className="text-xs">
+                            <Repeat className="w-3 h-3 mr-1" />
+                            Recurrente
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Metadata Row 2: Company, Date, Comments, Attachments */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        {tarea.empresas && (
+                          <span className="flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5" />
+                            {tarea.empresas.razon_social}
+                          </span>
+                        )}
+                        {tarea.fecha_vencimiento && (
+                          <span className={`flex items-center gap-1.5 ${isOverdue(tarea.fecha_vencimiento) ? 'text-destructive font-medium' : ''}`}>
+                            <Calendar className="w-3.5 h-3.5" />
+                            {formatDate(tarea.fecha_vencimiento)}
+                            {isOverdue(tarea.fecha_vencimiento) && (
+                              <AlertCircle className="w-3.5 h-3.5" />
+                            )}
+                          </span>
+                        )}
+                        {tarea.archivos_adjuntos && tarea.archivos_adjuntos.length > 0 && (
+                          <span className="flex items-center gap-1.5">
+                            <Paperclip className="w-3.5 h-3.5" />
+                            {tarea.archivos_adjuntos.length}
+                          </span>
+                        )}
+                        {!tarea.consultor_profile && (
+                          <Badge variant="outline" className="text-xs">
+                            Sin asignar
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
-              {tareas.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground font-body">
-                  No hay tareas creadas aún
+              {filteredTareas.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+                    <Search className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-heading font-semibold text-lg mb-2">
+                    No se encontraron tareas
+                  </h3>
+                  <p className="text-sm text-muted-foreground font-body">
+                    {hasActiveFilters 
+                      ? 'Intenta ajustar los filtros para ver más resultados'
+                      : 'No hay tareas creadas aún'}
+                  </p>
                 </div>
               )}
             </div>
