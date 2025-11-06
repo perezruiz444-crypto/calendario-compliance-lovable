@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
-import { DndContext, DragEndEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -228,7 +228,7 @@ function KanbanColumn({
   formatDate,
   prioridadLabels,
 }: KanbanColumnProps) {
-  const { setNodeRef } = useSortable({ id: estado });
+  const { setNodeRef } = useDroppable({ id: estado });
 
   return (
     <div ref={setNodeRef} className="flex flex-col h-full min-h-[600px]">
