@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Building2, CheckSquare, Users, TrendingUp, Calendar, Clock, AlertCircle, Shield, FileText } from 'lucide-react';
 import { format, isAfter, isBefore, addDays, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
@@ -367,82 +368,98 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Próximas Tareas */}
-        <Card className="gradient-card shadow-card">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="font-heading flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  Próximas Tareas
-                </CardTitle>
-                <CardDescription className="font-body">
-                  Tareas con vencimiento en los próximos 7 días
-                </CardDescription>
-              </div>
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/tareas')}
-                className="font-heading"
-              >
-                Ver Todas
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {proximasTareas.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="mx-auto w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mb-4">
-                  <CheckSquare className="w-8 h-8 text-success" />
+        {/* Grid con Próximas Tareas y Calendario */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Próximas Tareas */}
+          <Card className="gradient-card shadow-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="font-heading flex items-center gap-2">
+                    <Calendar className="w-5 h-5" />
+                    Próximas Tareas
+                  </CardTitle>
+                  <CardDescription className="font-body">
+                    Tareas con vencimiento en los próximos 7 días
+                  </CardDescription>
                 </div>
-                <p className="text-muted-foreground font-body mb-2">
-                  ¡Excelente! No hay tareas próximas a vencer
-                </p>
-                <p className="text-sm text-muted-foreground font-body">
-                  Todas las tareas urgentes están bajo control
-                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/tareas')}
+                  className="font-heading"
+                  size="sm"
+                >
+                  Ver Todas
+                </Button>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {proximasTareas.map((tarea) => (
-                  <div 
-                    key={tarea.id} 
-                    className="border rounded-lg p-4 hover:border-primary transition-colors cursor-pointer hover-scale animate-fade-in"
-                    onClick={() => navigate('/tareas')}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-heading font-semibold">{tarea.titulo}</h4>
-                          <Badge className={getPrioridadColor(tarea.prioridad)} variant="secondary">
-                            {tarea.prioridad}
-                          </Badge>
-                          <Badge className={getEstadoColor(tarea.estado)}>
-                            {estadoLabels[tarea.estado]}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground font-body">
-                          {tarea.empresa_nombre && (
-                            <span className="flex items-center gap-1">
-                              <Building2 className="w-3 h-3" />
-                              {tarea.empresa_nombre}
-                            </span>
-                          )}
-                          {tarea.fecha_vencimiento && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              Vence: {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
-                            </span>
-                          )}
+            </CardHeader>
+            <CardContent>
+              {proximasTareas.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="mx-auto w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mb-4">
+                    <CheckSquare className="w-8 h-8 text-success" />
+                  </div>
+                  <p className="text-muted-foreground font-body mb-2">
+                    ¡Excelente! No hay tareas próximas a vencer
+                  </p>
+                  <p className="text-sm text-muted-foreground font-body">
+                    Todas las tareas urgentes están bajo control
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {proximasTareas.map((tarea) => (
+                    <div 
+                      key={tarea.id} 
+                      className="border rounded-lg p-4 hover:border-primary transition-colors cursor-pointer hover-scale animate-fade-in"
+                      onClick={() => navigate('/tareas')}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <h4 className="font-heading font-semibold">{tarea.titulo}</h4>
+                            <Badge className={getPrioridadColor(tarea.prioridad)} variant="secondary">
+                              {tarea.prioridad}
+                            </Badge>
+                            <Badge className={getEstadoColor(tarea.estado)}>
+                              {estadoLabels[tarea.estado]}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground font-body flex-wrap">
+                            {tarea.empresa_nombre && (
+                              <span className="flex items-center gap-1">
+                                <Building2 className="w-3 h-3" />
+                                {tarea.empresa_nombre}
+                              </span>
+                            )}
+                            {tarea.fecha_vencimiento && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Vence: {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Calendario Widget */}
+          <DashboardCalendar 
+            height="500px"
+            onEventClick={(event) => {
+              if (event.resource.type === 'tarea') {
+                navigate('/tareas');
+              } else if (event.resource.type === 'documento') {
+                navigate(`/empresas/${event.resource.data.empresa_id}`);
+              }
+            }}
+          />
+        </div>
       </div>
     </DashboardLayout>
   );

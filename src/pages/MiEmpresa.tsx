@@ -11,6 +11,7 @@ import { format, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DocumentosManager } from '@/components/documentos/DocumentosManager';
 import { SolicitudesServicio } from '@/components/solicitudes/SolicitudesServicio';
+import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 
 export default function MiEmpresa() {
   const { user, role, loading } = useAuth();
@@ -397,8 +398,20 @@ export default function MiEmpresa() {
           </TabsContent>
         </Tabs>
 
+        {/* Calendario de eventos */}
+        <DashboardCalendar 
+          height="500px"
+          onEventClick={(event) => {
+            // Navigate to relevant section
+            if (event.resource.type === 'documento') {
+              // Scroll to documentos section
+              document.querySelector('[data-section="documentos"]')?.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+        />
+
         {/* New Tabs for Documentos and Solicitudes */}
-        <div className="mt-6 space-y-6">
+        <div className="mt-6 space-y-6" data-section="documentos">
           <Card>
             <CardHeader>
               <CardTitle className="font-heading">Documentos</CardTitle>
