@@ -36,6 +36,9 @@ interface TareaCardProps {
   prioridadLabels: { [key: string]: string };
   estadoLabels: { [key: string]: string };
   isDragging?: boolean;
+  showCheckbox?: boolean;
+  isSelected?: boolean;
+  onSelect?: (id: string) => void;
 }
 
 function TareaCard({ 
@@ -49,12 +52,15 @@ function TareaCard({
   formatDate, 
   prioridadLabels, 
   estadoLabels,
-  isDragging = false
+  isDragging = false,
+  showCheckbox = false,
+  isSelected = false,
+  onSelect
 }: TareaCardProps) {
   return (
     <div
       onClick={onClick}
-      className={`group relative p-5 border rounded-lg hover:shadow-md hover:scale-[1.01] cursor-pointer transition-all bg-card ${isDragging ? 'opacity-50' : ''}`}
+      className={`group relative p-5 border rounded-lg hover:shadow-md hover:scale-[1.01] cursor-pointer transition-all bg-card ${isDragging ? 'opacity-50' : ''} ${isSelected ? 'ring-2 ring-primary' : ''}`}
       style={{
         borderLeft: `3px solid ${
           tarea.prioridad === 'urgente' ? 'hsl(var(--destructive))' :
@@ -65,6 +71,17 @@ function TareaCard({
       }}
     >
       <div className="flex items-start gap-4">
+        {/* Checkbox */}
+        {showCheckbox && (
+          <div className="flex-shrink-0 mt-1">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onSelect?.(tarea.id)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+        
         {/* Avatar */}
         <div className="flex-shrink-0 mt-1">
           {tarea.consultor_profile ? (
@@ -1003,7 +1020,7 @@ export default function Tareas() {
           </Card>
         </div>
 
-        {/* Tareas View - List or Kanban */}
+        {/* Tareas View - List, Kanban or Calendar */}
         {viewMode === 'list' ? (
           <Card className="gradient-card shadow-card">
             <CardHeader>
@@ -1014,9 +1031,61 @@ export default function Tareas() {
                     {filteredTareas.length} de {tareas.length} tareas
                   </CardDescription>
                 </div>
+                {filteredTareas.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={selectedTareas.size === filteredTareas.length && selectedTareas.size > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      Seleccionar todas
+                    </span>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
+              {/* Bulk Actions Toolbar */}
+              {selectedTareas.size > 0 && (
+                <Card className="mb-4 bg-muted/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <span className="text-sm font-medium">
+                        {selectedTareas.size} tarea(s) seleccionada(s)
+                      </span>
+                      <div className="flex gap-2 flex-wrap">
+                        <Select onValueChange={handleBulkUpdateEstado}>
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Cambiar estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pendiente">Pendiente</SelectItem>
+                            <SelectItem value="en_progreso">En Progreso</SelectItem>
+                            <SelectItem value="completada">Completada</SelectItem>
+                            <SelectItem value="cancelada">Cancelada</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleBulkDelete}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedTareas(new Set())}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="space-y-4">
                 {filteredTareas.map((tarea) => (
                   <TareaCard
@@ -1031,11 +1100,77 @@ export default function Tareas() {
                     formatDate={formatDate}
                     prioridadLabels={prioridadLabels}
                     estadoLabels={estadoLabels}
+                    showCheckbox={true}
+                    isSelected={selectedTareas.has(tarea.id)}
+                    onSelect={handleSelectTarea}
                   />
                 ))}
                 {filteredTareas.length === 0 && (
                   <EmptyState hasActiveFilters={hasActiveFilters} />
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : viewMode === 'calendar' ? (
+          <Card className="gradient-card shadow-card">
+            <CardHeader>
+              <CardTitle className="font-heading">Calendario de Tareas</CardTitle>
+              <CardDescription className="font-body">
+                Vista de tareas por fecha de vencimiento
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[600px]">
+                <BigCalendar
+                  localizer={localizer}
+                  events={calendarEvents}
+                  startAccessor="start"
+                  endAccessor="end"
+                  onSelectEvent={handleSelectEvent}
+                  views={['month', 'week', 'day', 'agenda']}
+                  defaultView="month"
+                  style={{ height: '100%' }}
+                  messages={{
+                    next: 'Siguiente',
+                    previous: 'Anterior',
+                    today: 'Hoy',
+                    month: 'Mes',
+                    week: 'Semana',
+                    day: 'Día',
+                    agenda: 'Agenda',
+                    date: 'Fecha',
+                    time: 'Hora',
+                    event: 'Tarea',
+                    noEventsInRange: 'No hay tareas en este rango',
+                    allDay: 'Todo el día',
+                    showMore: (total) => `+${total} más`,
+                  }}
+                  eventPropGetter={(event) => {
+                    const tarea = event.resource;
+                    let backgroundColor = 'hsl(var(--primary))';
+                    
+                    if (tarea.prioridad === 'urgente') {
+                      backgroundColor = 'hsl(var(--destructive))';
+                    } else if (tarea.prioridad === 'alta') {
+                      backgroundColor = 'hsl(25, 95%, 53%)';
+                    } else if (tarea.prioridad === 'media') {
+                      backgroundColor = 'hsl(var(--warning))';
+                    } else if (tarea.prioridad === 'baja') {
+                      backgroundColor = 'hsl(var(--success))';
+                    }
+                    
+                    return {
+                      style: {
+                        backgroundColor,
+                        borderRadius: '4px',
+                        opacity: 0.9,
+                        color: 'white',
+                        border: 'none',
+                        display: 'block'
+                      }
+                    };
+                  }}
+                />
               </div>
             </CardContent>
           </Card>
