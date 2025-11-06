@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar, AlertCircle, Paperclip, User } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar, AlertCircle, Paperclip, User, LayoutGrid, List } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
 import TareaDetailDialog from '@/components/tareas/TareaDetailDialog';
@@ -15,6 +15,265 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
+import { DndContext, DragEndEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Helper Components
+interface TareaCardProps {
+  tarea: any;
+  onClick: () => void;
+  getPrioridadColor: (prioridad: string) => string;
+  getEstadoColor: (estado: string) => string;
+  getInitials: (name: string) => string;
+  getAvatarColor: (name: string) => string;
+  isOverdue: (fecha: string) => boolean;
+  formatDate: (fecha: string) => string;
+  prioridadLabels: { [key: string]: string };
+  estadoLabels: { [key: string]: string };
+  isDragging?: boolean;
+}
+
+function TareaCard({ 
+  tarea, 
+  onClick, 
+  getPrioridadColor, 
+  getEstadoColor, 
+  getInitials, 
+  getAvatarColor, 
+  isOverdue, 
+  formatDate, 
+  prioridadLabels, 
+  estadoLabels,
+  isDragging = false
+}: TareaCardProps) {
+  return (
+    <div
+      onClick={onClick}
+      className={`group relative p-5 border rounded-lg hover:shadow-md hover:scale-[1.01] cursor-pointer transition-all bg-card ${isDragging ? 'opacity-50' : ''}`}
+      style={{
+        borderLeft: `3px solid ${
+          tarea.prioridad === 'urgente' ? 'hsl(var(--destructive))' :
+          tarea.prioridad === 'alta' ? 'hsl(25, 95%, 53%)' :
+          tarea.prioridad === 'media' ? 'hsl(var(--warning))' :
+          'hsl(var(--success))'
+        }`
+      }}
+    >
+      <div className="flex items-start gap-4">
+        {/* Avatar */}
+        <div className="flex-shrink-0 mt-1">
+          {tarea.consultor_profile ? (
+            <Avatar className="h-10 w-10">
+              <AvatarFallback 
+                style={{ backgroundColor: getAvatarColor(tarea.consultor_profile.nombre_completo) }}
+                className="text-white text-xs font-medium"
+              >
+                {getInitials(tarea.consultor_profile.nombre_completo)}
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <Avatar className="h-10 w-10">
+              <AvatarFallback className="bg-muted">
+                <User className="h-5 w-5 text-muted-foreground" />
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Title and Priority */}
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <h3 className="font-heading font-semibold text-lg text-foreground line-clamp-1">
+              {tarea.titulo}
+            </h3>
+            <Badge className={`${getPrioridadColor(tarea.prioridad)} flex-shrink-0`}>
+              {prioridadLabels[tarea.prioridad]}
+            </Badge>
+          </div>
+
+          {/* Description */}
+          {tarea.descripcion && (
+            <p className="text-sm font-body text-muted-foreground mb-3 line-clamp-2">
+              {tarea.descripcion}
+            </p>
+          )}
+
+          {/* Metadata Row 1: Category and Status */}
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            {tarea.categorias_tareas && (
+              <Badge
+                variant="outline"
+                className="text-xs gap-1.5"
+                style={{ borderColor: tarea.categorias_tareas.color }}
+              >
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: tarea.categorias_tareas.color }}
+                />
+                {tarea.categorias_tareas.nombre}
+              </Badge>
+            )}
+            <Badge className={`text-xs ${getEstadoColor(tarea.estado)}`}>
+              {estadoLabels[tarea.estado]}
+            </Badge>
+            {tarea.es_recurrente && (
+              <Badge variant="outline" className="text-xs">
+                <Repeat className="w-3 h-3 mr-1" />
+                Recurrente
+              </Badge>
+            )}
+          </div>
+
+          {/* Metadata Row 2: Company, Date, Comments, Attachments */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            {tarea.empresas && (
+              <span className="flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5" />
+                {tarea.empresas.razon_social}
+              </span>
+            )}
+            {tarea.fecha_vencimiento && (
+              <span className={`flex items-center gap-1.5 ${isOverdue(tarea.fecha_vencimiento) ? 'text-destructive font-medium' : ''}`}>
+                <Calendar className="w-3.5 h-3.5" />
+                {formatDate(tarea.fecha_vencimiento)}
+                {isOverdue(tarea.fecha_vencimiento) && (
+                  <AlertCircle className="w-3.5 h-3.5" />
+                )}
+              </span>
+            )}
+            {tarea.archivos_adjuntos && tarea.archivos_adjuntos.length > 0 && (
+              <span className="flex items-center gap-1.5">
+                <Paperclip className="w-3.5 h-3.5" />
+                {tarea.archivos_adjuntos.length}
+              </span>
+            )}
+            {!tarea.consultor_profile && (
+              <Badge variant="outline" className="text-xs">
+                Sin asignar
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SortableTareaCard(props: TareaCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.tarea.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <TareaCard {...props} isDragging={isDragging} />
+    </div>
+  );
+}
+
+function EmptyState({ hasActiveFilters }: { hasActiveFilters: boolean }) {
+  return (
+    <div className="text-center py-12">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+        <Search className="w-8 h-8 text-muted-foreground" />
+      </div>
+      <h3 className="font-heading font-semibold text-lg mb-2">
+        No se encontraron tareas
+      </h3>
+      <p className="text-sm text-muted-foreground font-body">
+        {hasActiveFilters 
+          ? 'Intenta ajustar los filtros para ver más resultados'
+          : 'No hay tareas creadas aún'}
+      </p>
+    </div>
+  );
+}
+
+interface KanbanColumnProps {
+  estado: 'pendiente' | 'en_progreso' | 'completada' | 'cancelada';
+  tareas: any[];
+  estadoLabels: { [key: string]: string };
+  getEstadoColor: (estado: string) => string;
+  onTareaClick: (tareaId: string) => void;
+  getPrioridadColor: (prioridad: string) => string;
+  getInitials: (name: string) => string;
+  getAvatarColor: (name: string) => string;
+  isOverdue: (fecha: string) => boolean;
+  formatDate: (fecha: string) => string;
+  prioridadLabels: { [key: string]: string };
+}
+
+function KanbanColumn({
+  estado,
+  tareas,
+  estadoLabels,
+  getEstadoColor,
+  onTareaClick,
+  getPrioridadColor,
+  getInitials,
+  getAvatarColor,
+  isOverdue,
+  formatDate,
+  prioridadLabels,
+}: KanbanColumnProps) {
+  const { setNodeRef } = useSortable({ id: estado });
+
+  return (
+    <div ref={setNodeRef} className="flex flex-col h-full min-h-[600px]">
+      <Card className="flex-1 flex flex-col">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-heading font-medium flex items-center gap-2">
+              <Badge className={getEstadoColor(estado)}>
+                {estadoLabels[estado]}
+              </Badge>
+              <span className="text-muted-foreground">({tareas.length})</span>
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 overflow-y-auto">
+          <SortableContext items={tareas.map(t => t.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3">
+              {tareas.map((tarea) => (
+                <SortableTareaCard
+                  key={tarea.id}
+                  tarea={tarea}
+                  onClick={() => onTareaClick(tarea.id)}
+                  getPrioridadColor={getPrioridadColor}
+                  getEstadoColor={getEstadoColor}
+                  getInitials={getInitials}
+                  getAvatarColor={getAvatarColor}
+                  isOverdue={isOverdue}
+                  formatDate={formatDate}
+                  prioridadLabels={prioridadLabels}
+                  estadoLabels={estadoLabels}
+                />
+              ))}
+              {tareas.length === 0 && (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  No hay tareas
+                </div>
+              )}
+            </div>
+          </SortableContext>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 
 export default function Tareas() {
   const { user, role, loading } = useAuth();
@@ -35,6 +294,19 @@ export default function Tareas() {
   const [filterPrioridad, setFilterPrioridad] = useState<string>('all');
   const [filterEmpresa, setFilterEmpresa] = useState<string>('all');
   const [filterConsultor, setFilterConsultor] = useState<string>('all');
+  
+  // View mode
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   useEffect(() => {
     if (!loading && !user) {
@@ -304,6 +576,56 @@ export default function Tareas() {
     return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
   };
 
+  // Handle drag end
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragId(null);
+
+    if (!over) return;
+    
+    const tareaId = active.id as string;
+    const newEstado = over.id as 'pendiente' | 'en_progreso' | 'completada' | 'cancelada';
+
+    // Find the task
+    const tarea = tareas.find(t => t.id === tareaId);
+    if (!tarea || tarea.estado === newEstado) return;
+
+    // Optimistic update
+    setTareas(prevTareas =>
+      prevTareas.map(t =>
+        t.id === tareaId ? { ...t, estado: newEstado } : t
+      )
+    );
+
+    // Update in database
+    try {
+      const { error } = await supabase
+        .from('tareas')
+        .update({ estado: newEstado })
+        .eq('id', tareaId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Tarea actualizada",
+        description: `Estado cambiado a ${estadoLabels[newEstado]}`,
+      });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      // Revert optimistic update
+      fetchTareas();
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la tarea",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDragStart = (event: DragEndEvent) => {
+    setActiveDragId(event.active.id as string);
+  };
+
   if (loading || loadingTareas) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -331,6 +653,28 @@ export default function Tareas() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {/* View Mode Toggle */}
+            <div className="flex gap-1 border rounded-lg p-1">
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="h-8"
+              >
+                <List className="w-4 h-4 mr-1" />
+                Lista
+              </Button>
+              <Button
+                variant={viewMode === 'kanban' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('kanban')}
+                className="h-8"
+              >
+                <LayoutGrid className="w-4 h-4 mr-1" />
+                Kanban
+              </Button>
+            </div>
+            
             {(role === 'administrador' || role === 'consultor') && (
               <>
                 <Button onClick={() => setCategoriesDialogOpen(true)} variant="outline" className="font-heading">
@@ -552,151 +896,87 @@ export default function Tareas() {
           </Card>
         </div>
 
-        {/* Tareas List */}
-        <Card className="gradient-card shadow-card">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="font-heading">Todas las Tareas</CardTitle>
-                <CardDescription className="font-body">
-                  {filteredTareas.length} de {tareas.length} tareas
-                </CardDescription>
+        {/* Tareas View - List or Kanban */}
+        {viewMode === 'list' ? (
+          <Card className="gradient-card shadow-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="font-heading">Todas las Tareas</CardTitle>
+                  <CardDescription className="font-body">
+                    {filteredTareas.length} de {tareas.length} tareas
+                  </CardDescription>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {filteredTareas.map((tarea) => (
-                <div
-                  key={tarea.id}
-                  onClick={() => handleTareaClick(tarea.id)}
-                  className="group relative p-5 border rounded-lg hover:shadow-md hover:scale-[1.01] cursor-pointer transition-all bg-card"
-                  style={{
-                    borderLeft: `3px solid ${
-                      tarea.prioridad === 'urgente' ? 'hsl(var(--destructive))' :
-                      tarea.prioridad === 'alta' ? 'hsl(25, 95%, 53%)' :
-                      tarea.prioridad === 'media' ? 'hsl(var(--warning))' :
-                      'hsl(var(--success))'
-                    }`
-                  }}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Avatar */}
-                    <div className="flex-shrink-0 mt-1">
-                      {tarea.consultor_profile ? (
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback 
-                            style={{ backgroundColor: getAvatarColor(tarea.consultor_profile.nombre_completo) }}
-                            className="text-white text-xs font-medium"
-                          >
-                            {getInitials(tarea.consultor_profile.nombre_completo)}
-                          </AvatarFallback>
-                        </Avatar>
-                      ) : (
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-muted">
-                            <User className="h-5 w-5 text-muted-foreground" />
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      {/* Title and Priority */}
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="font-heading font-semibold text-lg text-foreground line-clamp-1">
-                          {tarea.titulo}
-                        </h3>
-                        <Badge className={`${getPrioridadColor(tarea.prioridad)} flex-shrink-0`}>
-                          {prioridadLabels[tarea.prioridad]}
-                        </Badge>
-                      </div>
-
-                      {/* Description */}
-                      {tarea.descripcion && (
-                        <p className="text-sm font-body text-muted-foreground mb-3 line-clamp-2">
-                          {tarea.descripcion}
-                        </p>
-                      )}
-
-                      {/* Metadata Row 1: Category and Status */}
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        {tarea.categorias_tareas && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs gap-1.5"
-                            style={{ borderColor: tarea.categorias_tareas.color }}
-                          >
-                            <div
-                              className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: tarea.categorias_tareas.color }}
-                            />
-                            {tarea.categorias_tareas.nombre}
-                          </Badge>
-                        )}
-                        <Badge className={`text-xs ${getEstadoColor(tarea.estado)}`}>
-                          {estadoLabels[tarea.estado]}
-                        </Badge>
-                        {tarea.es_recurrente && (
-                          <Badge variant="outline" className="text-xs">
-                            <Repeat className="w-3 h-3 mr-1" />
-                            Recurrente
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Metadata Row 2: Company, Date, Comments, Attachments */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        {tarea.empresas && (
-                          <span className="flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5" />
-                            {tarea.empresas.razon_social}
-                          </span>
-                        )}
-                        {tarea.fecha_vencimiento && (
-                          <span className={`flex items-center gap-1.5 ${isOverdue(tarea.fecha_vencimiento) ? 'text-destructive font-medium' : ''}`}>
-                            <Calendar className="w-3.5 h-3.5" />
-                            {formatDate(tarea.fecha_vencimiento)}
-                            {isOverdue(tarea.fecha_vencimiento) && (
-                              <AlertCircle className="w-3.5 h-3.5" />
-                            )}
-                          </span>
-                        )}
-                        {tarea.archivos_adjuntos && tarea.archivos_adjuntos.length > 0 && (
-                          <span className="flex items-center gap-1.5">
-                            <Paperclip className="w-3.5 h-3.5" />
-                            {tarea.archivos_adjuntos.length}
-                          </span>
-                        )}
-                        {!tarea.consultor_profile && (
-                          <Badge variant="outline" className="text-xs">
-                            Sin asignar
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredTareas.map((tarea) => (
+                  <TareaCard
+                    key={tarea.id}
+                    tarea={tarea}
+                    onClick={() => handleTareaClick(tarea.id)}
+                    getPrioridadColor={getPrioridadColor}
+                    getEstadoColor={getEstadoColor}
+                    getInitials={getInitials}
+                    getAvatarColor={getAvatarColor}
+                    isOverdue={isOverdue}
+                    formatDate={formatDate}
+                    prioridadLabels={prioridadLabels}
+                    estadoLabels={estadoLabels}
+                  />
+                ))}
+                {filteredTareas.length === 0 && (
+                  <EmptyState hasActiveFilters={hasActiveFilters} />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {(['pendiente', 'en_progreso', 'completada', 'cancelada'] as const).map((estado) => (
+                <KanbanColumn
+                  key={estado}
+                  estado={estado}
+                  tareas={filteredTareas.filter(t => t.estado === estado)}
+                  estadoLabels={estadoLabels}
+                  getEstadoColor={getEstadoColor}
+                  onTareaClick={handleTareaClick}
+                  getPrioridadColor={getPrioridadColor}
+                  getInitials={getInitials}
+                  getAvatarColor={getAvatarColor}
+                  isOverdue={isOverdue}
+                  formatDate={formatDate}
+                  prioridadLabels={prioridadLabels}
+                />
               ))}
-              {filteredTareas.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                    <Search className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="font-heading font-semibold text-lg mb-2">
-                    No se encontraron tareas
-                  </h3>
-                  <p className="text-sm text-muted-foreground font-body">
-                    {hasActiveFilters 
-                      ? 'Intenta ajustar los filtros para ver más resultados'
-                      : 'No hay tareas creadas aún'}
-                  </p>
-                </div>
-              )}
             </div>
-          </CardContent>
-        </Card>
+            <DragOverlay>
+              {activeDragId ? (
+                <div className="opacity-50">
+                  <TareaCard
+                    tarea={tareas.find(t => t.id === activeDragId)!}
+                    onClick={() => {}}
+                    getPrioridadColor={getPrioridadColor}
+                    getEstadoColor={getEstadoColor}
+                    getInitials={getInitials}
+                    getAvatarColor={getAvatarColor}
+                    isOverdue={isOverdue}
+                    formatDate={formatDate}
+                    prioridadLabels={prioridadLabels}
+                    estadoLabels={estadoLabels}
+                  />
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        )}
       </div>
 
       <CreateTareaDialog 
