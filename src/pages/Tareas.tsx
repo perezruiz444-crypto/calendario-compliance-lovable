@@ -4,11 +4,15 @@ import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar, AlertCircle, Paperclip, User, LayoutGrid, List } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
-import TareaDetailDialog from '@/components/tareas/TareaDetailDialog';
+import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
 import ManageCategoriesDialog from '@/components/tareas/ManageCategoriesDialog';
+import { Calendar as BigCalendar, momentLocalizer, View } from 'react-big-calendar';
+import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { Checkbox } from '@/components/ui/checkbox';
 import SendNotificationDialog from '@/components/tareas/SendNotificationDialog';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -136,7 +140,7 @@ function TareaCard({
             )}
             {tarea.fecha_vencimiento && (
               <span className={`flex items-center gap-1.5 ${isOverdue(tarea.fecha_vencimiento) ? 'text-destructive font-medium' : ''}`}>
-                <Calendar className="w-3.5 h-3.5" />
+                <CalendarIcon className="w-3.5 h-3.5" />
                 {formatDate(tarea.fecha_vencimiento)}
                 {isOverdue(tarea.fecha_vencimiento) && (
                   <AlertCircle className="w-3.5 h-3.5" />
@@ -296,8 +300,15 @@ export default function Tareas() {
   const [filterConsultor, setFilterConsultor] = useState<string>('all');
   
   // View mode
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'calendar'>('list');
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  
+  // Bulk selection
+  const [selectedTareas, setSelectedTareas] = useState<Set<string>>(new Set());
+  const [bulkActionMode, setBulkActionMode] = useState(false);
+  
+  // Calendar
+  const localizer = momentLocalizer(moment);
   
   // Drag and drop sensors
   const sensors = useSensors(
@@ -639,6 +650,93 @@ export default function Tareas() {
   const tareasEnProgreso = filteredTareas.filter(t => t.estado === 'en_progreso');
   const tareasCompletadas = filteredTareas.filter(t => t.estado === 'completada');
 
+  // Bulk actions
+  const handleSelectTarea = (tareaId: string) => {
+    const newSelected = new Set(selectedTareas);
+    if (newSelected.has(tareaId)) {
+      newSelected.delete(tareaId);
+    } else {
+      newSelected.add(tareaId);
+    }
+    setSelectedTareas(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTareas.size === filteredTareas.length) {
+      setSelectedTareas(new Set());
+    } else {
+      setSelectedTareas(new Set(filteredTareas.map(t => t.id)));
+    }
+  };
+
+  const handleBulkUpdateEstado = async (newEstado: 'pendiente' | 'en_progreso' | 'completada' | 'cancelada') => {
+    try {
+      const updates = Array.from(selectedTareas).map(id =>
+        supabase.from('tareas').update({ estado: newEstado }).eq('id', id)
+      );
+      
+      await Promise.all(updates);
+      
+      toast({
+        title: "Tareas actualizadas",
+        description: `${selectedTareas.size} tareas actualizadas a ${newEstado}`,
+      });
+      
+      setSelectedTareas(new Set());
+      fetchTareas();
+    } catch (error) {
+      console.error('Error bulk updating:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron actualizar las tareas",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`¿Eliminar ${selectedTareas.size} tareas seleccionadas?`)) return;
+    
+    try {
+      const deletes = Array.from(selectedTareas).map(id =>
+        supabase.from('tareas').delete().eq('id', id)
+      );
+      
+      await Promise.all(deletes);
+      
+      toast({
+        title: "Tareas eliminadas",
+        description: `${selectedTareas.size} tareas eliminadas`,
+      });
+      
+      setSelectedTareas(new Set());
+      fetchTareas();
+    } catch (error) {
+      console.error('Error bulk deleting:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron eliminar las tareas",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Calendar events
+  const calendarEvents = filteredTareas
+    .filter(t => t.fecha_vencimiento)
+    .map(t => ({
+      id: t.id,
+      title: t.titulo,
+      start: new Date(t.fecha_vencimiento),
+      end: new Date(t.fecha_vencimiento),
+      resource: t
+    }));
+
+  const handleSelectEvent = (event: any) => {
+    setSelectedTareaId(event.id);
+    setDetailDialogOpen(true);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -672,6 +770,15 @@ export default function Tareas() {
               >
                 <LayoutGrid className="w-4 h-4 mr-1" />
                 Kanban
+              </Button>
+              <Button
+                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('calendar')}
+                className="h-8"
+              >
+                <CalendarViewIcon className="w-4 h-4 mr-1" />
+                Calendario
               </Button>
             </div>
             
@@ -985,10 +1092,11 @@ export default function Tareas() {
         onTareaCreated={fetchTareas}
       />
       {selectedTareaId && (
-        <TareaDetailDialog
+        <TareaDetailSheet
           open={detailDialogOpen}
           onOpenChange={handleDetailDialogClose}
           tareaId={selectedTareaId}
+          onUpdate={fetchTareas}
         />
       )}
       <ManageCategoriesDialog 
