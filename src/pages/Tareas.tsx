@@ -7,8 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
+import QuickCreateTarea from '@/components/tareas/QuickCreateTarea';
 import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
 import ManageCategoriesDialog from '@/components/tareas/ManageCategoriesDialog';
+import ManageCustomFields from '@/components/tareas/ManageCustomFields';
+import ManageTemplates from '@/components/tareas/ManageTemplates';
 import { Calendar as BigCalendar, momentLocalizer, View } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -302,8 +305,11 @@ export default function Tareas() {
   const [tareas, setTareas] = useState<any[]>([]);
   const [loadingTareas, setLoadingTareas] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [categoriesDialogOpen, setCategoriesDialogOpen] = useState(false);
+  const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
+  const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
   const [selectedConsultor, setSelectedConsultor] = useState<string>('');
   const [consultores, setConsultores] = useState<any[]>([]);
@@ -801,13 +807,17 @@ export default function Tareas() {
             
             {(role === 'administrador' || role === 'consultor') && (
               <>
-                <Button onClick={() => setCategoriesDialogOpen(true)} variant="outline" className="font-heading">
+                <Button onClick={() => setCustomFieldsDialogOpen(true)} variant="outline" className="font-heading">
                   <Settings className="w-4 h-4 mr-2" />
-                  Categorías
+                  Campos
                 </Button>
-                <Button onClick={() => setDialogOpen(true)} className="font-heading">
+                <Button onClick={() => setTemplatesDialogOpen(true)} variant="outline" className="font-heading">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Templates
+                </Button>
+                <Button onClick={() => setQuickCreateOpen(true)} className="font-heading gradient-primary">
                   <Plus className="w-4 h-4 mr-2" />
-                  Nueva Tarea
+                  Quick Create
                 </Button>
               </>
             )}
@@ -1226,6 +1236,11 @@ export default function Tareas() {
         onOpenChange={handleDialogClose}
         onTareaCreated={fetchTareas}
       />
+      <QuickCreateTarea
+        open={quickCreateOpen}
+        onOpenChange={setQuickCreateOpen}
+        onTareaCreated={fetchTareas}
+      />
       {selectedTareaId && (
         <TareaDetailSheet
           open={detailDialogOpen}
@@ -1234,9 +1249,17 @@ export default function Tareas() {
           onUpdate={fetchTareas}
         />
       )}
-      <ManageCategoriesDialog 
-        open={categoriesDialogOpen} 
+      <ManageCategoriesDialog
+        open={categoriesDialogOpen}
         onOpenChange={setCategoriesDialogOpen}
+      />
+      <ManageCustomFields
+        open={customFieldsDialogOpen}
+        onOpenChange={setCustomFieldsDialogOpen}
+      />
+      <ManageTemplates
+        open={templatesDialogOpen}
+        onOpenChange={setTemplatesDialogOpen}
       />
     </DashboardLayout>
   );

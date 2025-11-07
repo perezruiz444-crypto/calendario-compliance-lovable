@@ -264,6 +264,48 @@ export type Database = {
           },
         ]
       }
+      custom_fields: {
+        Row: {
+          activo: boolean | null
+          created_at: string | null
+          created_by: string | null
+          descripcion: string | null
+          id: string
+          nombre: string
+          opciones: Json | null
+          orden: number | null
+          requerido: boolean | null
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          opciones?: Json | null
+          orden?: number | null
+          requerido?: boolean | null
+          tipo: string
+          updated_at?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          opciones?: Json | null
+          orden?: number | null
+          requerido?: boolean | null
+          tipo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       documentos: {
         Row: {
           archivo_nombre: string
@@ -732,6 +774,110 @@ export type Database = {
           },
         ]
       }
+      tarea_custom_field_values: {
+        Row: {
+          created_at: string | null
+          custom_field_id: string
+          id: string
+          tarea_id: string
+          updated_at: string | null
+          valor: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_field_id: string
+          id?: string
+          tarea_id: string
+          updated_at?: string | null
+          valor?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_field_id?: string
+          id?: string
+          tarea_id?: string
+          updated_at?: string | null
+          valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarea_custom_field_values_custom_field_id_fkey"
+            columns: ["custom_field_id"]
+            isOneToOne: false
+            referencedRelation: "custom_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarea_custom_field_values_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tarea_templates: {
+        Row: {
+          campos_personalizados: Json | null
+          categoria_id: string | null
+          checklist: Json | null
+          created_at: string | null
+          created_by: string | null
+          descripcion: string | null
+          descripcion_template: string | null
+          duracion_dias: number | null
+          es_publico: boolean | null
+          id: string
+          nombre: string
+          prioridad: string | null
+          titulo_template: string
+          updated_at: string | null
+          veces_usado: number | null
+        }
+        Insert: {
+          campos_personalizados?: Json | null
+          categoria_id?: string | null
+          checklist?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          descripcion?: string | null
+          descripcion_template?: string | null
+          duracion_dias?: number | null
+          es_publico?: boolean | null
+          id?: string
+          nombre: string
+          prioridad?: string | null
+          titulo_template: string
+          updated_at?: string | null
+          veces_usado?: number | null
+        }
+        Update: {
+          campos_personalizados?: Json | null
+          categoria_id?: string | null
+          checklist?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          descripcion?: string | null
+          descripcion_template?: string | null
+          duracion_dias?: number | null
+          es_publico?: boolean | null
+          id?: string
+          nombre?: string
+          prioridad?: string | null
+          titulo_template?: string
+          updated_at?: string | null
+          veces_usado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarea_templates_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tareas: {
         Row: {
           archivos_adjuntos: Json | null
@@ -906,6 +1052,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_template_usage: {
+        Args: { template_id: string }
+        Returns: undefined
       }
     }
     Enums: {
