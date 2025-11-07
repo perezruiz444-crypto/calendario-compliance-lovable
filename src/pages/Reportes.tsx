@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, User, Filter, Mail, Send, FileDown } from 'lucide-react';
+import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, User, Filter, Mail, Send, FileDown, Clock } from 'lucide-react';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
@@ -39,13 +39,18 @@ export default function Reportes() {
     empresasConVencimientos: [] as any[],
     certificacionesVencimiento: [] as any[],
     rendimientoConsultores: [] as any[],
+    tiempoPorConsultor: [] as any[],
+    tiempoPorEmpresa: [] as any[],
+    tiempoPorTarea: [] as any[],
     resumen: {
       totalEmpresas: 0,
       totalTareas: 0,
       tareasCompletadas: 0,
       tareasPendientes: 0,
       certificacionesVencer: 0,
-      tasaCompletitud: 0
+      tasaCompletitud: 0,
+      totalHorasTrabajadas: 0,
+      horasFacturables: 0
     }
   });
 
@@ -377,6 +382,73 @@ export default function Reportes() {
       const total = tareas?.length || 0;
       const tasaCompletitud = total > 0 ? Math.round((completadas / total) * 100) : 0;
 
+      // Fetch time entries for time tracking reports
+      const { data: timeEntries } = await supabase
+        .from('time_entries')
+        .select('*, user_id, tarea_id')
+        .gte('inicio', startDate.toISOString())
+        .lte('inicio', endDate.toISOString());
+
+      // Calculate time by consultor
+      const tiempoPorConsultor: Record<string, { total: number; facturable: number }> = {};
+      timeEntries?.forEach(entry => {
+        const nombre = consultorMap[entry.user_id] || 'Sin asignar';
+        if (!tiempoPorConsultor[nombre]) {
+          tiempoPorConsultor[nombre] = { total: 0, facturable: 0 };
+        }
+        const minutos = entry.duracion_minutos || 0;
+        tiempoPorConsultor[nombre].total += minutos;
+        if (entry.facturable) {
+          tiempoPorConsultor[nombre].facturable += minutos;
+        }
+      });
+
+      const tiempoPorConsultorArray = Object.entries(tiempoPorConsultor).map(([name, data]) => ({
+        name,
+        horas: Math.round((data.total / 60) * 10) / 10,
+        facturable: Math.round((data.facturable / 60) * 10) / 10
+      }));
+
+      // Calculate time by empresa
+      const tiempoPorEmpresa: Record<string, number> = {};
+      timeEntries?.forEach(entry => {
+        const tarea = tareas?.find(t => t.id === entry.tarea_id);
+        if (tarea) {
+          const nombre = empresaMap[tarea.empresa_id] || 'Sin empresa';
+          tiempoPorEmpresa[nombre] = (tiempoPorEmpresa[nombre] || 0) + (entry.duracion_minutos || 0);
+        }
+      });
+
+      const tiempoPorEmpresaArray = Object.entries(tiempoPorEmpresa)
+        .map(([name, minutos]) => ({
+          name,
+          horas: Math.round((minutos / 60) * 10) / 10
+        }))
+        .sort((a, b) => b.horas - a.horas)
+        .slice(0, 10);
+
+      // Calculate time by tarea (top 10)
+      const tiempoPorTarea: Record<string, number> = {};
+      timeEntries?.forEach(entry => {
+        const tarea = tareas?.find(t => t.id === entry.tarea_id);
+        if (tarea) {
+          tiempoPorTarea[tarea.titulo] = (tiempoPorTarea[tarea.titulo] || 0) + (entry.duracion_minutos || 0);
+        }
+      });
+
+      const tiempoPorTareaArray = Object.entries(tiempoPorTarea)
+        .map(([name, minutos]) => ({
+          name,
+          horas: Math.round((minutos / 60) * 10) / 10
+        }))
+        .sort((a, b) => b.horas - a.horas)
+        .slice(0, 10);
+
+      const totalMinutos = timeEntries?.reduce((sum, e) => sum + (e.duracion_minutos || 0), 0) || 0;
+      const totalHorasTrabajadas = Math.round((totalMinutos / 60) * 10) / 10;
+      const minutosFacturables = timeEntries?.filter(e => e.facturable).reduce((sum, e) => sum + (e.duracion_minutos || 0), 0) || 0;
+      const horasFacturables = Math.round((minutosFacturables / 60) * 10) / 10;
+
       setReporteData({
         tareasPorEstado,
         tareasPorPrioridad,
@@ -387,13 +459,18 @@ export default function Reportes() {
         empresasConVencimientos: empresasData || [],
         certificacionesVencimiento: allVencimientos,
         rendimientoConsultores,
+        tiempoPorConsultor: tiempoPorConsultorArray,
+        tiempoPorEmpresa: tiempoPorEmpresaArray,
+        tiempoPorTarea: tiempoPorTareaArray,
         resumen: {
           totalEmpresas: empresasData?.length || 0,
           totalTareas: total,
           tareasCompletadas: completadas,
           tareasPendientes: tareas?.filter(t => t.estado === 'pendiente' || t.estado === 'en_progreso').length || 0,
           certificacionesVencer: allVencimientos.length,
-          tasaCompletitud
+          tasaCompletitud,
+          totalHorasTrabajadas,
+          horasFacturables
         }
       });
     } catch (error) {
@@ -786,12 +863,16 @@ export default function Reportes() {
 
         {/* Gráficas según tipo de reporte */}
         <Tabs defaultValue="estado" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
             <TabsTrigger value="estado">Estado</TabsTrigger>
             <TabsTrigger value="consultor">Consultores</TabsTrigger>
             <TabsTrigger value="empresa">Empresas</TabsTrigger>
             <TabsTrigger value="categoria">Categorías</TabsTrigger>
             <TabsTrigger value="rendimiento">Rendimiento</TabsTrigger>
+            <TabsTrigger value="tiempo">
+              <Clock className="w-4 h-4 mr-2" />
+              Tiempo
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="estado" className="space-y-6">

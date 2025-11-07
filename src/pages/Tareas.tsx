@@ -5,7 +5,7 @@ import { useTareasShortcuts } from '@/hooks/useKeyboardShortcuts';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2 } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
 import QuickCreateTarea from '@/components/tareas/QuickCreateTarea';
@@ -13,6 +13,7 @@ import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
 import ManageCategoriesDialog from '@/components/tareas/ManageCategoriesDialog';
 import ManageCustomFields from '@/components/tareas/ManageCustomFields';
 import ManageTemplates from '@/components/tareas/ManageTemplates';
+import { ManageAutomations } from '@/components/tareas/ManageAutomations';
 import { Calendar as BigCalendar, momentLocalizer, View } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -23,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { DndContext, DragEndEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -321,6 +323,7 @@ export default function Tareas() {
   const [categoriesDialogOpen, setCategoriesDialogOpen] = useState(false);
   const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
   const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
+  const [automationsDialogOpen, setAutomationsDialogOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
   const [selectedConsultor, setSelectedConsultor] = useState<string>('');
   const [consultores, setConsultores] = useState<any[]>([]);
@@ -826,6 +829,10 @@ export default function Tareas() {
                   <Settings className="w-4 h-4 mr-2" />
                   Templates
                 </Button>
+                <Button onClick={() => setAutomationsDialogOpen(true)} variant="outline" className="font-heading">
+                  <Zap className="w-4 h-4 mr-2" />
+                  Automatizaciones
+                </Button>
                 <Button onClick={() => setQuickCreateOpen(true)} className="font-heading gradient-primary">
                   <Plus className="w-4 h-4 mr-2" />
                   Quick Create
@@ -1273,6 +1280,11 @@ export default function Tareas() {
         open={templatesDialogOpen}
         onOpenChange={setTemplatesDialogOpen}
       />
+      <Dialog open={automationsDialogOpen} onOpenChange={setAutomationsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <ManageAutomations />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
