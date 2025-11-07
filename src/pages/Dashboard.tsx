@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, CheckSquare, Users, TrendingUp, Calendar, Clock, AlertCircle, Shield, FileText } from 'lucide-react';
+import { Building2, CheckSquare, Users, TrendingUp, Calendar, Clock, AlertCircle, Shield, FileText, BarChart3 } from 'lucide-react';
 import { format, isAfter, isBefore, addDays, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
+import AdminAnalytics from '@/components/dashboard/AdminAnalytics';
+import ConsultorAnalytics from '@/components/dashboard/ConsultorAnalytics';
+import ClienteAnalytics from '@/components/dashboard/ClienteAnalytics';
 
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
+  const { data: analyticsData, loading: analyticsLoading } = useAnalytics();
   const [stats, setStats] = useState({
     empresas: 0,
     tareasPendientes: 0,
@@ -25,6 +30,7 @@ export default function Dashboard() {
   const [proximasTareas, setProximasTareas] = useState<any[]>([]);
   const [empresaCliente, setEmpresaCliente] = useState<any>(null);
   const [loadingData, setLoadingData] = useState(true);
+  const [showAnalytics, setShowAnalytics] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -156,7 +162,7 @@ export default function Dashboard() {
     cancelada: 'Cancelada'
   };
 
-  if (loading || loadingData) {
+  if (loading || loadingData || analyticsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -216,162 +222,183 @@ export default function Dashboard() {
     <DashboardLayout currentPage="/dashboard">
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-            Dashboard
-          </h1>
-          <p className="text-muted-foreground font-body">
-            Bienvenido {role === 'administrador' ? 'Administrador' : role === 'consultor' ? 'Consultor' : 'Cliente'}
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
+              Dashboard
+            </h1>
+            <p className="text-muted-foreground font-body">
+              Bienvenido {role === 'administrador' ? 'Administrador' : role === 'consultor' ? 'Consultor' : 'Cliente'}
+            </p>
+          </div>
+          <Button
+            variant={showAnalytics ? "default" : "outline"}
+            onClick={() => setShowAnalytics(!showAnalytics)}
+            className="gap-2"
+          >
+            <BarChart3 className="w-4 h-4" />
+            {showAnalytics ? 'Vista Simple' : 'Analytics'}
+          </Button>
         </div>
 
-        {/* Widget Mi Empresa para Clientes */}
-        {role === 'cliente' && empresaCliente && (
-          <Card className="gradient-card shadow-elegant border-primary/20">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="font-heading flex items-center gap-2">
-                    <Building2 className="w-5 h-5" />
-                    {empresaCliente.razon_social}
-                  </CardTitle>
-                  <CardDescription className="font-body">
-                    RFC: {empresaCliente.rfc}
-                  </CardDescription>
-                </div>
-                <Button 
-                  onClick={() => navigate('/mi-empresa')}
-                  className="gradient-primary shadow-elegant font-heading"
-                >
-                  Ver Detalles
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {/* Alertas de vencimiento */}
-              {(empresaCliente.cert_iva_ieps_fecha_vencimiento || 
-                empresaCliente.matriz_seguridad_fecha_vencimiento || 
-                empresaCliente.immex_fecha_fin) && (
-                <div className="space-y-2">
-                  <p className="text-sm font-heading font-medium flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
-                    Próximos Vencimientos
-                  </p>
-                  
-                  {empresaCliente.cert_iva_ieps_fecha_vencimiento && 
-                   (() => {
-                     const alert = getVencimientoAlert(empresaCliente.cert_iva_ieps_fecha_vencimiento);
-                     return alert && alert.dias <= 90 ? (
-                       <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
-                         <div className="flex items-center gap-2">
-                           <Shield className="w-4 h-4 text-muted-foreground" />
-                           <span className="text-xs font-body">Cert. IVA/IEPS</span>
-                         </div>
-                         <Badge variant={alert.color as any} className="text-xs">
-                           {alert.text}
-                         </Badge>
-                       </div>
-                     ) : null;
-                   })()}
-                  
-                  {empresaCliente.matriz_seguridad_fecha_vencimiento && 
-                   (() => {
-                     const alert = getVencimientoAlert(empresaCliente.matriz_seguridad_fecha_vencimiento);
-                     return alert && alert.dias <= 90 ? (
-                       <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
-                         <div className="flex items-center gap-2">
-                           <Shield className="w-4 h-4 text-muted-foreground" />
-                           <span className="text-xs font-body">Matriz Seguridad</span>
-                         </div>
-                         <Badge variant={alert.color as any} className="text-xs">
-                           {alert.text}
-                         </Badge>
-                       </div>
-                     ) : null;
-                   })()}
-                  
-                  {empresaCliente.immex_fecha_fin && 
-                   (() => {
-                     const alert = getVencimientoAlert(empresaCliente.immex_fecha_fin);
-                     return alert && alert.dias <= 90 ? (
-                       <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
-                         <div className="flex items-center gap-2">
-                           <FileText className="w-4 h-4 text-muted-foreground" />
-                           <span className="text-xs font-body">Programa IMMEX</span>
-                         </div>
-                         <Badge variant={alert.color as any} className="text-xs">
-                           {alert.text}
-                         </Badge>
-                       </div>
-                     ) : null;
-                   })()}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* Analytics Section */}
+        {showAnalytics && (
+          <>
+            {role === 'administrador' && <AdminAnalytics data={analyticsData} />}
+            {role === 'consultor' && <ConsultorAnalytics data={analyticsData} />}
+            {role === 'cliente' && <ClienteAnalytics data={analyticsData} />}
+          </>
         )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {statCards.filter(stat => stat.show).map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={stat.title} className="gradient-card shadow-elegant hover:shadow-card transition-smooth hover-scale">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-heading font-medium">
-                    {stat.title}
-                  </CardTitle>
-                  <div className={`${stat.bgColor} p-2 rounded-lg`}>
-                    <Icon className={`w-4 h-4 ${stat.color}`} />
+        {/* Vista Simple - Original Dashboard */}
+        {!showAnalytics && (
+          <>
+            {/* Widget Mi Empresa para Clientes */}
+            {role === 'cliente' && empresaCliente && (
+              <Card className="gradient-card shadow-elegant border-primary/20">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="font-heading flex items-center gap-2">
+                        <Building2 className="w-5 h-5" />
+                        {empresaCliente.razon_social}
+                      </CardTitle>
+                      <CardDescription className="font-body">
+                        RFC: {empresaCliente.rfc}
+                      </CardDescription>
+                    </div>
+                    <Button 
+                      onClick={() => navigate('/mi-empresa')}
+                      className="gradient-primary shadow-elegant font-heading"
+                    >
+                      Ver Detalles
+                    </Button>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-heading font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground font-body mt-1">
-                    {stat.description}
-                  </p>
+                <CardContent className="space-y-3">
+                  {/* Alertas de vencimiento */}
+                  {(empresaCliente.cert_iva_ieps_fecha_vencimiento || 
+                    empresaCliente.matriz_seguridad_fecha_vencimiento || 
+                    empresaCliente.immex_fecha_fin) && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-heading font-medium flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" />
+                        Próximos Vencimientos
+                      </p>
+                      
+                      {empresaCliente.cert_iva_ieps_fecha_vencimiento && 
+                       (() => {
+                         const alert = getVencimientoAlert(empresaCliente.cert_iva_ieps_fecha_vencimiento);
+                         return alert && alert.dias <= 90 ? (
+                           <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
+                             <div className="flex items-center gap-2">
+                               <Shield className="w-4 h-4 text-muted-foreground" />
+                               <span className="text-xs font-body">Cert. IVA/IEPS</span>
+                             </div>
+                             <Badge variant={alert.color as any} className="text-xs">
+                               {alert.text}
+                             </Badge>
+                           </div>
+                         ) : null;
+                       })()}
+                      
+                      {empresaCliente.matriz_seguridad_fecha_vencimiento && 
+                       (() => {
+                         const alert = getVencimientoAlert(empresaCliente.matriz_seguridad_fecha_vencimiento);
+                         return alert && alert.dias <= 90 ? (
+                           <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
+                             <div className="flex items-center gap-2">
+                               <Shield className="w-4 h-4 text-muted-foreground" />
+                               <span className="text-xs font-body">Matriz Seguridad</span>
+                             </div>
+                             <Badge variant={alert.color as any} className="text-xs">
+                               {alert.text}
+                             </Badge>
+                           </div>
+                         ) : null;
+                       })()}
+                      
+                      {empresaCliente.immex_fecha_fin && 
+                       (() => {
+                         const alert = getVencimientoAlert(empresaCliente.immex_fecha_fin);
+                         return alert && alert.dias <= 90 ? (
+                           <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
+                             <div className="flex items-center gap-2">
+                               <FileText className="w-4 h-4 text-muted-foreground" />
+                               <span className="text-xs font-body">Programa IMMEX</span>
+                             </div>
+                             <Badge variant={alert.color as any} className="text-xs">
+                               {alert.text}
+                             </Badge>
+                           </div>
+                         ) : null;
+                       })()}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            );
-          })}
-        </div>
-
-        {/* Cumplimiento Progress */}
-        <Card className="gradient-card shadow-card">
-          <CardHeader>
-            <CardTitle className="font-heading flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Progreso de Cumplimiento
-            </CardTitle>
-            <CardDescription className="font-body">
-              Porcentaje de tareas completadas
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-heading font-medium">Cumplimiento General</span>
-                <span className="text-2xl font-heading font-bold text-primary">{stats.cumplimiento}%</span>
-              </div>
-              <Progress value={stats.cumplimiento} className="h-3" />
+            )}
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {statCards.filter(stat => stat.show).map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <Card key={stat.title} className="gradient-card shadow-elegant hover:shadow-card transition-smooth hover-scale">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-heading font-medium">
+                        {stat.title}
+                      </CardTitle>
+                      <div className={`${stat.bgColor} p-2 rounded-lg`}>
+                        <Icon className={`w-4 h-4 ${stat.color}`} />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-heading font-bold">{stat.value}</div>
+                      <p className="text-xs text-muted-foreground font-body mt-1">
+                        {stat.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-              <div className="space-y-1">
-                <p className="text-xs font-heading font-medium text-muted-foreground">Completadas</p>
-                <p className="text-lg font-heading font-bold text-success">{stats.tareasCompletadas}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-heading font-medium text-muted-foreground">Pendientes</p>
-                <p className="text-lg font-heading font-bold text-warning">{stats.tareasPendientes}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Grid con Próximas Tareas y Calendario */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Próximas Tareas */}
-          <Card className="gradient-card shadow-card">
+            {/* Cumplimiento Progress */}
+            <Card className="gradient-card shadow-card">
+              <CardHeader>
+                <CardTitle className="font-heading flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Progreso de Cumplimiento
+                </CardTitle>
+                <CardDescription className="font-body">
+                  Porcentaje de tareas completadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-heading font-medium">Cumplimiento General</span>
+                    <span className="text-2xl font-heading font-bold text-primary">{stats.cumplimiento}%</span>
+                  </div>
+                  <Progress value={stats.cumplimiento} className="h-3" />
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="space-y-1">
+                    <p className="text-xs font-heading font-medium text-muted-foreground">Completadas</p>
+                    <p className="text-lg font-heading font-bold text-success">{stats.tareasCompletadas}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-heading font-medium text-muted-foreground">Pendientes</p>
+                    <p className="text-lg font-heading font-bold text-warning">{stats.tareasPendientes}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Grid con Próximas Tareas y Calendario */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Próximas Tareas */}
+              <Card className="gradient-card shadow-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -448,18 +475,20 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Calendario Widget */}
-          <DashboardCalendar 
-            height="500px"
-            onEventClick={(event) => {
-              if (event.resource.type === 'tarea') {
-                navigate('/tareas');
-              } else if (event.resource.type === 'documento') {
-                navigate(`/empresas/${event.resource.data.empresa_id}`);
-              }
-            }}
-          />
-        </div>
+              {/* Calendario Widget */}
+              <DashboardCalendar 
+                height="500px"
+                onEventClick={(event) => {
+                  if (event.resource.type === 'tarea') {
+                    navigate('/tareas');
+                  } else if (event.resource.type === 'documento') {
+                    navigate(`/empresas/${event.resource.data.empresa_id}`);
+                  }
+                }}
+              />
+            </div>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );
