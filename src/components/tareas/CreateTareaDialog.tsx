@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,20 +14,25 @@ import { tareaSchema } from '@/lib/validation';
 import { z } from 'zod';
 import { CategorySelector } from './CategorySelector';
 import { FileAttachments } from './FileAttachments';
-import { Repeat } from 'lucide-react';
+import { TareaPreview } from './TareaPreview';
+import { Repeat, Save, Eye, AlertCircle } from 'lucide-react';
 
 interface CreateTareaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTareaCreated: () => void;
   defaultEmpresaId?: string;
+  duplicateData?: any;
 }
 
-export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, defaultEmpresaId }: CreateTareaDialogProps) {
+export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, defaultEmpresaId, duplicateData }: CreateTareaDialogProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [consultores, setConsultores] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<any[]>([]);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
@@ -47,12 +53,18 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
   useEffect(() => {
     if (open) {
       fetchEmpresas();
+      fetchCategorias();
+      loadDraft();
       // Set empresa_id if provided
       if (defaultEmpresaId && !formData.empresa_id) {
         setFormData(prev => ({ ...prev, empresa_id: defaultEmpresaId }));
       }
+      // Apply duplicate data if provided
+      if (duplicateData) {
+        setFormData(duplicateData);
+      }
     }
-  }, [open, defaultEmpresaId]);
+  }, [open, defaultEmpresaId, duplicateData]);
 
   // Refetch consultores when empresa changes
   useEffect(() => {
@@ -60,6 +72,145 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
       fetchConsultores();
     }
   }, [open, formData.empresa_id]);
+
+  // Auto-save draft
+  useEffect(() => {
+    if (open && formData.titulo) {
+      const timeoutId = setTimeout(() => {
+        saveDraft();
+      }, 2000); // Auto-save after 2 seconds of inactivity
+      return () => clearTimeout(timeoutId);
+    }
+  }, [formData, open]);
+
+  // Real-time validation
+  useEffect(() => {
+    if (formData.titulo || formData.empresa_id) {
+      validateForm();
+    }
+  }, [formData.titulo, formData.empresa_id, formData.prioridad]);
+
+  const fetchCategorias = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categorias_tareas')
+        .select('*')
+        .order('nombre');
+
+      if (error) throw error;
+      setCategorias(data || []);
+    } catch (error) {
+      console.error('Error fetching categorias:', error);
+    }
+  };
+
+  const loadDraft = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tareas_borradores')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setCurrentDraftId(data.id);
+        setFormData({
+          titulo: data.titulo || '',
+          descripcion: data.descripcion || '',
+          prioridad: (data.prioridad as 'alta' | 'media' | 'baja') || 'media',
+          fecha_vencimiento: data.fecha_vencimiento || '',
+          empresa_id: data.empresa_id || '',
+          consultor_asignado_id: data.consultor_asignado_id || '',
+          categoria_id: data.categoria_id || '',
+          es_recurrente: false,
+          frecuencia_recurrencia: 'mensual',
+          intervalo_recurrencia: 1,
+          fecha_inicio_recurrencia: '',
+          fecha_fin_recurrencia: ''
+        });
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+  };
+
+  const saveDraft = async () => {
+    if (!user?.id || !formData.titulo) return;
+
+    setSavingDraft(true);
+    try {
+      const draftData = {
+        user_id: user.id,
+        titulo: formData.titulo.trim(),
+        descripcion: formData.descripcion.trim() || null,
+        prioridad: formData.prioridad,
+        empresa_id: formData.empresa_id || null,
+        consultor_asignado_id: formData.consultor_asignado_id || null,
+        fecha_vencimiento: formData.fecha_vencimiento || null,
+        categoria_id: formData.categoria_id || null,
+        custom_fields: {},
+        archivos_adjuntos: attachments
+      };
+
+      if (currentDraftId) {
+        const { error } = await supabase
+          .from('tareas_borradores')
+          .update(draftData)
+          .eq('id', currentDraftId);
+        
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('tareas_borradores')
+          .insert(draftData)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        setCurrentDraftId(data.id);
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const deleteDraft = async () => {
+    if (!currentDraftId) return;
+    
+    try {
+      await supabase
+        .from('tareas_borradores')
+        .delete()
+        .eq('id', currentDraftId);
+      
+      setCurrentDraftId(null);
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+    }
+  };
+
+  const validateForm = () => {
+    try {
+      tareaSchema.parse(formData);
+      setErrors({});
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.issues.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+      }
+    }
+  };
 
   const fetchEmpresas = async () => {
     try {
@@ -140,7 +291,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
-        error.errors.forEach((err) => {
+        error.issues.forEach((err) => {
           if (err.path[0]) {
             fieldErrors[err.path[0].toString()] = err.message;
           }
@@ -175,6 +326,9 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
 
       if (error) throw error;
 
+      // Delete draft after successful creation
+      await deleteDraft();
+
       toast.success('Tarea creada exitosamente');
       setFormData({
         titulo: '',
@@ -202,15 +356,36 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="font-heading">Nueva Tarea</DialogTitle>
-          <DialogDescription className="font-body">
-            Crea una nueva tarea y asígnala a un consultor
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="font-heading">Nueva Tarea</DialogTitle>
+              <DialogDescription className="font-body">
+                Crea una nueva tarea y asígnala a un consultor
+              </DialogDescription>
+            </div>
+            {savingDraft && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Save className="w-3 h-3 animate-pulse" />
+                <span>Guardando borrador...</span>
+              </div>
+            )}
+          </div>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="space-y-4 py-4 overflow-y-auto pr-2">
+        
+        <Tabs defaultValue="form" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="form">Formulario</TabsTrigger>
+            <TabsTrigger value="preview">
+              <Eye className="w-4 h-4 mr-2" />
+              Previsualización
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="form" className="flex-1 overflow-hidden">
+            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+              <div className="space-y-4 py-4 overflow-y-auto pr-2">
             <div className="space-y-2">
               <Label htmlFor="titulo" className="font-heading">Título *</Label>
               <Input
@@ -408,16 +583,52 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
                 </div>
               )}
             </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-heading">
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading} className="gradient-primary shadow-elegant font-heading">
-              {loading ? 'Creando...' : 'Crear Tarea'}
-            </Button>
-          </DialogFooter>
-        </form>
+              </div>
+              <DialogFooter className="mt-4">
+                <Button type="button" variant="outline" onClick={async () => { await saveDraft(); toast.success('Borrador guardado'); }} className="font-heading gap-2">
+                  <Save className="w-4 h-4" />
+                  Guardar Borrador
+                </Button>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-heading">
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading || Object.keys(errors).length > 0} className="gradient-primary shadow-elegant font-heading">
+                  {loading ? 'Creando...' : 'Crear Tarea'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="preview" className="flex-1 overflow-y-auto py-4">
+            <TareaPreview
+              formData={formData}
+              empresas={empresas}
+              consultores={consultores}
+              categorias={categorias}
+            />
+            {Object.keys(errors).length > 0 && (
+              <div className="mt-4 p-4 border border-destructive/50 rounded bg-destructive/10">
+                <div className="flex items-center gap-2 text-destructive font-medium mb-2">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Corrige los siguientes errores:</span>
+                </div>
+                <ul className="text-sm text-destructive space-y-1 list-disc list-inside">
+                  {Object.entries(errors).map(([field, error]) => (
+                    <li key={field}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-heading">
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmit} disabled={loading || Object.keys(errors).length > 0} className="gradient-primary shadow-elegant font-heading">
+                {loading ? 'Creando...' : 'Crear Tarea'}
+              </Button>
+            </DialogFooter>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

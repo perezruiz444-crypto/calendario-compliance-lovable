@@ -1183,6 +1183,72 @@ export type Database = {
           },
         ]
       }
+      tareas_borradores: {
+        Row: {
+          archivos_adjuntos: Json | null
+          categoria_id: string | null
+          consultor_asignado_id: string | null
+          created_at: string | null
+          custom_fields: Json | null
+          descripcion: string | null
+          empresa_id: string | null
+          estado: string | null
+          fecha_vencimiento: string | null
+          id: string
+          prioridad: string | null
+          titulo: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          archivos_adjuntos?: Json | null
+          categoria_id?: string | null
+          consultor_asignado_id?: string | null
+          created_at?: string | null
+          custom_fields?: Json | null
+          descripcion?: string | null
+          empresa_id?: string | null
+          estado?: string | null
+          fecha_vencimiento?: string | null
+          id?: string
+          prioridad?: string | null
+          titulo?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          archivos_adjuntos?: Json | null
+          categoria_id?: string | null
+          consultor_asignado_id?: string | null
+          created_at?: string | null
+          custom_fields?: Json | null
+          descripcion?: string | null
+          empresa_id?: string | null
+          estado?: string | null
+          fecha_vencimiento?: string | null
+          id?: string
+          prioridad?: string | null
+          titulo?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tareas_borradores_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_tareas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_borradores_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       time_entries: {
         Row: {
           created_at: string | null
