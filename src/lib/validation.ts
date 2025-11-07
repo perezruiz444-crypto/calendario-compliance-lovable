@@ -15,9 +15,11 @@ export const userSchema = z.object({
     .trim()
     .min(2, { message: "El nombre debe tener al menos 2 caracteres" })
     .max(100, { message: "El nombre debe tener máximo 100 caracteres" }),
-  role: z.enum(['administrador', 'consultor', 'cliente'], {
-    errorMap: () => ({ message: "Rol inválido" })
-  })
+  role: z.union([
+    z.literal('administrador'),
+    z.literal('consultor'),
+    z.literal('cliente')
+  ])
 });
 
 export const empresaSchema = z.object({
@@ -56,9 +58,11 @@ export const tareaSchema = z.object({
     .max(2000, { message: "La descripción debe tener máximo 2000 caracteres" })
     .optional()
     .or(z.literal('')),
-  prioridad: z.enum(['baja', 'media', 'alta'], {
-    errorMap: () => ({ message: "Prioridad inválida" })
-  }),
+  prioridad: z.union([
+    z.literal('baja'),
+    z.literal('media'),
+    z.literal('alta')
+  ]),
   empresa_id: z.string().uuid({ message: "Empresa inválida" }),
   consultor_asignado_id: z.string().uuid({ message: "Consultor inválido" }).optional().or(z.literal('')),
   fecha_vencimiento: z.string().optional().or(z.literal('')),

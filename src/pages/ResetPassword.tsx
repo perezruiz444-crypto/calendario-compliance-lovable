@@ -36,7 +36,7 @@ export default function ResetPassword() {
       toast.success('Correo de recuperación enviado');
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
+        toast.error(error.issues[0].message);
       } else if (error instanceof Error) {
         if (error.message.includes('request this after')) {
           const seconds = error.message.match(/\d+/)?.[0] || '60';

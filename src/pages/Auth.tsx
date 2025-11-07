@@ -47,7 +47,7 @@ export default function Auth() {
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
+        toast.error(error.issues[0].message);
       } else {
         toast.error('Ocurrió un error inesperado');
       }
