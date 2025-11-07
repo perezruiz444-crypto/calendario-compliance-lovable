@@ -17,10 +17,14 @@ export interface Notification {
 
 export function useNotifications() {
   const { user } = useAuth();
-  const { showNotification, permission } = usePushNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Get push notification functions safely
+  const pushNotifications = usePushNotifications();
+  const showNotification = pushNotifications?.showNotification;
+  const permission = pushNotifications?.permission || 'default';
 
   useEffect(() => {
     if (!user) {
@@ -78,8 +82,8 @@ export function useNotifications() {
             setNotifications(prev => [newNotification, ...prev]);
             setUnreadCount(prev => prev + 1);
             
-            // Show push notification
-            if (permission === 'granted') {
+            // Show push notification if available
+            if (permission === 'granted' && showNotification) {
               showNotification(newNotification.titulo, {
                 body: newNotification.contenido || '',
                 tag: newNotification.id,
@@ -144,25 +148,6 @@ export function useNotifications() {
     }
   };
 
-  const getNotificationUrl = (notification: Notification): string => {
-    const { referencia_tipo, referencia_id } = notification;
-    
-    if (!referencia_tipo || !referencia_id) return '/dashboard';
-    
-    switch (referencia_tipo) {
-      case 'tarea':
-        return `/tareas?tarea=${referencia_id}`;
-      case 'mensaje':
-        return `/mensajes?mensaje=${referencia_id}`;
-      case 'solicitud':
-        return `/dashboard?solicitud=${referencia_id}`;
-      case 'empresa':
-        return `/empresas/${referencia_id}`;
-      default:
-        return '/dashboard';
-    }
-  };
-
   return {
     notifications,
     loading,
@@ -171,4 +156,24 @@ export function useNotifications() {
     markAllAsRead,
     refetch: fetchNotifications
   };
+}
+
+// Helper function to get notification URL
+function getNotificationUrl(notification: Notification): string {
+  const { referencia_tipo, referencia_id } = notification;
+  
+  if (!referencia_tipo || !referencia_id) return '/dashboard';
+  
+  switch (referencia_tipo) {
+    case 'tarea':
+      return `/tareas?tarea=${referencia_id}`;
+    case 'mensaje':
+      return `/mensajes?mensaje=${referencia_id}`;
+    case 'solicitud':
+      return `/dashboard?solicitud=${referencia_id}`;
+    case 'empresa':
+      return `/empresas/${referencia_id}`;
+    default:
+      return '/dashboard';
+  }
 }

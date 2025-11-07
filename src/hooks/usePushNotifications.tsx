@@ -8,6 +8,7 @@ export function usePushNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     // Check if notifications are supported
@@ -18,6 +19,7 @@ export function usePushNotifications() {
       // Register service worker
       registerServiceWorker();
     }
+    setIsInitialized(true);
   }, []);
 
   const registerServiceWorker = async () => {
@@ -130,6 +132,7 @@ export function usePushNotifications() {
     isSupported,
     permission,
     isSubscribed,
+    isInitialized,
     requestPermission,
     unsubscribe,
     showNotification
