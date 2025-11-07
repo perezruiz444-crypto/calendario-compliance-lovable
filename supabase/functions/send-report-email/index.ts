@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 
 
@@ -106,19 +105,6 @@ serve(async (req: Request) => {
                        period === 'trimestre' ? 'Último Trimestre' :
                        period === 'semestre' ? 'Último Semestre' : 'Año Actual';
 
-    // Configure SMTP client
-    const smtpClient = new SMTPClient({
-      connection: {
-        hostname: Deno.env.get('SMTP_HOST') ?? '',
-        port: parseInt(Deno.env.get('SMTP_PORT') ?? '587'),
-        tls: true,
-        auth: {
-          username: Deno.env.get('SMTP_USER') ?? '',
-          password: Deno.env.get('SMTP_PASSWORD') ?? '',
-        },
-      },
-    });
-
     // Prepare email content
     const emailSubject = `📊 Reporte ${reportType} - ${periodText}`;
     const emailBody = `
@@ -152,24 +138,121 @@ serve(async (req: Request) => {
       </html>
     `;
 
+    // Helper function to send SMTP email
+    async function sendSMTPEmail(to: string, subject: string, html: string) {
+      const smtpHost = Deno.env.get('SMTP_HOST');
+      const smtpPort = parseInt(Deno.env.get('SMTP_PORT') ?? '587');
+      const smtpUser = Deno.env.get('SMTP_USER');
+      const smtpPassword = Deno.env.get('SMTP_PASSWORD');
+      const smtpFrom = Deno.env.get('SMTP_FROM');
+
+      // Connect to SMTP server
+      const conn = await Deno.connect({
+        hostname: smtpHost!,
+        port: smtpPort,
+      });
+
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
+
+      async function readLine() {
+        const buffer = new Uint8Array(1024);
+        const n = await conn.read(buffer);
+        if (!n) return '';
+        return decoder.decode(buffer.subarray(0, n));
+      }
+
+      async function writeLine(data: string) {
+        await conn.write(encoder.encode(data + '\r\n'));
+      }
+
+      try {
+        // Wait for server greeting
+        await readLine();
+
+        // EHLO
+        await writeLine(`EHLO ${smtpHost}`);
+        await readLine();
+
+        // STARTTLS
+        await writeLine('STARTTLS');
+        await readLine();
+
+        // Upgrade to TLS
+        const tlsConn = await Deno.startTls(conn, { hostname: smtpHost! });
+
+        // EHLO again after TLS
+        await tlsConn.write(encoder.encode(`EHLO ${smtpHost}\r\n`));
+        const buf1 = new Uint8Array(1024);
+        await tlsConn.read(buf1);
+
+        // AUTH LOGIN
+        await tlsConn.write(encoder.encode('AUTH LOGIN\r\n'));
+        const buf2 = new Uint8Array(1024);
+        await tlsConn.read(buf2);
+
+        // Send username (base64)
+        await tlsConn.write(encoder.encode(btoa(smtpUser!) + '\r\n'));
+        const buf3 = new Uint8Array(1024);
+        await tlsConn.read(buf3);
+
+        // Send password (base64)
+        await tlsConn.write(encoder.encode(btoa(smtpPassword!) + '\r\n'));
+        const buf4 = new Uint8Array(1024);
+        await tlsConn.read(buf4);
+
+        // MAIL FROM
+        await tlsConn.write(encoder.encode(`MAIL FROM:<${smtpFrom}>\r\n`));
+        const buf5 = new Uint8Array(1024);
+        await tlsConn.read(buf5);
+
+        // RCPT TO
+        await tlsConn.write(encoder.encode(`RCPT TO:<${to}>\r\n`));
+        const buf6 = new Uint8Array(1024);
+        await tlsConn.read(buf6);
+
+        // DATA
+        await tlsConn.write(encoder.encode('DATA\r\n'));
+        const buf7 = new Uint8Array(1024);
+        await tlsConn.read(buf7);
+
+        // Email content
+        const emailContent = [
+          `From: ${smtpFrom}`,
+          `To: ${to}`,
+          `Subject: ${subject}`,
+          'MIME-Version: 1.0',
+          'Content-Type: text/html; charset=UTF-8',
+          '',
+          html,
+          '.',
+        ].join('\r\n');
+
+        await tlsConn.write(encoder.encode(emailContent + '\r\n'));
+        const buf8 = new Uint8Array(1024);
+        await tlsConn.read(buf8);
+
+        // QUIT
+        await tlsConn.write(encoder.encode('QUIT\r\n'));
+
+        tlsConn.close();
+      } catch (error) {
+        conn.close();
+        throw error;
+      }
+    }
+
     // Send email to all cliente emails
     let emailsSent = 0;
     for (const email of clienteEmails) {
       try {
-        await smtpClient.send({
-          from: Deno.env.get('SMTP_FROM') ?? '',
-          to: email,
-          subject: emailSubject,
-          html: emailBody,
-        });
+        await sendSMTPEmail(email, emailSubject, emailBody);
         emailsSent++;
         console.log('Email sent to:', email);
       } catch (emailError) {
         console.error('Error sending email to', email, ':', emailError);
       }
     }
-
-    await smtpClient.close();
 
     console.log('Creating report notifications for users:', clienteIds);
 
