@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Building2, LayoutDashboard, CheckSquare, Users, LogOut, Menu, Calendar as CalendarIcon, MessageSquare, FileText, Settings } from 'lucide-react';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
+import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDropdown';
@@ -208,5 +209,7 @@ export default function DashboardLayout({
           {children}
         </div>
       </main>
+      
+      <PushNotificationPrompt />
     </div>;
 }

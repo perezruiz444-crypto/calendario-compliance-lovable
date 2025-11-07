@@ -6,9 +6,11 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Loader2, Mail, Shield } from 'lucide-react';
+import { Loader2, Mail, Shield, Palette, Bell } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from 'next-themes';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 interface NotificationSetting {
   id: string;
@@ -42,6 +44,8 @@ const categoryNames: Record<string, string> = {
 export default function Configuraciones() {
   const { role } = useAuth();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+  const { isSupported, permission, isSubscribed, requestPermission, unsubscribe } = usePushNotifications();
   const [settings, setSettings] = useState<NotificationSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -97,6 +101,19 @@ export default function Configuraciones() {
     }
   };
 
+  const handleThemeChange = (checked: boolean) => {
+    setTheme(checked ? 'dark' : 'light');
+    toast.success(`Tema ${checked ? 'oscuro' : 'claro'} activado`);
+  };
+
+  const handleTogglePush = async () => {
+    if (isSubscribed) {
+      await unsubscribe();
+    } else {
+      await requestPermission();
+    }
+  };
+
   // Agrupar por categoría
   const groupedSettings = settings.reduce((acc, setting) => {
     if (!acc[setting.category]) {
@@ -111,30 +128,103 @@ export default function Configuraciones() {
   }
 
   return (
-    <DashboardLayout currentPage="configuraciones">
+    <DashboardLayout currentPage="/configuraciones">
       <div className="container mx-auto py-6 space-y-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-lg">
             <Mail className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">Configuración de Notificaciones</h1>
+            <h1 className="text-3xl font-bold">Configuraciones</h1>
             <p className="text-muted-foreground">
-              Administra qué notificaciones automáticas por correo se envían
+              Personaliza tu experiencia y preferencias del sistema
             </p>
           </div>
         </div>
 
-        <Card className="border-amber-200 bg-amber-50/50">
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Appearance Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Apariencia
+              </CardTitle>
+              <CardDescription>
+                Personaliza cómo se ve la aplicación
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="dark-mode" className="text-base">
+                    Modo oscuro
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Activa el tema oscuro para reducir el brillo
+                  </p>
+                </div>
+                <Switch
+                  id="dark-mode"
+                  checked={theme === 'dark'}
+                  onCheckedChange={handleThemeChange}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Push Notifications */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Notificaciones Push
+              </CardTitle>
+              <CardDescription>
+                Recibe alertas en tiempo real en tu navegador
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!isSupported ? (
+                <p className="text-sm text-muted-foreground">
+                  Las notificaciones push no están disponibles en este navegador
+                </p>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="push-notifications" className="text-base">
+                      Notificaciones del navegador
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {permission === 'granted' 
+                        ? 'Activadas' 
+                        : permission === 'denied'
+                        ? 'Bloqueadas'
+                        : 'No activadas'}
+                    </p>
+                  </div>
+                  <Switch
+                    id="push-notifications"
+                    checked={isSubscribed}
+                    onCheckedChange={handleTogglePush}
+                    disabled={permission === 'denied'}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900/50">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-amber-600" />
-              <CardTitle className="text-amber-900">Acceso Administrativo</CardTitle>
+              <CardTitle className="text-amber-900 dark:text-amber-100">Acceso Administrativo</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-amber-800">
-              Solo los administradores pueden ver y modificar estas configuraciones. 
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              Solo los administradores pueden ver y modificar las configuraciones de notificaciones por correo. 
               Los cambios se aplican inmediatamente a todo el sistema.
             </p>
           </CardContent>

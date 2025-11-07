@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { usePushNotifications } from './usePushNotifications';
 
 export interface Notification {
   id: string;
@@ -16,6 +17,7 @@ export interface Notification {
 
 export function useNotifications() {
   const { user } = useAuth();
+  const { showNotification, permission } = usePushNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -72,8 +74,22 @@ export function useNotifications() {
           console.log('Notification change:', payload);
           
           if (payload.eventType === 'INSERT') {
-            setNotifications(prev => [payload.new as Notification, ...prev]);
+            const newNotification = payload.new as Notification;
+            setNotifications(prev => [newNotification, ...prev]);
             setUnreadCount(prev => prev + 1);
+            
+            // Show push notification
+            if (permission === 'granted') {
+              showNotification(newNotification.titulo, {
+                body: newNotification.contenido || '',
+                tag: newNotification.id,
+                data: {
+                  referencia_id: newNotification.referencia_id,
+                  referencia_tipo: newNotification.referencia_tipo,
+                  url: getNotificationUrl(newNotification)
+                }
+              });
+            }
           } else if (payload.eventType === 'UPDATE') {
             setNotifications(prev => 
               prev.map(n => n.id === payload.new.id ? payload.new as Notification : n)
@@ -125,6 +141,25 @@ export function useNotifications() {
       setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  const getNotificationUrl = (notification: Notification): string => {
+    const { referencia_tipo, referencia_id } = notification;
+    
+    if (!referencia_tipo || !referencia_id) return '/dashboard';
+    
+    switch (referencia_tipo) {
+      case 'tarea':
+        return `/tareas?tarea=${referencia_id}`;
+      case 'mensaje':
+        return `/mensajes?mensaje=${referencia_id}`;
+      case 'solicitud':
+        return `/dashboard?solicitud=${referencia_id}`;
+      case 'empresa':
+        return `/empresas/${referencia_id}`;
+      default:
+        return '/dashboard';
     }
   };
 

@@ -1,0 +1,17 @@
+{
+  "name": "Calendario Compliance",
+  "short_name": "Compliance",
+  "description": "Sistema de gestión de compliance empresarial",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}
