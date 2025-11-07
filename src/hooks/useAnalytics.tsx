@@ -125,13 +125,24 @@ export function useAnalytics() {
     }
 
     // Tareas por consultor
-    const { data: consultores } = await supabase
-      .from('profiles')
-      .select('id, nombre_completo')
-      .in('id', (await supabase.from('user_roles').select('user_id').eq('role', 'consultor')).data?.map(r => r.user_id) || []);
+    const { data: rolesData } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'consultor');
+    
+    const consultorIds = rolesData?.map(r => r.user_id) || [];
+    
+    let consultores = [];
+    if (consultorIds.length > 0) {
+      const { data: consultoresData } = await supabase
+        .from('profiles')
+        .select('id, nombre_completo')
+        .in('id', consultorIds);
+      consultores = consultoresData || [];
+    }
 
-    const tareasPorConsultor = await Promise.all(
-      (consultores || []).slice(0, 5).map(async (consultor) => {
+    const tareasPorConsultor = consultores.length > 0 ? await Promise.all(
+      consultores.slice(0, 5).map(async (consultor) => {
         const { data: consultorTareas } = await supabase
           .from('tareas')
           .select('estado')
@@ -143,7 +154,7 @@ export function useAnalytics() {
           completadas: consultorTareas?.filter(t => t.estado === 'completada').length || 0
         };
       })
-    );
+    ) : [];
 
     // Documentos próximos a vencer
     const { data: documentos } = await supabase
