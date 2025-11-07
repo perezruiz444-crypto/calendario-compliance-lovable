@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 
 
@@ -97,14 +98,82 @@ serve(async (req: Request) => {
       throw new Error('No se encontraron emails de clientes');
     }
 
-    console.log('Creating report notifications for users:', clienteIds);
+    console.log('Sending emails to:', clienteEmails);
 
-    // Create notifications for all cliente users
+    // Prepare period text
     const periodText = period === 'mes_actual' ? 'Mes Actual' :
                        period === 'mes_anterior' ? 'Mes Anterior' :
                        period === 'trimestre' ? 'Último Trimestre' :
                        period === 'semestre' ? 'Último Semestre' : 'Año Actual';
 
+    // Configure SMTP client
+    const smtpClient = new SMTPClient({
+      connection: {
+        hostname: Deno.env.get('SMTP_HOST') ?? '',
+        port: parseInt(Deno.env.get('SMTP_PORT') ?? '587'),
+        tls: true,
+        auth: {
+          username: Deno.env.get('SMTP_USER') ?? '',
+          password: Deno.env.get('SMTP_PASSWORD') ?? '',
+        },
+      },
+    });
+
+    // Prepare email content
+    const emailSubject = `📊 Reporte ${reportType} - ${periodText}`;
+    const emailBody = `
+      <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h1 style="color: #333; margin-bottom: 20px;">Reporte de Tareas</h1>
+            
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+              <h2 style="color: #555; font-size: 18px; margin: 0 0 10px 0;">Empresa: ${empresa.razon_social}</h2>
+              <p style="color: #666; margin: 5px 0;"><strong>RFC:</strong> ${empresa.rfc}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>Período:</strong> ${periodText}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>Tipo de Reporte:</strong> ${reportType}</p>
+            </div>
+
+            <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+              <h3 style="color: #1976d2; font-size: 16px; margin: 0 0 10px 0;">Resumen</h3>
+              <p style="color: #555; margin: 5px 0;"><strong>Total de tareas:</strong> ${reportData.resumen.totalTareas}</p>
+              <p style="color: #555; margin: 5px 0;"><strong>Tareas completadas:</strong> ${reportData.resumen.tareasCompletadas}</p>
+              <p style="color: #555; margin: 5px 0;"><strong>Tareas pendientes:</strong> ${reportData.resumen.tareasPendientes}</p>
+              <p style="color: #555; margin: 5px 0;"><strong>Tasa de completitud:</strong> ${reportData.resumen.tasaCompletitud}%</p>
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+              <p style="color: #666; font-size: 14px; margin: 0;">
+                Este es un correo automático. Para ver más detalles, accede a tu panel de reportes en la plataforma.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    // Send email to all cliente emails
+    let emailsSent = 0;
+    for (const email of clienteEmails) {
+      try {
+        await smtpClient.send({
+          from: Deno.env.get('SMTP_FROM') ?? '',
+          to: email,
+          subject: emailSubject,
+          html: emailBody,
+        });
+        emailsSent++;
+        console.log('Email sent to:', email);
+      } catch (emailError) {
+        console.error('Error sending email to', email, ':', emailError);
+      }
+    }
+
+    await smtpClient.close();
+
+    console.log('Creating report notifications for users:', clienteIds);
+
+    // Create notifications for all cliente users
     let notificacionesCreadas = 0;
     for (const clienteId of clienteIds) {
       const { error: notifError } = await supabaseClient
@@ -127,7 +196,8 @@ serve(async (req: Request) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `${notificacionesCreadas} notificación(es) creada(s) para ${clienteIds.length} cliente(s)`,
+        message: `${emailsSent} email(s) enviado(s) y ${notificacionesCreadas} notificación(es) creada(s) para ${clienteIds.length} cliente(s)`,
+        emailsSent,
         notificacionesCreadas
       }),
       {
