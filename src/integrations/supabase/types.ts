@@ -132,6 +132,93 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_logs: {
+        Row: {
+          ejecutada: boolean | null
+          error: string | null
+          executed_at: string | null
+          id: string
+          resultado: string | null
+          rule_id: string | null
+          tarea_id: string | null
+        }
+        Insert: {
+          ejecutada?: boolean | null
+          error?: string | null
+          executed_at?: string | null
+          id?: string
+          resultado?: string | null
+          rule_id?: string | null
+          tarea_id?: string | null
+        }
+        Update: {
+          ejecutada?: boolean | null
+          error?: string | null
+          executed_at?: string | null
+          id?: string
+          resultado?: string | null
+          rule_id?: string | null
+          tarea_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_logs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_logs_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_rules: {
+        Row: {
+          acciones: Json | null
+          activa: boolean | null
+          condiciones: Json | null
+          created_at: string | null
+          created_by: string | null
+          descripcion: string | null
+          id: string
+          nombre: string
+          prioridad: number | null
+          trigger_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          acciones?: Json | null
+          activa?: boolean | null
+          condiciones?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          prioridad?: number | null
+          trigger_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          acciones?: Json | null
+          activa?: boolean | null
+          condiciones?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          prioridad?: number | null
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       categorias_tareas: {
         Row: {
           color: string | null
@@ -774,6 +861,91 @@ export type Database = {
           },
         ]
       }
+      subtareas: {
+        Row: {
+          asignado_a: string | null
+          completada: boolean | null
+          completado_por: string | null
+          created_at: string | null
+          descripcion: string | null
+          fecha_completado: string | null
+          id: string
+          orden: number | null
+          tarea_id: string
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          asignado_a?: string | null
+          completada?: boolean | null
+          completado_por?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          fecha_completado?: string | null
+          id?: string
+          orden?: number | null
+          tarea_id: string
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          asignado_a?: string | null
+          completada?: boolean | null
+          completado_por?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          fecha_completado?: string | null
+          id?: string
+          orden?: number | null
+          tarea_id?: string
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subtareas_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tarea_asignaciones: {
+        Row: {
+          asignado_por: string | null
+          consultor_id: string
+          created_at: string | null
+          id: string
+          rol: string | null
+          tarea_id: string
+        }
+        Insert: {
+          asignado_por?: string | null
+          consultor_id: string
+          created_at?: string | null
+          id?: string
+          rol?: string | null
+          tarea_id: string
+        }
+        Update: {
+          asignado_por?: string | null
+          consultor_id?: string
+          created_at?: string | null
+          id?: string
+          rol?: string | null
+          tarea_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarea_asignaciones_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tarea_custom_field_values: {
         Row: {
           created_at: string | null
@@ -809,6 +981,48 @@ export type Database = {
           },
           {
             foreignKeyName: "tarea_custom_field_values_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tarea_dependencias: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          depende_de_tarea_id: string
+          id: string
+          tarea_id: string
+          tipo: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          depende_de_tarea_id: string
+          id?: string
+          tarea_id: string
+          tipo?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          depende_de_tarea_id?: string
+          id?: string
+          tarea_id?: string
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarea_dependencias_depende_de_tarea_id_fkey"
+            columns: ["depende_de_tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarea_dependencias_tarea_id_fkey"
             columns: ["tarea_id"]
             isOneToOne: false
             referencedRelation: "tareas"
@@ -969,6 +1183,53 @@ export type Database = {
           },
         ]
       }
+      time_entries: {
+        Row: {
+          created_at: string | null
+          descripcion: string | null
+          duracion_minutos: number | null
+          facturable: boolean | null
+          fin: string | null
+          id: string
+          inicio: string
+          tarea_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          descripcion?: string | null
+          duracion_minutos?: number | null
+          facturable?: boolean | null
+          fin?: string | null
+          id?: string
+          inicio: string
+          tarea_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          descripcion?: string | null
+          duracion_minutos?: number | null
+          facturable?: boolean | null
+          fin?: string | null
+          id?: string
+          inicio?: string
+          tarea_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_invitations: {
         Row: {
           accepted_at: string | null
@@ -1045,6 +1306,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_subtareas_progress: { Args: { p_tarea_id: string }; Returns: Json }
+      get_total_time_spent: { Args: { p_tarea_id: string }; Returns: number }
       get_user_empresa_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -1057,6 +1320,7 @@ export type Database = {
         Args: { template_id: string }
         Returns: undefined
       }
+      is_tarea_blocked: { Args: { p_tarea_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "administrador" | "consultor" | "cliente"

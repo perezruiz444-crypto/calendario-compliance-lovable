@@ -5,13 +5,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Send, MessageSquare, Calendar, User, Paperclip, Repeat, X } from 'lucide-react';
+import { Send, MessageSquare, Calendar, User, Paperclip, Repeat, X, CheckSquare, Link2, Users, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import SendNotificationDialog from './SendNotificationDialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SubtareasManager } from './SubtareasManager';
+import { DependenciasManager } from './DependenciasManager';
+import { MultipleAssignees } from './MultipleAssignees';
+import { TimeTracker } from './TimeTracker';
 
 interface TareaDetailSheetProps {
   open: boolean;

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useTareasShortcuts } from '@/hooks/useKeyboardShortcuts';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -302,6 +303,16 @@ function KanbanColumn({
 export default function Tareas() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcuts
+  useTareasShortcuts({
+    onQuickCreate: () => setQuickCreateOpen(true),
+    onSearch: () => searchInputRef.current?.focus(),
+    onListView: () => setViewMode('list'),
+    onKanbanView: () => setViewMode('kanban'),
+    onCalendarView: () => setViewMode('calendar')
+  });
   const [tareas, setTareas] = useState<any[]>([]);
   const [loadingTareas, setLoadingTareas] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -832,7 +843,8 @@ export default function Tareas() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar tareas por título, descripción, empresa o consultor..."
+                  ref={searchInputRef}
+                  placeholder="Buscar tareas (Ctrl+F)..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
