@@ -39,10 +39,18 @@ Deno.serve(async (req) => {
     }
 
     // Get the request body
-    const { userId, email, nombreCompleto, role } = await req.json()
+    const { userId, email, nombreCompleto, role, empresaId } = await req.json()
 
     if (!userId || !email || !nombreCompleto || !role) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Validate that cliente role requires empresaId
+    if (role === 'cliente' && !empresaId) {
+      return new Response(JSON.stringify({ error: 'Cliente role requires an empresa assignment' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -62,10 +70,19 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Update nombre_completo in profiles
+    // Update profile (nombre_completo and empresa_id for clientes)
+    const profileUpdate: any = { nombre_completo: nombreCompleto }
+    
+    // Set empresa_id for clientes, null for other roles
+    if (role === 'cliente' && empresaId) {
+      profileUpdate.empresa_id = empresaId
+    } else {
+      profileUpdate.empresa_id = null
+    }
+
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .update({ nombre_completo: nombreCompleto })
+      .update(profileUpdate)
       .eq('id', userId)
 
     if (profileError) {

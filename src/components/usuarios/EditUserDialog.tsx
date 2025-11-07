@@ -22,21 +22,65 @@ interface EditUserDialogProps {
 
 export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user }: EditUserDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [empresas, setEmpresas] = useState<Array<{ id: string; razon_social: string }>>([]);
   const [formData, setFormData] = useState({
     email: '',
     nombreCompleto: '',
-    role: ''
+    role: '',
+    empresaId: ''
   });
+
+  useEffect(() => {
+    if (open) {
+      fetchEmpresas();
+      fetchUserEmpresa();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (user) {
       setFormData({
         email: user.email,
         nombreCompleto: user.nombre_completo,
-        role: user.role === 'sin rol' ? 'consultor' : user.role
+        role: user.role === 'sin rol' ? 'consultor' : user.role,
+        empresaId: ''
       });
+      fetchUserEmpresa();
     }
   }, [user]);
+
+  const fetchEmpresas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('empresas')
+        .select('id, razon_social')
+        .order('razon_social');
+
+      if (error) throw error;
+      setEmpresas(data || []);
+    } catch (error: any) {
+      console.error('Error al cargar empresas:', error);
+    }
+  };
+
+  const fetchUserEmpresa = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('empresa_id')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      if (data?.empresa_id) {
+        setFormData(prev => ({ ...prev, empresaId: data.empresa_id || '' }));
+      }
+    } catch (error: any) {
+      console.error('Error al cargar empresa del usuario:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +92,12 @@ export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user
       return;
     }
 
+    // Validate that cliente role requires empresa_id
+    if (formData.role === 'cliente' && !formData.empresaId) {
+      toast.error('Debes seleccionar una empresa para el cliente');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -56,7 +106,8 @@ export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user
           userId: user.id,
           email: formData.email,
           nombreCompleto: formData.nombreCompleto,
-          role: formData.role
+          role: formData.role,
+          empresaId: formData.role === 'cliente' ? formData.empresaId : null
         }
       });
 
@@ -134,6 +185,32 @@ export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.role === 'cliente' && (
+              <div className="space-y-2">
+                <Label htmlFor="empresaId" className="font-heading">
+                  Empresa *
+                </Label>
+                <Select 
+                  value={formData.empresaId} 
+                  onValueChange={(value) => setFormData({ ...formData, empresaId: value })}
+                >
+                  <SelectTrigger className="font-body">
+                    <SelectValue placeholder="Selecciona una empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {empresas.map((empresa) => (
+                      <SelectItem key={empresa.id} value={empresa.id} className="font-body">
+                        {empresa.razon_social}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground font-body">
+                  El cliente solo podrá ver información de esta empresa
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
