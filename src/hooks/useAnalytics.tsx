@@ -188,11 +188,18 @@ export function useAnalytics() {
     const misEmpresas = asignaciones?.length || 0;
     const empresaIds = asignaciones?.map(a => a.empresa_id) || [];
 
-    // Tareas del consultor
-    const { data: tareas } = await supabase
+    // Tareas del consultor - handle empty empresaIds array
+    let tareasQuery = supabase
       .from('tareas')
-      .select('*')
-      .or(`consultor_asignado_id.eq.${user?.id},empresa_id.in.(${empresaIds.join(',')})`);
+      .select('*');
+    
+    if (empresaIds.length > 0) {
+      tareasQuery = tareasQuery.or(`consultor_asignado_id.eq.${user?.id},empresa_id.in.(${empresaIds.join(',')})`);
+    } else {
+      tareasQuery = tareasQuery.eq('consultor_asignado_id', user?.id);
+    }
+    
+    const { data: tareas } = await tareasQuery;
 
     const today = new Date();
     const totalTareas = tareas?.length || 0;
@@ -232,17 +239,21 @@ export function useAnalytics() {
     })).filter(e => e.cantidad > 0);
 
     // Documentos próximos a vencer de mis empresas
-    const { data: documentos } = await supabase
-      .from('documentos')
-      .select(`
-        nombre,
-        fecha_vencimiento,
-        empresas(razon_social)
-      `)
-      .in('empresa_id', empresaIds)
-      .not('fecha_vencimiento', 'is', null)
-      .order('fecha_vencimiento', { ascending: true })
-      .limit(5);
+    let documentos = [];
+    if (empresaIds.length > 0) {
+      const { data: docs } = await supabase
+        .from('documentos')
+        .select(`
+          nombre,
+          fecha_vencimiento,
+          empresas(razon_social)
+        `)
+        .in('empresa_id', empresaIds)
+        .not('fecha_vencimiento', 'is', null)
+        .order('fecha_vencimiento', { ascending: true })
+        .limit(5);
+      documentos = docs || [];
+    }
 
     const documentosVencimiento = documentos?.map(doc => ({
       nombre: doc.nombre,
