@@ -15,6 +15,7 @@ import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import AdminAnalytics from '@/components/dashboard/AdminAnalytics';
 import ConsultorAnalytics from '@/components/dashboard/ConsultorAnalytics';
 import ClienteAnalytics from '@/components/dashboard/ClienteAnalytics';
+import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDropdown';
 
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const [empresaCliente, setEmpresaCliente] = useState<any>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [showAnalytics, setShowAnalytics] = useState(true);
+  const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -42,7 +44,7 @@ export default function Dashboard() {
     if (user && role) {
       fetchDashboardData();
     }
-  }, [user, role]);
+  }, [user, role, selectedEmpresaId]);
 
   const fetchDashboardData = async () => {
     setLoadingData(true);
@@ -67,14 +69,19 @@ export default function Dashboard() {
       }
 
       // Fetch empresas count
-      const empresasQuery = supabase.from('empresas').select('id', { count: 'exact', head: true });
+      let empresasQuery = supabase.from('empresas').select('id', { count: 'exact', head: true });
       
-      // Fetch tareas
-      const tareasQuery = supabase
+      // Fetch tareas - filter by selected empresa if applicable
+      let tareasQuery = supabase
         .from('tareas')
         .select('*')
         .order('fecha_vencimiento', { ascending: true })
         .limit(5);
+      
+      // For consultores and admins, filter by selected empresa
+      if ((role === 'consultor' || role === 'administrador') && selectedEmpresaId) {
+        tareasQuery = tareasQuery.eq('empresa_id', selectedEmpresaId);
+      }
 
       // Fetch usuarios count (only for admin)
       const usuariosQuery = role === 'administrador' 
@@ -222,23 +229,43 @@ export default function Dashboard() {
     <DashboardLayout currentPage="/dashboard">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-              Dashboard
-            </h1>
-            <p className="text-muted-foreground font-body">
-              Bienvenido {role === 'administrador' ? 'Administrador' : role === 'consultor' ? 'Consultor' : 'Cliente'}
-            </p>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
+                Dashboard
+              </h1>
+              <p className="text-muted-foreground font-body">
+                Bienvenido {role === 'administrador' ? 'Administrador' : role === 'consultor' ? 'Consultor' : 'Cliente'}
+              </p>
+            </div>
+            <Button
+              variant={showAnalytics ? "default" : "outline"}
+              onClick={() => setShowAnalytics(!showAnalytics)}
+              className="gap-2"
+            >
+              <BarChart3 className="w-4 h-4" />
+              {showAnalytics ? 'Vista Simple' : 'Analytics'}
+            </Button>
           </div>
-          <Button
-            variant={showAnalytics ? "default" : "outline"}
-            onClick={() => setShowAnalytics(!showAnalytics)}
-            className="gap-2"
-          >
-            <BarChart3 className="w-4 h-4" />
-            {showAnalytics ? 'Vista Simple' : 'Analytics'}
-          </Button>
+
+          {/* Empresa Selector for Consultores and Admins */}
+          {(role === 'consultor' || role === 'administrador') && (
+            <Card className="bg-card/50 border-primary/20">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-3">
+                  <Building2 className="w-5 h-5 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-heading font-medium mb-2">Empresa Seleccionada</p>
+                    <EmpresaSelectorDropdown 
+                      selectedEmpresaId={selectedEmpresaId}
+                      onEmpresaSelect={setSelectedEmpresaId}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Analytics Section */}

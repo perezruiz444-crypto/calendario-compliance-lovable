@@ -37,30 +37,49 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: 
   const fetchEmpresas = async () => {
     setLoading(true);
     try {
-      // Get empresas assigned to this consultor
-      const { data: asignaciones, error: asignacionesError } = await supabase
-        .from('consultor_empresa_asignacion')
-        .select('empresa_id')
-        .eq('consultor_id', user?.id);
+      // Get user role
+      const { data: userData } = await supabase.auth.getUser();
+      const userRole = userData?.user?.user_metadata?.role;
 
-      if (asignacionesError) throw asignacionesError;
-
-      const empresaIds = asignaciones?.map(a => a.empresa_id) || [];
-
-      if (empresaIds.length > 0) {
-        const { data: empresasData, error: empresasError } = await supabase
+      let empresasData;
+      
+      if (userRole === 'administrador') {
+        // Admins can see all empresas
+        const { data, error } = await supabase
           .from('empresas')
           .select('id, razon_social')
-          .in('id', empresaIds)
           .order('razon_social');
-
-        if (empresasError) throw empresasError;
-        setEmpresas(empresasData || []);
         
-        // Auto-select first empresa if none selected
-        if (!selectedEmpresaId && empresasData && empresasData.length > 0) {
-          onEmpresaSelect(empresasData[0].id);
+        if (error) throw error;
+        empresasData = data;
+      } else {
+        // Consultores only see their assigned empresas
+        const { data: asignaciones, error: asignacionesError } = await supabase
+          .from('consultor_empresa_asignacion')
+          .select('empresa_id')
+          .eq('consultor_id', user?.id);
+
+        if (asignacionesError) throw asignacionesError;
+
+        const empresaIds = asignaciones?.map(a => a.empresa_id) || [];
+
+        if (empresaIds.length > 0) {
+          const { data, error: empresasError } = await supabase
+            .from('empresas')
+            .select('id, razon_social')
+            .in('id', empresaIds)
+            .order('razon_social');
+
+          if (empresasError) throw empresasError;
+          empresasData = data;
         }
+      }
+
+      setEmpresas(empresasData || []);
+      
+      // Auto-select first empresa if none selected
+      if (!selectedEmpresaId && empresasData && empresasData.length > 0) {
+        onEmpresaSelect(empresasData[0].id);
       }
     } catch (error) {
       console.error('Error fetching empresas:', error);
