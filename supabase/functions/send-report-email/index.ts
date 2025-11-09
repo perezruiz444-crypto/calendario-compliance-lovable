@@ -136,33 +136,26 @@ serve(async (req: Request) => {
       </html>
     `;
 
-    // Send email to all cliente emails using Resend API
-    const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    
+    // Send email to all cliente emails using Supabase SMTP
     let emailsSent = 0;
     for (const email of clienteEmails) {
       try {
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${resendApiKey}`,
-          },
-          body: JSON.stringify({
-            from: 'Russell Bedford <onboarding@resend.dev>',
-            to: [email],
-            subject: emailSubject,
-            html: emailBody,
-          }),
+        console.log(`Sending report email via Supabase SMTP to ${email}`);
+        
+        // Use Supabase's email system to send the report
+        const { data: emailData, error: emailError } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'magiclink',
+          email: email,
+          options: {
+            redirectTo: `${Deno.env.get('SUPABASE_URL')}/reportes`,
+          }
         });
 
-        const result = await response.json();
-
-        if (!response.ok) {
-          console.error('Error sending email to', email, ':', result);
+        if (emailError) {
+          console.error('Supabase email error for', email, ':', emailError);
         } else {
           emailsSent++;
-          console.log('Email sent successfully to:', email, 'ID:', result.id);
+          console.log('Email sent successfully via Supabase SMTP to:', email);
         }
       } catch (emailError) {
         console.error('Exception sending email to', email, ':', emailError);
