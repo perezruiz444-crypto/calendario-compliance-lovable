@@ -23,27 +23,23 @@ interface EmpresaSelectorProps {
 }
 
 export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: EmpresaSelectorProps) {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [open, setOpen] = useState(false);
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (user && role) {
       fetchEmpresas();
     }
-  }, [user]);
+  }, [user, role]);
 
   const fetchEmpresas = async () => {
     setLoading(true);
     try {
-      // Get user role
-      const { data: userData } = await supabase.auth.getUser();
-      const userRole = userData?.user?.user_metadata?.role;
-
       let empresasData;
       
-      if (userRole === 'administrador') {
+      if (role === 'administrador') {
         // Admins can see all empresas
         const { data, error } = await supabase
           .from('empresas')
