@@ -33,6 +33,8 @@ export default function Dashboard() {
   const [loadingData, setLoadingData] = useState(true);
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
+  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
+  const [filtroPrioridad, setFiltroPrioridad] = useState<string>('todos');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -79,7 +81,7 @@ export default function Dashboard() {
         .limit(5);
       
       // For consultores and admins, filter by selected empresa
-      if ((role === 'consultor' || role === 'administrador') && selectedEmpresaId) {
+      if ((role === 'consultor' || role === 'administrador') && selectedEmpresaId && selectedEmpresaId !== 'all') {
         tareasQuery = tareasQuery.eq('empresa_id', selectedEmpresaId);
       }
 
@@ -446,59 +448,96 @@ export default function Dashboard() {
                   Ver Todas
                 </Button>
               </div>
+              
+              {/* Filtros */}
+              <div className="flex gap-2 mt-4 flex-wrap">
+                <select
+                  value={filtroEstado}
+                  onChange={(e) => setFiltroEstado(e.target.value)}
+                  className="text-sm border rounded-md px-3 py-1.5 bg-background font-body"
+                >
+                  <option value="todos">Todos los estados</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="en_progreso">En Progreso</option>
+                  <option value="completada">Completada</option>
+                </select>
+                
+                <select
+                  value={filtroPrioridad}
+                  onChange={(e) => setFiltroPrioridad(e.target.value)}
+                  className="text-sm border rounded-md px-3 py-1.5 bg-background font-body"
+                >
+                  <option value="todos">Todas las prioridades</option>
+                  <option value="alta">Alta</option>
+                  <option value="media">Media</option>
+                  <option value="baja">Baja</option>
+                </select>
+              </div>
             </CardHeader>
             <CardContent>
-              {proximasTareas.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="mx-auto w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mb-4">
-                    <CheckSquare className="w-8 h-8 text-success" />
+              {(() => {
+                const tareasFiltradas = proximasTareas.filter(tarea => {
+                  const cumpleEstado = filtroEstado === 'todos' || tarea.estado === filtroEstado;
+                  const cumplePrioridad = filtroPrioridad === 'todos' || tarea.prioridad === filtroPrioridad;
+                  return cumpleEstado && cumplePrioridad;
+                });
+                
+                return tareasFiltradas.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="mx-auto w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mb-4">
+                      <CheckSquare className="w-8 h-8 text-success" />
+                    </div>
+                    <p className="text-muted-foreground font-body mb-2">
+                      {proximasTareas.length === 0 
+                        ? '¡Excelente! No hay tareas próximas a vencer' 
+                        : 'No hay tareas que coincidan con los filtros'}
+                    </p>
+                    <p className="text-sm text-muted-foreground font-body">
+                      {proximasTareas.length === 0 
+                        ? 'Todas las tareas urgentes están bajo control'
+                        : 'Intenta ajustar los filtros'}
+                    </p>
                   </div>
-                  <p className="text-muted-foreground font-body mb-2">
-                    ¡Excelente! No hay tareas próximas a vencer
-                  </p>
-                  <p className="text-sm text-muted-foreground font-body">
-                    Todas las tareas urgentes están bajo control
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                  {proximasTareas.map((tarea) => (
-                    <div 
-                      key={tarea.id} 
-                      className="border rounded-lg p-4 hover:border-primary transition-colors cursor-pointer hover-scale animate-fade-in"
-                      onClick={() => navigate('/tareas')}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <h4 className="font-heading font-semibold">{tarea.titulo}</h4>
-                            <Badge className={getPrioridadColor(tarea.prioridad)} variant="secondary">
-                              {tarea.prioridad}
-                            </Badge>
-                            <Badge className={getEstadoColor(tarea.estado)}>
-                              {estadoLabels[tarea.estado]}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground font-body flex-wrap">
-                            {tarea.empresa_nombre && (
-                              <span className="flex items-center gap-1">
-                                <Building2 className="w-3 h-3" />
-                                {tarea.empresa_nombre}
-                              </span>
-                            )}
-                            {tarea.fecha_vencimiento && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                Vence: {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
-                              </span>
-                            )}
+                ) : (
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    {tareasFiltradas.map((tarea) => (
+                      <div 
+                        key={tarea.id} 
+                        className="border rounded-lg p-4 hover:border-primary transition-colors cursor-pointer hover-scale animate-fade-in"
+                        onClick={() => navigate('/tareas')}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <h4 className="font-heading font-semibold">{tarea.titulo}</h4>
+                              <Badge className={getPrioridadColor(tarea.prioridad)} variant="secondary">
+                                {tarea.prioridad}
+                              </Badge>
+                              <Badge className={getEstadoColor(tarea.estado)}>
+                                {estadoLabels[tarea.estado]}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground font-body flex-wrap">
+                              {tarea.empresa_nombre && (
+                                <span className="flex items-center gap-1">
+                                  <Building2 className="w-3 h-3" />
+                                  {tarea.empresa_nombre}
+                                </span>
+                              )}
+                              {tarea.fecha_vencimiento && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  Vence: {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
 

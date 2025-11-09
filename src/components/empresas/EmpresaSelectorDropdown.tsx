@@ -28,6 +28,14 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: 
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Load saved empresa from localStorage on mount
+  useEffect(() => {
+    const savedEmpresaId = localStorage.getItem('selectedEmpresaId');
+    if (savedEmpresaId && !selectedEmpresaId) {
+      onEmpresaSelect(savedEmpresaId === 'all' ? 'all' : savedEmpresaId);
+    }
+  }, []);
+
   useEffect(() => {
     if (user && role) {
       fetchEmpresas();
@@ -73,9 +81,14 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: 
 
       setEmpresas(empresasData || []);
       
-      // Auto-select first empresa if none selected
+      // Auto-select from localStorage or first empresa if none selected
+      const savedEmpresaId = localStorage.getItem('selectedEmpresaId');
       if (!selectedEmpresaId && empresasData && empresasData.length > 0) {
-        onEmpresaSelect(empresasData[0].id);
+        if (savedEmpresaId && (savedEmpresaId === 'all' || empresasData.find(e => e.id === savedEmpresaId))) {
+          onEmpresaSelect(savedEmpresaId === 'all' ? 'all' : savedEmpresaId);
+        } else {
+          onEmpresaSelect(empresasData[0].id);
+        }
       }
     } catch (error) {
       console.error('Error fetching empresas:', error);
@@ -85,6 +98,7 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: 
   };
 
   const selectedEmpresa = empresas.find(e => e.id === selectedEmpresaId);
+  const isAllSelected = selectedEmpresaId === 'all';
 
   if (loading) {
     return (
@@ -116,7 +130,7 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: 
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4" />
             <span className="truncate">
-              {selectedEmpresa?.razon_social || 'Seleccionar empresa...'}
+              {isAllSelected ? 'Todas las empresas' : selectedEmpresa?.razon_social || 'Seleccionar empresa...'}
             </span>
           </div>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -127,11 +141,32 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: 
           <CommandInput placeholder="Buscar empresa..." className="font-body" />
           <CommandEmpty className="font-body">No se encontró la empresa.</CommandEmpty>
           <CommandGroup>
+            {role === 'administrador' && (
+              <CommandItem
+                value="todas-empresas"
+                onSelect={() => {
+                  const newValue = 'all';
+                  localStorage.setItem('selectedEmpresaId', newValue);
+                  onEmpresaSelect(newValue);
+                  setOpen(false);
+                }}
+                className="font-body font-semibold border-b"
+              >
+                <Check
+                  className={cn(
+                    'mr-2 h-4 w-4',
+                    isAllSelected ? 'opacity-100' : 'opacity-0'
+                  )}
+                />
+                Todas las empresas
+              </CommandItem>
+            )}
             {empresas.map((empresa) => (
               <CommandItem
                 key={empresa.id}
                 value={empresa.razon_social}
                 onSelect={() => {
+                  localStorage.setItem('selectedEmpresaId', empresa.id);
                   onEmpresaSelect(empresa.id);
                   setOpen(false);
                 }}
