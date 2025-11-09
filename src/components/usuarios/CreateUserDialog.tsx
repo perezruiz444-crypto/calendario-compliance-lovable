@@ -173,8 +173,8 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
                 Cerrar
               </Button>
             </div>
-            <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
-              <p className="text-sm font-body">
+            <div className="bg-primary-light dark:bg-primary/10 p-3 rounded-lg border border-primary/20">
+              <p className="text-sm font-body text-foreground">
                 <strong>Instrucciones:</strong><br/>
                 1. Copia este enlace<br/>
                 2. Envíalo al usuario por WhatsApp, correo o mensaje<br/>

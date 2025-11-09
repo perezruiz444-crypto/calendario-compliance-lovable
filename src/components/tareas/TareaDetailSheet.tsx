@@ -127,21 +127,21 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
 
   const getPrioridadColor = (prioridad: string) => {
     switch (prioridad) {
-      case 'urgente': return 'bg-red-500 text-white';
-      case 'alta': return 'bg-orange-500 text-white';
-      case 'media': return 'bg-yellow-500 text-white';
-      case 'baja': return 'bg-green-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'urgente': return 'bg-destructive text-destructive-foreground';
+      case 'alta': return 'bg-accent text-accent-foreground';
+      case 'media': return 'bg-warning text-warning-foreground';
+      case 'baja': return 'bg-success text-success-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
-      case 'pendiente': return 'bg-gray-500 text-white';
-      case 'en_progreso': return 'bg-blue-500 text-white';
-      case 'completada': return 'bg-green-500 text-white';
-      case 'cancelada': return 'bg-red-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'pendiente': return 'bg-muted text-muted-foreground';
+      case 'en_progreso': return 'bg-primary text-primary-foreground';
+      case 'completada': return 'bg-success text-success-foreground';
+      case 'cancelada': return 'bg-destructive text-destructive-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -173,7 +173,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                     {tarea.estado.replace('_', ' ').charAt(0).toUpperCase() + tarea.estado.slice(1).replace('_', ' ')}
                   </Badge>
                   {tarea.categorias_tareas && (
-                    <Badge style={{ backgroundColor: tarea.categorias_tareas.color }} className="text-white">
+                    <Badge style={{ backgroundColor: tarea.categorias_tareas.color }} className="text-primary-foreground">
                       {tarea.categorias_tareas.nombre}
                     </Badge>
                   )}

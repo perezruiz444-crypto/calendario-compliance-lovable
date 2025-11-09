@@ -86,10 +86,10 @@ export default function SendTestEmailDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-          <p className="text-sm text-blue-800 dark:text-blue-200">
+        <div className="bg-primary-light dark:bg-primary/10 border border-primary/20 rounded-lg p-3 mb-4">
+          <p className="text-sm text-primary-foreground dark:text-foreground">
             <strong>ℹ️ Nota:</strong> Se enviará un magic link de prueba usando el SMTP configurado en Supabase. 
-            Configura tu SMTP en: <a href="https://supabase.com/dashboard/project/svozqrjhwaohfmbkhpig/auth/providers" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900">Auth Settings</a>.
+            Configura tu SMTP en: <a href="https://supabase.com/dashboard/project/svozqrjhwaohfmbkhpig/auth/providers" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">Auth Settings</a>.
           </p>
         </div>
 

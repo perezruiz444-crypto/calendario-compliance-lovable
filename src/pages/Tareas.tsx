@@ -94,7 +94,7 @@ function TareaCard({
             <Avatar className="h-10 w-10">
               <AvatarFallback 
                 style={{ backgroundColor: getAvatarColor(tarea.consultor_profile.nombre_completo) }}
-                className="text-white text-xs font-medium"
+                className="text-primary-foreground text-xs font-medium"
               >
                 {getInitials(tarea.consultor_profile.nombre_completo)}
               </AvatarFallback>
