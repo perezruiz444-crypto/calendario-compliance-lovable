@@ -11,7 +11,7 @@ import EmpresaFormCertificacion from './EmpresaFormCertificacion';
 import EmpresaFormApoderados from './EmpresaFormApoderados';
 import EmpresaFormMatrizSeguridad from './EmpresaFormMatrizSeguridad';
 import EmpresaFormPadronImportadores from './EmpresaFormPadronImportadores';
-
+import EmpresaFormAgentesAduanales from './EmpresaFormAgentesAduanales';
 interface EditEmpresaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -101,12 +101,13 @@ export default function EditEmpresaDialog({ open, onOpenChange, onEmpresaUpdated
 
         <form onSubmit={handleSubmit}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="immex">IMMEX</TabsTrigger>
               <TabsTrigger value="prosec">PROSEC</TabsTrigger>
               <TabsTrigger value="certificacion">Certificación</TabsTrigger>
               <TabsTrigger value="apoderados">Apoderados</TabsTrigger>
+              <TabsTrigger value="agentes">Agentes</TabsTrigger>
               <TabsTrigger value="matriz">Matriz</TabsTrigger>
               <TabsTrigger value="padron">Padrón</TabsTrigger>
             </TabsList>
@@ -130,6 +131,10 @@ export default function EditEmpresaDialog({ open, onOpenChange, onEmpresaUpdated
 
               <TabsContent value="apoderados">
                 <EmpresaFormApoderados empresaId={empresaId} />
+              </TabsContent>
+
+              <TabsContent value="agentes">
+                <EmpresaFormAgentesAduanales empresaId={empresaId} />
               </TabsContent>
 
               <TabsContent value="matriz">
