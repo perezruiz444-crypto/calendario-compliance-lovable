@@ -4,10 +4,11 @@ import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Building2, Users } from 'lucide-react';
+import { Plus, Building2, Users, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateEmpresaDialog from '@/components/empresas/CreateEmpresaDialog';
 import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
+import EditEmpresaDialog from '@/components/empresas/EditEmpresaDialog';
 import { Badge } from '@/components/ui/badge';
 
 export default function Empresas() {
@@ -16,8 +17,10 @@ export default function Empresas() {
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [loadingEmpresas, setLoadingEmpresas] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [consultoresDialogOpen, setConsultoresDialogOpen] = useState(false);
   const [selectedEmpresa, setSelectedEmpresa] = useState<{ id: string; nombre: string } | null>(null);
+  const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -146,6 +149,19 @@ export default function Empresas() {
                           </Button>
                         )}
                         <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="font-heading"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedEmpresaId(empresa.id);
+                            setEditDialogOpen(true);
+                          }}
+                        >
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Editar
+                        </Button>
+                        <Button 
                           variant="ghost" 
                           size="sm" 
                           className="font-heading"
@@ -168,6 +184,15 @@ export default function Empresas() {
         onOpenChange={setDialogOpen}
         onEmpresaCreated={fetchEmpresas}
       />
+
+      {selectedEmpresaId && (
+        <EditEmpresaDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          empresaId={selectedEmpresaId}
+          onEmpresaUpdated={fetchEmpresas}
+        />
+      )}
 
       {selectedEmpresa && (
         <ManageConsultoresDialog

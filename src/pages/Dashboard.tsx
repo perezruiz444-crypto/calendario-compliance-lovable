@@ -15,7 +15,6 @@ import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import AdminAnalytics from '@/components/dashboard/AdminAnalytics';
 import ConsultorAnalytics from '@/components/dashboard/ConsultorAnalytics';
 import ClienteAnalytics from '@/components/dashboard/ClienteAnalytics';
-import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDropdown';
 
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
@@ -250,26 +249,7 @@ export default function Dashboard() {
               {showAnalytics ? 'Vista Simple' : 'Analytics'}
             </Button>
           </div>
-
-          {/* Empresa Selector for Consultores and Admins */}
-          {(role === 'consultor' || role === 'administrador') && (
-            <Card className="bg-card/50 border-primary/20">
-              <CardContent className="py-4">
-                <div className="flex items-center gap-3">
-                  <Building2 className="w-5 h-5 text-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm font-heading font-medium mb-2">Empresa Seleccionada</p>
-                    <EmpresaSelectorDropdown 
-                      selectedEmpresaId={selectedEmpresaId}
-                      onEmpresaSelect={setSelectedEmpresaId}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
-
         {/* Analytics Section */}
         {showAnalytics && (
           <>
