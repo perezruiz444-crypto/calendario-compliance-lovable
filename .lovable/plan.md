@@ -1,114 +1,170 @@
 
 
-# Plan: Corregir Configuración de Edge Functions
+# Plan: Simplificar el Sistema - Menos Menús y Edición Directa
 
-## Problema Identificado
-
-El archivo `supabase/config.toml` solo configura 3 de las 9 Edge Functions existentes. Las 6 funciones faltantes usan el valor por defecto `verify_jwt = true`, lo cual causa que Supabase bloquee las requests con error 401 antes de que el código pueda procesarlas.
-
-### Estado Actual del config.toml:
-```
-project_id = "svozqrjhwaohfmbkhpig"
-
-[functions.send-report-email]
-verify_jwt = true
-
-[functions.send-task-notifications]
-verify_jwt = true
-
-[functions.send-user-invitation]
-verify_jwt = true
-```
-
-### Funciones Faltantes:
-- `create-user`
-- `delete-user`
-- `list-users`
-- `update-user`
-- `send-daily-summary`
-- `send-test-email`
+## Objetivo
+Hacer el sistema más limpio, eficiente y fácil de usar, reduciendo la cantidad de clics necesarios para acciones comunes como editar empresas.
 
 ---
 
-## Solución
+## Problemas Identificados
 
-Actualizar `supabase/config.toml` para incluir **todas** las Edge Functions con `verify_jwt = false`. Esto permite que cada función maneje su propia autenticación internamente (como ya lo hacen).
-
-### Análisis de Autenticación por Función:
-
-| Función | Auth Interna | Tipo de Verificación |
-|---------|--------------|----------------------|
-| create-user | Sí | Admin/Consultor via getUser + roles |
-| delete-user | Sí | Admin via getUser + roles |
-| list-users | Sí | Admin via getUser + roles |
-| update-user | Sí | Admin via getUser + roles |
-| send-test-email | Sí | Admin/Consultor via getUser + roles |
-| send-report-email | Sí | Usuario via getUser |
-| send-task-notifications | Sí | Usuario via getUser |
-| send-user-invitation | Sí | Usuario via getUser |
-| send-daily-summary | No | Job interno (service role) |
+| Problema | Impacto |
+|----------|---------|
+| 3 clics para editar empresa (Menú → Empresa → Editar) | Ineficiente |
+| Selector de empresa duplicado (sidebar + dashboard) | Redundancia visual |
+| 8 pestañas en diálogo de edición | Abrumador |
+| Vistas separadas para ver y editar información | Navegación confusa |
 
 ---
 
-## Cambios a Realizar
+## Soluciones Propuestas
 
-### 1. Actualizar supabase/config.toml
+### 1. Edición Inline en Página de Detalle de Empresa
 
-Nuevo contenido completo:
+**Cambio**: En lugar de abrir un diálogo separado para editar, convertir la página de detalle de empresa en una vista editable directamente.
 
-```toml
-project_id = "svozqrjhwaohfmbkhpig"
+**Antes**: Ver información → Clic en "Editar" → Diálogo con 8 pestañas → Guardar → Cerrar diálogo
 
-[functions.create-user]
-verify_jwt = false
+**Después**: Ver información con botones de edición inline en cada sección → Editar directamente → Guardar automático o con botón
 
-[functions.delete-user]
-verify_jwt = false
+**Beneficios**:
+- Elimina el diálogo modal gigante
+- Permite editar secciones específicas sin navegar
+- Contexto visual siempre visible
 
-[functions.list-users]
-verify_jwt = false
+---
 
-[functions.update-user]
-verify_jwt = false
+### 2. Acceso Rápido desde Lista de Empresas
 
-[functions.send-daily-summary]
-verify_jwt = false
+**Cambio**: Agregar botón de "Editar" directamente en la lista de empresas (página `/empresas`) para no tener que entrar a la página de detalle.
 
-[functions.send-report-email]
-verify_jwt = false
-
-[functions.send-task-notifications]
-verify_jwt = false
-
-[functions.send-test-email]
-verify_jwt = false
-
-[functions.send-user-invitation]
-verify_jwt = false
+```
+┌─────────────────────────────────────────────────────┐
+│ Empresa XYZ                                         │
+│ RFC: ABC123456789 • Tel: 555-1234                   │
+│                                                     │
+│ [Consultores] [Editar ✏️] [Ver Detalles →]         │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Verificación Post-Implementación
+### 3. Consolidar Selector de Empresa
 
-Después de aplicar los cambios, se debe verificar:
+**Cambio**: Mantener el selector SOLO en el sidebar y eliminar la tarjeta duplicada del Dashboard.
 
-1. **create-user**: Crear un nuevo usuario desde panel de administración
-2. **delete-user**: Eliminar un usuario de prueba
-3. **list-users**: Verificar que se cargue la lista de usuarios
-4. **update-user**: Editar información de un usuario
-5. **send-test-email**: Enviar email de prueba desde el panel
-6. **send-user-invitation**: Invitar un nuevo usuario
-7. **send-report-email**: Generar y enviar un reporte
-8. **send-task-notifications**: Enviar notificación de tarea
-9. **send-daily-summary**: Verificar que funcione cuando se invoque manualmente
+**Antes**:
+- Selector en sidebar (siempre visible)
+- Tarjeta "Empresa Seleccionada" en Dashboard (ocupa espacio)
+
+**Después**:
+- Solo selector en sidebar
+- Dashboard más limpio con solo métricas importantes
+
+---
+
+### 4. Simplificar Menú Lateral (Opcional)
+
+**Evaluación de elementos del menú**:
+
+| Menú | ¿Necesario? | Propuesta |
+|------|-------------|-----------|
+| Dashboard | Sí | Mantener |
+| Empresas | Sí | Mantener |
+| Tareas | Sí | Mantener |
+| Calendario | ¿Duplica tareas? | Mantener (vista diferente) |
+| Mensajes | Sí | Mantener |
+| Reportes | Sí | Mantener |
+| Usuarios | Sí | Mantener (solo admin) |
+| Configuraciones | ¿Muy vacío? | Evaluar mover a dropdown de perfil |
+
+**Recomendación**: Mover "Configuraciones" a un menú dentro del área de perfil del usuario en la parte inferior del sidebar, ya que tiene pocas opciones.
+
+---
+
+## Cambios Técnicos
+
+### Archivo 1: `src/pages/Empresas.tsx`
+- Agregar botón "Editar" en cada tarjeta de empresa
+- El botón abre el Sheet/Dialog de edición directamente desde la lista
+
+### Archivo 2: `src/pages/EmpresaDetail.tsx`
+- Convertir las tarjetas de información en componentes editables inline
+- Agregar botón "Editar" pequeño (ícono de lápiz) en cada Card
+- Al hacer clic, los campos se vuelven editables dentro del mismo Card
+- Agregar botón "Guardar" cuando hay cambios pendientes
+
+### Archivo 3: `src/pages/Dashboard.tsx`
+- Eliminar la Card "Empresa Seleccionada" que duplica el selector del sidebar
+- Reorganizar el espacio para mostrar información más útil
+
+### Archivo 4: `src/components/layout/DashboardLayout.tsx`
+- Mover "Configuraciones" al área de perfil de usuario (dropdown o botón junto a "Cerrar Sesión")
+- Mantener el sidebar más limpio
+
+### Archivo 5: Nuevo componente `src/components/empresas/EditableCard.tsx`
+- Componente reutilizable que muestra información pero permite edición inline
+- Toggle entre modo vista y modo edición
+- Guardado automático o con confirmación
+
+---
+
+## Mockup: Nueva Experiencia de Edición
+
+```text
+┌────────────────────────────────────────────────────────────────┐
+│ ← Volver    EMPRESA XYZ S.A. de C.V.                           │
+│             RFC: ABC123456789 • Tel: 555-1234                  │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Información General                              [✏️]   │  │
+│  │                                                          │  │
+│  │ Razón Social: _________________ [Campo editable]        │  │
+│  │ RFC: __________________________ [Campo editable]        │  │
+│  │ Teléfono: _____________________ [Campo editable]        │  │
+│  │                                                          │  │
+│  │ [Cambios sin guardar]                    [Guardar] [×]  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Programa IMMEX                                   [✏️]   │  │
+│  │                                                          │  │
+│  │ Número: IMMEX-12345                                      │  │
+│  │ Modalidad: Industrial                                    │  │
+│  │ Fecha Autorización: 15/03/2020                           │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Resumen de Simplificaciones
+
+| Área | Antes | Después |
+|------|-------|---------|
+| Editar empresa | 3 clics + diálogo | 1-2 clics inline |
+| Selector empresa | Duplicado (sidebar + dashboard) | Solo en sidebar |
+| Menú Config | Item separado | Integrado en perfil |
+| Diálogo 8 pestañas | Modal grande | Secciones colapsables inline |
+
+---
+
+## Orden de Implementación
+
+1. **Agregar botón "Editar" en lista de empresas** (rápido, alto impacto)
+2. **Eliminar selector duplicado del Dashboard** (rápido, limpieza visual)
+3. **Mover Configuraciones al área de perfil** (medio, simplifica menú)
+4. **Implementar edición inline en página de detalle** (más complejo, mejor UX)
 
 ---
 
 ## Notas Técnicas
 
-- Todas las funciones ya implementan validación de autenticación interna usando `supabaseAdmin.auth.getUser(token)` o `supabaseClient.auth.getUser()`
-- Las funciones que requieren roles específicos (admin/consultor) verifican contra la tabla `user_roles`
-- `send-daily-summary` es un job programado que no requiere autenticación de usuario ya que usa el `SUPABASE_SERVICE_ROLE_KEY` directamente
-- No se requieren cambios en el código de las Edge Functions, solo en la configuración
+- La edición inline usa el mismo estado de formulario pero renderizado dentro de las Cards existentes
+- Se mantiene el diálogo como fallback o para edición masiva
+- Los cambios son retrocompatibles - no se pierde funcionalidad
+- Se puede implementar por fases
 
