@@ -127,8 +127,8 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: 
           aria-expanded={open}
           className="w-full justify-between font-body"
         >
-          <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4" />
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Building2 className="w-4 h-4 shrink-0" />
             <span className="truncate">
               {isAllSelected ? 'Todas las empresas' : selectedEmpresa?.razon_social || 'Seleccionar empresa...'}
             </span>
