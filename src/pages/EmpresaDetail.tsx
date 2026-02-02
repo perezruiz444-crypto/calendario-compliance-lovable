@@ -13,6 +13,7 @@ import TareaDetailDialog from '@/components/tareas/TareaDetailDialog';
 import { EmpresaGeneralCard } from '@/components/empresas/EmpresaGeneralCard';
 import { EmpresaIMMEXCard } from '@/components/empresas/EmpresaIMMEXCard';
 import { EmpresaCertificacionCard } from '@/components/empresas/EmpresaCertificacionCard';
+import { EmpresaObligacionesCard } from '@/components/empresas/EmpresaObligacionesCard';
 import { 
   Building2, 
   MapPin, 
@@ -179,6 +180,9 @@ export default function EmpresaDetail() {
           </Card>
         </div>
 
+        {/* Obligaciones Section - Full Width */}
+        <EmpresaObligacionesCard empresa={empresa} />
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Company Info */}
@@ -186,40 +190,6 @@ export default function EmpresaDetail() {
             <EmpresaGeneralCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
             <EmpresaIMMEXCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
             <EmpresaCertificacionCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
-            
-            {/* Matriz de Seguridad */}
-            <Card className="gradient-card shadow-card">
-              <CardHeader>
-                <CardTitle className="font-heading flex items-center gap-2">
-                  <Scale className="w-5 h-5" />
-                  Matriz de Seguridad
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {empresa.matriz_seguridad_fecha_vencimiento || empresa.matriz_seguridad_fecha_renovar ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    {empresa.matriz_seguridad_fecha_vencimiento && (
-                      <div>
-                        <label className="text-sm font-heading font-medium text-muted-foreground">Vencimiento</label>
-                        <p className="font-body mt-1">
-                          {new Date(empresa.matriz_seguridad_fecha_vencimiento).toLocaleDateString('es-MX')}
-                        </p>
-                      </div>
-                    )}
-                    {empresa.matriz_seguridad_fecha_renovar && (
-                      <div>
-                        <label className="text-sm font-heading font-medium text-muted-foreground">Renovar</label>
-                        <p className="font-body mt-1">
-                          {new Date(empresa.matriz_seguridad_fecha_renovar).toLocaleDateString('es-MX')}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground font-body">No registrado</p>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
           {/* Right Column - Related Data */}

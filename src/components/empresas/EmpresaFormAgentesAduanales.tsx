@@ -19,13 +19,7 @@ interface EmpresaFormAgentesAduanalesProps {
   empresaId?: string;
 }
 
-const ESTADOS_MEXICO = [
-  'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
-  'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
-  'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
-  'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
-  'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
-];
+const ESTADOS_AGENTE = ['Aceptado', 'Pendiente'];
 
 export default function EmpresaFormAgentesAduanales({ empresaId }: EmpresaFormAgentesAduanalesProps) {
   const [agentes, setAgentes] = useState<AgenteAduanal[]>([]);
@@ -145,88 +139,90 @@ export default function EmpresaFormAgentesAduanales({ empresaId }: EmpresaFormAg
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-heading font-semibold">Agentes Aduanales</h3>
-        <Button type="button" onClick={addAgente} size="sm" variant="outline">
+      <h3 className="text-lg font-heading font-semibold">Agentes Aduanales</h3>
+
+      {agentes.length === 0 ? (
+        <p className="text-center text-muted-foreground font-body py-8">
+          No hay agentes aduanales registrados
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {agentes.map((agente, index) => (
+            <Card key={index}>
+              <CardContent className="pt-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="font-heading">Nombre del Agente *</Label>
+                    <Input
+                      value={agente.nombre_agente}
+                      onChange={(e) => updateAgente(index, 'nombre_agente', e.target.value)}
+                      placeholder="Nombre completo"
+                      className="font-body"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-heading">Número de Patente *</Label>
+                    <Input
+                      value={agente.numero_patente}
+                      onChange={(e) => updateAgente(index, 'numero_patente', e.target.value)}
+                      placeholder="Ej: 1234"
+                      className="font-body"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-heading">Estado</Label>
+                    <Select
+                      value={agente.estado || ''}
+                      onValueChange={(value) => updateAgente(index, 'estado', value)}
+                    >
+                      <SelectTrigger className="font-body">
+                        <SelectValue placeholder="Selecciona estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ESTADOS_AGENTE.map((estado) => (
+                          <SelectItem key={estado} value={estado}>
+                            {estado}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  {empresaId && (
+                    <Button
+                      type="button"
+                      onClick={() => saveAgente(index)}
+                      disabled={loading || !agente.nombre_agente || !agente.numero_patente}
+                      size="sm"
+                    >
+                      Guardar
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    onClick={() => removeAgente(index)}
+                    variant="destructive"
+                    size="sm"
+                    disabled={loading}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Botón Agregar al final */}
+      <div className="flex justify-center pt-2">
+        <Button type="button" onClick={addAgente} variant="outline" className="w-full max-w-xs">
           <Plus className="w-4 h-4 mr-2" />
           Agregar Agente
         </Button>
       </div>
-
-      <div className="space-y-4">
-        {agentes.map((agente, index) => (
-          <Card key={index}>
-            <CardContent className="pt-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-heading">Nombre del Agente *</Label>
-                  <Input
-                    value={agente.nombre_agente}
-                    onChange={(e) => updateAgente(index, 'nombre_agente', e.target.value)}
-                    placeholder="Nombre completo"
-                    className="font-body"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-heading">Número de Patente *</Label>
-                  <Input
-                    value={agente.numero_patente}
-                    onChange={(e) => updateAgente(index, 'numero_patente', e.target.value)}
-                    placeholder="Ej: 1234"
-                    className="font-body"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-heading">Estado</Label>
-                  <Select
-                    value={agente.estado || ''}
-                    onValueChange={(value) => updateAgente(index, 'estado', value)}
-                  >
-                    <SelectTrigger className="font-body">
-                      <SelectValue placeholder="Selecciona estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ESTADOS_MEXICO.map((estado) => (
-                        <SelectItem key={estado} value={estado}>
-                          {estado}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                {empresaId && (
-                  <Button
-                    type="button"
-                    onClick={() => saveAgente(index)}
-                    disabled={loading || !agente.nombre_agente || !agente.numero_patente}
-                    size="sm"
-                  >
-                    Guardar
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  onClick={() => removeAgente(index)}
-                  variant="destructive"
-                  size="sm"
-                  disabled={loading}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {agentes.length === 0 && (
-        <p className="text-center text-muted-foreground font-body py-8">
-          No hay agentes aduanales registrados
-        </p>
-      )}
     </div>
   );
 }
