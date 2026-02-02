@@ -1,170 +1,255 @@
 
-
-# Plan: Simplificar el Sistema - Menos Menús y Edición Directa
+# Plan: Centro de Control de Notificaciones y Recordatorios
 
 ## Objetivo
-Hacer el sistema más limpio, eficiente y fácil de usar, reduciendo la cantidad de clics necesarios para acciones comunes como editar empresas.
+Crear un sistema centralizado y configurable para gestionar todas las notificaciones y recordatorios automáticos del sistema.
 
 ---
 
-## Problemas Identificados
+## Nuevas Funcionalidades
 
-| Problema | Impacto |
-|----------|---------|
-| 3 clics para editar empresa (Menú → Empresa → Editar) | Ineficiente |
-| Selector de empresa duplicado (sidebar + dashboard) | Redundancia visual |
-| 8 pestañas en diálogo de edición | Abrumador |
-| Vistas separadas para ver y editar información | Navegación confusa |
+### 1. Preferencias de Notificación por Usuario
 
----
+Cada usuario podrá personalizar:
+- Qué notificaciones recibir (tareas, certificaciones, documentos, etc.)
+- Cómo recibirlas (email, push, ambas, ninguna)
+- Frecuencia de resúmenes (diario, semanal, nunca)
 
-## Soluciones Propuestas
+### 2. Recordatorios Configurables de Vencimientos
 
-### 1. Edición Inline en Página de Detalle de Empresa
+Panel para configurar cuántos días antes del vencimiento se envían alertas:
+- **Certificaciones**: 90, 60, 30, 15, 7 días (configurable)
+- **Obligaciones IMMEX/PROSEC**: Igual
+- **Documentos**: 30, 15, 7, 1 día
 
-**Cambio**: En lugar de abrir un diálogo separado para editar, convertir la página de detalle de empresa en una vista editable directamente.
+### 3. Centro de Notificaciones Unificado
 
-**Antes**: Ver información → Clic en "Editar" → Diálogo con 8 pestañas → Guardar → Cerrar diálogo
-
-**Después**: Ver información con botones de edición inline en cada sección → Editar directamente → Guardar automático o con botón
-
-**Beneficios**:
-- Elimina el diálogo modal gigante
-- Permite editar secciones específicas sin navegar
-- Contexto visual siempre visible
+Nueva sección en Configuraciones con:
+- Vista general de todas las reglas activas
+- Historial de notificaciones enviadas
+- Prueba de notificaciones
+- Horario de envío personalizado
 
 ---
 
-### 2. Acceso Rápido desde Lista de Empresas
+## Cambios en Base de Datos
 
-**Cambio**: Agregar botón de "Editar" directamente en la lista de empresas (página `/empresas`) para no tener que entrar a la página de detalle.
-
+### Nueva Tabla: `user_notification_preferences`
+```sql
+CREATE TABLE user_notification_preferences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  notification_key TEXT NOT NULL,
+  email_enabled BOOLEAN DEFAULT true,
+  push_enabled BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, notification_key)
+);
 ```
-┌─────────────────────────────────────────────────────┐
-│ Empresa XYZ                                         │
-│ RFC: ABC123456789 • Tel: 555-1234                   │
-│                                                     │
-│ [Consultores] [Editar ✏️] [Ver Detalles →]         │
-└─────────────────────────────────────────────────────┘
+
+### Nueva Tabla: `reminder_rules`
+```sql
+CREATE TABLE reminder_rules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre TEXT NOT NULL,
+  tipo TEXT NOT NULL, -- 'certificacion', 'immex', 'prosec', 'documento'
+  dias_antes INTEGER NOT NULL,
+  activa BOOLEAN DEFAULT true,
+  empresa_id UUID REFERENCES empresas(id), -- NULL = aplica a todas
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### Modificar Tabla: `profiles`
+```sql
+ALTER TABLE profiles ADD COLUMN 
+  resumen_frecuencia TEXT DEFAULT 'diario', -- 'diario', 'semanal', 'nunca'
+  resumen_hora INTEGER DEFAULT 8; -- Hora de envío (0-23)
 ```
 
 ---
 
-### 3. Consolidar Selector de Empresa
+## Nuevos Componentes
 
-**Cambio**: Mantener el selector SOLO en el sidebar y eliminar la tarjeta duplicada del Dashboard.
+### 1. `src/components/notifications/NotificationCenter.tsx`
+Panel principal que muestra:
+- Resumen de notificaciones activas
+- Accesos rápidos a configuración
+- Historial reciente
 
-**Antes**:
-- Selector en sidebar (siempre visible)
-- Tarjeta "Empresa Seleccionada" en Dashboard (ocupa espacio)
+### 2. `src/components/notifications/UserNotificationPreferences.tsx`
+Formulario para que cada usuario configure:
+- Switches para cada tipo de notificación
+- Toggle email/push por categoría
+- Selector de frecuencia de resumen
 
-**Después**:
-- Solo selector en sidebar
-- Dashboard más limpio con solo métricas importantes
+### 3. `src/components/notifications/ReminderRulesManager.tsx`
+CRUD para reglas de recordatorio:
+- Tipo de vencimiento a monitorear
+- Días de anticipación
+- Empresa específica o todas
+- Activar/desactivar
 
----
-
-### 4. Simplificar Menú Lateral (Opcional)
-
-**Evaluación de elementos del menú**:
-
-| Menú | ¿Necesario? | Propuesta |
-|------|-------------|-----------|
-| Dashboard | Sí | Mantener |
-| Empresas | Sí | Mantener |
-| Tareas | Sí | Mantener |
-| Calendario | ¿Duplica tareas? | Mantener (vista diferente) |
-| Mensajes | Sí | Mantener |
-| Reportes | Sí | Mantener |
-| Usuarios | Sí | Mantener (solo admin) |
-| Configuraciones | ¿Muy vacío? | Evaluar mover a dropdown de perfil |
-
-**Recomendación**: Mover "Configuraciones" a un menú dentro del área de perfil del usuario en la parte inferior del sidebar, ya que tiene pocas opciones.
+### 4. `src/components/notifications/NotificationHistory.tsx`
+Tabla con:
+- Últimas notificaciones enviadas
+- Estado (enviada, fallida, pendiente)
+- Tipo y destinatario
+- Filtros por fecha y tipo
 
 ---
 
-## Cambios Técnicos
+## Cambios en Archivos Existentes
 
-### Archivo 1: `src/pages/Empresas.tsx`
-- Agregar botón "Editar" en cada tarjeta de empresa
-- El botón abre el Sheet/Dialog de edición directamente desde la lista
+### `src/pages/Configuraciones.tsx`
+- Reorganizar en pestañas:
+  - **General** (tema, idioma)
+  - **Mis Notificaciones** (preferencias del usuario actual)
+  - **Recordatorios** (reglas de vencimientos - solo admin)
+  - **Sistema** (configuraciones globales - solo admin)
 
-### Archivo 2: `src/pages/EmpresaDetail.tsx`
-- Convertir las tarjetas de información en componentes editables inline
-- Agregar botón "Editar" pequeño (ícono de lápiz) en cada Card
-- Al hacer clic, los campos se vuelven editables dentro del mismo Card
-- Agregar botón "Guardar" cuando hay cambios pendientes
+### `src/components/layout/DashboardLayout.tsx`
+- Ya existe acceso a Configuraciones en el dropdown de perfil
 
-### Archivo 3: `src/pages/Dashboard.tsx`
-- Eliminar la Card "Empresa Seleccionada" que duplica el selector del sidebar
-- Reorganizar el espacio para mostrar información más útil
-
-### Archivo 4: `src/components/layout/DashboardLayout.tsx`
-- Mover "Configuraciones" al área de perfil de usuario (dropdown o botón junto a "Cerrar Sesión")
-- Mantener el sidebar más limpio
-
-### Archivo 5: Nuevo componente `src/components/empresas/EditableCard.tsx`
-- Componente reutilizable que muestra información pero permite edición inline
-- Toggle entre modo vista y modo edición
-- Guardado automático o con confirmación
+### Edge Function: `send-daily-summary`
+- Modificar para respetar preferencias por usuario
+- Verificar `user_notification_preferences` antes de enviar
+- Respetar horario y frecuencia configurados
 
 ---
 
-## Mockup: Nueva Experiencia de Edición
+## Flujo de Usuario
 
 ```text
-┌────────────────────────────────────────────────────────────────┐
-│ ← Volver    EMPRESA XYZ S.A. de C.V.                           │
-│             RFC: ABC123456789 • Tel: 555-1234                  │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ Información General                              [✏️]   │  │
-│  │                                                          │  │
-│  │ Razón Social: _________________ [Campo editable]        │  │
-│  │ RFC: __________________________ [Campo editable]        │  │
-│  │ Teléfono: _____________________ [Campo editable]        │  │
-│  │                                                          │  │
-│  │ [Cambios sin guardar]                    [Guardar] [×]  │  │
-│  └──────────────────────────────────────────────────────────┘  │
-│                                                                │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ Programa IMMEX                                   [✏️]   │  │
-│  │                                                          │  │
-│  │ Número: IMMEX-12345                                      │  │
-│  │ Modalidad: Industrial                                    │  │
-│  │ Fecha Autorización: 15/03/2020                           │  │
-│  └──────────────────────────────────────────────────────────┘  │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
+Usuario                    Sistema
+   │                          │
+   ├─► Ir a Configuraciones   │
+   │                          │
+   ├─► Pestaña "Mis Notificaciones"
+   │   ├─ Toggle: Tareas vencidas [Email ✓] [Push ✓]
+   │   ├─ Toggle: Certificaciones [Email ✓] [Push ✗]
+   │   ├─ Toggle: Resumen diario [Email ✓]
+   │   └─ Selector: Enviar resumen a las [8:00 AM ▼]
+   │                          │
+   ├─► Guardar ───────────────►├─► Actualiza user_notification_preferences
+   │                          │
+   │                          ├─► Cron Job (8:00 AM)
+   │                          │   ├─ Verifica preferencias de usuario
+   │                          │   ├─ Verifica frecuencia (diario/semanal)
+   │                          │   └─ Envía solo notificaciones habilitadas
+   │                          │
+   │◄─── Recibe email/push ───┤
 ```
 
 ---
 
-## Resumen de Simplificaciones
+## Interfaz: Vista de Preferencias por Usuario
 
-| Área | Antes | Después |
-|------|-------|---------|
-| Editar empresa | 3 clics + diálogo | 1-2 clics inline |
-| Selector empresa | Duplicado (sidebar + dashboard) | Solo en sidebar |
-| Menú Config | Item separado | Integrado en perfil |
-| Diálogo 8 pestañas | Modal grande | Secciones colapsables inline |
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│ Mis Preferencias de Notificación                                 │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  📋 TAREAS                                    Email    Push      │
+│  ├─ Tarea asignada                            [✓]      [✓]       │
+│  ├─ Recordatorio 3 días antes                 [✓]      [✗]       │
+│  ├─ Recordatorio 1 día antes                  [✓]      [✓]       │
+│  └─ Tarea vencida                             [✓]      [✓]       │
+│                                                                  │
+│  🏆 CERTIFICACIONES                           Email    Push      │
+│  ├─ Vencimiento 90 días                       [✓]      [✗]       │
+│  ├─ Vencimiento 30 días                       [✓]      [✓]       │
+│  └─ Vencimiento 15 días                       [✓]      [✓]       │
+│                                                                  │
+│  📊 RESUMEN                                                      │
+│  ├─ Frecuencia: [Diario ▼]                                       │
+│  └─ Hora de envío: [08:00 ▼]                                     │
+│                                                                  │
+│                                    [Restaurar Predeterminados]   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Interfaz: Reglas de Recordatorio (Admin)
+
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│ Reglas de Recordatorio                          [+ Nueva Regla]  │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ 🏆 Certificación IVA/IEPS - 30 días antes      [Activa ●]  │  │
+│  │    Aplica a: Todas las empresas                            │  │
+│  │    Última ejecución: Hace 2 días                           │  │
+│  │                                          [Editar] [Eliminar]│  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ 📋 IMMEX - 15 días antes                       [Activa ●]  │  │
+│  │    Aplica a: Todas las empresas                            │  │
+│  │    Última ejecución: Hace 5 días                           │  │
+│  │                                          [Editar] [Eliminar]│  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ 📄 Documentos - 7 días antes                   [Inactiva ○]│  │
+│  │    Aplica a: Empresa XYZ                                   │  │
+│  │    Última ejecución: Nunca                                 │  │
+│  │                                          [Editar] [Eliminar]│  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Orden de Implementación
 
-1. **Agregar botón "Editar" en lista de empresas** (rápido, alto impacto)
-2. **Eliminar selector duplicado del Dashboard** (rápido, limpieza visual)
-3. **Mover Configuraciones al área de perfil** (medio, simplifica menú)
-4. **Implementar edición inline en página de detalle** (más complejo, mejor UX)
+1. **Fase 1: Base de Datos**
+   - Crear tabla `user_notification_preferences`
+   - Crear tabla `reminder_rules`
+   - Agregar columnas a `profiles`
+
+2. **Fase 2: Preferencias de Usuario**
+   - Crear componente `UserNotificationPreferences`
+   - Integrar en página de Configuraciones
+   - Migrar datos existentes
+
+3. **Fase 3: Reglas de Recordatorio**
+   - Crear componente `ReminderRulesManager`
+   - CRUD completo para reglas
+   - Vista solo para administradores
+
+4. **Fase 4: Actualizar Edge Functions**
+   - Modificar `send-daily-summary` para respetar preferencias
+   - Crear función para procesar `reminder_rules`
+   - Ajustar cron jobs según configuración
+
+5. **Fase 5: Historial y Monitoreo**
+   - Crear componente `NotificationHistory`
+   - Agregar logging de notificaciones enviadas
+   - Panel de estadísticas
+
+---
+
+## Beneficios
+
+| Antes | Después |
+|-------|---------|
+| Configuración global fija | Personalizable por usuario |
+| Horario fijo (8:00 AM) | Horario configurable |
+| Sin control de canales | Email y Push independientes |
+| Recordatorios hardcodeados | Reglas dinámicas configurables |
+| Sin historial | Registro completo de envíos |
 
 ---
 
 ## Notas Técnicas
 
-- La edición inline usa el mismo estado de formulario pero renderizado dentro de las Cards existentes
-- Se mantiene el diálogo como fallback o para edición masiva
-- Los cambios son retrocompatibles - no se pierde funcionalidad
-- Se puede implementar por fases
-
+- Las preferencias de usuario se almacenan en `user_notification_preferences` con una entrada por cada tipo de notificación
+- El edge function `send-daily-summary` consultará esta tabla antes de enviar
+- Los defaults se toman de `notification_settings` (configuración global) cuando el usuario no tiene preferencia explícita
+- Se mantiene retrocompatibilidad: usuarios sin preferencias configuradas recibirán todo como antes
