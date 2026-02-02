@@ -731,6 +731,48 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_logs: {
+        Row: {
+          canal: string
+          contenido: string | null
+          created_at: string | null
+          error_mensaje: string | null
+          estado: string
+          id: string
+          referencia_id: string | null
+          referencia_tipo: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          canal: string
+          contenido?: string | null
+          created_at?: string | null
+          error_mensaje?: string | null
+          estado?: string
+          id?: string
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          canal?: string
+          contenido?: string | null
+          created_at?: string | null
+          error_mensaje?: string | null
+          estado?: string
+          id?: string
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_settings: {
         Row: {
           category: string
@@ -771,6 +813,8 @@ export type Database = {
           id: string
           nombre_completo: string
           notificaciones_activas: boolean | null
+          resumen_frecuencia: string | null
+          resumen_hora: number | null
           telefono: string | null
           tema_visual: string | null
           updated_at: string | null
@@ -781,6 +825,8 @@ export type Database = {
           id: string
           nombre_completo: string
           notificaciones_activas?: boolean | null
+          resumen_frecuencia?: string | null
+          resumen_hora?: number | null
           telefono?: string | null
           tema_visual?: string | null
           updated_at?: string | null
@@ -791,6 +837,8 @@ export type Database = {
           id?: string
           nombre_completo?: string
           notificaciones_activas?: boolean | null
+          resumen_frecuencia?: string | null
+          resumen_hora?: number | null
           telefono?: string | null
           tema_visual?: string | null
           updated_at?: string | null
@@ -798,6 +846,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reminder_rules: {
+        Row: {
+          activa: boolean | null
+          created_at: string | null
+          created_by: string | null
+          dias_antes: number
+          empresa_id: string | null
+          id: string
+          nombre: string
+          tipo: string
+          ultima_ejecucion: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          activa?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          dias_antes: number
+          empresa_id?: string | null
+          id?: string
+          nombre: string
+          tipo: string
+          ultima_ejecucion?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          activa?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          dias_antes?: number
+          empresa_id?: string | null
+          id?: string
+          nombre?: string
+          tipo?: string
+          ultima_ejecucion?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminder_rules_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
@@ -1345,6 +1440,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_notification_preferences: {
+        Row: {
+          created_at: string | null
+          email_enabled: boolean | null
+          id: string
+          notification_key: string
+          push_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          notification_key: string
+          push_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          notification_key?: string
+          push_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
