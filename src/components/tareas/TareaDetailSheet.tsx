@@ -54,11 +54,15 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
 
       if (tareaError) throw tareaError;
 
-      const { data: consultorData } = await supabase
-        .from('profiles')
-        .select('id, nombre_completo')
-        .eq('id', tareaData.consultor_asignado_id)
-        .single();
+      let consultorData = null;
+      if (tareaData.consultor_asignado_id) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, nombre_completo')
+          .eq('id', tareaData.consultor_asignado_id)
+          .maybeSingle();
+        consultorData = data;
+      }
 
       setTarea({
         ...tareaData,
