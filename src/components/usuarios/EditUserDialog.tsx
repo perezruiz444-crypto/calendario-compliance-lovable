@@ -71,7 +71,7 @@ export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user
         .from('profiles')
         .select('empresa_id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       if (data?.empresa_id) {

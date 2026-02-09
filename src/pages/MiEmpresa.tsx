@@ -44,7 +44,7 @@ export default function MiEmpresa() {
         .from('profiles')
         .select('empresa_id')
         .eq('id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (!profile?.empresa_id) {
         console.error('No empresa assigned to user');
@@ -54,7 +54,7 @@ export default function MiEmpresa() {
 
       // Fetch empresa data
       const [empresaRes, apoderadosRes, domiciliosRes] = await Promise.all([
-        supabase.from('empresas').select('*').eq('id', profile.empresa_id).single(),
+        supabase.from('empresas').select('*').eq('id', profile.empresa_id).maybeSingle(),
         supabase.from('apoderados_legales').select('*').eq('empresa_id', profile.empresa_id),
         supabase.from('domicilios_operacion').select('*').eq('empresa_id', profile.empresa_id)
       ]);

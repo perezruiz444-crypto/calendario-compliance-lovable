@@ -67,9 +67,14 @@ export default function EmpresaDetail() {
         .from('empresas')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (empresaError) throw empresaError;
+      if (!empresaData) {
+        toast.error('Empresa no encontrada');
+        navigate('/empresas');
+        return;
+      }
       setEmpresa(empresaData);
 
       const [domiciliosRes, miembrosRes, agentesRes, apoderadosRes, tareasRes] = await Promise.all([

@@ -115,7 +115,7 @@ export function UserNotificationPreferences() {
         .from('profiles')
         .select('resumen_frecuencia, resumen_hora, notificaciones_activas')
         .eq('id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
 

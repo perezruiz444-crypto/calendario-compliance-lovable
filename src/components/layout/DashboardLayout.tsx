@@ -38,17 +38,17 @@ export default function DashboardLayout({
       if (role === 'cliente' && user) {
         const {
           data: profile
-        } = await supabase.from('profiles').select('empresa_id').eq('id', user.id).single();
+        } = await supabase.from('profiles').select('empresa_id').eq('id', user.id).maybeSingle();
         if (profile?.empresa_id) {
           const {
             data: empresa
-          } = await supabase.from('empresas').select('razon_social').eq('id', profile.empresa_id).single();
+          } = await supabase.from('empresas').select('razon_social').eq('id', profile.empresa_id).maybeSingle();
           setEmpresaInfo(empresa);
         }
       } else if ((role === 'consultor' || role === 'administrador') && selectedEmpresaId && selectedEmpresaId !== 'all') {
         const {
           data: empresa
-        } = await supabase.from('empresas').select('razon_social').eq('id', selectedEmpresaId).single();
+        } = await supabase.from('empresas').select('razon_social').eq('id', selectedEmpresaId).maybeSingle();
         setConsultorEmpresaInfo(empresa);
       } else {
         setConsultorEmpresaInfo(null);

@@ -50,9 +50,14 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
           categorias_tareas(nombre, color)
         `)
         .eq('id', tareaId)
-        .single();
+        .maybeSingle();
 
       if (tareaError) throw tareaError;
+      if (!tareaData) {
+        toast.error('Tarea no encontrada');
+        onOpenChange(false);
+        return;
+      }
 
       let consultorData = null;
       if (tareaData.consultor_asignado_id) {

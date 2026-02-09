@@ -45,9 +45,14 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
           categorias_tareas(nombre, color)
         `)
         .eq('id', tareaId)
-        .single();
+        .maybeSingle();
 
       if (tareaError) throw tareaError;
+      if (!tareaData) {
+        toast.error('Tarea no encontrada');
+        onOpenChange(false);
+        return;
+      }
 
       // Fetch consultant profile separately
       let profiles = null;

@@ -587,9 +587,10 @@ export default function Reportes() {
                         .from('empresas')
                         .select('razon_social, rfc')
                         .eq('id', selectedEmpresa)
-                        .single();
+                        .maybeSingle();
                       
                       if (empresaError) throw empresaError;
+                      if (!empresa) throw new Error('Empresa no encontrada');
                       
                       await generateReportPDF(empresa, reporteData, selectedPeriod, tipoReporte);
                       

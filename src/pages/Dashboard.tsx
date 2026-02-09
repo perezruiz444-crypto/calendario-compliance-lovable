@@ -56,14 +56,14 @@ export default function Dashboard() {
           .from('profiles')
           .select('empresa_id')
           .eq('id', user?.id)
-          .single();
+          .maybeSingle();
 
         if (profile?.empresa_id) {
           const { data: empresa } = await supabase
             .from('empresas')
             .select('*')
             .eq('id', profile.empresa_id)
-            .single();
+            .maybeSingle();
           
           setEmpresaCliente(empresa);
         }

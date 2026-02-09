@@ -291,7 +291,7 @@ export function useAnalytics() {
       .from('profiles')
       .select('empresa_id')
       .eq('id', user?.id)
-      .single();
+      .maybeSingle();
 
     if (!profile?.empresa_id) {
       setData({
@@ -342,7 +342,7 @@ export function useAnalytics() {
       .from('empresas')
       .select('*')
       .eq('id', profile.empresa_id)
-      .single();
+      .maybeSingle();
 
     const proximosVencimientos = [];
     if (empresa?.cert_iva_ieps_fecha_vencimiento) {
