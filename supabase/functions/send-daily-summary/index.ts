@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
           .from('user_roles')
           .select('role')
           .eq('user_id', profile.id)
-          .single()
+          .maybeSingle()
 
         let expiringDocs = 0
         let expiringCerts = 0
@@ -115,14 +115,14 @@ Deno.serve(async (req) => {
             .from('profiles')
             .select('empresa_id')
             .eq('id', profile.id)
-            .single()
+            .maybeSingle()
 
           if (clientProfile?.empresa_id) {
             const { data: empresa } = await supabaseAdmin
               .from('empresas')
               .select('immex_fecha_fin, prosec_fecha_fin, cert_iva_ieps_fecha_vencimiento, matriz_seguridad_fecha_vencimiento')
               .eq('id', clientProfile.empresa_id)
-              .single()
+              .maybeSingle()
 
             if (empresa) {
               if (empresa.immex_fecha_fin && empresa.immex_fecha_fin <= next7Days) expiringCerts++

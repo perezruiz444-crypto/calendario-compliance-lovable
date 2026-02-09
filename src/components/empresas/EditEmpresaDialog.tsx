@@ -35,11 +35,14 @@ export default function EditEmpresaDialog({ open, onOpenChange, onEmpresaUpdated
       .from('empresas')
       .select('*')
       .eq('id', empresaId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       toast.error('Error al cargar datos de la empresa');
       console.error(error);
+    } else if (!data) {
+      toast.error('Empresa no encontrada');
+      onOpenChange(false);
     } else {
       setFormData(data);
     }

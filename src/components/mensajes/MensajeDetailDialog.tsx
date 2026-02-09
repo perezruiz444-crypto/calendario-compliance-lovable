@@ -38,9 +38,14 @@ export function MensajeDetailDialog({ open, onOpenChange, mensajeId, onUpdate }:
           empresas(razon_social)
         `)
         .eq('id', mensajeId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) {
+        toast.error('Mensaje no encontrado');
+        onOpenChange(false);
+        return;
+      }
       setMensaje(data);
 
       // Mark as read if user is recipient and message is unread
