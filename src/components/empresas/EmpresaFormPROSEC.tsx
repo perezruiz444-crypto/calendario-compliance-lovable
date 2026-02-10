@@ -76,12 +76,13 @@ export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaForm
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent className="w-auto p-0 z-50" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
             <Calendar
               mode="single"
               selected={formData.prosec_fecha_autorizacion ? new Date(formData.prosec_fecha_autorizacion) : undefined}
               onSelect={(date) => setFormData({ ...formData, prosec_fecha_autorizacion: date?.toISOString().split('T')[0] })}
               initialFocus
+              captionLayout="buttons"
               className={cn("p-3 pointer-events-auto")}
             />
           </PopoverContent>
