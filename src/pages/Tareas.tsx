@@ -632,7 +632,18 @@ export default function Tareas() {
     if (!over) return;
     
     const tareaId = active.id as string;
-    const newEstado = over.id as 'pendiente' | 'en_progreso' | 'completada' | 'cancelada';
+    const validEstados = ['pendiente', 'en_progreso', 'completada', 'cancelada'];
+    
+    // Resolve the target estado - over.id could be a column ID or a task ID
+    let newEstado: 'pendiente' | 'en_progreso' | 'completada' | 'cancelada';
+    if (validEstados.includes(over.id as string)) {
+      newEstado = over.id as 'pendiente' | 'en_progreso' | 'completada' | 'cancelada';
+    } else {
+      // Dropped on another task card - find which column that task belongs to
+      const targetTarea = tareas.find(t => t.id === over.id);
+      if (!targetTarea) return;
+      newEstado = targetTarea.estado as 'pendiente' | 'en_progreso' | 'completada' | 'cancelada';
+    }
 
     // Find the task
     const tarea = tareas.find(t => t.id === tareaId);

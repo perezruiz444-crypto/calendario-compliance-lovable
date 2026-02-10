@@ -14,10 +14,18 @@ export function useKeyboardShortcuts(shortcuts: ShortcutConfig[], enabled: boole
     if (!enabled) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Don't intercept when user is typing in an input, textarea, or contenteditable
+      const target = event.target as HTMLElement;
+      const isTyping = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
       shortcuts.forEach(({ key, ctrl, shift, alt, callback }) => {
         const ctrlMatch = ctrl ? (event.ctrlKey || event.metaKey) : !event.ctrlKey && !event.metaKey;
         const shiftMatch = shift ? event.shiftKey : !event.shiftKey;
         const altMatch = alt ? event.altKey : !event.altKey;
+
+        // Skip bare-key shortcuts (no modifier) when typing in inputs
+        const isBareKey = !ctrl && !shift && !alt;
+        if (isBareKey && isTyping) return;
         
         if (
           event.key.toLowerCase() === key.toLowerCase() &&
