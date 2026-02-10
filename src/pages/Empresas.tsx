@@ -4,12 +4,13 @@ import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Building2, Users, Pencil } from 'lucide-react';
+import { Plus, Building2, Users, Pencil, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateEmpresaDialog from '@/components/empresas/CreateEmpresaDialog';
 import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
 import EditEmpresaDialog from '@/components/empresas/EditEmpresaDialog';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 export default function Empresas() {
   const { user, role, loading } = useAuth();
@@ -45,6 +46,85 @@ export default function Empresas() {
       console.error('Error fetching empresas:', error);
     } finally {
       setLoadingEmpresas(false);
+    }
+  };
+
+  const handleDuplicateEmpresa = async (empresaId: string) => {
+    try {
+      // Fetch original empresa
+      const { data: original, error: fetchError } = await supabase
+        .from('empresas')
+        .select('*')
+        .eq('id', empresaId)
+        .maybeSingle();
+
+      if (fetchError || !original) throw fetchError || new Error('Empresa no encontrada');
+
+      // Clone empresa without id, timestamps
+      const { id, created_at, updated_at, ...empresaData } = original;
+      const { data: newEmpresa, error: insertError } = await supabase
+        .from('empresas')
+        .insert({
+          ...empresaData,
+          razon_social: `${empresaData.razon_social} (Copia)`,
+          created_by: user?.id
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Clone related data: tareas
+      const { data: tareasOriginal } = await supabase
+        .from('tareas')
+        .select('*')
+        .eq('empresa_id', empresaId);
+
+      if (tareasOriginal && tareasOriginal.length > 0) {
+        const newTareas = tareasOriginal.map(({ id, created_at, updated_at, ...t }) => ({
+          ...t,
+          empresa_id: newEmpresa.id,
+          estado: 'pendiente' as const,
+          creado_por: user?.id || t.creado_por
+        }));
+
+        await supabase.from('tareas').insert(newTareas);
+      }
+
+      // Clone agentes aduanales
+      const { data: agentesOriginal } = await supabase
+        .from('agentes_aduanales')
+        .select('*')
+        .eq('empresa_id', empresaId);
+
+      if (agentesOriginal && agentesOriginal.length > 0) {
+        const newAgentes = agentesOriginal.map(({ id, created_at, ...a }) => ({
+          ...a,
+          empresa_id: newEmpresa.id
+        }));
+        await supabase.from('agentes_aduanales').insert(newAgentes);
+      }
+
+      // Clone consultor assignments
+      const { data: asignacionesOriginal } = await supabase
+        .from('consultor_empresa_asignacion')
+        .select('*')
+        .eq('empresa_id', empresaId);
+
+      if (asignacionesOriginal && asignacionesOriginal.length > 0) {
+        const newAsignaciones = asignacionesOriginal.map(({ created_at, ...a }) => ({
+          ...a,
+          empresa_id: newEmpresa.id
+        }));
+        await supabase.from('consultor_empresa_asignacion').insert(newAsignaciones);
+      }
+
+      toast.success('Empresa duplicada exitosamente');
+      fetchEmpresas();
+      navigate(`/empresas/${newEmpresa.id}`);
+    } catch (error: any) {
+      console.error('Error duplicating empresa:', error);
+      toast.error(error.message || 'Error al duplicar empresa');
     }
   };
 
@@ -160,6 +240,18 @@ export default function Empresas() {
                         >
                           <Pencil className="w-4 h-4 mr-2" />
                           Editar
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="font-heading"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDuplicateEmpresa(empresa.id);
+                          }}
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Duplicar
                         </Button>
                         <Button 
                           variant="ghost" 

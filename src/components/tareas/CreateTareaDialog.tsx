@@ -45,7 +45,10 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
     frecuencia_recurrencia: 'mensual',
     intervalo_recurrencia: 1,
     fecha_inicio_recurrencia: '',
-    fecha_fin_recurrencia: ''
+    fecha_fin_recurrencia: '',
+    dia_semana: '5', // viernes por defecto
+    dia_mes: '1',
+    ultimo_dia_habil: false
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<any[]>([]);
@@ -112,7 +115,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
         .eq('user_id', user?.id)
         .order('updated_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
       
@@ -130,7 +133,10 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
           frecuencia_recurrencia: 'mensual',
           intervalo_recurrencia: 1,
           fecha_inicio_recurrencia: '',
-          fecha_fin_recurrencia: ''
+          fecha_fin_recurrencia: '',
+          dia_semana: '5',
+          dia_mes: '1',
+          ultimo_dia_habil: false
         });
       }
     } catch (error) {
@@ -342,7 +348,10 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
         frecuencia_recurrencia: 'mensual',
         intervalo_recurrencia: 1,
         fecha_inicio_recurrencia: '',
-        fecha_fin_recurrencia: ''
+        fecha_fin_recurrencia: '',
+        dia_semana: '5',
+        dia_mes: '1',
+        ultimo_dia_habil: false
       });
       setAttachments([]);
       onOpenChange(false);
@@ -356,7 +365,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[900px] max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -383,9 +392,9 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="form" className="flex-1 overflow-hidden">
+          <TabsContent value="form" className="flex-1 overflow-hidden mt-0">
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
-              <div className="space-y-4 py-4 overflow-y-auto pr-2">
+              <div className="space-y-4 py-4 overflow-y-auto pr-2 flex-1" style={{ maxHeight: 'calc(85vh - 220px)' }}>
             <div className="space-y-2">
               <Label htmlFor="titulo" className="font-heading">Título *</Label>
               <Input
@@ -518,7 +527,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
                       <Label htmlFor="frecuencia" className="font-heading">Frecuencia</Label>
                       <Select
                         value={formData.frecuencia_recurrencia}
-                        onValueChange={(value) => setFormData({ ...formData, frecuencia_recurrencia: value })}
+                        onValueChange={(value) => setFormData({ ...formData, frecuencia_recurrencia: value, ultimo_dia_habil: false })}
                       >
                         <SelectTrigger className="font-body">
                           <SelectValue />
@@ -526,6 +535,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
                         <SelectContent>
                           <SelectItem value="diaria">Diaria</SelectItem>
                           <SelectItem value="semanal">Semanal</SelectItem>
+                          <SelectItem value="quincenal">Quincenal</SelectItem>
                           <SelectItem value="mensual">Mensual</SelectItem>
                           <SelectItem value="trimestral">Trimestral</SelectItem>
                           <SelectItem value="anual">Anual</SelectItem>
@@ -546,6 +556,75 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
                     </div>
                   </div>
 
+                  {/* Day of week picker for weekly */}
+                  {formData.frecuencia_recurrencia === 'semanal' && (
+                    <div className="space-y-2">
+                      <Label className="font-heading">Día de la semana</Label>
+                      <div className="flex gap-2 flex-wrap">
+                        {[
+                          { value: '1', label: 'Lun' },
+                          { value: '2', label: 'Mar' },
+                          { value: '3', label: 'Mié' },
+                          { value: '4', label: 'Jue' },
+                          { value: '5', label: 'Vie' },
+                          { value: '6', label: 'Sáb' },
+                          { value: '0', label: 'Dom' },
+                        ].map((day) => (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, dia_semana: day.value })}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                              formData.dia_semana === day.value
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            }`}
+                          >
+                            {day.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Day of month or last business day for monthly */}
+                  {(formData.frecuencia_recurrencia === 'mensual' || formData.frecuencia_recurrencia === 'trimestral') && (
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="ultimo_dia_habil"
+                          checked={formData.ultimo_dia_habil}
+                          onCheckedChange={(checked) => 
+                            setFormData({ ...formData, ultimo_dia_habil: checked as boolean })
+                          }
+                        />
+                        <Label htmlFor="ultimo_dia_habil" className="font-body cursor-pointer">
+                          Último día hábil del mes
+                        </Label>
+                      </div>
+                      {!formData.ultimo_dia_habil && (
+                        <div className="space-y-2">
+                          <Label className="font-heading">Día del mes</Label>
+                          <Select
+                            value={formData.dia_mes}
+                            onValueChange={(value) => setFormData({ ...formData, dia_mes: value })}
+                          >
+                            <SelectTrigger className="font-body w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Array.from({ length: 28 }, (_, i) => (
+                                <SelectItem key={i + 1} value={String(i + 1)}>
+                                  {i + 1}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="fecha_inicio_rec" className="font-heading">Fecha Inicio</Label>
@@ -559,7 +638,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="fecha_fin_rec" className="font-heading">Fecha Fin</Label>
+                      <Label htmlFor="fecha_fin_rec" className="font-heading">Fecha Fin (opcional)</Label>
                       <Input
                         id="fecha_fin_rec"
                         type="date"
@@ -570,16 +649,17 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
                     </div>
                   </div>
 
-                  <p className="text-xs text-muted-foreground font-body">
-                    Esta tarea se repetirá cada {formData.intervalo_recurrencia} 
-                    {formData.frecuencia_recurrencia === 'diaria' && ' día(s)'}
-                    {formData.frecuencia_recurrencia === 'semanal' && ' semana(s)'}
-                    {formData.frecuencia_recurrencia === 'mensual' && ' mes(es)'}
-                    {formData.frecuencia_recurrencia === 'trimestral' && ' trimestre(s)'}
-                    {formData.frecuencia_recurrencia === 'anual' && ' año(s)'}
-                    {formData.fecha_inicio_recurrencia && ` desde ${new Date(formData.fecha_inicio_recurrencia).toLocaleDateString()}`}
-                    {formData.fecha_fin_recurrencia && ` hasta ${new Date(formData.fecha_fin_recurrencia).toLocaleDateString()}`}
-                  </p>
+                  <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground font-body">
+                    📅 Esta tarea se repetirá cada {formData.intervalo_recurrencia}{' '}
+                    {formData.frecuencia_recurrencia === 'diaria' && 'día(s)'}
+                    {formData.frecuencia_recurrencia === 'semanal' && `semana(s) el ${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][parseInt(formData.dia_semana)]}`}
+                    {formData.frecuencia_recurrencia === 'quincenal' && 'quincena(s)'}
+                    {formData.frecuencia_recurrencia === 'mensual' && (formData.ultimo_dia_habil ? 'mes(es) el último día hábil' : `mes(es) el día ${formData.dia_mes}`)}
+                    {formData.frecuencia_recurrencia === 'trimestral' && (formData.ultimo_dia_habil ? 'trimestre(s) el último día hábil' : `trimestre(s) el día ${formData.dia_mes}`)}
+                    {formData.frecuencia_recurrencia === 'anual' && 'año(s)'}
+                    {formData.fecha_inicio_recurrencia && ` desde ${new Date(formData.fecha_inicio_recurrencia).toLocaleDateString('es-MX')}`}
+                    {formData.fecha_fin_recurrencia && ` hasta ${new Date(formData.fecha_fin_recurrencia).toLocaleDateString('es-MX')}`}
+                  </div>
                 </div>
               )}
             </div>
