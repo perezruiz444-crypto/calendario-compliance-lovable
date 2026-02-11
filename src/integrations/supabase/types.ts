@@ -806,6 +806,71 @@ export type Database = {
         }
         Relationships: []
       }
+      obligaciones: {
+        Row: {
+          categoria: string
+          created_at: string
+          created_by: string | null
+          descripcion: string | null
+          empresa_id: string
+          estado: string
+          fecha_autorizacion: string | null
+          fecha_fin: string | null
+          fecha_inicio: string | null
+          fecha_renovacion: string | null
+          fecha_vencimiento: string | null
+          id: string
+          nombre: string
+          notas: string | null
+          numero_oficio: string | null
+          updated_at: string
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          empresa_id: string
+          estado?: string
+          fecha_autorizacion?: string | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          fecha_renovacion?: string | null
+          fecha_vencimiento?: string | null
+          id?: string
+          nombre: string
+          notas?: string | null
+          numero_oficio?: string | null
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          empresa_id?: string
+          estado?: string
+          fecha_autorizacion?: string | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          fecha_renovacion?: string | null
+          fecha_vencimiento?: string | null
+          id?: string
+          nombre?: string
+          notas?: string | null
+          numero_oficio?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligaciones_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
