@@ -14,6 +14,7 @@ import { EmpresaGeneralCard } from '@/components/empresas/EmpresaGeneralCard';
 import { EmpresaIMMEXCard } from '@/components/empresas/EmpresaIMMEXCard';
 import { EmpresaCertificacionCard } from '@/components/empresas/EmpresaCertificacionCard';
 import { EmpresaObligacionesCard } from '@/components/empresas/EmpresaObligacionesCard';
+import { ObligacionesManager } from '@/components/obligaciones/ObligacionesManager';
 import { 
   Building2, 
   MapPin, 
@@ -187,6 +188,9 @@ export default function EmpresaDetail() {
 
         {/* Obligaciones Section - Full Width */}
         <EmpresaObligacionesCard empresa={empresa} />
+
+        {/* Obligaciones Manager - Full CRUD */}
+        <ObligacionesManager empresaId={id!} canEdit={canEdit} />
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
