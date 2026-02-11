@@ -61,12 +61,16 @@ export default function Empresas() {
       if (fetchError || !original) throw fetchError || new Error('Empresa no encontrada');
 
       // Clone empresa without id, timestamps
-      const { id, created_at, updated_at, ...empresaData } = original;
+      const { id: _id, created_at: _ca, updated_at: _ua, ...empresaData } = original;
+      
+      // Generate a new RFC suffix to avoid unique constraint
+      const copySuffix = ` (Copia ${Date.now().toString().slice(-4)})`;
       const { data: newEmpresa, error: insertError } = await supabase
         .from('empresas')
         .insert({
           ...empresaData,
-          razon_social: `${empresaData.razon_social} (Copia)`,
+          razon_social: `${empresaData.razon_social}${copySuffix}`,
+          rfc: empresaData.rfc.slice(0, 10) + 'C' + Math.floor(Math.random() * 100).toString().padStart(2, '0'),
           created_by: user?.id
         })
         .select()
@@ -81,7 +85,7 @@ export default function Empresas() {
         .eq('empresa_id', empresaId);
 
       if (tareasOriginal && tareasOriginal.length > 0) {
-        const newTareas = tareasOriginal.map(({ id, created_at, updated_at, ...t }) => ({
+        const newTareas = tareasOriginal.map(({ id: _id, created_at: _ca, updated_at: _ua, ...t }) => ({
           ...t,
           empresa_id: newEmpresa.id,
           estado: 'pendiente' as const,
@@ -98,7 +102,7 @@ export default function Empresas() {
         .eq('empresa_id', empresaId);
 
       if (agentesOriginal && agentesOriginal.length > 0) {
-        const newAgentes = agentesOriginal.map(({ id, created_at, ...a }) => ({
+        const newAgentes = agentesOriginal.map(({ id: _id, created_at: _ca, ...a }) => ({
           ...a,
           empresa_id: newEmpresa.id
         }));
@@ -112,11 +116,12 @@ export default function Empresas() {
         .eq('empresa_id', empresaId);
 
       if (asignacionesOriginal && asignacionesOriginal.length > 0) {
-        const newAsignaciones = asignacionesOriginal.map(({ created_at, ...a }) => ({
+        const newAsignaciones = asignacionesOriginal.map(({ created_at: _ca, empresa_id: _eid, ...a }) => ({
           ...a,
           empresa_id: newEmpresa.id
         }));
-        await supabase.from('consultor_empresa_asignacion').insert(newAsignaciones);
+        // Use upsert to handle potential conflicts
+        await supabase.from('consultor_empresa_asignacion').upsert(newAsignaciones, { onConflict: 'consultor_id,empresa_id' });
       }
 
       toast.success('Empresa duplicada exitosamente');

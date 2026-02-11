@@ -30,8 +30,10 @@ export function usePushNotifications() {
       console.log('Service Worker registered:', registration);
       
       // Check if already subscribed
-      const subscription = await registration.pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
+      if ('pushManager' in registration) {
+        const subscription = await (registration as any).pushManager.getSubscription();
+        setIsSubscribed(!!subscription);
+      }
     } catch (error) {
       console.error('Service Worker registration failed:', error);
     }
@@ -87,7 +89,7 @@ export function usePushNotifications() {
   const unsubscribe = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = 'pushManager' in registration ? await (registration as any).pushManager.getSubscription() : null;
       
       if (subscription) {
         await subscription.unsubscribe();

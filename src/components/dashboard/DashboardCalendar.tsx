@@ -10,6 +10,55 @@ import { toast } from '@/hooks/use-toast';
 
 const localizer = momentLocalizer(moment);
 
+// Generate recurring dates within a range (up to 1 year ahead)
+function generateRecurringDates(
+  startDateStr: string,
+  endDateStr: string | null,
+  frecuencia: string,
+  intervalo: number
+): Date[] {
+  const dates: Date[] = [];
+  const start = new Date(startDateStr + 'T12:00:00');
+  const now = new Date();
+  const maxDate = endDateStr 
+    ? new Date(endDateStr + 'T12:00:00') 
+    : new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+  
+  let current = new Date(start);
+  const maxOccurrences = 365;
+  let count = 0;
+
+  while (current <= maxDate && count < maxOccurrences) {
+    dates.push(new Date(current));
+    count++;
+    
+    switch (frecuencia) {
+      case 'diaria':
+        current.setDate(current.getDate() + intervalo);
+        break;
+      case 'semanal':
+        current.setDate(current.getDate() + 7 * intervalo);
+        break;
+      case 'quincenal':
+        current.setDate(current.getDate() + 14 * intervalo);
+        break;
+      case 'mensual':
+        current.setMonth(current.getMonth() + intervalo);
+        break;
+      case 'trimestral':
+        current.setMonth(current.getMonth() + 3 * intervalo);
+        break;
+      case 'anual':
+        current.setFullYear(current.getFullYear() + intervalo);
+        break;
+      default:
+        current.setMonth(current.getMonth() + intervalo);
+    }
+  }
+
+  return dates;
+}
+
 interface CalendarEvent {
   id: string;
   title: string;
@@ -59,18 +108,44 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
       if (tareas) {
         tareas.forEach(tarea => {
           if (tarea.fecha_vencimiento) {
-            allEvents.push({
-              id: tarea.id,
-              title: `📋 ${tarea.titulo}`,
-              start: new Date(tarea.fecha_vencimiento),
-              end: new Date(tarea.fecha_vencimiento),
-              resource: {
-                type: 'tarea',
-                prioridad: tarea.prioridad,
-                estado: tarea.estado,
-                data: tarea
-              }
-            });
+            const baseDate = new Date(tarea.fecha_vencimiento + 'T12:00:00');
+            
+            // If recurring, generate occurrences within a reasonable range
+            if (tarea.es_recurrente && tarea.frecuencia_recurrencia) {
+              const occurrences = generateRecurringDates(
+                tarea.fecha_inicio_recurrencia || tarea.fecha_vencimiento,
+                tarea.fecha_fin_recurrencia,
+                tarea.frecuencia_recurrencia,
+                tarea.intervalo_recurrencia || 1
+              );
+              occurrences.forEach((occDate, idx) => {
+                allEvents.push({
+                  id: `${tarea.id}-rec-${idx}`,
+                  title: `🔄 ${tarea.titulo}`,
+                  start: occDate,
+                  end: occDate,
+                  resource: {
+                    type: 'tarea',
+                    prioridad: tarea.prioridad,
+                    estado: tarea.estado,
+                    data: tarea
+                  }
+                });
+              });
+            } else {
+              allEvents.push({
+                id: tarea.id,
+                title: `📋 ${tarea.titulo}`,
+                start: baseDate,
+                end: baseDate,
+                resource: {
+                  type: 'tarea',
+                  prioridad: tarea.prioridad,
+                  estado: tarea.estado,
+                  data: tarea
+                }
+              });
+            }
           }
         });
       }
@@ -92,8 +167,8 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
             allEvents.push({
               id: doc.id,
               title: `📄 ${doc.nombre}`,
-              start: new Date(doc.fecha_vencimiento),
-              end: new Date(doc.fecha_vencimiento),
+              start: new Date(doc.fecha_vencimiento + 'T12:00:00'),
+              end: new Date(doc.fecha_vencimiento + 'T12:00:00'),
               resource: {
                 type: 'documento',
                 data: doc
@@ -117,8 +192,8 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
             allEvents.push({
               id: `immex-${empresa.id}`,
               title: `🏭 IMMEX - ${empresa.razon_social}`,
-              start: new Date(empresa.immex_fecha_fin),
-              end: new Date(empresa.immex_fecha_fin),
+              start: new Date(empresa.immex_fecha_fin + 'T12:00:00'),
+              end: new Date(empresa.immex_fecha_fin + 'T12:00:00'),
               resource: {
                 type: 'programa',
                 data: { tipo: 'IMMEX', empresa }
@@ -131,8 +206,8 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
             allEvents.push({
               id: `prosec-${empresa.id}`,
               title: `📊 PROSEC - ${empresa.razon_social}`,
-              start: new Date(empresa.prosec_fecha_fin),
-              end: new Date(empresa.prosec_fecha_fin),
+              start: new Date(empresa.prosec_fecha_fin + 'T12:00:00'),
+              end: new Date(empresa.prosec_fecha_fin + 'T12:00:00'),
               resource: {
                 type: 'programa',
                 data: { tipo: 'PROSEC', empresa }
@@ -145,8 +220,8 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
             allEvents.push({
               id: `cert-${empresa.id}`,
               title: `🛡️ Cert. IVA/IEPS - ${empresa.razon_social}`,
-              start: new Date(empresa.cert_iva_ieps_fecha_vencimiento),
-              end: new Date(empresa.cert_iva_ieps_fecha_vencimiento),
+              start: new Date(empresa.cert_iva_ieps_fecha_vencimiento + 'T12:00:00'),
+              end: new Date(empresa.cert_iva_ieps_fecha_vencimiento + 'T12:00:00'),
               resource: {
                 type: 'programa',
                 data: { tipo: 'Certificación', empresa }
@@ -159,8 +234,8 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
             allEvents.push({
               id: `matriz-${empresa.id}`,
               title: `🔐 Matriz Seg. - ${empresa.razon_social}`,
-              start: new Date(empresa.matriz_seguridad_fecha_vencimiento),
-              end: new Date(empresa.matriz_seguridad_fecha_vencimiento),
+              start: new Date(empresa.matriz_seguridad_fecha_vencimiento + 'T12:00:00'),
+              end: new Date(empresa.matriz_seguridad_fecha_vencimiento + 'T12:00:00'),
               resource: {
                 type: 'programa',
                 data: { tipo: 'Matriz Seguridad', empresa }

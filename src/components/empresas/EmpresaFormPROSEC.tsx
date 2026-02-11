@@ -79,10 +79,19 @@ export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaForm
           <PopoverContent className="w-auto p-0 z-50" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
             <Calendar
               mode="single"
-              selected={formData.prosec_fecha_autorizacion ? new Date(formData.prosec_fecha_autorizacion) : undefined}
-              onSelect={(date) => setFormData({ ...formData, prosec_fecha_autorizacion: date?.toISOString().split('T')[0] })}
+              selected={formData.prosec_fecha_autorizacion ? new Date(formData.prosec_fecha_autorizacion + 'T12:00:00') : undefined}
+              onSelect={(date) => {
+                if (date) {
+                  const year = date.getFullYear();
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const day = String(date.getDate()).padStart(2, '0');
+                  setFormData({ ...formData, prosec_fecha_autorizacion: `${year}-${month}-${day}` });
+                }
+              }}
               initialFocus
-              captionLayout="buttons"
+              captionLayout="dropdown-buttons"
+              fromYear={1990}
+              toYear={2100}
               className={cn("p-3 pointer-events-auto")}
             />
           </PopoverContent>

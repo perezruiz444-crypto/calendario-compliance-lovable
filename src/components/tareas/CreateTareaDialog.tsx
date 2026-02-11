@@ -16,6 +16,7 @@ import { CategorySelector } from './CategorySelector';
 import { FileAttachments } from './FileAttachments';
 import { TareaPreview } from './TareaPreview';
 import { Repeat, Save, Eye, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface CreateTareaDialogProps {
   open: boolean;
@@ -52,6 +53,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<any[]>([]);
+  const [selectedEmpresaIds, setSelectedEmpresaIds] = useState<string[]>(defaultEmpresaId ? [defaultEmpresaId] : []);
 
   useEffect(() => {
     if (open) {
@@ -311,31 +313,36 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
     setLoading(true);
 
     try {
+      // If multiple empresas selected, create one tarea per empresa
+      const empresaIds = selectedEmpresaIds.length > 0 ? selectedEmpresaIds : [formData.empresa_id];
+      
+      const tareasToInsert = empresaIds.map(eid => ({
+        titulo: formData.titulo.trim(),
+        descripcion: formData.descripcion.trim() || null,
+        prioridad: formData.prioridad,
+        empresa_id: eid,
+        consultor_asignado_id: formData.consultor_asignado_id || null,
+        fecha_vencimiento: formData.fecha_vencimiento || null,
+        categoria_id: formData.categoria_id || null,
+        archivos_adjuntos: attachments.length > 0 ? attachments : null,
+        creado_por: user?.id,
+        es_recurrente: formData.es_recurrente,
+        frecuencia_recurrencia: formData.es_recurrente ? formData.frecuencia_recurrencia : null,
+        intervalo_recurrencia: formData.es_recurrente ? formData.intervalo_recurrencia : null,
+        fecha_inicio_recurrencia: formData.es_recurrente && formData.fecha_inicio_recurrencia ? formData.fecha_inicio_recurrencia : null,
+        fecha_fin_recurrencia: formData.es_recurrente && formData.fecha_fin_recurrencia ? formData.fecha_fin_recurrencia : null
+      }));
+
       const { error } = await supabase
         .from('tareas')
-        .insert({
-          titulo: formData.titulo.trim(),
-          descripcion: formData.descripcion.trim() || null,
-          prioridad: formData.prioridad,
-          empresa_id: formData.empresa_id,
-          consultor_asignado_id: formData.consultor_asignado_id || null,
-          fecha_vencimiento: formData.fecha_vencimiento || null,
-          categoria_id: formData.categoria_id || null,
-          archivos_adjuntos: attachments.length > 0 ? attachments : null,
-          creado_por: user?.id,
-          es_recurrente: formData.es_recurrente,
-          frecuencia_recurrencia: formData.es_recurrente ? formData.frecuencia_recurrencia : null,
-          intervalo_recurrencia: formData.es_recurrente ? formData.intervalo_recurrencia : null,
-          fecha_inicio_recurrencia: formData.es_recurrente ? formData.fecha_inicio_recurrencia : null,
-          fecha_fin_recurrencia: formData.es_recurrente ? formData.fecha_fin_recurrencia : null
-        });
+        .insert(tareasToInsert);
 
       if (error) throw error;
 
       // Delete draft after successful creation
       await deleteDraft();
 
-      toast.success('Tarea creada exitosamente');
+      toast.success(empresaIds.length > 1 ? `${empresaIds.length} tareas creadas exitosamente` : 'Tarea creada exitosamente');
       setFormData({
         titulo: '',
         descripcion: '',
@@ -354,7 +361,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
         ultimo_dia_habil: false
       });
       setAttachments([]);
-      onOpenChange(false);
+      setSelectedEmpresaIds([]);
       onTareaCreated();
     } catch (error: any) {
       toast.error(error.message || 'Error al crear tarea');
@@ -460,22 +467,59 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="empresa_id" className="font-heading">Empresa *</Label>
-              <Select
-                value={formData.empresa_id}
-                onValueChange={(value) => setFormData({ ...formData, empresa_id: value })}
-              >
-                <SelectTrigger className="font-body">
-                  <SelectValue placeholder="Selecciona una empresa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {empresas.map((empresa) => (
-                    <SelectItem key={empresa.id} value={empresa.id}>
-                      {empresa.razon_social}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="empresa_id" className="font-heading">Empresa(s) *</Label>
+              <div className="space-y-2">
+                <Select
+                  value={formData.empresa_id}
+                  onValueChange={(value) => {
+                    if (!selectedEmpresaIds.includes(value)) {
+                      setSelectedEmpresaIds([...selectedEmpresaIds, value]);
+                    }
+                    setFormData({ ...formData, empresa_id: value });
+                  }}
+                >
+                  <SelectTrigger className="font-body">
+                    <SelectValue placeholder="Selecciona una o más empresas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {empresas.map((empresa) => (
+                      <SelectItem key={empresa.id} value={empresa.id}>
+                        {empresa.razon_social}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedEmpresaIds.length > 1 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedEmpresaIds.map((eid) => {
+                      const emp = empresas.find(e => e.id === eid);
+                      return (
+                        <Badge key={eid} variant="secondary" className="font-body text-xs">
+                          {emp?.razon_social || eid}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = selectedEmpresaIds.filter(id => id !== eid);
+                              setSelectedEmpresaIds(updated);
+                              if (formData.empresa_id === eid) {
+                                setFormData({ ...formData, empresa_id: updated[0] || '' });
+                              }
+                            }}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+                {selectedEmpresaIds.length > 1 && (
+                  <p className="text-xs text-muted-foreground">
+                    Se creará una tarea idéntica para cada empresa seleccionada ({selectedEmpresaIds.length} empresas)
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
