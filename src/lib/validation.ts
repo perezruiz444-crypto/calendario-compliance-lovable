@@ -63,7 +63,7 @@ export const tareaSchema = z.object({
     z.literal('media'),
     z.literal('alta')
   ]),
-  empresa_id: z.string().uuid({ message: "Empresa inválida" }),
+  empresa_id: z.string().min(1, { message: "Selecciona al menos una empresa" }),
   consultor_asignado_id: z.string().uuid({ message: "Consultor inválido" }).optional().or(z.literal('')),
   fecha_vencimiento: z.string().optional().or(z.literal('')),
   categoria_id: z.string().uuid({ message: "Categoría inválida" }).optional().or(z.literal(''))

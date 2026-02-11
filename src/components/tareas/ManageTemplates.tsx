@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, FileText, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Users, Repeat } from 'lucide-react';
 
 interface ManageTemplatesProps {
   open: boolean;
@@ -32,7 +32,10 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
     prioridad: 'media' as 'alta' | 'media' | 'baja',
     categoria_id: '',
     duracion_dias: '',
-    es_publico: false
+    es_publico: false,
+    es_recurrente: false,
+    frecuencia_recurrencia: 'mensual',
+    intervalo_recurrencia: 1,
   });
 
   useEffect(() => {
@@ -80,7 +83,10 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
       prioridad: 'media',
       categoria_id: '',
       duracion_dias: '',
-      es_publico: false
+      es_publico: false,
+      es_recurrente: false,
+      frecuencia_recurrencia: 'mensual',
+      intervalo_recurrencia: 1,
     });
     setEditingTemplate(null);
     setShowForm(false);
@@ -96,7 +102,10 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
       prioridad: template.prioridad,
       categoria_id: template.categoria_id || '',
       duracion_dias: template.duracion_dias?.toString() || '',
-      es_publico: template.es_publico
+      es_publico: template.es_publico,
+      es_recurrente: template.campos_personalizados?.es_recurrente || false,
+      frecuencia_recurrencia: template.campos_personalizados?.frecuencia_recurrencia || 'mensual',
+      intervalo_recurrencia: template.campos_personalizados?.intervalo_recurrencia || 1,
     });
     setShowForm(true);
   };
@@ -114,7 +123,12 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
         prioridad: formData.prioridad,
         categoria_id: formData.categoria_id || null,
         duracion_dias: formData.duracion_dias ? parseInt(formData.duracion_dias) : null,
-        es_publico: formData.es_publico
+        es_publico: formData.es_publico,
+        campos_personalizados: formData.es_recurrente ? {
+          es_recurrente: true,
+          frecuencia_recurrencia: formData.frecuencia_recurrencia,
+          intervalo_recurrencia: formData.intervalo_recurrencia,
+        } : null,
       };
 
       if (editingTemplate) {
@@ -220,6 +234,12 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
                               {template.categorias_tareas && (
                                 <Badge variant="outline" className="text-xs">
                                   {template.categorias_tareas.nombre}
+                                </Badge>
+                              )}
+                              {template.campos_personalizados?.es_recurrente && (
+                                <Badge variant="outline" className="text-xs gap-1">
+                                  <Repeat className="w-3 h-3" />
+                                  Recurrente
                                 </Badge>
                               )}
                             </div>
@@ -365,6 +385,54 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
                   Template público (visible para todos)
                 </Label>
               </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="es_recurrente_tpl"
+                  checked={formData.es_recurrente}
+                  onCheckedChange={(checked) => setFormData({ ...formData, es_recurrente: checked as boolean })}
+                />
+                <Label htmlFor="es_recurrente_tpl" className="font-body cursor-pointer flex items-center gap-2">
+                  <Repeat className="w-4 h-4" />
+                  Tarea recurrente
+                </Label>
+              </div>
+
+              {formData.es_recurrente && (
+                <div className="space-y-3 pl-6 border-l-2 border-primary/20">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="font-heading">Frecuencia</Label>
+                      <Select
+                        value={formData.frecuencia_recurrencia}
+                        onValueChange={(value) => setFormData({ ...formData, frecuencia_recurrencia: value })}
+                      >
+                        <SelectTrigger className="font-body">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="diaria">Diaria</SelectItem>
+                          <SelectItem value="semanal">Semanal</SelectItem>
+                          <SelectItem value="quincenal">Quincenal</SelectItem>
+                          <SelectItem value="mensual">Mensual</SelectItem>
+                          <SelectItem value="trimestral">Trimestral</SelectItem>
+                          <SelectItem value="anual">Anual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-heading">Cada</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={formData.intervalo_recurrencia}
+                        onChange={(e) => setFormData({ ...formData, intervalo_recurrencia: parseInt(e.target.value) || 1 })}
+                        className="font-body"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2 pt-4">
                 <Button
