@@ -808,6 +808,7 @@ export type Database = {
       }
       obligaciones: {
         Row: {
+          articulos: string | null
           categoria: string
           created_at: string
           created_by: string | null
@@ -823,9 +824,11 @@ export type Database = {
           nombre: string
           notas: string | null
           numero_oficio: string | null
+          presentacion: string | null
           updated_at: string
         }
         Insert: {
+          articulos?: string | null
           categoria: string
           created_at?: string
           created_by?: string | null
@@ -841,9 +844,11 @@ export type Database = {
           nombre: string
           notas?: string | null
           numero_oficio?: string | null
+          presentacion?: string | null
           updated_at?: string
         }
         Update: {
+          articulos?: string | null
           categoria?: string
           created_at?: string
           created_by?: string | null
@@ -859,6 +864,7 @@ export type Database = {
           nombre?: string
           notas?: string | null
           numero_oficio?: string | null
+          presentacion?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -870,6 +876,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      obligaciones_catalogo: {
+        Row: {
+          articulos: string | null
+          created_at: string
+          created_by: string | null
+          descripcion: string | null
+          id: string
+          nombre: string
+          presentacion: string | null
+          programa: string
+          updated_at: string
+        }
+        Insert: {
+          articulos?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          presentacion?: string | null
+          programa: string
+          updated_at?: string
+        }
+        Update: {
+          articulos?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          presentacion?: string | null
+          programa?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

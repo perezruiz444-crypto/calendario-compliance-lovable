@@ -4,13 +4,17 @@ import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Building2, Users, Pencil, Copy } from 'lucide-react';
+import { Plus, Building2, Users, Pencil, Copy, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateEmpresaDialog from '@/components/empresas/CreateEmpresaDialog';
 import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
 import EditEmpresaDialog from '@/components/empresas/EditEmpresaDialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function Empresas() {
   const { user, role, loading } = useAuth();
@@ -22,6 +26,7 @@ export default function Empresas() {
   const [consultoresDialogOpen, setConsultoresDialogOpen] = useState(false);
   const [selectedEmpresa, setSelectedEmpresa] = useState<{ id: string; nombre: string } | null>(null);
   const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
+  const [deleteEmpresaId, setDeleteEmpresaId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -130,6 +135,31 @@ export default function Empresas() {
     } catch (error: any) {
       console.error('Error duplicating empresa:', error);
       toast.error(error.message || 'Error al duplicar empresa');
+    }
+  };
+
+  const handleDeleteEmpresa = async () => {
+    if (!deleteEmpresaId) return;
+    try {
+      // Delete related data first
+      await supabase.from('obligaciones').delete().eq('empresa_id', deleteEmpresaId);
+      await supabase.from('tareas').delete().eq('empresa_id', deleteEmpresaId);
+      await supabase.from('agentes_aduanales').delete().eq('empresa_id', deleteEmpresaId);
+      await supabase.from('consultor_empresa_asignacion').delete().eq('empresa_id', deleteEmpresaId);
+      await supabase.from('documentos').delete().eq('empresa_id', deleteEmpresaId);
+      await supabase.from('apoderados_legales').delete().eq('empresa_id', deleteEmpresaId);
+      await supabase.from('domicilios_operacion').delete().eq('empresa_id', deleteEmpresaId);
+      await supabase.from('miembros_socios').delete().eq('empresa_id', deleteEmpresaId);
+      
+      const { error } = await supabase.from('empresas').delete().eq('id', deleteEmpresaId);
+      if (error) throw error;
+      
+      toast.success('Empresa eliminada exitosamente');
+      setDeleteEmpresaId(null);
+      fetchEmpresas();
+    } catch (error: any) {
+      console.error('Error deleting empresa:', error);
+      toast.error(error.message || 'Error al eliminar empresa');
     }
   };
 
@@ -258,6 +288,20 @@ export default function Empresas() {
                           <Copy className="w-4 h-4 mr-2" />
                           Duplicar
                         </Button>
+                        {role === 'administrador' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="font-heading text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteEmpresaId(empresa.id);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Eliminar
+                          </Button>
+                        )}
                         <Button 
                           variant="ghost" 
                           size="sm" 
@@ -299,6 +343,23 @@ export default function Empresas() {
           empresaNombre={selectedEmpresa.nombre}
         />
       )}
+
+      <AlertDialog open={!!deleteEmpresaId} onOpenChange={(v) => !v && setDeleteEmpresaId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar empresa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán todos los datos relacionados (tareas, obligaciones, documentos, agentes, etc.). Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteEmpresa} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar Empresa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

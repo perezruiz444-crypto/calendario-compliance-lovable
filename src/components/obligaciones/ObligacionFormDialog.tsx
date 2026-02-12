@@ -28,6 +28,8 @@ export interface ObligacionFormData {
   categoria: string;
   nombre: string;
   descripcion: string;
+  articulos: string;
+  presentacion: string;
   fecha_autorizacion: string;
   fecha_vencimiento: string;
   fecha_renovacion: string;
@@ -39,17 +41,9 @@ export interface ObligacionFormData {
 }
 
 const EMPTY_FORM: ObligacionFormData = {
-  categoria: 'general',
-  nombre: '',
-  descripcion: '',
-  fecha_autorizacion: '',
-  fecha_vencimiento: '',
-  fecha_renovacion: '',
-  fecha_inicio: '',
-  fecha_fin: '',
-  numero_oficio: '',
-  estado: 'vigente',
-  notas: '',
+  categoria: 'general', nombre: '', descripcion: '', articulos: '', presentacion: '',
+  fecha_autorizacion: '', fecha_vencimiento: '', fecha_renovacion: '',
+  fecha_inicio: '', fecha_fin: '', numero_oficio: '', estado: 'vigente', notas: '',
 };
 
 interface Props {
@@ -64,9 +58,7 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
   const [form, setForm] = useState<ObligacionFormData>(EMPTY_FORM);
 
   useEffect(() => {
-    if (open) {
-      setForm(initialData ? { ...initialData } : { ...EMPTY_FORM });
-    }
+    if (open) setForm(initialData ? { ...EMPTY_FORM, ...initialData } : { ...EMPTY_FORM });
   }, [open, initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -111,6 +103,14 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
                 </SelectContent>
               </Select>
             </div>
+            <div className="col-span-2">
+              <Label>Artículo(s)</Label>
+              <Input value={form.articulos} onChange={e => update('articulos', e.target.value)} placeholder="Ej: Art. 24 IMMEX, Regla 7.1.1" />
+            </div>
+            <div className="col-span-2">
+              <Label>Presentación</Label>
+              <Input value={form.presentacion} onChange={e => update('presentacion', e.target.value)} placeholder="Ej: Mensual, Semestral, Anual" />
+            </div>
             <div>
               <Label>Número de Oficio</Label>
               <Input value={form.numero_oficio} onChange={e => update('numero_oficio', e.target.value)} placeholder="Oficio / Número" />
@@ -126,14 +126,6 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
             <div>
               <Label>Fecha Renovación</Label>
               <Input type="date" value={form.fecha_renovacion} onChange={e => update('fecha_renovacion', e.target.value)} />
-            </div>
-            <div>
-              <Label>Fecha Inicio</Label>
-              <Input type="date" value={form.fecha_inicio} onChange={e => update('fecha_inicio', e.target.value)} />
-            </div>
-            <div>
-              <Label>Fecha Fin</Label>
-              <Input type="date" value={form.fecha_fin} onChange={e => update('fecha_fin', e.target.value)} />
             </div>
             <div className="col-span-2">
               <Label>Descripción</Label>

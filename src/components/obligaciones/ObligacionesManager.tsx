@@ -7,22 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, differenceInDays, isPast, isValid } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { 
   Plus, Upload, Trash2, Pencil, Search, 
-  Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter
+  Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen
 } from 'lucide-react';
 import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormDialog';
 import { BulkImportDialog, type ParsedRow } from './BulkImportDialog';
+import { CatalogoObligacionesDialog } from './CatalogoObligacionesDialog';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
 interface Props {
@@ -31,12 +25,8 @@ interface Props {
 }
 
 const CATEGORIA_LABELS: Record<string, string> = {
-  general: 'General',
-  cert_iva_ieps: 'Cert. IVA/IEPS',
-  immex: 'IMMEX',
-  prosec: 'PROSEC',
-  padron: 'Padrón',
-  otro: 'Otro',
+  general: 'General', cert_iva_ieps: 'Cert. IVA/IEPS', immex: 'IMMEX',
+  prosec: 'PROSEC', padron: 'Padrón', otro: 'Otro',
 };
 
 const CATEGORIA_COLORS: Record<string, string> = {
@@ -53,7 +43,6 @@ function getVencimientoBadge(fecha: string | null) {
   const date = new Date(fecha);
   if (!isValid(date)) return null;
   const days = differenceInDays(date, new Date());
-
   if (isPast(date)) return <Badge variant="destructive" className="text-xs gap-1"><AlertCircle className="w-3 h-3" />Vencido</Badge>;
   if (days <= 30) return <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-xs gap-1"><AlertCircle className="w-3 h-3" />{days}d</Badge>;
   if (days <= 90) return <Badge className="bg-warning/20 text-warning border-warning/30 text-xs gap-1"><Calendar className="w-3 h-3" />{days}d</Badge>;
@@ -74,6 +63,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const [filterCategoria, setFilterCategoria] = useState('all');
   const [formOpen, setFormOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const [editData, setEditData] = useState<ObligacionFormData | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -98,6 +88,8 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       categoria: data.categoria,
       nombre: data.nombre,
       descripcion: data.descripcion || null,
+      articulos: data.articulos || null,
+      presentacion: data.presentacion || null,
       fecha_autorizacion: data.fecha_autorizacion || null,
       fecha_vencimiento: data.fecha_vencimiento || null,
       fecha_renovacion: data.fecha_renovacion || null,
@@ -121,6 +113,8 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       categoria: data.categoria,
       nombre: data.nombre,
       descripcion: data.descripcion || null,
+      articulos: data.articulos || null,
+      presentacion: data.presentacion || null,
       fecha_autorizacion: data.fecha_autorizacion || null,
       fecha_vencimiento: data.fecha_vencimiento || null,
       fecha_renovacion: data.fecha_renovacion || null,
@@ -147,42 +141,92 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
     fetchObligaciones();
   };
 
-  const handleBulkImport = async (rows: ParsedRow[]) => {
+  const handleBulkImport = async (rows: ParsedRow[], saveToCatalog: boolean) => {
     setSaving(true);
+
+    // Map programa text to categoria key
+    const programaToCategoria = (programa: string): string => {
+      const lower = programa.toLowerCase();
+      if (lower.includes('immex')) return 'immex';
+      if (lower.includes('prosec')) return 'prosec';
+      if (lower.includes('cert') || lower.includes('iva') || lower.includes('ieps')) return 'cert_iva_ieps';
+      if (lower.includes('padr')) return 'padron';
+      if (lower.includes('general')) return 'general';
+      return 'otro';
+    };
+
     const inserts = rows.map(r => ({
       empresa_id: empresaId,
-      categoria: r.categoria,
+      categoria: programaToCategoria(r.programa),
       nombre: r.nombre,
       descripcion: r.descripcion || null,
-      fecha_autorizacion: r.fecha_autorizacion || null,
-      fecha_vencimiento: r.fecha_vencimiento || null,
-      fecha_renovacion: r.fecha_renovacion || null,
-      numero_oficio: r.numero_oficio || null,
-      estado: r.estado || 'vigente',
-      notas: r.notas || null,
+      articulos: r.articulos || null,
+      presentacion: r.presentacion || null,
+      estado: 'vigente',
     }));
+
     const { error } = await supabase.from('obligaciones').insert(inserts);
+    if (error) { toast.error('Error en importación masiva'); console.error(error); setSaving(false); return; }
+
+    // Save to catalog if requested
+    if (saveToCatalog) {
+      const catalogInserts = rows.map(r => ({
+        programa: r.programa,
+        nombre: r.nombre,
+        articulos: r.articulos || null,
+        descripcion: r.descripcion || null,
+        presentacion: r.presentacion || null,
+      }));
+      await supabase.from('obligaciones_catalogo').insert(catalogInserts);
+    }
+
     setSaving(false);
-    if (error) { toast.error('Error en importación masiva'); console.error(error); return; }
     toast.success(`${rows.length} obligaciones importadas`);
     setBulkOpen(false);
     fetchObligaciones();
   };
 
+  const handleAssignFromCatalog = async (catalogItems: any[]) => {
+    if (catalogItems.length === 0) return;
+    setSaving(true);
+
+    const programaToCategoria = (programa: string): string => {
+      const lower = programa.toLowerCase();
+      if (lower.includes('immex')) return 'immex';
+      if (lower.includes('prosec')) return 'prosec';
+      if (lower.includes('cert') || lower.includes('iva') || lower.includes('ieps')) return 'cert_iva_ieps';
+      if (lower.includes('padr')) return 'padron';
+      if (lower.includes('general')) return 'general';
+      return 'otro';
+    };
+
+    const inserts = catalogItems.map(item => ({
+      empresa_id: empresaId,
+      categoria: programaToCategoria(item.programa),
+      nombre: item.nombre,
+      descripcion: item.descripcion || null,
+      articulos: item.articulos || null,
+      presentacion: item.presentacion || null,
+      estado: 'vigente',
+    }));
+
+    const { error } = await supabase.from('obligaciones').insert(inserts);
+    setSaving(false);
+    if (error) { toast.error('Error al asignar obligaciones'); return; }
+    toast.success(`${catalogItems.length} obligaciones asignadas desde catálogo`);
+    setCatalogOpen(false);
+    fetchObligaciones();
+  };
+
   const openEdit = (ob: any) => {
     setEditData({
-      id: ob.id,
-      categoria: ob.categoria,
-      nombre: ob.nombre,
-      descripcion: ob.descripcion || '',
-      fecha_autorizacion: ob.fecha_autorizacion || '',
-      fecha_vencimiento: ob.fecha_vencimiento || '',
-      fecha_renovacion: ob.fecha_renovacion || '',
-      fecha_inicio: ob.fecha_inicio || '',
-      fecha_fin: ob.fecha_fin || '',
-      numero_oficio: ob.numero_oficio || '',
-      estado: ob.estado,
-      notas: ob.notas || '',
+      id: ob.id, categoria: ob.categoria, nombre: ob.nombre,
+      descripcion: ob.descripcion || '', articulos: ob.articulos || '',
+      presentacion: ob.presentacion || '',
+      fecha_autorizacion: ob.fecha_autorizacion || '', fecha_vencimiento: ob.fecha_vencimiento || '',
+      fecha_renovacion: ob.fecha_renovacion || '', fecha_inicio: ob.fecha_inicio || '',
+      fecha_fin: ob.fecha_fin || '', numero_oficio: ob.numero_oficio || '',
+      estado: ob.estado, notas: ob.notas || '',
     });
     setFormOpen(true);
   };
@@ -196,8 +240,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const vencidosCount = obligaciones.filter(ob => ob.fecha_vencimiento && isPast(new Date(ob.fecha_vencimiento))).length;
   const porVencerCount = obligaciones.filter(ob => {
     if (!ob.fecha_vencimiento) return false;
-    const d = new Date(ob.fecha_vencimiento);
-    const days = differenceInDays(d, new Date());
+    const days = differenceInDays(new Date(ob.fecha_vencimiento), new Date());
     return days >= 0 && days <= 90;
   }).length;
 
@@ -212,33 +255,22 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
           </CardTitle>
           <div className="flex items-center gap-2">
             {vencidosCount > 0 && (
-              <Badge variant="destructive" className="gap-1">
-                <AlertCircle className="w-3 h-3" />{vencidosCount} vencido(s)
-              </Badge>
+              <Badge variant="destructive" className="gap-1"><AlertCircle className="w-3 h-3" />{vencidosCount} vencido(s)</Badge>
             )}
             {porVencerCount > 0 && (
-              <Badge className="bg-warning/20 text-warning border-warning/30 gap-1">
-                <Calendar className="w-3 h-3" />{porVencerCount} próximo(s)
-              </Badge>
+              <Badge className="bg-warning/20 text-warning border-warning/30 gap-1"><Calendar className="w-3 h-3" />{porVencerCount} próximo(s)</Badge>
             )}
           </div>
         </div>
 
-        {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-2 mt-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              value={search} 
-              onChange={e => setSearch(e.target.value)} 
-              placeholder="Buscar obligación..." 
-              className="pl-9"
-            />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar obligación..." className="pl-9" />
           </div>
           <Select value={filterCategoria} onValueChange={setFilterCategoria}>
             <SelectTrigger className="w-[160px]">
-              <Filter className="w-4 h-4 mr-1" />
-              <SelectValue />
+              <Filter className="w-4 h-4 mr-1" /><SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
@@ -249,13 +281,14 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
           </Select>
           {canEdit && (
             <>
+              <Button size="sm" variant="outline" onClick={() => setCatalogOpen(true)}>
+                <BookOpen className="w-4 h-4 mr-1" />Catálogo
+              </Button>
               <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}>
-                <Upload className="w-4 h-4 mr-1" />
-                Masivo
+                <Upload className="w-4 h-4 mr-1" />Masivo
               </Button>
               <Button size="sm" onClick={() => { setEditData(null); setFormOpen(true); }}>
-                <Plus className="w-4 h-4 mr-1" />
-                Nueva
+                <Plus className="w-4 h-4 mr-1" />Nueva
               </Button>
             </>
           )}
@@ -264,23 +297,16 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
 
       <CardContent>
         {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
+          <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-10">
             <ClipboardList className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">
-              {obligaciones.length === 0 ? 'Sin obligaciones registradas' : 'Sin resultados para el filtro'}
-            </p>
+            <p className="text-muted-foreground">{obligaciones.length === 0 ? 'Sin obligaciones registradas' : 'Sin resultados para el filtro'}</p>
             {canEdit && obligaciones.length === 0 && (
               <div className="flex justify-center gap-2 mt-4">
-                <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}>
-                  <Upload className="w-4 h-4 mr-1" />Importar Masivamente
-                </Button>
-                <Button size="sm" onClick={() => { setEditData(null); setFormOpen(true); }}>
-                  <Plus className="w-4 h-4 mr-1" />Agregar
-                </Button>
+                <Button size="sm" variant="outline" onClick={() => setCatalogOpen(true)}><BookOpen className="w-4 h-4 mr-1" />Desde Catálogo</Button>
+                <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}><Upload className="w-4 h-4 mr-1" />Importar</Button>
+                <Button size="sm" onClick={() => { setEditData(null); setFormOpen(true); }}><Plus className="w-4 h-4 mr-1" />Agregar</Button>
               </div>
             )}
           </div>
@@ -291,7 +317,8 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                 <tr className="border-b">
                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Categoría</th>
                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Nombre</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Oficio</th>
+                  <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Artículo(s)</th>
+                  <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Presentación</th>
                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Vencimiento</th>
                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Estado</th>
                   {canEdit && <th className="text-right p-2 font-heading font-medium text-muted-foreground">Acciones</th>}
@@ -309,25 +336,20 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                       <p className="font-medium">{ob.nombre}</p>
                       {ob.descripcion && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{ob.descripcion}</p>}
                     </td>
-                    <td className="p-2 hidden md:table-cell text-muted-foreground">{ob.numero_oficio || '-'}</td>
+                    <td className="p-2 hidden md:table-cell text-muted-foreground">{ob.articulos || '-'}</td>
+                    <td className="p-2 hidden md:table-cell text-muted-foreground">{ob.presentacion || '-'}</td>
                     <td className="p-2">
                       <div className="flex items-center gap-2">
                         <span>{formatDateShort(ob.fecha_vencimiento)}</span>
                         {getVencimientoBadge(ob.fecha_vencimiento)}
                       </div>
                     </td>
-                    <td className="p-2">
-                      <Badge variant="outline" className="text-xs capitalize">{ob.estado}</Badge>
-                    </td>
+                    <td className="p-2"><Badge variant="outline" className="text-xs capitalize">{ob.estado}</Badge></td>
                     {canEdit && (
                       <td className="p-2 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(ob)}>
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(ob.id)}>
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(ob)}><Pencil className="w-3.5 h-3.5" /></Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(ob.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                         </div>
                       </td>
                     )}
@@ -347,10 +369,12 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
         loading={saving}
       />
 
-      <BulkImportDialog
-        open={bulkOpen}
-        onOpenChange={setBulkOpen}
-        onImport={handleBulkImport}
+      <BulkImportDialog open={bulkOpen} onOpenChange={setBulkOpen} onImport={handleBulkImport} loading={saving} />
+
+      <CatalogoObligacionesDialog
+        open={catalogOpen}
+        onOpenChange={setCatalogOpen}
+        onAssign={handleAssignFromCatalog}
         loading={saving}
       />
 
@@ -362,9 +386,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Eliminar
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
