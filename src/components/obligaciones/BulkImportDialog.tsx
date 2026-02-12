@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertCircle, Download, Upload, BookmarkPlus } from 'lucide-react';
+import { AlertCircle, Download, Upload, BookmarkPlus, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 interface Props {
   open: boolean;
@@ -22,59 +22,77 @@ export interface ParsedRow {
   presentacion: string;
 }
 
-const TEMPLATE = `Programa\tNombre de la Obligación\tArtículo(s)\tDescripción\tPresentación
-IMMEX\tInforme de operaciones\tArt. 24 IMMEX\tReporte semestral de operaciones\tSemestral
-Certificación IVA/IEPS\tRenovación certificación\tRegla 7.1.1 RGCE\tRenovación anual de certificación\tAnual
-PROSEC\tAviso de producción\tArt. 5 PROSEC\tNotificación de inicio de producción\tÚnica vez
-General\tDeclaración informativa\tArt. 32 CFF\tDeclaración informativa de operaciones\tMensual`;
-
 export function BulkImportDialog({ open, onOpenChange, onImport, loading }: Props) {
-  const [rawText, setRawText] = useState('');
   const [parsed, setParsed] = useState<ParsedRow[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [saveToCatalog, setSaveToCatalog] = useState(true);
-
-  const handleParse = () => {
-    const lines = rawText.trim().split('\n');
-    if (lines.length < 2) {
-      setErrors(['Se necesitan al menos 2 líneas: encabezado + datos']);
-      setParsed([]);
-      return;
-    }
-
-    // Skip header line, parse data
-    const rows: ParsedRow[] = [];
-    const errs: string[] = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split('\t');
-      if (cols.every(c => !c.trim())) continue;
-
-      const programa = (cols[0] || '').trim();
-      const nombre = (cols[1] || '').trim();
-      const articulos = (cols[2] || '').trim();
-      const descripcion = (cols[3] || '').trim();
-      const presentacion = (cols[4] || '').trim();
-
-      if (!nombre) { errs.push(`Fila ${i + 1}: nombre vacío`); continue; }
-      if (!programa) { errs.push(`Fila ${i + 1}: programa vacío`); continue; }
-
-      rows.push({ programa, nombre, articulos, descripcion, presentacion });
-    }
-
-    setParsed(rows);
-    setErrors(errs);
-    if (rows.length > 0) toast.success(`${rows.length} obligaciones parseadas correctamente`);
-  };
+  const [fileName, setFileName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const downloadTemplate = () => {
-    const blob = new Blob([TEMPLATE], { type: 'text/tab-separated-values' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'obligaciones_template.tsv';
-    a.click();
-    URL.revokeObjectURL(url);
+    const data = [
+      ['Programa', 'Nombre de la Obligación', 'Artículo(s)', 'Descripción', 'Presentación'],
+      ['IMMEX', 'Informe de operaciones', 'Art. 24 IMMEX', 'Reporte semestral de operaciones', 'Semestral'],
+      ['Certificación IVA/IEPS', 'Renovación certificación', 'Regla 7.1.1 RGCE', 'Renovación anual de certificación', 'Anual'],
+      ['PROSEC', 'Aviso de producción', 'Art. 5 PROSEC', 'Notificación de inicio de producción', 'Única vez'],
+      ['General', 'Declaración informativa', 'Art. 32 CFF', 'Declaración informativa de operaciones', 'Mensual'],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    // Set column widths
+    ws['!cols'] = [{ wch: 22 }, { wch: 35 }, { wch: 20 }, { wch: 40 }, { wch: 15 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Obligaciones');
+    XLSX.writeFile(wb, 'obligaciones_plantilla.xlsx');
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (jsonData.length < 2) {
+          setErrors(['El archivo necesita al menos 2 filas: encabezado + datos']);
+          setParsed([]);
+          return;
+        }
+
+        const rows: ParsedRow[] = [];
+        const errs: string[] = [];
+
+        // Skip header row (index 0)
+        for (let i = 1; i < jsonData.length; i++) {
+          const cols = jsonData[i];
+          if (!cols || cols.every(c => !c || !String(c).trim())) continue;
+
+          const programa = String(cols[0] || '').trim();
+          const nombre = String(cols[1] || '').trim();
+          const articulos = String(cols[2] || '').trim();
+          const descripcion = String(cols[3] || '').trim();
+          const presentacion = String(cols[4] || '').trim();
+
+          if (!nombre) { errs.push(`Fila ${i + 1}: nombre vacío`); continue; }
+          if (!programa) { errs.push(`Fila ${i + 1}: programa vacío`); continue; }
+
+          rows.push({ programa, nombre, articulos, descripcion, presentacion });
+        }
+
+        setParsed(rows);
+        setErrors(errs);
+        if (rows.length > 0) toast.success(`${rows.length} obligaciones leídas del archivo`);
+      } catch {
+        setErrors(['Error al leer el archivo. Asegúrate de que sea un archivo Excel válido.']);
+        setParsed([]);
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   const handleImport = () => {
@@ -82,8 +100,18 @@ export function BulkImportDialog({ open, onOpenChange, onImport, loading }: Prop
     onImport(parsed, saveToCatalog);
   };
 
+  const handleClose = (v: boolean) => {
+    if (!v) {
+      setParsed([]);
+      setErrors([]);
+      setFileName('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+    onOpenChange(v);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) { setParsed([]); setErrors([]); setRawText(''); } onOpenChange(v); }}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2">
@@ -91,7 +119,7 @@ export function BulkImportDialog({ open, onOpenChange, onImport, loading }: Prop
             Importar Obligaciones desde Excel
           </DialogTitle>
           <DialogDescription>
-            Pega datos desde Excel/Sheets con columnas: Programa | Nombre | Artículo(s) | Descripción | Presentación
+            Sube un archivo .xlsx con columnas: Programa | Nombre | Artículo(s) | Descripción | Presentación
           </DialogDescription>
         </DialogHeader>
 
@@ -99,36 +127,42 @@ export function BulkImportDialog({ open, onOpenChange, onImport, loading }: Prop
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
               <Download className="w-4 h-4 mr-1" />
-              Descargar Plantilla TSV
+              Descargar Plantilla .xlsx
             </Button>
-            <span className="text-xs text-muted-foreground">Compatible con Excel y Google Sheets</span>
+            <span className="text-xs text-muted-foreground">Llena la plantilla en Excel y súbela aquí</span>
           </div>
 
-          <div>
-            <Textarea
-              value={rawText}
-              onChange={e => setRawText(e.target.value)}
-              placeholder={"Programa\tNombre\tArtículo(s)\tDescripción\tPresentación\nIMMEX\tInforme operaciones\tArt. 24\tReporte semestral\tSemestral"}
-              rows={8}
-              className="font-mono text-xs"
+          <div
+            className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleFileUpload}
             />
+            <FileUp className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+            {fileName ? (
+              <p className="text-sm font-medium">{fileName}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Haz clic o arrastra un archivo .xlsx aquí
+              </p>
+            )}
           </div>
 
-          <div className="flex items-center gap-4">
-            <Button onClick={handleParse} variant="secondary" disabled={!rawText.trim()}>
-              Validar Datos
-            </Button>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="saveCatalog"
-                checked={saveToCatalog}
-                onCheckedChange={(v) => setSaveToCatalog(!!v)}
-              />
-              <label htmlFor="saveCatalog" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1">
-                <BookmarkPlus className="w-3.5 h-3.5" />
-                Guardar en catálogo reutilizable
-              </label>
-            </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="saveCatalog"
+              checked={saveToCatalog}
+              onCheckedChange={(v) => setSaveToCatalog(!!v)}
+            />
+            <label htmlFor="saveCatalog" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1">
+              <BookmarkPlus className="w-3.5 h-3.5" />
+              Guardar en catálogo reutilizable
+            </label>
           </div>
 
           {errors.length > 0 && (
@@ -171,7 +205,7 @@ export function BulkImportDialog({ open, onOpenChange, onImport, loading }: Prop
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => handleClose(false)}>Cancelar</Button>
           <Button onClick={handleImport} disabled={loading || parsed.length === 0}>
             {loading ? 'Importando...' : `Importar ${parsed.length} Obligaciones`}
           </Button>
