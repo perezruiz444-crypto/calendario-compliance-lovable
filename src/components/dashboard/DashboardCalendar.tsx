@@ -94,26 +94,25 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
       const allEvents: CalendarEvent[] = [];
 
       // Fetch tareas
+      // Fetch all tareas (including recurring ones without fecha_vencimiento)
       const { data: tareas, error: tareasError } = await supabase
         .from('tareas')
         .select(`
           *,
           empresas(razon_social)
         `)
-        .not('fecha_vencimiento', 'is', null)
-        .order('fecha_vencimiento', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (tareasError) throw tareasError;
 
       if (tareas) {
         tareas.forEach(tarea => {
-          if (tarea.fecha_vencimiento) {
-            const baseDate = new Date(tarea.fecha_vencimiento + 'T12:00:00');
-            
-            // If recurring, generate occurrences within a reasonable range
-            if (tarea.es_recurrente && tarea.frecuencia_recurrencia) {
+          // Recurring tasks: generate all occurrences
+          if (tarea.es_recurrente && tarea.frecuencia_recurrencia) {
+            const startDate = tarea.fecha_inicio_recurrencia || tarea.fecha_vencimiento;
+            if (startDate) {
               const occurrences = generateRecurringDates(
-                tarea.fecha_inicio_recurrencia || tarea.fecha_vencimiento,
+                startDate,
                 tarea.fecha_fin_recurrencia,
                 tarea.frecuencia_recurrencia,
                 tarea.intervalo_recurrencia || 1
@@ -132,20 +131,22 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
                   }
                 });
               });
-            } else {
-              allEvents.push({
-                id: tarea.id,
-                title: `📋 ${tarea.titulo}`,
-                start: baseDate,
-                end: baseDate,
-                resource: {
-                  type: 'tarea',
-                  prioridad: tarea.prioridad,
-                  estado: tarea.estado,
-                  data: tarea
-                }
-              });
             }
+          } else if (tarea.fecha_vencimiento) {
+            // Non-recurring tasks with a due date
+            const baseDate = new Date(tarea.fecha_vencimiento + 'T12:00:00');
+            allEvents.push({
+              id: tarea.id,
+              title: `📋 ${tarea.titulo}`,
+              start: baseDate,
+              end: baseDate,
+              resource: {
+                type: 'tarea',
+                prioridad: tarea.prioridad,
+                estado: tarea.estado,
+                data: tarea
+              }
+            });
           }
         });
       }

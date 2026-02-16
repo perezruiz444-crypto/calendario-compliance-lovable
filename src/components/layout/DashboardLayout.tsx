@@ -105,8 +105,8 @@ export default function DashboardLayout({
     roles: ['administrador']
   }];
   const filteredNavItems = navItems.filter(item => role && item.roles.includes(role));
-  const SidebarContent = () => <div className="flex flex-col h-full bg-sidebar">
-      <div className="p-6 border-b border-sidebar-border">
+  const SidebarContent = () => <div className="flex flex-col h-full bg-sidebar overflow-hidden">
+      <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-sidebar-primary rounded-xl flex items-center justify-center shadow-elegant">
             <Building2 className="w-6 h-6 text-sidebar-primary-foreground" />
@@ -152,7 +152,7 @@ export default function DashboardLayout({
           </div>}
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {filteredNavItems.map(item => {
         const Icon = item.icon;
         const isActive = currentPage === item.path;
