@@ -108,8 +108,20 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
               <Input value={form.articulos} onChange={e => update('articulos', e.target.value)} placeholder="Ej: Art. 24 IMMEX, Regla 7.1.1" />
             </div>
             <div className="col-span-2">
-              <Label>Presentación</Label>
-              <Input value={form.presentacion} onChange={e => update('presentacion', e.target.value)} placeholder="Ej: Mensual, Semestral, Anual" />
+              <Label>Presentación (periodicidad)</Label>
+              <Select value={form.presentacion} onValueChange={v => update('presentacion', v)}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unica">Única</SelectItem>
+                  <SelectItem value="semanal">Semanal</SelectItem>
+                  <SelectItem value="quincenal">Quincenal</SelectItem>
+                  <SelectItem value="mensual">Mensual</SelectItem>
+                  <SelectItem value="bimestral">Bimestral</SelectItem>
+                  <SelectItem value="trimestral">Trimestral</SelectItem>
+                  <SelectItem value="semestral">Semestral</SelectItem>
+                  <SelectItem value="anual">Anual</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Número de Oficio</Label>

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format, differenceInDays, isPast, isValid } from 'date-fns';
 import { 
@@ -56,6 +57,7 @@ function formatDateShort(fecha: string | null) {
 }
 
 export function ObligacionesManager({ empresaId, canEdit }: Props) {
+  const { user } = useAuth();
   const [obligaciones, setObligaciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -81,9 +83,63 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
 
   useEffect(() => { fetchObligaciones(); }, [empresaId]);
 
+  // Map presentacion to recurrence frequency for tasks
+  const presentacionToFrecuencia = (presentacion: string | null): string | null => {
+    if (!presentacion) return null;
+    const lower = presentacion.toLowerCase();
+    if (lower === 'semanal') return 'semanal';
+    if (lower === 'quincenal') return 'quincenal';
+    if (lower === 'mensual') return 'mensual';
+    if (lower === 'bimestral') return 'mensual'; // interval 2
+    if (lower === 'trimestral') return 'trimestral';
+    if (lower === 'semestral') return 'mensual'; // interval 6
+    if (lower === 'anual') return 'anual';
+    return null;
+  };
+
+  const presentacionToIntervalo = (presentacion: string | null): number => {
+    if (!presentacion) return 1;
+    const lower = presentacion.toLowerCase();
+    if (lower === 'bimestral') return 2;
+    if (lower === 'semestral') return 6;
+    return 1;
+  };
+
+  const isRecurring = (presentacion: string | null): boolean => {
+    return presentacionToFrecuencia(presentacion) !== null && presentacion?.toLowerCase() !== 'unica';
+  };
+
+  const createTaskForObligation = async (data: ObligacionFormData, obligacionId: string) => {
+    if (!user) return;
+    const frecuencia = presentacionToFrecuencia(data.presentacion);
+    if (!frecuencia || data.presentacion?.toLowerCase() === 'unica') return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const { error } = await supabase.from('tareas').insert({
+      titulo: `[Obligación] ${data.nombre}`,
+      descripcion: `Obligación recurrente: ${data.nombre}${data.articulos ? ` - Art. ${data.articulos}` : ''}`,
+      empresa_id: empresaId,
+      creado_por: user.id,
+      es_recurrente: true,
+      frecuencia_recurrencia: frecuencia,
+      intervalo_recurrencia: presentacionToIntervalo(data.presentacion),
+      fecha_inicio_recurrencia: data.fecha_inicio || today,
+      fecha_fin_recurrencia: data.fecha_fin || null,
+      fecha_vencimiento: data.fecha_vencimiento || null,
+      estado: 'pendiente',
+      prioridad: 'media',
+    });
+    if (error) {
+      console.error('Error creating task for obligation:', error);
+      toast.error('Obligación creada, pero hubo un error al generar la tarea recurrente');
+    } else {
+      toast.success('Tarea recurrente generada automáticamente');
+    }
+  };
+
   const handleCreate = async (data: ObligacionFormData) => {
     setSaving(true);
-    const { error } = await supabase.from('obligaciones').insert({
+    const { data: inserted, error } = await supabase.from('obligaciones').insert({
       empresa_id: empresaId,
       categoria: data.categoria,
       nombre: data.nombre,
@@ -98,10 +154,16 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       numero_oficio: data.numero_oficio || null,
       estado: data.estado,
       notas: data.notas || null,
-    });
+    }).select('id').single();
     setSaving(false);
     if (error) { toast.error('Error al crear obligación'); return; }
     toast.success('Obligación creada');
+    
+    // Auto-generate recurring task if applicable
+    if (inserted && isRecurring(data.presentacion)) {
+      await createTaskForObligation(data, inserted.id);
+    }
+    
     setFormOpen(false);
     fetchObligaciones();
   };
