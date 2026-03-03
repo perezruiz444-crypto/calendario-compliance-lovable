@@ -4,17 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { format, differenceInDays, isPast, isValid } from 'date-fns';
+import { format, differenceInDays, isPast, isValid, startOfWeek, getISOWeek } from 'date-fns';
 import { 
   Plus, Upload, Trash2, Pencil, Search, 
-  Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen
+  Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen, FileDown
 } from 'lucide-react';
 import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormDialog';
 import { BulkImportDialog, type ParsedRow } from './BulkImportDialog';
 import { CatalogoObligacionesDialog } from './CatalogoObligacionesDialog';
+import { generateObligacionesPDF } from '@/lib/pdfGenerator';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -56,9 +58,54 @@ function formatDateShort(fecha: string | null) {
   return isValid(d) ? format(d, 'dd/MM/yyyy') : '-';
 }
 
+/** Get the current period key based on presentacion frequency */
+function getCurrentPeriodKey(presentacion: string | null): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const week = getISOWeek(now);
+
+  switch (presentacion?.toLowerCase()) {
+    case 'semanal': return `${year}-W${String(week).padStart(2, '0')}`;
+    case 'quincenal': {
+      const half = now.getDate() <= 15 ? '1' : '2';
+      return `${year}-${month}-Q${half}`;
+    }
+    case 'mensual': return `${year}-${month}`;
+    case 'bimestral': {
+      const bim = Math.ceil((now.getMonth() + 1) / 2);
+      return `${year}-B${bim}`;
+    }
+    case 'trimestral': {
+      const q = Math.ceil((now.getMonth() + 1) / 3);
+      return `${year}-T${q}`;
+    }
+    case 'semestral': {
+      const s = now.getMonth() < 6 ? '1' : '2';
+      return `${year}-S${s}`;
+    }
+    case 'anual': return `${year}`;
+    default: return `${year}-${month}`;
+  }
+}
+
+function getPeriodLabel(presentacion: string | null, periodKey: string): string {
+  switch (presentacion?.toLowerCase()) {
+    case 'semanal': return `Semana ${periodKey.split('-W')[1]}`;
+    case 'quincenal': return periodKey.includes('Q1') ? '1ra Quincena' : '2da Quincena';
+    case 'mensual': return format(new Date(periodKey + '-01'), 'MMMM yyyy');
+    case 'bimestral': return `Bimestre ${periodKey.split('-B')[1]}`;
+    case 'trimestral': return `Trimestre ${periodKey.split('-T')[1]}`;
+    case 'semestral': return `Semestre ${periodKey.split('-S')[1]}`;
+    case 'anual': return `Año ${periodKey}`;
+    default: return periodKey;
+  }
+}
+
 export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const { user } = useAuth();
   const [obligaciones, setObligaciones] = useState<any[]>([]);
+  const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -77,11 +124,69 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       .eq('empresa_id', empresaId)
       .order('fecha_vencimiento', { ascending: true, nullsFirst: false });
     if (error) { toast.error('Error al cargar obligaciones'); console.error(error); }
-    else setObligaciones(data || []);
+    else {
+      setObligaciones(data || []);
+      // Fetch cumplimientos for current periods
+      if (data && data.length > 0) {
+        await fetchCumplimientos(data);
+      }
+    }
     setLoading(false);
   };
 
+  const fetchCumplimientos = async (obs: any[]) => {
+    const periodKeys = obs.map(ob => ({
+      id: ob.id,
+      key: getCurrentPeriodKey(ob.presentacion)
+    }));
+
+    const obIds = obs.map(ob => ob.id);
+    const { data, error } = await supabase
+      .from('obligacion_cumplimientos')
+      .select('obligacion_id, periodo_key')
+      .in('obligacion_id', obIds);
+
+    if (!error && data) {
+      const map: Record<string, boolean> = {};
+      data.forEach(c => {
+        map[`${c.obligacion_id}:${c.periodo_key}`] = true;
+      });
+      setCumplimientos(map);
+    }
+  };
+
   useEffect(() => { fetchObligaciones(); }, [empresaId]);
+
+  const toggleCumplimiento = async (obligacionId: string, presentacion: string | null) => {
+    if (!user) return;
+    const periodKey = getCurrentPeriodKey(presentacion);
+    const mapKey = `${obligacionId}:${periodKey}`;
+    const isCompleted = cumplimientos[mapKey];
+
+    if (isCompleted) {
+      // Remove completion
+      const { error } = await supabase
+        .from('obligacion_cumplimientos')
+        .delete()
+        .eq('obligacion_id', obligacionId)
+        .eq('periodo_key', periodKey);
+      if (error) { toast.error('Error al desmarcar'); return; }
+      setCumplimientos(prev => ({ ...prev, [mapKey]: false }));
+      toast.success('Cumplimiento desmarcado');
+    } else {
+      // Add completion
+      const { error } = await supabase
+        .from('obligacion_cumplimientos')
+        .insert({
+          obligacion_id: obligacionId,
+          periodo_key: periodKey,
+          completada_por: user.id,
+        });
+      if (error) { toast.error('Error al marcar cumplimiento'); return; }
+      setCumplimientos(prev => ({ ...prev, [mapKey]: true }));
+      toast.success(`Marcada como completada - ${getPeriodLabel(presentacion, periodKey)}`);
+    }
+  };
 
   // Map presentacion to recurrence frequency for tasks
   const presentacionToFrecuencia = (presentacion: string | null): string | null => {
@@ -90,9 +195,9 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
     if (lower === 'semanal') return 'semanal';
     if (lower === 'quincenal') return 'quincenal';
     if (lower === 'mensual') return 'mensual';
-    if (lower === 'bimestral') return 'mensual'; // interval 2
+    if (lower === 'bimestral') return 'mensual';
     if (lower === 'trimestral') return 'trimestral';
-    if (lower === 'semestral') return 'mensual'; // interval 6
+    if (lower === 'semestral') return 'mensual';
     if (lower === 'anual') return 'anual';
     return null;
   };
@@ -159,7 +264,6 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
     if (error) { toast.error('Error al crear obligación'); return; }
     toast.success('Obligación creada');
     
-    // Auto-generate recurring task if applicable
     if (inserted && isRecurring(data.presentacion)) {
       await createTaskForObligation(data, inserted.id);
     }
@@ -206,7 +310,6 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const handleBulkImport = async (rows: ParsedRow[], saveToCatalog: boolean) => {
     setSaving(true);
 
-    // Map programa text to categoria key
     const programaToCategoria = (programa: string): string => {
       const lower = programa.toLowerCase();
       if (lower.includes('immex')) return 'immex';
@@ -230,7 +333,6 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
     const { error } = await supabase.from('obligaciones').insert(inserts);
     if (error) { toast.error('Error en importación masiva'); console.error(error); setSaving(false); return; }
 
-    // Save to catalog if requested
     if (saveToCatalog) {
       const catalogInserts = rows.map(r => ({
         programa: r.programa,
@@ -293,6 +395,22 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
     setFormOpen(true);
   };
 
+  const handleExportPDF = async () => {
+    // Fetch empresa info
+    const { data: empresa } = await supabase.from('empresas').select('razon_social, rfc').eq('id', empresaId).single();
+    if (!empresa) { toast.error('Error al obtener datos de la empresa'); return; }
+
+    generateObligacionesPDF(
+      empresa,
+      filtered.map(ob => ({
+        ...ob,
+        completada_periodo: cumplimientos[`${ob.id}:${getCurrentPeriodKey(ob.presentacion)}`] || false,
+        periodo_actual: getPeriodLabel(ob.presentacion, getCurrentPeriodKey(ob.presentacion)),
+      }))
+    );
+    toast.success('Reporte PDF generado');
+  };
+
   const filtered = obligaciones.filter(ob => {
     if (filterCategoria !== 'all' && ob.categoria !== filterCategoria) return false;
     if (search && !ob.nombre.toLowerCase().includes(search.toLowerCase())) return false;
@@ -341,6 +459,11 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
               ))}
             </SelectContent>
           </Select>
+          {filtered.length > 0 && (
+            <Button size="sm" variant="outline" onClick={handleExportPDF}>
+              <FileDown className="w-4 h-4 mr-1" />PDF
+            </Button>
+          )}
           {canEdit && (
             <>
               <Button size="sm" variant="outline" onClick={() => setCatalogOpen(true)}>
@@ -377,46 +500,72 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
+                  {canEdit && <th className="text-center p-2 font-heading font-medium text-muted-foreground w-10">✓</th>}
                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Categoría</th>
                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Nombre</th>
                   <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Artículo(s)</th>
                   <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Presentación</th>
+                  <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden lg:table-cell">Período Actual</th>
                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Vencimiento</th>
                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Estado</th>
                   {canEdit && <th className="text-right p-2 font-heading font-medium text-muted-foreground">Acciones</th>}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(ob => (
-                  <tr key={ob.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                    <td className="p-2">
-                      <Badge variant="outline" className={`text-xs ${CATEGORIA_COLORS[ob.categoria] || ''}`}>
-                        {CATEGORIA_LABELS[ob.categoria] || ob.categoria}
-                      </Badge>
-                    </td>
-                    <td className="p-2">
-                      <p className="font-medium">{ob.nombre}</p>
-                      {ob.descripcion && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{ob.descripcion}</p>}
-                    </td>
-                    <td className="p-2 hidden md:table-cell text-muted-foreground">{ob.articulos || '-'}</td>
-                    <td className="p-2 hidden md:table-cell text-muted-foreground">{ob.presentacion || '-'}</td>
-                    <td className="p-2">
-                      <div className="flex items-center gap-2">
-                        <span>{formatDateShort(ob.fecha_vencimiento)}</span>
-                        {getVencimientoBadge(ob.fecha_vencimiento)}
-                      </div>
-                    </td>
-                    <td className="p-2"><Badge variant="outline" className="text-xs capitalize">{ob.estado}</Badge></td>
-                    {canEdit && (
-                      <td className="p-2 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(ob)}><Pencil className="w-3.5 h-3.5" /></Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(ob.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                {filtered.map(ob => {
+                  const periodKey = getCurrentPeriodKey(ob.presentacion);
+                  const mapKey = `${ob.id}:${periodKey}`;
+                  const isCompleted = cumplimientos[mapKey] || false;
+
+                  return (
+                    <tr key={ob.id} className={`border-b last:border-0 hover:bg-muted/50 transition-colors ${isCompleted ? 'bg-success/5' : ''}`}>
+                      {canEdit && (
+                        <td className="p-2 text-center">
+                          <Checkbox
+                            checked={isCompleted}
+                            onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
+                            aria-label="Marcar como completada"
+                          />
+                        </td>
+                      )}
+                      <td className="p-2">
+                        <Badge variant="outline" className={`text-xs ${CATEGORIA_COLORS[ob.categoria] || ''}`}>
+                          {CATEGORIA_LABELS[ob.categoria] || ob.categoria}
+                        </Badge>
+                      </td>
+                      <td className="p-2">
+                        <p className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>{ob.nombre}</p>
+                        {ob.descripcion && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{ob.descripcion}</p>}
+                      </td>
+                      <td className="p-2 hidden md:table-cell text-muted-foreground">{ob.articulos || '-'}</td>
+                      <td className="p-2 hidden md:table-cell text-muted-foreground capitalize">{ob.presentacion || '-'}</td>
+                      <td className="p-2 hidden lg:table-cell">
+                        {ob.presentacion && ob.presentacion !== 'unica' ? (
+                          <Badge variant={isCompleted ? 'default' : 'outline'} className={`text-xs ${isCompleted ? 'bg-success text-success-foreground' : ''}`}>
+                            {isCompleted ? '✓ ' : ''}{getPeriodLabel(ob.presentacion, periodKey)}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
+                      </td>
+                      <td className="p-2">
+                        <div className="flex items-center gap-2">
+                          <span>{formatDateShort(ob.fecha_vencimiento)}</span>
+                          {getVencimientoBadge(ob.fecha_vencimiento)}
                         </div>
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td className="p-2"><Badge variant="outline" className="text-xs capitalize">{ob.estado}</Badge></td>
+                      {canEdit && (
+                        <td className="p-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(ob)}><Pencil className="w-3.5 h-3.5" /></Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(ob.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
