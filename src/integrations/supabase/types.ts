@@ -806,6 +806,47 @@ export type Database = {
         }
         Relationships: []
       }
+      obligacion_cumplimientos: {
+        Row: {
+          completada: boolean
+          completada_en: string
+          completada_por: string | null
+          created_at: string
+          id: string
+          notas: string | null
+          obligacion_id: string
+          periodo_key: string
+        }
+        Insert: {
+          completada?: boolean
+          completada_en?: string
+          completada_por?: string | null
+          created_at?: string
+          id?: string
+          notas?: string | null
+          obligacion_id: string
+          periodo_key: string
+        }
+        Update: {
+          completada?: boolean
+          completada_en?: string
+          completada_por?: string | null
+          created_at?: string
+          id?: string
+          notas?: string | null
+          obligacion_id?: string
+          periodo_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligacion_cumplimientos_obligacion_id_fkey"
+            columns: ["obligacion_id"]
+            isOneToOne: false
+            referencedRelation: "obligaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       obligaciones: {
         Row: {
           articulos: string | null

@@ -40,7 +40,7 @@ export async function generateReportPDF(
 
   // Header
   doc.setFontSize(24);
-  doc.setTextColor(30, 64, 175); // Blue
+  doc.setTextColor(30, 64, 175);
   doc.text('REPORTE DE GESTIÓN', pageWidth / 2, yPosition, { align: 'center' });
   yPosition += 15;
 
@@ -58,13 +58,11 @@ export async function generateReportPDF(
   doc.text(`Tipo: ${reportType.charAt(0).toUpperCase() + reportType.slice(1)}`, pageWidth / 2, yPosition, { align: 'center' });
   yPosition += 15;
 
-  // Horizontal line
   doc.setDrawColor(30, 64, 175);
   doc.setLineWidth(0.5);
   doc.line(20, yPosition, pageWidth - 20, yPosition);
   yPosition += 15;
 
-  // Check if new page is needed
   const checkNewPage = (requiredSpace: number) => {
     if (yPosition + requiredSpace > pageHeight - 20) {
       doc.addPage();
@@ -95,9 +93,9 @@ export async function generateReportPDF(
     doc.setTextColor(80, 80, 80);
     doc.text(item.label, 30, yPosition);
     doc.setTextColor(0, 0, 0);
-    doc.setFont(undefined, 'bold');
+    doc.setFont(undefined!, 'bold');
     doc.text(item.value, 100, yPosition);
-    doc.setFont(undefined, 'normal');
+    doc.setFont(undefined!, 'normal');
     yPosition += 8;
   }
   yPosition += 10;
@@ -116,9 +114,9 @@ export async function generateReportPDF(
       doc.setTextColor(80, 80, 80);
       doc.text(`${item.name}:`, 30, yPosition);
       doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'bold');
+      doc.setFont(undefined!, 'bold');
       doc.text(item.value.toString(), 100, yPosition);
-      doc.setFont(undefined, 'normal');
+      doc.setFont(undefined!, 'normal');
       yPosition += 7;
     }
     yPosition += 10;
@@ -138,9 +136,9 @@ export async function generateReportPDF(
       doc.setTextColor(80, 80, 80);
       doc.text(`${item.name}:`, 30, yPosition);
       doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'bold');
+      doc.setFont(undefined!, 'bold');
       doc.text(item.value.toString(), 100, yPosition);
-      doc.setFont(undefined, 'normal');
+      doc.setFont(undefined!, 'normal');
       yPosition += 7;
     }
     yPosition += 10;
@@ -150,7 +148,7 @@ export async function generateReportPDF(
   if (reportData.certificacionesVencimiento.length > 0) {
     checkNewPage(60);
     doc.setFontSize(14);
-    doc.setTextColor(245, 158, 11); // Warning color
+    doc.setTextColor(245, 158, 11);
     doc.text('CERTIFICACIONES PRÓXIMAS A VENCER', 20, yPosition);
     yPosition += 10;
 
@@ -162,9 +160,9 @@ export async function generateReportPDF(
       checkNewPage(15);
       
       doc.setTextColor(50, 50, 50);
-      doc.setFont(undefined, 'bold');
+      doc.setFont(undefined!, 'bold');
       doc.text(cert.tipo, 30, yPosition);
-      doc.setFont(undefined, 'normal');
+      doc.setFont(undefined!, 'normal');
       yPosition += 6;
       
       doc.setTextColor(100, 100, 100);
@@ -183,7 +181,148 @@ export async function generateReportPDF(
     { align: 'center' }
   );
 
-  // Save PDF
   const fileName = `reporte-${empresa.razon_social.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(fileName);
+}
+
+// ==============================
+// Obligaciones PDF Report
+// ==============================
+
+interface ObligacionPDFData {
+  nombre: string;
+  categoria: string;
+  articulos: string | null;
+  presentacion: string | null;
+  fecha_vencimiento: string | null;
+  estado: string;
+  completada_periodo: boolean;
+  periodo_actual: string;
+}
+
+const CATEGORIA_LABELS_PDF: Record<string, string> = {
+  general: 'General', cert_iva_ieps: 'Cert. IVA/IEPS', immex: 'IMMEX',
+  prosec: 'PROSEC', padron: 'Padrón', otro: 'Otro',
+};
+
+export function generateObligacionesPDF(
+  empresa: { razon_social: string; rfc: string },
+  obligaciones: ObligacionPDFData[]
+) {
+  const doc = new jsPDF('landscape');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  let y = 20;
+
+  // Header
+  doc.setFontSize(20);
+  doc.setTextColor(30, 64, 175);
+  doc.text('REPORTE DE OBLIGACIONES', pageWidth / 2, y, { align: 'center' });
+  y += 12;
+
+  doc.setFontSize(12);
+  doc.setTextColor(50, 50, 50);
+  doc.text(empresa.razon_social, pageWidth / 2, y, { align: 'center' });
+  y += 8;
+
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`RFC: ${empresa.rfc} | Generado: ${new Date().toLocaleDateString('es-MX')}`, pageWidth / 2, y, { align: 'center' });
+  y += 10;
+
+  doc.setDrawColor(30, 64, 175);
+  doc.setLineWidth(0.5);
+  doc.line(15, y, pageWidth - 15, y);
+  y += 8;
+
+  // Summary
+  const completadas = obligaciones.filter(o => o.completada_periodo).length;
+  const pendientes = obligaciones.length - completadas;
+
+  doc.setFontSize(10);
+  doc.setTextColor(50, 50, 50);
+  doc.text(`Total: ${obligaciones.length}  |  `, 15, y);
+  doc.setTextColor(34, 139, 34);
+  doc.text(`Completadas período actual: ${completadas}`, 65, y);
+  doc.setTextColor(200, 50, 50);
+  doc.text(`Pendientes: ${pendientes}`, 170, y);
+  y += 12;
+
+  // Table header
+  const cols = [15, 55, 120, 165, 200, 230, 260];
+  const colLabels = ['Categoría', 'Nombre', 'Artículos', 'Presentación', 'Período', 'Vencimiento', 'Estado'];
+
+  doc.setFillColor(30, 64, 175);
+  doc.rect(14, y - 5, pageWidth - 28, 8, 'F');
+  doc.setFontSize(8);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont(undefined!, 'bold');
+  colLabels.forEach((label, i) => {
+    doc.text(label, cols[i], y);
+  });
+  doc.setFont(undefined!, 'normal');
+  y += 8;
+
+  // Table rows
+  doc.setFontSize(8);
+  obligaciones.forEach((ob, idx) => {
+    if (y > pageHeight - 20) {
+      doc.addPage();
+      y = 20;
+      // Repeat header
+      doc.setFillColor(30, 64, 175);
+      doc.rect(14, y - 5, pageWidth - 28, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined!, 'bold');
+      colLabels.forEach((label, i) => doc.text(label, cols[i], y));
+      doc.setFont(undefined!, 'normal');
+      y += 8;
+    }
+
+    // Alternate row background
+    if (idx % 2 === 0) {
+      doc.setFillColor(245, 245, 250);
+      doc.rect(14, y - 4, pageWidth - 28, 7, 'F');
+    }
+
+    // Completion indicator
+    if (ob.completada_periodo) {
+      doc.setTextColor(34, 139, 34);
+    } else {
+      doc.setTextColor(50, 50, 50);
+    }
+
+    doc.text(CATEGORIA_LABELS_PDF[ob.categoria] || ob.categoria, cols[0], y);
+    doc.text((ob.completada_periodo ? '✓ ' : '') + ob.nombre.substring(0, 30), cols[1], y);
+    doc.text((ob.articulos || '-').substring(0, 20), cols[2], y);
+    doc.text((ob.presentacion || '-'), cols[3], y);
+    doc.text(ob.periodo_actual.substring(0, 15), cols[4], y);
+
+    const venc = ob.fecha_vencimiento ? new Date(ob.fecha_vencimiento).toLocaleDateString('es-MX') : '-';
+    doc.text(venc, cols[5], y);
+
+    // Estado with color
+    if (ob.completada_periodo) {
+      doc.setTextColor(34, 139, 34);
+      doc.text('Completada', cols[6], y);
+    } else {
+      doc.setTextColor(200, 150, 0);
+      doc.text(ob.estado, cols[6], y);
+    }
+
+    y += 7;
+  });
+
+  // Footer
+  doc.setFontSize(7);
+  doc.setTextColor(150, 150, 150);
+  doc.text(
+    `Generado el ${new Date().toLocaleString('es-MX')}`,
+    pageWidth / 2,
+    pageHeight - 8,
+    { align: 'center' }
+  );
+
+  const fileName = `obligaciones-${empresa.razon_social.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(fileName);
 }

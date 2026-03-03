@@ -12,6 +12,7 @@ import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
 import TareaDetailDialog from '@/components/tareas/TareaDetailDialog';
 import { EmpresaGeneralCard } from '@/components/empresas/EmpresaGeneralCard';
 import { EmpresaIMMEXCard } from '@/components/empresas/EmpresaIMMEXCard';
+import { EmpresaPROSECCard } from '@/components/empresas/EmpresaPROSECCard';
 import { EmpresaCertificacionCard } from '@/components/empresas/EmpresaCertificacionCard';
 import { EmpresaObligacionesCard } from '@/components/empresas/EmpresaObligacionesCard';
 import { ObligacionesManager } from '@/components/obligaciones/ObligacionesManager';
@@ -198,6 +199,7 @@ export default function EmpresaDetail() {
           <div className="space-y-6">
             <EmpresaGeneralCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
             <EmpresaIMMEXCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+            <EmpresaPROSECCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
             <EmpresaCertificacionCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
           </div>
 

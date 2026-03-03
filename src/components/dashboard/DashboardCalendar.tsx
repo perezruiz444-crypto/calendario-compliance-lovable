@@ -65,7 +65,7 @@ interface CalendarEvent {
   start: Date;
   end: Date;
   resource: {
-    type: 'tarea' | 'documento' | 'programa';
+    type: 'tarea' | 'documento' | 'programa' | 'obligacion';
     prioridad?: string;
     estado?: string;
     data: any;
@@ -246,6 +246,30 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
         });
       }
 
+      // Fetch obligaciones with dates
+      const { data: obligaciones, error: obError } = await supabase
+        .from('obligaciones')
+        .select('*, empresas(razon_social)')
+        .or('fecha_vencimiento.not.is.null,fecha_renovacion.not.is.null');
+
+      if (!obError && obligaciones) {
+        obligaciones.forEach(ob => {
+          const dateStr = ob.fecha_vencimiento || ob.fecha_renovacion;
+          if (dateStr) {
+            allEvents.push({
+              id: `ob-${ob.id}`,
+              title: `📋 ${ob.nombre}${ob.empresas?.razon_social ? ` - ${ob.empresas.razon_social}` : ''}`,
+              start: new Date(dateStr + 'T12:00:00'),
+              end: new Date(dateStr + 'T12:00:00'),
+              resource: {
+                type: 'obligacion',
+                data: ob
+              }
+            });
+          }
+        });
+      }
+
       setEvents(allEvents);
     } catch (error) {
       console.error('Error fetching calendar events:', error);
@@ -277,6 +301,8 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
       backgroundColor = 'hsl(221, 83%, 53%)';
     } else if (event.resource.type === 'programa') {
       backgroundColor = 'hsl(340, 82%, 52%)';
+    } else if (event.resource.type === 'obligacion') {
+      backgroundColor = 'hsl(262, 83%, 58%)';
     }
 
     // Check if overdue
