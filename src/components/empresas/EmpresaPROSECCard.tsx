@@ -199,6 +199,22 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
                   </p>
                 </div>
               )}
+              {empresa.prosec_fecha_ultima_renovacion && (
+                <div>
+                  <label className="text-sm font-heading font-medium text-muted-foreground">Última Renovación</label>
+                  <p className="font-body mt-1">
+                    {new Date(empresa.prosec_fecha_ultima_renovacion).toLocaleDateString('es-MX')}
+                  </p>
+                </div>
+              )}
+              {empresa.prosec_fecha_siguiente_renovacion && (
+                <div>
+                  <label className="text-sm font-heading font-medium text-muted-foreground">Siguiente Renovación</label>
+                  <p className="font-body mt-1">
+                    {new Date(empresa.prosec_fecha_siguiente_renovacion).toLocaleDateString('es-MX')}
+                  </p>
+                </div>
+              )}
             </div>
             {sectores.length > 0 && (
               <div>

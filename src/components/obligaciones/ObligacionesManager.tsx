@@ -210,11 +210,6 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
     setSaving(false);
     if (error) { toast.error('Error al crear obligación'); return; }
     toast.success('Obligación creada');
-    
-    if (inserted && isRecurring(data.presentacion)) {
-      await createTaskForObligation(data, inserted.id);
-    }
-    
     setFormOpen(false);
     fetchObligaciones();
   };
