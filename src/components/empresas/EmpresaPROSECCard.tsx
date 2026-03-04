@@ -35,6 +35,8 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
           prosec_numero: formData.prosec_numero.trim() || null,
           prosec_modalidad: formData.prosec_modalidad.trim() || null,
           prosec_fecha_autorizacion: formData.prosec_fecha_autorizacion || null,
+          prosec_fecha_ultima_renovacion: formData.prosec_fecha_ultima_renovacion || null,
+          prosec_fecha_siguiente_renovacion: formData.prosec_fecha_siguiente_renovacion || null,
           prosec_sectores: formData.prosec_sectores,
         })
         .eq('id', empresa.id);
