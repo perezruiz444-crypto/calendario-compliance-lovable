@@ -126,14 +126,34 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
                 />
               </div>
             </div>
-            <div>
-              <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Autorización</label>
-              <Input
-                type="date"
-                value={formData.prosec_fecha_autorizacion}
-                onChange={(e) => setFormData({ ...formData, prosec_fecha_autorizacion: e.target.value })}
-                className="mt-1"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Autorización</label>
+                <Input
+                  type="date"
+                  value={formData.prosec_fecha_autorizacion}
+                  onChange={(e) => setFormData({ ...formData, prosec_fecha_autorizacion: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-heading font-medium text-muted-foreground">Última Renovación</label>
+                <Input
+                  type="date"
+                  value={formData.prosec_fecha_ultima_renovacion}
+                  onChange={(e) => setFormData({ ...formData, prosec_fecha_ultima_renovacion: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-heading font-medium text-muted-foreground">Siguiente Renovación</label>
+                <Input
+                  type="date"
+                  value={formData.prosec_fecha_siguiente_renovacion}
+                  onChange={(e) => setFormData({ ...formData, prosec_fecha_siguiente_renovacion: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm font-heading font-medium text-muted-foreground">Sectores</label>
