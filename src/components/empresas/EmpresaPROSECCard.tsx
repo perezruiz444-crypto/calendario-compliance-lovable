@@ -57,6 +57,8 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
       prosec_numero: empresa.prosec_numero || '',
       prosec_modalidad: empresa.prosec_modalidad || '',
       prosec_fecha_autorizacion: empresa.prosec_fecha_autorizacion || '',
+      prosec_fecha_ultima_renovacion: empresa.prosec_fecha_ultima_renovacion || '',
+      prosec_fecha_siguiente_renovacion: empresa.prosec_fecha_siguiente_renovacion || '',
       prosec_sectores: Array.isArray(empresa.prosec_sectores) ? empresa.prosec_sectores : [],
     });
     setIsEditing(false);
