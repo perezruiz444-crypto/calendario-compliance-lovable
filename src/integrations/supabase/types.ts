@@ -518,6 +518,8 @@ export type Database = {
           prosec_fecha_autorizacion: string | null
           prosec_fecha_fin: string | null
           prosec_fecha_inicio: string | null
+          prosec_fecha_siguiente_renovacion: string | null
+          prosec_fecha_ultima_renovacion: string | null
           prosec_modalidad: string | null
           prosec_numero: string | null
           prosec_sector: string | null
@@ -562,6 +564,8 @@ export type Database = {
           prosec_fecha_autorizacion?: string | null
           prosec_fecha_fin?: string | null
           prosec_fecha_inicio?: string | null
+          prosec_fecha_siguiente_renovacion?: string | null
+          prosec_fecha_ultima_renovacion?: string | null
           prosec_modalidad?: string | null
           prosec_numero?: string | null
           prosec_sector?: string | null
@@ -606,6 +610,8 @@ export type Database = {
           prosec_fecha_autorizacion?: string | null
           prosec_fecha_fin?: string | null
           prosec_fecha_inicio?: string | null
+          prosec_fecha_siguiente_renovacion?: string | null
+          prosec_fecha_ultima_renovacion?: string | null
           prosec_modalidad?: string | null
           prosec_numero?: string | null
           prosec_sector?: string | null

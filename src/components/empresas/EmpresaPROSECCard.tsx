@@ -20,6 +20,8 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
     prosec_numero: empresa.prosec_numero || '',
     prosec_modalidad: empresa.prosec_modalidad || '',
     prosec_fecha_autorizacion: empresa.prosec_fecha_autorizacion || '',
+    prosec_fecha_ultima_renovacion: empresa.prosec_fecha_ultima_renovacion || '',
+    prosec_fecha_siguiente_renovacion: empresa.prosec_fecha_siguiente_renovacion || '',
     prosec_sectores: Array.isArray(empresa.prosec_sectores) ? empresa.prosec_sectores : [],
   });
   const [newSector, setNewSector] = useState('');
@@ -33,6 +35,8 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
           prosec_numero: formData.prosec_numero.trim() || null,
           prosec_modalidad: formData.prosec_modalidad.trim() || null,
           prosec_fecha_autorizacion: formData.prosec_fecha_autorizacion || null,
+          prosec_fecha_ultima_renovacion: formData.prosec_fecha_ultima_renovacion || null,
+          prosec_fecha_siguiente_renovacion: formData.prosec_fecha_siguiente_renovacion || null,
           prosec_sectores: formData.prosec_sectores,
         })
         .eq('id', empresa.id);
@@ -53,6 +57,8 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
       prosec_numero: empresa.prosec_numero || '',
       prosec_modalidad: empresa.prosec_modalidad || '',
       prosec_fecha_autorizacion: empresa.prosec_fecha_autorizacion || '',
+      prosec_fecha_ultima_renovacion: empresa.prosec_fecha_ultima_renovacion || '',
+      prosec_fecha_siguiente_renovacion: empresa.prosec_fecha_siguiente_renovacion || '',
       prosec_sectores: Array.isArray(empresa.prosec_sectores) ? empresa.prosec_sectores : [],
     });
     setIsEditing(false);
@@ -120,14 +126,34 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
                 />
               </div>
             </div>
-            <div>
-              <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Autorización</label>
-              <Input
-                type="date"
-                value={formData.prosec_fecha_autorizacion}
-                onChange={(e) => setFormData({ ...formData, prosec_fecha_autorizacion: e.target.value })}
-                className="mt-1"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Autorización</label>
+                <Input
+                  type="date"
+                  value={formData.prosec_fecha_autorizacion}
+                  onChange={(e) => setFormData({ ...formData, prosec_fecha_autorizacion: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-heading font-medium text-muted-foreground">Última Renovación</label>
+                <Input
+                  type="date"
+                  value={formData.prosec_fecha_ultima_renovacion}
+                  onChange={(e) => setFormData({ ...formData, prosec_fecha_ultima_renovacion: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-heading font-medium text-muted-foreground">Siguiente Renovación</label>
+                <Input
+                  type="date"
+                  value={formData.prosec_fecha_siguiente_renovacion}
+                  onChange={(e) => setFormData({ ...formData, prosec_fecha_siguiente_renovacion: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm font-heading font-medium text-muted-foreground">Sectores</label>
@@ -170,6 +196,22 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
                   <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Autorización</label>
                   <p className="font-body mt-1">
                     {new Date(empresa.prosec_fecha_autorizacion).toLocaleDateString('es-MX')}
+                  </p>
+                </div>
+              )}
+              {empresa.prosec_fecha_ultima_renovacion && (
+                <div>
+                  <label className="text-sm font-heading font-medium text-muted-foreground">Última Renovación</label>
+                  <p className="font-body mt-1">
+                    {new Date(empresa.prosec_fecha_ultima_renovacion).toLocaleDateString('es-MX')}
+                  </p>
+                </div>
+              )}
+              {empresa.prosec_fecha_siguiente_renovacion && (
+                <div>
+                  <label className="text-sm font-heading font-medium text-muted-foreground">Siguiente Renovación</label>
+                  <p className="font-body mt-1">
+                    {new Date(empresa.prosec_fecha_siguiente_renovacion).toLocaleDateString('es-MX')}
                   </p>
                 </div>
               )}

@@ -188,59 +188,6 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
     }
   };
 
-  // Map presentacion to recurrence frequency for tasks
-  const presentacionToFrecuencia = (presentacion: string | null): string | null => {
-    if (!presentacion) return null;
-    const lower = presentacion.toLowerCase();
-    if (lower === 'semanal') return 'semanal';
-    if (lower === 'quincenal') return 'quincenal';
-    if (lower === 'mensual') return 'mensual';
-    if (lower === 'bimestral') return 'mensual';
-    if (lower === 'trimestral') return 'trimestral';
-    if (lower === 'semestral') return 'mensual';
-    if (lower === 'anual') return 'anual';
-    return null;
-  };
-
-  const presentacionToIntervalo = (presentacion: string | null): number => {
-    if (!presentacion) return 1;
-    const lower = presentacion.toLowerCase();
-    if (lower === 'bimestral') return 2;
-    if (lower === 'semestral') return 6;
-    return 1;
-  };
-
-  const isRecurring = (presentacion: string | null): boolean => {
-    return presentacionToFrecuencia(presentacion) !== null && presentacion?.toLowerCase() !== 'unica';
-  };
-
-  const createTaskForObligation = async (data: ObligacionFormData, obligacionId: string) => {
-    if (!user) return;
-    const frecuencia = presentacionToFrecuencia(data.presentacion);
-    if (!frecuencia || data.presentacion?.toLowerCase() === 'unica') return;
-
-    const today = new Date().toISOString().split('T')[0];
-    const { error } = await supabase.from('tareas').insert({
-      titulo: `[Obligación] ${data.nombre}`,
-      descripcion: `Obligación recurrente: ${data.nombre}${data.articulos ? ` - Art. ${data.articulos}` : ''}`,
-      empresa_id: empresaId,
-      creado_por: user.id,
-      es_recurrente: true,
-      frecuencia_recurrencia: frecuencia,
-      intervalo_recurrencia: presentacionToIntervalo(data.presentacion),
-      fecha_inicio_recurrencia: data.fecha_inicio || today,
-      fecha_fin_recurrencia: data.fecha_fin || null,
-      fecha_vencimiento: data.fecha_vencimiento || null,
-      estado: 'pendiente',
-      prioridad: 'media',
-    });
-    if (error) {
-      console.error('Error creating task for obligation:', error);
-      toast.error('Obligación creada, pero hubo un error al generar la tarea recurrente');
-    } else {
-      toast.success('Tarea recurrente generada automáticamente');
-    }
-  };
 
   const handleCreate = async (data: ObligacionFormData) => {
     setSaving(true);
@@ -263,11 +210,6 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
     setSaving(false);
     if (error) { toast.error('Error al crear obligación'); return; }
     toast.success('Obligación creada');
-    
-    if (inserted && isRecurring(data.presentacion)) {
-      await createTaskForObligation(data, inserted.id);
-    }
-    
     setFormOpen(false);
     fetchObligaciones();
   };
