@@ -116,6 +116,8 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [editData, setEditData] = useState<ObligacionFormData | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [filterResponsable, setFilterResponsable] = useState('all');
+  const [profiles, setProfiles] = useState<Record<string, string>>({});
 
   const fetchObligaciones = async () => {
     setLoading(true);
