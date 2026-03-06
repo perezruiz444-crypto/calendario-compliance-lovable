@@ -11,7 +11,8 @@ import { toast } from 'sonner';
 import { format, differenceInDays, isPast, isValid, startOfWeek, getISOWeek } from 'date-fns';
 import { 
   Plus, Upload, Trash2, Pencil, Search, 
-  Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen, FileDown
+  Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen, FileDown,
+  Zap, User, Users
 } from 'lucide-react';
 import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormDialog';
 import { BulkImportDialog, type ParsedRow } from './BulkImportDialog';
@@ -115,6 +116,8 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [editData, setEditData] = useState<ObligacionFormData | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [filterResponsable, setFilterResponsable] = useState('all');
+  const [profiles, setProfiles] = useState<Record<string, string>>({});
 
   const fetchObligaciones = async () => {
     setLoading(true);
@@ -156,6 +159,22 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   };
 
   useEffect(() => { fetchObligaciones(); }, [empresaId]);
+
+  // Fetch profile names for responsable display
+  useEffect(() => {
+    const ids = obligaciones.filter(o => o.responsable_id).map(o => o.responsable_id);
+    if (ids.length === 0) return;
+    const uniqueIds = [...new Set(ids)];
+    const fetchProfiles = async () => {
+      const { data } = await supabase.from('profiles').select('id, nombre_completo').in('id', uniqueIds);
+      if (data) {
+        const map: Record<string, string> = {};
+        data.forEach(p => { map[p.id] = p.nombre_completo; });
+        setProfiles(map);
+      }
+    };
+    fetchProfiles();
+  }, [obligaciones]);
 
   const toggleCumplimiento = async (obligacionId: string, presentacion: string | null) => {
     if (!user) return;
@@ -206,6 +225,9 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       numero_oficio: data.numero_oficio || null,
       estado: data.estado,
       notas: data.notas || null,
+      activa: data.activa,
+      responsable_tipo: data.responsable_tipo || null,
+      responsable_id: data.responsable_id || null,
     }).select('id').single();
     setSaving(false);
     if (error) { toast.error('Error al crear obligación'); return; }
@@ -231,6 +253,9 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       numero_oficio: data.numero_oficio || null,
       estado: data.estado,
       notas: data.notas || null,
+      activa: data.activa,
+      responsable_tipo: data.responsable_tipo || null,
+      responsable_id: data.responsable_id || null,
     }).eq('id', data.id);
     setSaving(false);
     if (error) { toast.error('Error al actualizar'); return; }
@@ -333,6 +358,9 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       fecha_renovacion: ob.fecha_renovacion || '', fecha_inicio: ob.fecha_inicio || '',
       fecha_fin: ob.fecha_fin || '', numero_oficio: ob.numero_oficio || '',
       estado: ob.estado, notas: ob.notas || '',
+      activa: ob.activa || false,
+      responsable_tipo: ob.responsable_tipo || '',
+      responsable_id: ob.responsable_id || '',
     });
     setFormOpen(true);
   };
@@ -355,6 +383,10 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
 
   const filtered = obligaciones.filter(ob => {
     if (filterCategoria !== 'all' && ob.categoria !== filterCategoria) return false;
+    if (filterResponsable === 'cliente' && ob.responsable_tipo !== 'cliente') return false;
+    if (filterResponsable === 'consultor' && ob.responsable_tipo !== 'consultor') return false;
+    if (filterResponsable === 'sin_asignar' && ob.responsable_tipo) return false;
+    if (filterResponsable === 'activas' && !ob.activa) return false;
     if (search && !ob.nombre.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -401,6 +433,18 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
               ))}
             </SelectContent>
           </Select>
+          <Select value={filterResponsable} onValueChange={setFilterResponsable}>
+            <SelectTrigger className="w-[160px]">
+              <Users className="w-4 h-4 mr-1" /><SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="activas">Solo activas</SelectItem>
+              <SelectItem value="cliente">Cliente</SelectItem>
+              <SelectItem value="consultor">Consultor</SelectItem>
+              <SelectItem value="sin_asignar">Sin asignar</SelectItem>
+            </SelectContent>
+          </Select>
           {filtered.length > 0 && (
             <Button size="sm" variant="outline" onClick={handleExportPDF}>
               <FileDown className="w-4 h-4 mr-1" />PDF
@@ -442,15 +486,15 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  {canEdit && <th className="text-center p-2 font-heading font-medium text-muted-foreground w-10">✓</th>}
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground">Categoría</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground">Nombre</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Artículo(s)</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Presentación</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden lg:table-cell">Período Actual</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground">Vencimiento</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground">Estado</th>
-                  {canEdit && <th className="text-right p-2 font-heading font-medium text-muted-foreground">Acciones</th>}
+                   {canEdit && <th className="text-center p-2 font-heading font-medium text-muted-foreground w-10">✓</th>}
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Categoría</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Nombre</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Responsable</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Presentación</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden lg:table-cell">Período Actual</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Vencimiento</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Estado</th>
+                   {canEdit && <th className="text-right p-2 font-heading font-medium text-muted-foreground">Acciones</th>}
                 </tr>
               </thead>
               <tbody>
@@ -476,10 +520,24 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                         </Badge>
                       </td>
                       <td className="p-2">
-                        <p className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>{ob.nombre}</p>
-                        {ob.descripcion && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{ob.descripcion}</p>}
+                        <div className="flex items-center gap-1.5">
+                          {ob.activa && <Zap className="w-3.5 h-3.5 text-primary shrink-0" />}
+                          <div>
+                            <p className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>{ob.nombre}</p>
+                            {ob.descripcion && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{ob.descripcion}</p>}
+                          </div>
+                        </div>
                       </td>
-                      <td className="p-2 hidden md:table-cell text-muted-foreground">{ob.articulos || '-'}</td>
+                      <td className="p-2 hidden md:table-cell">
+                        {ob.responsable_tipo ? (
+                          <div className="flex items-center gap-1">
+                            {ob.responsable_tipo === 'cliente' ? <User className="w-3 h-3 text-muted-foreground" /> : <Users className="w-3 h-3 text-muted-foreground" />}
+                            <span className="text-xs capitalize">{ob.responsable_id ? (profiles[ob.responsable_id] || ob.responsable_tipo) : ob.responsable_tipo}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </td>
                       <td className="p-2 hidden md:table-cell text-muted-foreground capitalize">{ob.presentacion || '-'}</td>
                       <td className="p-2 hidden lg:table-cell">
                         {ob.presentacion && ob.presentacion !== 'unica' ? (
@@ -520,6 +578,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
         onSubmit={editData?.id ? handleUpdate : handleCreate}
         initialData={editData}
         loading={saving}
+        empresaId={empresaId}
       />
 
       <BulkImportDialog open={bulkOpen} onOpenChange={setBulkOpen} onImport={handleBulkImport} loading={saving} />

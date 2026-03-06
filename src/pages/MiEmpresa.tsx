@@ -76,7 +76,7 @@ export default function MiEmpresa() {
         supabase.from('empresas').select('*').eq('id', profile.empresa_id).maybeSingle(),
         supabase.from('apoderados_legales').select('*').eq('empresa_id', profile.empresa_id),
         supabase.from('domicilios_operacion').select('*').eq('empresa_id', profile.empresa_id),
-        supabase.from('obligaciones').select('*').eq('empresa_id', profile.empresa_id).order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
+        supabase.from('obligaciones').select('*').eq('empresa_id', profile.empresa_id).eq('activa', true).order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
       ]);
 
       setEmpresa(empresaRes.data);

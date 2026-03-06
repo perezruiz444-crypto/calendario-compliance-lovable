@@ -855,6 +855,7 @@ export type Database = {
       }
       obligaciones: {
         Row: {
+          activa: boolean
           articulos: string | null
           categoria: string
           created_at: string
@@ -872,9 +873,12 @@ export type Database = {
           notas: string | null
           numero_oficio: string | null
           presentacion: string | null
+          responsable_id: string | null
+          responsable_tipo: string | null
           updated_at: string
         }
         Insert: {
+          activa?: boolean
           articulos?: string | null
           categoria: string
           created_at?: string
@@ -892,9 +896,12 @@ export type Database = {
           notas?: string | null
           numero_oficio?: string | null
           presentacion?: string | null
+          responsable_id?: string | null
+          responsable_tipo?: string | null
           updated_at?: string
         }
         Update: {
+          activa?: boolean
           articulos?: string | null
           categoria?: string
           created_at?: string
@@ -912,6 +919,8 @@ export type Database = {
           notas?: string | null
           numero_oficio?: string | null
           presentacion?: string | null
+          responsable_id?: string | null
+          responsable_tipo?: string | null
           updated_at?: string
         }
         Relationships: [
