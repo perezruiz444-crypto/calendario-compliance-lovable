@@ -11,7 +11,8 @@ import { toast } from 'sonner';
 import { format, differenceInDays, isPast, isValid, startOfWeek, getISOWeek } from 'date-fns';
 import { 
   Plus, Upload, Trash2, Pencil, Search, 
-  Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen, FileDown
+  Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen, FileDown,
+  Zap, User, Users
 } from 'lucide-react';
 import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormDialog';
 import { BulkImportDialog, type ParsedRow } from './BulkImportDialog';
