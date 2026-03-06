@@ -160,6 +160,22 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
 
   useEffect(() => { fetchObligaciones(); }, [empresaId]);
 
+  // Fetch profile names for responsable display
+  useEffect(() => {
+    const ids = obligaciones.filter(o => o.responsable_id).map(o => o.responsable_id);
+    if (ids.length === 0) return;
+    const uniqueIds = [...new Set(ids)];
+    const fetchProfiles = async () => {
+      const { data } = await supabase.from('profiles').select('id, nombre_completo').in('id', uniqueIds);
+      if (data) {
+        const map: Record<string, string> = {};
+        data.forEach(p => { map[p.id] = p.nombre_completo; });
+        setProfiles(map);
+      }
+    };
+    fetchProfiles();
+  }, [obligaciones]);
+
   const toggleCumplimiento = async (obligacionId: string, presentacion: string | null) => {
     if (!user) return;
     const periodKey = getCurrentPeriodKey(presentacion);
