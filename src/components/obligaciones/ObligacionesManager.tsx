@@ -578,6 +578,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
         onSubmit={editData?.id ? handleUpdate : handleCreate}
         initialData={editData}
         loading={saving}
+        empresaId={empresaId}
       />
 
       <BulkImportDialog open={bulkOpen} onOpenChange={setBulkOpen} onImport={handleBulkImport} loading={saving} />

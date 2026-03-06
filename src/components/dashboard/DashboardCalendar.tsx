@@ -246,10 +246,11 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
         });
       }
 
-      // Fetch obligaciones with dates
+      // Fetch only active obligaciones with dates
       const { data: obligaciones, error: obError } = await supabase
         .from('obligaciones')
         .select('*, empresas(razon_social)')
+        .eq('activa', true)
         .or('fecha_vencimiento.not.is.null,fecha_renovacion.not.is.null');
 
       if (!obError && obligaciones) {
