@@ -486,15 +486,15 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  {canEdit && <th className="text-center p-2 font-heading font-medium text-muted-foreground w-10">✓</th>}
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground">Categoría</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground">Nombre</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Artículo(s)</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Presentación</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden lg:table-cell">Período Actual</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground">Vencimiento</th>
-                  <th className="text-left p-2 font-heading font-medium text-muted-foreground">Estado</th>
-                  {canEdit && <th className="text-right p-2 font-heading font-medium text-muted-foreground">Acciones</th>}
+                   {canEdit && <th className="text-center p-2 font-heading font-medium text-muted-foreground w-10">✓</th>}
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Categoría</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Nombre</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Responsable</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Presentación</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden lg:table-cell">Período Actual</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Vencimiento</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Estado</th>
+                   {canEdit && <th className="text-right p-2 font-heading font-medium text-muted-foreground">Acciones</th>}
                 </tr>
               </thead>
               <tbody>
