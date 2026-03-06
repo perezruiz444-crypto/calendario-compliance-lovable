@@ -225,6 +225,9 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       numero_oficio: data.numero_oficio || null,
       estado: data.estado,
       notas: data.notas || null,
+      activa: data.activa,
+      responsable_tipo: data.responsable_tipo || null,
+      responsable_id: data.responsable_id || null,
     }).select('id').single();
     setSaving(false);
     if (error) { toast.error('Error al crear obligación'); return; }
