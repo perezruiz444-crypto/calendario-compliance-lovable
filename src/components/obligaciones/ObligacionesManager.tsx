@@ -383,6 +383,10 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
 
   const filtered = obligaciones.filter(ob => {
     if (filterCategoria !== 'all' && ob.categoria !== filterCategoria) return false;
+    if (filterResponsable === 'cliente' && ob.responsable_tipo !== 'cliente') return false;
+    if (filterResponsable === 'consultor' && ob.responsable_tipo !== 'consultor') return false;
+    if (filterResponsable === 'sin_asignar' && ob.responsable_tipo) return false;
+    if (filterResponsable === 'activas' && !ob.activa) return false;
     if (search && !ob.nombre.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
