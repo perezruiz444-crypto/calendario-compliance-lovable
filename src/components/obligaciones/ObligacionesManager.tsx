@@ -358,6 +358,9 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       fecha_renovacion: ob.fecha_renovacion || '', fecha_inicio: ob.fecha_inicio || '',
       fecha_fin: ob.fecha_fin || '', numero_oficio: ob.numero_oficio || '',
       estado: ob.estado, notas: ob.notas || '',
+      activa: ob.activa || false,
+      responsable_tipo: ob.responsable_tipo || '',
+      responsable_id: ob.responsable_id || '',
     });
     setFormOpen(true);
   };
