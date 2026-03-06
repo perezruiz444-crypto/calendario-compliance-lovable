@@ -433,6 +433,18 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
               ))}
             </SelectContent>
           </Select>
+          <Select value={filterResponsable} onValueChange={setFilterResponsable}>
+            <SelectTrigger className="w-[160px]">
+              <Users className="w-4 h-4 mr-1" /><SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="activas">Solo activas</SelectItem>
+              <SelectItem value="cliente">Cliente</SelectItem>
+              <SelectItem value="consultor">Consultor</SelectItem>
+              <SelectItem value="sin_asignar">Sin asignar</SelectItem>
+            </SelectContent>
+          </Select>
           {filtered.length > 0 && (
             <Button size="sm" variant="outline" onClick={handleExportPDF}>
               <FileDown className="w-4 h-4 mr-1" />PDF
