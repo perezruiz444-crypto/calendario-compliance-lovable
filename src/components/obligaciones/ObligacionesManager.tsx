@@ -520,10 +520,24 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                         </Badge>
                       </td>
                       <td className="p-2">
-                        <p className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>{ob.nombre}</p>
-                        {ob.descripcion && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{ob.descripcion}</p>}
+                        <div className="flex items-center gap-1.5">
+                          {ob.activa && <Zap className="w-3.5 h-3.5 text-primary shrink-0" />}
+                          <div>
+                            <p className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>{ob.nombre}</p>
+                            {ob.descripcion && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{ob.descripcion}</p>}
+                          </div>
+                        </div>
                       </td>
-                      <td className="p-2 hidden md:table-cell text-muted-foreground">{ob.articulos || '-'}</td>
+                      <td className="p-2 hidden md:table-cell">
+                        {ob.responsable_tipo ? (
+                          <div className="flex items-center gap-1">
+                            {ob.responsable_tipo === 'cliente' ? <User className="w-3 h-3 text-muted-foreground" /> : <Users className="w-3 h-3 text-muted-foreground" />}
+                            <span className="text-xs capitalize">{ob.responsable_id ? (profiles[ob.responsable_id] || ob.responsable_tipo) : ob.responsable_tipo}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </td>
                       <td className="p-2 hidden md:table-cell text-muted-foreground capitalize">{ob.presentacion || '-'}</td>
                       <td className="p-2 hidden lg:table-cell">
                         {ob.presentacion && ob.presentacion !== 'unica' ? (
