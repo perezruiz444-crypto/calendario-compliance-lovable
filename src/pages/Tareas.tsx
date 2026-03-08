@@ -1070,8 +1070,23 @@ export default function Tareas() {
           </Card>
         </div>
 
-        {/* Tareas View - List, Kanban or Calendar */}
-        {viewMode === 'list' ? (
+        {/* Tareas View - List, Kanban, Calendar or Obligaciones */}
+        {viewMode === 'obligaciones' ? (
+          <Card className="gradient-card shadow-card">
+            <CardHeader>
+              <CardTitle className="font-heading flex items-center gap-2">
+                <ClipboardList className="w-5 h-5" />
+                Obligaciones Activas
+              </CardTitle>
+              <CardDescription className="font-body">
+                Obligaciones legales activadas como pendientes de cumplimiento
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ObligacionesActivasTab />
+            </CardContent>
+          </Card>
+        ) : viewMode === 'list' ? (
           <Card className="gradient-card shadow-card">
             <CardHeader>
               <div className="flex items-center justify-between">
