@@ -1297,7 +1297,7 @@ export default function Tareas() {
               ))}
             </div>
             <DragOverlay>
-              {activeDragId ? (
+              {activeDragId && tareas.find(t => t.id === activeDragId) ? (
                 <div className="opacity-50">
                   <TareaCard
                     tarea={tareas.find(t => t.id === activeDragId)!}
