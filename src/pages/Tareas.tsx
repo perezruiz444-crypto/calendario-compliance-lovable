@@ -1106,8 +1106,13 @@ export default function Tareas() {
           </Card>
         </div>
 
-        {/* Tareas View - List, Kanban, Calendar or Obligaciones */}
-        {viewMode === 'obligaciones' ? (
+        {/* Tareas View - List, Kanban, Calendar, Timeline or Obligaciones */}
+        {viewMode === 'timeline' ? (
+          <TareasTimeline
+            tareas={filteredTareas}
+            onTareaClick={(id) => { setSelectedTareaId(id); setDetailDialogOpen(true); }}
+          />
+        ) : viewMode === 'obligaciones' ? (
           <Card className="gradient-card shadow-card">
             <CardHeader>
               <CardTitle className="font-heading flex items-center gap-2">
