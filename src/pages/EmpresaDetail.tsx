@@ -42,7 +42,11 @@ export default function EmpresaDetail() {
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth');
-  }, [user, loading, navigate]);
+    if (!loading && role === 'cliente') {
+      toast.info('Redirigido a tu empresa');
+      navigate('/mi-empresa');
+    }
+  }, [user, role, loading, navigate]);
 
   useEffect(() => {
     if (id && user) fetchEmpresaData();
