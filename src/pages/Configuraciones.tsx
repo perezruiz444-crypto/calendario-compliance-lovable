@@ -147,10 +147,14 @@ export default function Configuraciones() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5">
             <TabsTrigger value="general" className="gap-2">
               <Palette className="h-4 w-4" />
               <span className="hidden sm:inline">General</span>
+            </TabsTrigger>
+            <TabsTrigger value="colores" className="gap-2">
+              <Paintbrush className="h-4 w-4" />
+              <span className="hidden sm:inline">Colores</span>
             </TabsTrigger>
             <TabsTrigger value="notificaciones" className="gap-2">
               <Bell className="h-4 w-4" />
