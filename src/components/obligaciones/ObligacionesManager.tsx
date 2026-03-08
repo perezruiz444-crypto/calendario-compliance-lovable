@@ -249,16 +249,6 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
     if (catalogItems.length === 0) return;
     setSaving(true);
 
-    const programaToCategoria = (programa: string): string => {
-      const lower = programa.toLowerCase();
-      if (lower.includes('immex')) return 'immex';
-      if (lower.includes('prosec')) return 'prosec';
-      if (lower.includes('cert') || lower.includes('iva') || lower.includes('ieps')) return 'cert_iva_ieps';
-      if (lower.includes('padr')) return 'padron';
-      if (lower.includes('general')) return 'general';
-      return 'otro';
-    };
-
     const inserts = catalogItems.map(item => ({
       empresa_id: empresaId,
       categoria: programaToCategoria(item.programa),
