@@ -405,7 +405,11 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Grid con Próximas Tareas y Calendario */}
+            {/* Grid con Obligaciones, Próximas Tareas y Calendario */}
+            {(role === 'administrador' || role === 'consultor') && (
+              <DashboardObligaciones />
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Próximas Tareas */}
               <Card className="gradient-card shadow-card">
