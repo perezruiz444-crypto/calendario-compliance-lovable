@@ -454,7 +454,7 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
             </p>
           </div>
         ) : (
-          <div style={{ height }}>
+          <div style={{ height }} className="rbc-calendar-enhanced">
             <BigCalendar
               localizer={localizer}
               events={events}
@@ -463,7 +463,15 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
               onSelectEvent={handleSelectEvent}
               views={['month', 'week', 'day', 'agenda']}
               defaultView="month"
+              view={currentView as any}
+              onView={(view) => setCurrentView(view)}
+              popup
               style={{ height: '100%' }}
+              components={{
+                month: {
+                  dateHeader: CustomDateHeader,
+                },
+              }}
               messages={{
                 next: 'Siguiente',
                 previous: 'Anterior',
