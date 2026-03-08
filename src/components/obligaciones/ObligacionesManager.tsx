@@ -215,16 +215,6 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const handleBulkImport = async (rows: ParsedRow[], saveToCatalog: boolean) => {
     setSaving(true);
 
-    const programaToCategoria = (programa: string): string => {
-      const lower = programa.toLowerCase();
-      if (lower.includes('immex')) return 'immex';
-      if (lower.includes('prosec')) return 'prosec';
-      if (lower.includes('cert') || lower.includes('iva') || lower.includes('ieps')) return 'cert_iva_ieps';
-      if (lower.includes('padr')) return 'padron';
-      if (lower.includes('general')) return 'general';
-      return 'otro';
-    };
-
     const inserts = rows.map(r => ({
       empresa_id: empresaId,
       categoria: programaToCategoria(r.programa),
