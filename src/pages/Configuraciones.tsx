@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Mail, Shield, Palette, Bell, Settings, Clock, History } from 'lucide-react';
+import { Loader2, Mail, Shield, Palette, Bell, Settings, Clock, History, Paintbrush } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from 'next-themes';
@@ -15,6 +15,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { UserNotificationPreferences } from '@/components/notifications/UserNotificationPreferences';
 import { ReminderRulesManager } from '@/components/notifications/ReminderRulesManager';
 import { NotificationHistory } from '@/components/notifications/NotificationHistory';
+import ThemeEditor from '@/components/configuraciones/ThemeEditor';
 
 interface NotificationSetting {
   id: string;
@@ -146,10 +147,14 @@ export default function Configuraciones() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5">
             <TabsTrigger value="general" className="gap-2">
               <Palette className="h-4 w-4" />
               <span className="hidden sm:inline">General</span>
+            </TabsTrigger>
+            <TabsTrigger value="colores" className="gap-2">
+              <Paintbrush className="h-4 w-4" />
+              <span className="hidden sm:inline">Colores</span>
             </TabsTrigger>
             <TabsTrigger value="notificaciones" className="gap-2">
               <Bell className="h-4 w-4" />
@@ -314,6 +319,11 @@ export default function Configuraciones() {
                 )}
               </>
             )}
+          </TabsContent>
+
+          {/* Colors Tab */}
+          <TabsContent value="colores">
+            <ThemeEditor />
           </TabsContent>
 
           {/* My Notifications Tab */}
