@@ -839,6 +839,15 @@ export default function Tareas() {
                 Calendario
               </Button>
               <Button
+                variant={viewMode === 'timeline' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('timeline')}
+                className="h-8"
+              >
+                <GanttChart className="w-4 h-4 mr-1" />
+                Timeline
+              </Button>
+              <Button
                 variant={viewMode === 'obligaciones' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('obligaciones')}
