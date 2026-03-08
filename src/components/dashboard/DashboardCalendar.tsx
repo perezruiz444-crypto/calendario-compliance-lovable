@@ -82,6 +82,72 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
   const { user, role } = useAuth();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState<string>('month');
+
+  // Build a map of date -> event counts by type for badges
+  const eventCountsByDate = useMemo(() => {
+    const map: Record<string, { tareas: number; documentos: number; programas: number }> = {};
+    events.forEach(ev => {
+      const key = moment(ev.start).format('YYYY-MM-DD');
+      if (!map[key]) map[key] = { tareas: 0, documentos: 0, programas: 0 };
+      if (ev.resource.type === 'tarea') map[key].tareas++;
+      else if (ev.resource.type === 'documento') map[key].documentos++;
+      else map[key].programas++; // programa + obligacion
+    });
+    return map;
+  }, [events]);
+
+  const CustomDateHeader = useCallback(({ date, label }: DateHeaderProps) => {
+    const key = moment(date).format('YYYY-MM-DD');
+    const counts = eventCountsByDate[key];
+    const hasEvents = counts && (counts.tareas + counts.documentos + counts.programas > 0);
+
+    return (
+      <div className="rbc-date-header-custom">
+        <span className="rbc-date-number">{label}</span>
+        {hasEvents && (
+          <div className="rbc-date-badges">
+            {counts.tareas > 0 && (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="rbc-badge rbc-badge-tarea">{counts.tareas}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {counts.tareas} tarea{counts.tareas > 1 ? 's' : ''}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {counts.documentos > 0 && (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="rbc-badge rbc-badge-documento">{counts.documentos}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {counts.documentos} documento{counts.documentos > 1 ? 's' : ''}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {counts.programas > 0 && (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="rbc-badge rbc-badge-programa">{counts.programas}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {counts.programas} programa{counts.programas > 1 ? 's' : ''}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }, [eventCountsByDate]);
 
   useEffect(() => {
     if (user && role) {
