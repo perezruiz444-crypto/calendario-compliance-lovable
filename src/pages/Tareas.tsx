@@ -1211,7 +1211,7 @@ export default function Tareas() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[600px]">
+              <div className="rbc-calendar-enhanced h-[600px]">
                 <BigCalendar
                   localizer={localizer}
                   events={calendarEvents}
@@ -1220,6 +1220,7 @@ export default function Tareas() {
                   onSelectEvent={handleSelectEvent}
                   views={['month', 'week', 'day', 'agenda']}
                   defaultView="month"
+                  popup
                   style={{ height: '100%' }}
                   messages={{
                     next: 'Siguiente',
@@ -1238,25 +1239,30 @@ export default function Tareas() {
                   }}
                   eventPropGetter={(event) => {
                     const tarea = event.resource;
-                    let backgroundColor = 'hsl(var(--primary))';
+                    let color = 'hsl(var(--primary))';
                     
                     if (tarea.prioridad === 'urgente') {
-                      backgroundColor = 'hsl(var(--destructive))';
+                      color = 'hsl(0, 84%, 60%)';
                     } else if (tarea.prioridad === 'alta') {
-                      backgroundColor = 'hsl(25, 95%, 53%)';
+                      color = 'hsl(25, 95%, 53%)';
                     } else if (tarea.prioridad === 'media') {
-                      backgroundColor = 'hsl(var(--warning))';
+                      color = 'hsl(45, 93%, 47%)';
                     } else if (tarea.prioridad === 'baja') {
-                      backgroundColor = 'hsl(var(--success))';
+                      color = 'hsl(142, 76%, 36%)';
                     }
                     
                     return {
                       style: {
-                        backgroundColor,
-                        borderRadius: '4px',
-                        opacity: 0.9,
-                        color: 'white',
+                        backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
+                        borderLeft: `3px solid ${color}`,
+                        borderRadius: '6px',
+                        color: 'inherit',
                         border: 'none',
+                        borderLeftWidth: '3px',
+                        borderLeftStyle: 'solid',
+                        borderLeftColor: color,
+                        fontSize: '0.72rem',
+                        fontWeight: 500,
                         display: 'block'
                       }
                     };
