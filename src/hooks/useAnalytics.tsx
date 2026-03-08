@@ -222,16 +222,11 @@ export function useAnalytics() {
       const { data: consultoresData } = await supabase.from('profiles').select('id, nombre_completo').in('id', consultorIds);
       const consultores = consultoresData || [];
       
-      tareasPorConsultor = (await Promise.all(
-        consultores.slice(0, 5).map(async (consultor) => {
-          const { data: cTareas } = await supabase.from('tareas').select('estado').eq('consultor_asignado_id', consultor.id);
-          return {
-            nombre: consultor.nombre_completo,
-            total: cTareas?.length || 0,
-            completadas: cTareas?.filter(t => t.estado === 'completada').length || 0
-          };
-        })
-      )).filter(t => t.total > 0);
+      tareasPorConsultor = consultores.slice(0, 5).map(consultor => ({
+        nombre: consultor.nombre_completo,
+        total: tareas.filter(t => t.consultor_asignado_id === consultor.id).length,
+        completadas: tareas.filter(t => t.consultor_asignado_id === consultor.id && t.estado === 'completada').length,
+      })).filter(t => t.total > 0);
     }
 
     // Documentos próximos a vencer
