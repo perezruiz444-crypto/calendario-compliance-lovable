@@ -81,6 +81,13 @@ export default function Empresas() {
   const handleDeleteEmpresa = async () => {
     if (!deleteEmpresaId) return;
     try {
+      // First delete obligacion_cumplimientos (depends on obligaciones)
+      const { data: obligs } = await supabase.from('obligaciones').select('id').eq('empresa_id', deleteEmpresaId);
+      if (obligs && obligs.length > 0) {
+        const obligIds = obligs.map(o => o.id);
+        await supabase.from('obligacion_cumplimientos').delete().in('obligacion_id', obligIds);
+      }
+
       await Promise.all([
         supabase.from('obligaciones').delete().eq('empresa_id', deleteEmpresaId),
         supabase.from('tareas').delete().eq('empresa_id', deleteEmpresaId),
@@ -90,6 +97,8 @@ export default function Empresas() {
         supabase.from('apoderados_legales').delete().eq('empresa_id', deleteEmpresaId),
         supabase.from('domicilios_operacion').delete().eq('empresa_id', deleteEmpresaId),
         supabase.from('miembros_socios').delete().eq('empresa_id', deleteEmpresaId),
+        supabase.from('solicitudes_servicio').delete().eq('empresa_id', deleteEmpresaId),
+        supabase.from('client_invitations').delete().eq('empresa_id', deleteEmpresaId),
       ]);
       const { error } = await supabase.from('empresas').delete().eq('id', deleteEmpresaId);
       if (error) throw error;

@@ -63,10 +63,10 @@ export default function Usuarios() {
     if (!loading && !user) {
       navigate('/auth');
     }
-    if (!loading && role !== 'administrador' && role !== 'consultor') {
+    if (!loading && role !== 'administrador') {
       navigate('/dashboard');
     }
-    if (!loading && (role === 'administrador' || role === 'consultor')) {
+    if (!loading && role === 'administrador') {
       fetchUsuarios();
     }
   }, [user, role, loading, navigate]);

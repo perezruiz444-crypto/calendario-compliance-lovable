@@ -155,16 +155,6 @@ export default function DashboardLayout({
             </p>
           </div>
         </div>
-        {role === 'administrador' && (
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-smooth font-heading mb-2" 
-            onClick={() => navigate('/configuraciones')}
-          >
-            <Settings className="w-5 h-5" />
-            Configuraciones
-          </Button>
-        )}
         <Button variant="ghost" className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-smooth font-heading" onClick={handleSignOut}>
           <LogOut className="w-5 h-5" />
           Cerrar Sesión

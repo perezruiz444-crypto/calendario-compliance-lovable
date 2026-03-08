@@ -58,7 +58,10 @@ export default function Reportes() {
     if (!loading && !user) {
       navigate('/auth');
     }
-  }, [user, loading, navigate]);
+    if (!loading && role && !['administrador', 'consultor'].includes(role)) {
+      navigate('/dashboard');
+    }
+  }, [user, role, loading, navigate]);
 
   useEffect(() => {
     if (user && role) {
