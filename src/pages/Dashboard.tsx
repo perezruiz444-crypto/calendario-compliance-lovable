@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -6,14 +6,18 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building2, CheckSquare, Users, AlertCircle, AlertTriangle, TrendingUp, Calendar, Clock, Target, FileText, Plus } from 'lucide-react';
+import { Building2, CheckSquare, Users, AlertCircle, AlertTriangle, TrendingUp, Calendar, Clock, Target, FileText, Plus, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import DashboardObligaciones from '@/components/dashboard/DashboardObligaciones';
 import DashboardMensajes from '@/components/dashboard/DashboardMensajes';
 import AdminAnalytics from '@/components/dashboard/AdminAnalytics';
 import ConsultorAnalytics from '@/components/dashboard/ConsultorAnalytics';
 import ClienteAnalytics from '@/components/dashboard/ClienteAnalytics';
+import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
+import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -22,10 +26,38 @@ function getGreeting(): string {
   return 'Buenas noches';
 }
 
+const getPrioridadColor = (prioridad: string) => {
+  switch (prioridad) {
+    case 'alta': return 'bg-destructive text-destructive-foreground';
+    case 'media': return 'bg-warning text-warning-foreground';
+    case 'baja': return 'bg-success text-success-foreground';
+    default: return 'bg-muted';
+  }
+};
+
+const getEstadoColor = (estado: string) => {
+  switch (estado) {
+    case 'pendiente': return 'bg-warning text-warning-foreground';
+    case 'en_progreso': return 'bg-primary text-primary-foreground';
+    case 'completada': return 'bg-success text-success-foreground';
+    default: return 'bg-muted';
+  }
+};
+
+const estadoLabels: Record<string, string> = {
+  pendiente: 'Pendiente',
+  en_progreso: 'En Progreso',
+  completada: 'Completada',
+  cancelada: 'Cancelada'
+};
+
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const { data, loading: analyticsLoading } = useAnalytics();
+  const { data, loading: analyticsLoading, refetch } = useAnalytics();
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -43,29 +75,16 @@ export default function Dashboard() {
 
   const firstName = data.nombreUsuario?.split(' ')[0] || 'Usuario';
 
-  const getPrioridadColor = (prioridad: string) => {
-    switch (prioridad) {
-      case 'alta': return 'bg-destructive text-destructive-foreground';
-      case 'media': return 'bg-warning text-warning-foreground';
-      case 'baja': return 'bg-success text-success-foreground';
-      default: return 'bg-muted';
+  const handleQuickComplete = async (e: React.MouseEvent, tareaId: string) => {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase.from('tareas').update({ estado: 'completada' }).eq('id', tareaId);
+      if (error) throw error;
+      toast.success('Tarea completada');
+      refetch();
+    } catch {
+      toast.error('Error al completar tarea');
     }
-  };
-
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'pendiente': return 'bg-warning text-warning-foreground';
-      case 'en_progreso': return 'bg-primary text-primary-foreground';
-      case 'completada': return 'bg-success text-success-foreground';
-      default: return 'bg-muted';
-    }
-  };
-
-  const estadoLabels: Record<string, string> = {
-    pendiente: 'Pendiente',
-    en_progreso: 'En Progreso',
-    completada: 'Completada',
-    cancelada: 'Cancelada'
   };
 
   // KPI cards based on role
@@ -100,7 +119,7 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Button onClick={() => navigate('/tareas')} size="sm" className="gap-1.5">
+            <Button onClick={() => setCreateSheetOpen(true)} size="sm" className="gap-1.5">
               <Plus className="w-4 h-4" /> Nueva Tarea
             </Button>
             {role !== 'cliente' && (
@@ -176,8 +195,8 @@ export default function Dashboard() {
                   {data.proximasTareas.map((tarea) => (
                     <div
                       key={tarea.id}
-                      className="border rounded-lg p-3 hover:border-primary transition-colors cursor-pointer"
-                      onClick={() => navigate('/tareas')}
+                      className="border rounded-lg p-3 hover:border-primary transition-colors cursor-pointer group"
+                      onClick={() => { setSelectedTareaId(tarea.id); setDetailSheetOpen(true); }}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -201,6 +220,17 @@ export default function Dashboard() {
                             </span>
                           </div>
                         </div>
+                        {tarea.estado !== 'completada' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-success hover:text-success hover:bg-success/10"
+                            onClick={(e) => handleQuickComplete(e, tarea.id)}
+                            title="Marcar como completada"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -218,13 +248,29 @@ export default function Dashboard() {
           height="500px"
           onEventClick={(event) => {
             if (event.resource.type === 'tarea') {
-              navigate('/tareas');
+              setSelectedTareaId(event.resource.data.id);
+              setDetailSheetOpen(true);
             } else if (event.resource.type === 'documento') {
               navigate(`/empresas/${event.resource.data.empresa_id}`);
             }
           }}
         />
       </div>
+
+      <CreateTareaSheet
+        open={createSheetOpen}
+        onOpenChange={setCreateSheetOpen}
+        onTareaCreated={() => refetch()}
+      />
+
+      {selectedTareaId && (
+        <TareaDetailSheet
+          open={detailSheetOpen}
+          onOpenChange={(open) => { setDetailSheetOpen(open); if (!open) { setSelectedTareaId(null); refetch(); } }}
+          tareaId={selectedTareaId}
+          onUpdate={() => refetch()}
+        />
+      )}
     </DashboardLayout>
   );
 }

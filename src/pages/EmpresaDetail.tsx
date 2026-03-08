@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
-import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
-import TareaDetailDialog from '@/components/tareas/TareaDetailDialog';
+import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
+import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
 import { EmpresaGeneralCard } from '@/components/empresas/EmpresaGeneralCard';
 import { EmpresaIMMEXCard } from '@/components/empresas/EmpresaIMMEXCard';
 import { EmpresaPROSECCard } from '@/components/empresas/EmpresaPROSECCard';
@@ -19,8 +19,11 @@ import { ObligacionesManager } from '@/components/obligaciones/ObligacionesManag
 import { AgentesAduanalesCard } from '@/components/empresas/AgentesAduanalesCard';
 import { ApoderadosCard } from '@/components/empresas/ApoderadosCard';
 import { DomiciliosCard } from '@/components/empresas/DomiciliosCard';
+import {
+  Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator
+} from '@/components/ui/breadcrumb';
 import { 
-  ArrowLeft, Phone, UserCog, CheckSquare, Plus, Repeat
+  Phone, UserCog, CheckSquare, Plus, Repeat
 } from 'lucide-react';
 
 export default function EmpresaDetail() {
@@ -34,8 +37,8 @@ export default function EmpresaDetail() {
   const [tareas, setTareas] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [consultoresDialogOpen, setConsultoresDialogOpen] = useState(false);
-  const [createTareaDialogOpen, setCreateTareaDialogOpen] = useState(false);
-  const [detailTareaDialogOpen, setDetailTareaDialogOpen] = useState(false);
+  const [createTareaSheetOpen, setCreateTareaSheetOpen] = useState(false);
+  const [detailTareaSheetOpen, setDetailTareaSheetOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
 
   const canEdit = role === 'administrador' || role === 'consultor';
@@ -105,11 +108,23 @@ export default function EmpresaDetail() {
   return (
     <DashboardLayout currentPage="/empresas">
       <div className="space-y-6">
+        {/* Breadcrumbs */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/empresas">Empresas</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{empresa.razon_social}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/empresas')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
           <div className="flex-1">
             <h1 className="text-3xl font-heading font-bold text-foreground mb-2">{empresa.razon_social}</h1>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -180,7 +195,7 @@ export default function EmpresaDetail() {
                   <CardDescription>{tareas.length} tarea(s)</CardDescription>
                 </div>
                 {canEdit && (
-                  <Button size="sm" onClick={() => setCreateTareaDialogOpen(true)} className="gradient-primary">
+                  <Button size="sm" onClick={() => setCreateTareaSheetOpen(true)} className="gradient-primary">
                     <Plus className="w-4 h-4 mr-1" />Nueva
                   </Button>
                 )}
@@ -191,7 +206,7 @@ export default function EmpresaDetail() {
                     {tareas.slice(0, 5).map((tarea) => (
                       <div
                         key={tarea.id}
-                        onClick={() => { setSelectedTareaId(tarea.id); setDetailTareaDialogOpen(true); }}
+                        onClick={() => { setSelectedTareaId(tarea.id); setDetailTareaSheetOpen(true); }}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
                       >
                         <div className="flex-1 min-w-0">
@@ -216,7 +231,7 @@ export default function EmpresaDetail() {
                     <CheckSquare className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                     <p className="text-muted-foreground text-sm">Sin tareas</p>
                     {canEdit && (
-                      <Button size="sm" variant="outline" className="mt-2" onClick={() => setCreateTareaDialogOpen(true)}>
+                      <Button size="sm" variant="outline" className="mt-2" onClick={() => setCreateTareaSheetOpen(true)}>
                         <Plus className="w-4 h-4 mr-1" />Crear Tarea
                       </Button>
                     )}
@@ -235,18 +250,19 @@ export default function EmpresaDetail() {
 
       <ManageConsultoresDialog open={consultoresDialogOpen} onOpenChange={setConsultoresDialogOpen} empresaId={id!} empresaNombre={empresa?.razon_social || ''} />
 
-      <CreateTareaDialog
-        open={createTareaDialogOpen}
-        onOpenChange={(open) => { setCreateTareaDialogOpen(open); if (!open) fetchEmpresaData(); }}
+      <CreateTareaSheet
+        open={createTareaSheetOpen}
+        onOpenChange={(open) => { setCreateTareaSheetOpen(open); if (!open) fetchEmpresaData(); }}
         onTareaCreated={fetchEmpresaData}
         defaultEmpresaId={id}
       />
 
       {selectedTareaId && (
-        <TareaDetailDialog
-          open={detailTareaDialogOpen}
-          onOpenChange={(open) => { setDetailTareaDialogOpen(open); if (!open) { fetchEmpresaData(); setSelectedTareaId(null); } }}
+        <TareaDetailSheet
+          open={detailTareaSheetOpen}
+          onOpenChange={(open) => { setDetailTareaSheetOpen(open); if (!open) { fetchEmpresaData(); setSelectedTareaId(null); } }}
           tareaId={selectedTareaId}
+          onUpdate={fetchEmpresaData}
         />
       )}
     </DashboardLayout>
