@@ -1,37 +1,255 @@
 
+# Plan: Centro de Control de Notificaciones y Recordatorios
 
-## Plan: Modernizar el Calendario de Eventos
+## Objetivo
+Crear un sistema centralizado y configurable para gestionar todas las notificaciones y recordatorios automáticos del sistema.
 
-### Problema
-El calendario usa los estilos por defecto de `react-big-calendar` con overrides minimos. Se ve anticuado: bordes gruesos, toolbar plana, eventos como barras opacas, sin transiciones ni sombras.
+---
 
-### Cambios propuestos
+## Nuevas Funcionalidades
 
-#### 1. Overhaul completo de CSS (`src/index.css`)
-Reescribir todos los estilos `.rbc-calendar-enhanced` con un look moderno:
+### 1. Preferencias de Notificación por Usuario
 
-- **Toolbar**: Botones con estilo pill/rounded, grupo de vistas como segmented control, titulo del mes mas grande y centrado
-- **Grid del mes**: Bordes sutiles (1px light), sin bordes exteriores pesados, celdas con fondo ligeramente alternado
-- **Headers de dia**: Uppercase mas sutil, color muted, sin borde inferior grueso
-- **Eventos**: Border-radius mayor (6px), sombra sutil, hover con scale transform, texto truncado limpio
-- **Hoy**: Highlight con ring/outline sutil en primary en vez de background solido
-- **"+N mas"**: Estilo como badge/chip moderno con gradiente sutil
-- **Popup overlay**: Glassmorphism ligero (backdrop-blur, border translucido)
-- **Transiciones**: `transition` en hover de eventos, botones toolbar, celdas
-- **Vista week/day**: Lineas de hora mas sutiles, header con fondo gradiente
+Cada usuario podrá personalizar:
+- Qué notificaciones recibir (tareas, certificaciones, documentos, etc.)
+- Cómo recibirlas (email, push, ambas, ninguna)
+- Frecuencia de resúmenes (diario, semanal, nunca)
 
-#### 2. Eventos con dot indicator en vez de barras llenas (`DashboardCalendar.tsx`)
-- Cambiar `eventStyleGetter` para usar estilos mas modernos: fondo con opacity baja + borde izquierdo de color + texto oscuro en vez de barras solidas de color con texto blanco
-- Esto da un look mas limpio y legible tipo Google Calendar / Notion
+### 2. Recordatorios Configurables de Vencimientos
 
-#### 3. Leyenda integrada como chips (`Calendario.tsx`)
-- Reemplazar la Card de leyenda por chips/pills inline debajo del toolbar del calendario, mas compactos y modernos
+Panel para configurar cuántos días antes del vencimiento se envían alertas:
+- **Certificaciones**: 90, 60, 30, 15, 7 días (configurable)
+- **Obligaciones IMMEX/PROSEC**: Igual
+- **Documentos**: 30, 15, 7, 1 día
 
-### Archivos afectados
+### 3. Centro de Notificaciones Unificado
 
-| Archivo | Cambio |
-|---|---|
-| `src/index.css` | Reescribir estilos rbc-calendar-enhanced con look moderno |
-| `src/components/dashboard/DashboardCalendar.tsx` | Actualizar eventStyleGetter para estilo moderno (fondo translucido + borde izquierdo), mejorar badges |
-| `src/pages/Calendario.tsx` | Leyenda como chips inline en vez de card separada |
+Nueva sección en Configuraciones con:
+- Vista general de todas las reglas activas
+- Historial de notificaciones enviadas
+- Prueba de notificaciones
+- Horario de envío personalizado
 
+---
+
+## Cambios en Base de Datos
+
+### Nueva Tabla: `user_notification_preferences`
+```sql
+CREATE TABLE user_notification_preferences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  notification_key TEXT NOT NULL,
+  email_enabled BOOLEAN DEFAULT true,
+  push_enabled BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, notification_key)
+);
+```
+
+### Nueva Tabla: `reminder_rules`
+```sql
+CREATE TABLE reminder_rules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre TEXT NOT NULL,
+  tipo TEXT NOT NULL, -- 'certificacion', 'immex', 'prosec', 'documento'
+  dias_antes INTEGER NOT NULL,
+  activa BOOLEAN DEFAULT true,
+  empresa_id UUID REFERENCES empresas(id), -- NULL = aplica a todas
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### Modificar Tabla: `profiles`
+```sql
+ALTER TABLE profiles ADD COLUMN 
+  resumen_frecuencia TEXT DEFAULT 'diario', -- 'diario', 'semanal', 'nunca'
+  resumen_hora INTEGER DEFAULT 8; -- Hora de envío (0-23)
+```
+
+---
+
+## Nuevos Componentes
+
+### 1. `src/components/notifications/NotificationCenter.tsx`
+Panel principal que muestra:
+- Resumen de notificaciones activas
+- Accesos rápidos a configuración
+- Historial reciente
+
+### 2. `src/components/notifications/UserNotificationPreferences.tsx`
+Formulario para que cada usuario configure:
+- Switches para cada tipo de notificación
+- Toggle email/push por categoría
+- Selector de frecuencia de resumen
+
+### 3. `src/components/notifications/ReminderRulesManager.tsx`
+CRUD para reglas de recordatorio:
+- Tipo de vencimiento a monitorear
+- Días de anticipación
+- Empresa específica o todas
+- Activar/desactivar
+
+### 4. `src/components/notifications/NotificationHistory.tsx`
+Tabla con:
+- Últimas notificaciones enviadas
+- Estado (enviada, fallida, pendiente)
+- Tipo y destinatario
+- Filtros por fecha y tipo
+
+---
+
+## Cambios en Archivos Existentes
+
+### `src/pages/Configuraciones.tsx`
+- Reorganizar en pestañas:
+  - **General** (tema, idioma)
+  - **Mis Notificaciones** (preferencias del usuario actual)
+  - **Recordatorios** (reglas de vencimientos - solo admin)
+  - **Sistema** (configuraciones globales - solo admin)
+
+### `src/components/layout/DashboardLayout.tsx`
+- Ya existe acceso a Configuraciones en el dropdown de perfil
+
+### Edge Function: `send-daily-summary`
+- Modificar para respetar preferencias por usuario
+- Verificar `user_notification_preferences` antes de enviar
+- Respetar horario y frecuencia configurados
+
+---
+
+## Flujo de Usuario
+
+```text
+Usuario                    Sistema
+   │                          │
+   ├─► Ir a Configuraciones   │
+   │                          │
+   ├─► Pestaña "Mis Notificaciones"
+   │   ├─ Toggle: Tareas vencidas [Email ✓] [Push ✓]
+   │   ├─ Toggle: Certificaciones [Email ✓] [Push ✗]
+   │   ├─ Toggle: Resumen diario [Email ✓]
+   │   └─ Selector: Enviar resumen a las [8:00 AM ▼]
+   │                          │
+   ├─► Guardar ───────────────►├─► Actualiza user_notification_preferences
+   │                          │
+   │                          ├─► Cron Job (8:00 AM)
+   │                          │   ├─ Verifica preferencias de usuario
+   │                          │   ├─ Verifica frecuencia (diario/semanal)
+   │                          │   └─ Envía solo notificaciones habilitadas
+   │                          │
+   │◄─── Recibe email/push ───┤
+```
+
+---
+
+## Interfaz: Vista de Preferencias por Usuario
+
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│ Mis Preferencias de Notificación                                 │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  📋 TAREAS                                    Email    Push      │
+│  ├─ Tarea asignada                            [✓]      [✓]       │
+│  ├─ Recordatorio 3 días antes                 [✓]      [✗]       │
+│  ├─ Recordatorio 1 día antes                  [✓]      [✓]       │
+│  └─ Tarea vencida                             [✓]      [✓]       │
+│                                                                  │
+│  🏆 CERTIFICACIONES                           Email    Push      │
+│  ├─ Vencimiento 90 días                       [✓]      [✗]       │
+│  ├─ Vencimiento 30 días                       [✓]      [✓]       │
+│  └─ Vencimiento 15 días                       [✓]      [✓]       │
+│                                                                  │
+│  📊 RESUMEN                                                      │
+│  ├─ Frecuencia: [Diario ▼]                                       │
+│  └─ Hora de envío: [08:00 ▼]                                     │
+│                                                                  │
+│                                    [Restaurar Predeterminados]   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Interfaz: Reglas de Recordatorio (Admin)
+
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│ Reglas de Recordatorio                          [+ Nueva Regla]  │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ 🏆 Certificación IVA/IEPS - 30 días antes      [Activa ●]  │  │
+│  │    Aplica a: Todas las empresas                            │  │
+│  │    Última ejecución: Hace 2 días                           │  │
+│  │                                          [Editar] [Eliminar]│  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ 📋 IMMEX - 15 días antes                       [Activa ●]  │  │
+│  │    Aplica a: Todas las empresas                            │  │
+│  │    Última ejecución: Hace 5 días                           │  │
+│  │                                          [Editar] [Eliminar]│  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ 📄 Documentos - 7 días antes                   [Inactiva ○]│  │
+│  │    Aplica a: Empresa XYZ                                   │  │
+│  │    Última ejecución: Nunca                                 │  │
+│  │                                          [Editar] [Eliminar]│  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Orden de Implementación
+
+1. **Fase 1: Base de Datos**
+   - Crear tabla `user_notification_preferences`
+   - Crear tabla `reminder_rules`
+   - Agregar columnas a `profiles`
+
+2. **Fase 2: Preferencias de Usuario**
+   - Crear componente `UserNotificationPreferences`
+   - Integrar en página de Configuraciones
+   - Migrar datos existentes
+
+3. **Fase 3: Reglas de Recordatorio**
+   - Crear componente `ReminderRulesManager`
+   - CRUD completo para reglas
+   - Vista solo para administradores
+
+4. **Fase 4: Actualizar Edge Functions**
+   - Modificar `send-daily-summary` para respetar preferencias
+   - Crear función para procesar `reminder_rules`
+   - Ajustar cron jobs según configuración
+
+5. **Fase 5: Historial y Monitoreo**
+   - Crear componente `NotificationHistory`
+   - Agregar logging de notificaciones enviadas
+   - Panel de estadísticas
+
+---
+
+## Beneficios
+
+| Antes | Después |
+|-------|---------|
+| Configuración global fija | Personalizable por usuario |
+| Horario fijo (8:00 AM) | Horario configurable |
+| Sin control de canales | Email y Push independientes |
+| Recordatorios hardcodeados | Reglas dinámicas configurables |
+| Sin historial | Registro completo de envíos |
+
+---
+
+## Notas Técnicas
+
+- Las preferencias de usuario se almacenan en `user_notification_preferences` con una entrada por cada tipo de notificación
+- El edge function `send-daily-summary` consultará esta tabla antes de enviar
+- Los defaults se toman de `notification_settings` (configuración global) cuando el usuario no tiene preferencia explícita
+- Se mantiene retrocompatibilidad: usuarios sin preferencias configuradas recibirán todo como antes

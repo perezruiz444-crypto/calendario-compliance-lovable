@@ -51,43 +51,36 @@ export default function Calendario() {
           }}
         />
 
-        {/* Legend */}
-        <Card className="gradient-card shadow-card">
-          <CardHeader>
-            <CardTitle className="font-heading text-lg">Leyenda de Colores</CardTitle>
-            <CardDescription className="font-body">
-              Tipos de eventos en el calendario
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(var(--destructive))' }}></div>
-                <span className="text-sm font-body">Tareas Urgentes / Vencidas</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(25, 95%, 53%)' }}></div>
-                <span className="text-sm font-body">Tareas Alta Prioridad</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(var(--warning))' }}></div>
-                <span className="text-sm font-body">Tareas Media Prioridad</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(var(--success))' }}></div>
-                <span className="text-sm font-body">Tareas Baja Prioridad</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(221, 83%, 53%)' }}></div>
-                <span className="text-sm font-body">Documentos</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(340, 82%, 52%)' }}></div>
-                <span className="text-sm font-body">Programas / Certificaciones</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Legend as inline chips */}
+        <div className="flex flex-wrap items-center gap-3 px-1">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Leyenda:</span>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-destructive/10 text-destructive border border-destructive/20">
+              <span className="w-2 h-2 rounded-full bg-destructive" />
+              Urgente / Vencida
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: 'hsl(25, 95%, 53%, 0.1)', color: 'hsl(25, 95%, 40%)', border: '1px solid hsl(25, 95%, 53%, 0.2)' }}>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(25, 95%, 53%)' }} />
+              Alta Prioridad
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning border border-warning/20">
+              <span className="w-2 h-2 rounded-full bg-warning" />
+              Media Prioridad
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success border border-success/20">
+              <span className="w-2 h-2 rounded-full bg-success" />
+              Baja Prioridad
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: 'hsl(221, 83%, 53%, 0.1)', color: 'hsl(221, 83%, 40%)', border: '1px solid hsl(221, 83%, 53%, 0.2)' }}>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(221, 83%, 53%)' }} />
+              Documentos
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: 'hsl(340, 82%, 52%, 0.1)', color: 'hsl(340, 82%, 40%)', border: '1px solid hsl(340, 82%, 52%, 0.2)' }}>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(340, 82%, 52%)' }} />
+              Programas / Certificaciones
+            </span>
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );
