@@ -42,13 +42,6 @@ export default function DashboardLayout({
           } = await supabase.from('empresas').select('razon_social').eq('id', profile.empresa_id).maybeSingle();
           setEmpresaInfo(empresa);
         }
-      } else if ((role === 'consultor' || role === 'administrador') && selectedEmpresaId && selectedEmpresaId !== 'all') {
-        const {
-          data: empresa
-        } = await supabase.from('empresas').select('razon_social').eq('id', selectedEmpresaId).maybeSingle();
-        setConsultorEmpresaInfo(empresa);
-      } else {
-        setConsultorEmpresaInfo(null);
       }
     };
     fetchEmpresaInfo();
