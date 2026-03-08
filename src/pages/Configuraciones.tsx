@@ -15,6 +15,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { UserNotificationPreferences } from '@/components/notifications/UserNotificationPreferences';
 import { ReminderRulesManager } from '@/components/notifications/ReminderRulesManager';
 import { NotificationHistory } from '@/components/notifications/NotificationHistory';
+import ThemeEditor from '@/components/configuraciones/ThemeEditor';
 
 interface NotificationSetting {
   id: string;
