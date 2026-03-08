@@ -12,6 +12,7 @@ import { Building2, CheckSquare, Users, TrendingUp, Calendar, Clock, AlertCircle
 import { format, isAfter, isBefore, addDays, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
+import DashboardObligaciones from '@/components/dashboard/DashboardObligaciones';
 import AdminAnalytics from '@/components/dashboard/AdminAnalytics';
 import ConsultorAnalytics from '@/components/dashboard/ConsultorAnalytics';
 import ClienteAnalytics from '@/components/dashboard/ClienteAnalytics';
