@@ -5,7 +5,7 @@ import { useTareasShortcuts } from '@/hooks/useKeyboardShortcuts';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList, GanttChart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
 import QuickCreateTarea from '@/components/tareas/QuickCreateTarea';
@@ -14,6 +14,7 @@ import ManageCategoriesDialog from '@/components/tareas/ManageCategoriesDialog';
 import ManageCustomFields from '@/components/tareas/ManageCustomFields';
 import ManageTemplates from '@/components/tareas/ManageTemplates';
 import { ManageAutomations } from '@/components/tareas/ManageAutomations';
+import { TareasTimeline } from '@/components/tareas/TareasTimeline';
 import { ObligacionesActivasTab } from '@/components/obligaciones/ObligacionesActivasTab';
 import { Calendar as BigCalendar, momentLocalizer, View } from 'react-big-calendar';
 import moment from 'moment';
@@ -338,7 +339,7 @@ export default function Tareas() {
   const [filterConsultor, setFilterConsultor] = useState<string>('all');
   
   // View mode
-  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'calendar' | 'obligaciones'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'calendar' | 'timeline' | 'obligaciones'>('list');
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   
   // Bulk selection
@@ -838,6 +839,15 @@ export default function Tareas() {
                 Calendario
               </Button>
               <Button
+                variant={viewMode === 'timeline' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('timeline')}
+                className="h-8"
+              >
+                <GanttChart className="w-4 h-4 mr-1" />
+                Timeline
+              </Button>
+              <Button
                 variant={viewMode === 'obligaciones' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('obligaciones')}
@@ -1096,8 +1106,13 @@ export default function Tareas() {
           </Card>
         </div>
 
-        {/* Tareas View - List, Kanban, Calendar or Obligaciones */}
-        {viewMode === 'obligaciones' ? (
+        {/* Tareas View - List, Kanban, Calendar, Timeline or Obligaciones */}
+        {viewMode === 'timeline' ? (
+          <TareasTimeline
+            tareas={filteredTareas}
+            onTareaClick={(id) => { setSelectedTareaId(id); setDetailDialogOpen(true); }}
+          />
+        ) : viewMode === 'obligaciones' ? (
           <Card className="gradient-card shadow-card">
             <CardHeader>
               <CardTitle className="font-heading flex items-center gap-2">
