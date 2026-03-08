@@ -82,7 +82,7 @@ export default function DashboardObligaciones() {
               Pendientes de cumplimiento del periodo actual
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate('/tareas')} className="gap-1">
+          <Button variant="outline" size="sm" onClick={() => navigate('/empresas')} className="gap-1">
             Ver todas <ArrowRight className="w-3 h-3" />
           </Button>
         </div>
