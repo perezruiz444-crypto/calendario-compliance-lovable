@@ -219,6 +219,12 @@ export default function Empresas() {
                             {badges.map((b, i) => (
                               <Badge key={i} variant={b.variant} className="text-xs">{b.label}</Badge>
                             ))}
+                            {taskCounts[empresa.id] > 0 && (
+                              <Badge variant="secondary" className="text-xs gap-1">
+                                <CheckSquare className="w-3 h-3" />
+                                {taskCounts[empresa.id]} pendiente{taskCounts[empresa.id] > 1 ? 's' : ''}
+                              </Badge>
+                            )}
                           </div>
                           {empresa.domicilio_fiscal && (
                             <p className="text-sm text-muted-foreground font-body truncate">{empresa.domicilio_fiscal}</p>
