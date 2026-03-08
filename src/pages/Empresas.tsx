@@ -45,6 +45,21 @@ export default function Empresas() {
         .order('created_at', { ascending: false });
       if (error) throw error;
       setEmpresas(data || []);
+
+      // Fetch pending task counts per empresa
+      if (data && data.length > 0) {
+        const { data: tareasData } = await supabase
+          .from('tareas')
+          .select('empresa_id')
+          .in('estado', ['pendiente', 'en_progreso']);
+        if (tareasData) {
+          const counts: Record<string, number> = {};
+          tareasData.forEach(t => {
+            counts[t.empresa_id] = (counts[t.empresa_id] || 0) + 1;
+          });
+          setTaskCounts(counts);
+        }
+      }
     } catch (error) {
       console.error('Error fetching empresas:', error);
     } finally {
