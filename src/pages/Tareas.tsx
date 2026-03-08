@@ -698,6 +698,14 @@ export default function Tareas() {
   const tareasPendientes = filteredTareas.filter(t => t.estado === 'pendiente');
   const tareasEnProgreso = filteredTareas.filter(t => t.estado === 'en_progreso');
   const tareasCompletadas = filteredTareas.filter(t => t.estado === 'completada');
+  const tareasCanceladas = filteredTareas.filter(t => t.estado === 'cancelada');
+
+  // Totals for context
+  const totalPendientes = tareas.filter(t => t.estado === 'pendiente').length;
+  const totalEnProgreso = tareas.filter(t => t.estado === 'en_progreso').length;
+  const totalCompletadas = tareas.filter(t => t.estado === 'completada').length;
+  const totalCanceladas = tareas.filter(t => t.estado === 'cancelada').length;
+  const hasFiltersApplied = filterEmpresa !== 'all' || filterConsultor !== 'all' || filterEstado !== 'all' || filterPrioridad !== 'all' || searchTerm !== '';
 
   // Bulk actions
   const handleSelectTarea = (tareaId: string) => {
