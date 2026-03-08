@@ -1,0 +1,94 @@
+import { format, differenceInDays, isPast, isValid, getISOWeek } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+// ─── Category constants ───────────────────────────────────────────────
+export const CATEGORIA_LABELS: Record<string, string> = {
+  general: 'General',
+  cert_iva_ieps: 'Cert. IVA/IEPS',
+  immex: 'IMMEX',
+  prosec: 'PROSEC',
+  padron: 'Padrón',
+  otro: 'Otro',
+};
+
+export const CATEGORIA_COLORS: Record<string, string> = {
+  general: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  cert_iva_ieps: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  immex: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  prosec: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  padron: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+  otro: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300',
+};
+
+// ─── Period key helpers ───────────────────────────────────────────────
+export function getCurrentPeriodKey(presentacion: string | null): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const week = getISOWeek(now);
+
+  switch (presentacion?.toLowerCase()) {
+    case 'semanal': return `${year}-W${String(week).padStart(2, '0')}`;
+    case 'quincenal': {
+      const half = now.getDate() <= 15 ? '1' : '2';
+      return `${year}-${month}-Q${half}`;
+    }
+    case 'mensual': return `${year}-${month}`;
+    case 'bimestral': {
+      const bim = Math.ceil((now.getMonth() + 1) / 2);
+      return `${year}-B${bim}`;
+    }
+    case 'trimestral': {
+      const q = Math.ceil((now.getMonth() + 1) / 3);
+      return `${year}-T${q}`;
+    }
+    case 'semestral': {
+      const s = now.getMonth() < 6 ? '1' : '2';
+      return `${year}-S${s}`;
+    }
+    case 'anual': return `${year}`;
+    default: return `${year}-${month}`;
+  }
+}
+
+export function getPeriodLabel(presentacion: string | null, periodKey: string): string {
+  switch (presentacion?.toLowerCase()) {
+    case 'semanal': return `Semana ${periodKey.split('-W')[1]}`;
+    case 'quincenal': return periodKey.includes('Q1') ? '1ra Quincena' : '2da Quincena';
+    case 'mensual': return format(new Date(periodKey + '-01'), 'MMMM yyyy', { locale: es });
+    case 'bimestral': return `Bimestre ${periodKey.split('-B')[1]}`;
+    case 'trimestral': return `Trimestre ${periodKey.split('-T')[1]}`;
+    case 'semestral': return `Semestre ${periodKey.split('-S')[1]}`;
+    case 'anual': return `Año ${periodKey}`;
+    default: return periodKey;
+  }
+}
+
+// ─── Formatting helpers ───────────────────────────────────────────────
+export function formatDateShort(fecha: string | null): string {
+  if (!fecha) return '-';
+  const d = new Date(fecha);
+  return isValid(d) ? format(d, 'dd/MM/yyyy') : '-';
+}
+
+export function getVencimientoInfo(fecha: string | null): { status: 'vencido' | 'urgente' | 'proximo' | 'vigente'; days: number } | null {
+  if (!fecha) return null;
+  const date = new Date(fecha);
+  if (!isValid(date)) return null;
+  const days = differenceInDays(date, new Date());
+  if (isPast(date)) return { status: 'vencido', days };
+  if (days <= 30) return { status: 'urgente', days };
+  if (days <= 90) return { status: 'proximo', days };
+  return { status: 'vigente', days };
+}
+
+// ─── Programa to categoría mapping ────────────────────────────────────
+export function programaToCategoria(programa: string): string {
+  const lower = programa.toLowerCase();
+  if (lower.includes('immex')) return 'immex';
+  if (lower.includes('prosec')) return 'prosec';
+  if (lower.includes('cert') || lower.includes('iva') || lower.includes('ieps')) return 'cert_iva_ieps';
+  if (lower.includes('padr')) return 'padron';
+  if (lower.includes('general')) return 'general';
+  return 'otro';
+}
