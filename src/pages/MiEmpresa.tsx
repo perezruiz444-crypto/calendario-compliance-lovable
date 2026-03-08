@@ -6,45 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, ClipboardList } from 'lucide-react';
-import { format, differenceInDays, parseISO, getISOWeek } from 'date-fns';
+import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, ClipboardList, ChevronDown, TrendingUp } from 'lucide-react';
+import { format, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DocumentosManager } from '@/components/documentos/DocumentosManager';
 import { SolicitudesServicio } from '@/components/solicitudes/SolicitudesServicio';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import { toast } from 'sonner';
-
-// Period key helpers (same logic as ObligacionesManager)
-function getCurrentPeriodKey(presentacion: string | null): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const week = getISOWeek(now);
-  switch (presentacion?.toLowerCase()) {
-    case 'semanal': return `${year}-W${String(week).padStart(2, '0')}`;
-    case 'quincenal': { const half = now.getDate() <= 15 ? '1' : '2'; return `${year}-${month}-Q${half}`; }
-    case 'mensual': return `${year}-${month}`;
-    case 'bimestral': { const bim = Math.ceil((now.getMonth() + 1) / 2); return `${year}-B${bim}`; }
-    case 'trimestral': { const q = Math.ceil((now.getMonth() + 1) / 3); return `${year}-T${q}`; }
-    case 'semestral': { const s = now.getMonth() < 6 ? '1' : '2'; return `${year}-S${s}`; }
-    case 'anual': return `${year}`;
-    default: return `${year}-${month}`;
-  }
-}
-
-function getPeriodLabel(presentacion: string | null, periodKey: string): string {
-  switch (presentacion?.toLowerCase()) {
-    case 'semanal': return `Semana ${periodKey.split('-W')[1]}`;
-    case 'quincenal': return periodKey.includes('Q1') ? '1ra Quincena' : '2da Quincena';
-    case 'mensual': return format(new Date(periodKey + '-01'), 'MMMM yyyy', { locale: es });
-    case 'bimestral': return `Bimestre ${periodKey.split('-B')[1]}`;
-    case 'trimestral': return `Trimestre ${periodKey.split('-T')[1]}`;
-    case 'semestral': return `Semestre ${periodKey.split('-S')[1]}`;
-    case 'anual': return `Año ${periodKey}`;
-    default: return periodKey;
-  }
-}
+import { getCurrentPeriodKey, getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
 
 export default function MiEmpresa() {
   const { user, role, loading } = useAuth();
