@@ -119,26 +119,7 @@ export default function DashboardLayout({
         
         {/* Empresa Selector for Consultores and Admins */}
         {(role === 'consultor' || role === 'administrador') && <div className="mt-4">
-            <label className="text-xs font-heading font-medium text-sidebar-foreground/60 mb-2 block">
-              Empresa Activa
-            </label>
             <EmpresaSelectorDropdown selectedEmpresaId={selectedEmpresaId} onEmpresaSelect={setSelectedEmpresaId} />
-            {consultorEmpresaInfo && (
-              <div className="mt-2 p-2 bg-sidebar-primary/10 rounded-lg border border-sidebar-primary/20">
-                <p className="text-xs font-body text-sidebar-foreground/80">
-                  <span className="inline-block w-2 h-2 bg-sidebar-primary rounded-full mr-2"></span>
-                  {consultorEmpresaInfo.razon_social}
-                </p>
-              </div>
-            )}
-            {selectedEmpresaId === 'all' && role === 'administrador' && (
-              <div className="mt-2 p-2 bg-sidebar-primary/10 rounded-lg border border-sidebar-primary/20">
-                <p className="text-xs font-body text-sidebar-foreground/80">
-                  <span className="inline-block w-2 h-2 bg-sidebar-primary rounded-full mr-2"></span>
-                  Vista consolidada
-                </p>
-              </div>
-            )}
           </div>}
         
         {/* Empresa Info for Clientes */}
