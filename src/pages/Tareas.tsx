@@ -819,7 +819,7 @@ export default function Tareas() {
                 <LayoutGrid className="w-4 h-4 mr-1" />
                 Kanban
               </Button>
-              <Button
+               <Button
                 variant={viewMode === 'calendar' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('calendar')}
@@ -827,6 +827,15 @@ export default function Tareas() {
               >
                 <CalendarViewIcon className="w-4 h-4 mr-1" />
                 Calendario
+              </Button>
+              <Button
+                variant={viewMode === 'obligaciones' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('obligaciones')}
+                className="h-8"
+              >
+                <ClipboardList className="w-4 h-4 mr-1" />
+                Obligaciones
               </Button>
             </div>
             
