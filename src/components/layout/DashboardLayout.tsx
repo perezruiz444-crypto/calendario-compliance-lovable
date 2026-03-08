@@ -28,9 +28,6 @@ export default function DashboardLayout({
   const [empresaInfo, setEmpresaInfo] = useState<{
     razon_social: string;
   } | null>(null);
-  const [consultorEmpresaInfo, setConsultorEmpresaInfo] = useState<{
-    razon_social: string;
-  } | null>(null);
 
   // Fetch empresa info
   useEffect(() => {
@@ -45,13 +42,6 @@ export default function DashboardLayout({
           } = await supabase.from('empresas').select('razon_social').eq('id', profile.empresa_id).maybeSingle();
           setEmpresaInfo(empresa);
         }
-      } else if ((role === 'consultor' || role === 'administrador') && selectedEmpresaId && selectedEmpresaId !== 'all') {
-        const {
-          data: empresa
-        } = await supabase.from('empresas').select('razon_social').eq('id', selectedEmpresaId).maybeSingle();
-        setConsultorEmpresaInfo(empresa);
-      } else {
-        setConsultorEmpresaInfo(null);
       }
     };
     fetchEmpresaInfo();
@@ -119,26 +109,7 @@ export default function DashboardLayout({
         
         {/* Empresa Selector for Consultores and Admins */}
         {(role === 'consultor' || role === 'administrador') && <div className="mt-4">
-            <label className="text-xs font-heading font-medium text-sidebar-foreground/60 mb-2 block">
-              Empresa Activa
-            </label>
             <EmpresaSelectorDropdown selectedEmpresaId={selectedEmpresaId} onEmpresaSelect={setSelectedEmpresaId} />
-            {consultorEmpresaInfo && (
-              <div className="mt-2 p-2 bg-sidebar-primary/10 rounded-lg border border-sidebar-primary/20">
-                <p className="text-xs font-body text-sidebar-foreground/80">
-                  <span className="inline-block w-2 h-2 bg-sidebar-primary rounded-full mr-2"></span>
-                  {consultorEmpresaInfo.razon_social}
-                </p>
-              </div>
-            )}
-            {selectedEmpresaId === 'all' && role === 'administrador' && (
-              <div className="mt-2 p-2 bg-sidebar-primary/10 rounded-lg border border-sidebar-primary/20">
-                <p className="text-xs font-body text-sidebar-foreground/80">
-                  <span className="inline-block w-2 h-2 bg-sidebar-primary rounded-full mr-2"></span>
-                  Vista consolidada
-                </p>
-              </div>
-            )}
           </div>}
         
         {/* Empresa Info for Clientes */}
