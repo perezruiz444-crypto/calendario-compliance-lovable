@@ -338,7 +338,7 @@ export default function Tareas() {
   const [filterConsultor, setFilterConsultor] = useState<string>('all');
   
   // View mode
-  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'calendar' | 'obligaciones'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'calendar' | 'timeline' | 'obligaciones'>('list');
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   
   // Bulk selection
