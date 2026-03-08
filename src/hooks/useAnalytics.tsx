@@ -75,7 +75,8 @@ export function useAnalytics() {
     if (user && role) {
       fetchAnalytics();
     }
-  }, [user, role]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, role]);
 
   const fetchCommonData = async () => {
     // Profile name
