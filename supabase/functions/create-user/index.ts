@@ -24,33 +24,36 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Check if user is admin or consultor
+    // Only admins can create users directly
     const { data: roleData } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .single()
 
-    if (!roleData || (roleData.role !== 'administrador' && roleData.role !== 'consultor')) {
+    if (!roleData || roleData.role !== 'administrador') {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const { email, password, nombre_completo, role } = await req.json()
+    const { email, password, nombre_completo, role, empresa_id } = await req.json()
 
-    // Create the user
+    // Create the user with empresa_id in metadata for the handle_new_user trigger
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { nombre_completo }
+      user_metadata: { 
+        nombre_completo,
+        ...(empresa_id ? { empresa_id } : {})
+      }
     })
 
     if (createError) {
       console.error('Error creating user:', createError)
-      return new Response(JSON.stringify({ error: 'Failed to create user. Please check the provided information.' }), {
+      return new Response(JSON.stringify({ error: 'Error al crear usuario. Verifica la información proporcionada.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -63,7 +66,7 @@ Deno.serve(async (req) => {
 
     if (roleError) {
       console.error('Error assigning role:', roleError)
-      return new Response(JSON.stringify({ error: 'Failed to assign user role.' }), {
+      return new Response(JSON.stringify({ error: 'Error al asignar rol al usuario.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -75,7 +78,7 @@ Deno.serve(async (req) => {
     })
   } catch (error: any) {
     console.error('Error in create-user function:', error)
-    return new Response(JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }), {
+    return new Response(JSON.stringify({ error: 'Ocurrió un error inesperado. Intenta de nuevo.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
