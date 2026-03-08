@@ -352,25 +352,25 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
   };
 
   const eventStyleGetter = (event: CalendarEvent) => {
-    let backgroundColor = 'hsl(var(--primary))';
+    let color = 'hsl(var(--primary))';
     
     if (event.resource.type === 'tarea') {
       const prioridad = event.resource.prioridad;
       if (prioridad === 'urgente') {
-        backgroundColor = 'hsl(var(--destructive))';
+        color = 'hsl(var(--destructive))';
       } else if (prioridad === 'alta') {
-        backgroundColor = 'hsl(25, 95%, 53%)';
+        color = 'hsl(25, 95%, 53%)';
       } else if (prioridad === 'media') {
-        backgroundColor = 'hsl(var(--warning))';
+        color = 'hsl(var(--warning))';
       } else if (prioridad === 'baja') {
-        backgroundColor = 'hsl(var(--success))';
+        color = 'hsl(var(--success))';
       }
     } else if (event.resource.type === 'documento') {
-      backgroundColor = 'hsl(221, 83%, 53%)';
+      color = 'hsl(221, 83%, 53%)';
     } else if (event.resource.type === 'programa') {
-      backgroundColor = 'hsl(340, 82%, 52%)';
+      color = 'hsl(340, 82%, 52%)';
     } else if (event.resource.type === 'obligacion') {
-      backgroundColor = 'hsl(262, 83%, 58%)';
+      color = 'hsl(262, 83%, 58%)';
     }
 
     // Check if overdue
@@ -380,18 +380,22 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
     eventDate.setHours(0, 0, 0, 0);
     
     if (eventDate < today) {
-      backgroundColor = 'hsl(var(--destructive))';
+      color = 'hsl(var(--destructive))';
     }
     
     return {
       style: {
-        backgroundColor,
-        borderRadius: '4px',
-        opacity: 0.9,
-        color: 'white',
+        backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
+        borderLeft: `3px solid ${color}`,
+        borderRadius: '6px',
+        color: 'hsl(var(--foreground))',
         border: 'none',
+        borderLeftWidth: '3px',
+        borderLeftStyle: 'solid' as const,
+        borderLeftColor: color,
         display: 'block',
-        fontSize: '0.875rem'
+        fontSize: '0.72rem',
+        fontWeight: 500,
       }
     };
   };
