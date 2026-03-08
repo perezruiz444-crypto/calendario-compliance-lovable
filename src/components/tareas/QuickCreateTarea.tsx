@@ -1,17 +1,21 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useState, useEffect, useMemo } from 'react';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { Zap, Maximize2, Minimize2, Repeat } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Zap, ChevronDown, CalendarIcon, Check, Search, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format, addDays, addWeeks } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { TemplateSelector } from './TemplateSelector';
-import { CustomFieldInput } from './CustomFieldInput';
 
 interface QuickCreateTareaProps {
   open: boolean;
@@ -20,15 +24,23 @@ interface QuickCreateTareaProps {
   defaultEmpresaId?: string;
 }
 
+const PRIORIDADES = [
+  { value: 'alta', label: 'Alta', color: 'bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/25' },
+  { value: 'media', label: 'Media', color: 'bg-warning/15 text-warning-foreground border-warning/30 hover:bg-warning/25' },
+  { value: 'baja', label: 'Baja', color: 'bg-success/15 text-success-foreground border-success/30 hover:bg-success/25' },
+] as const;
+
 export default function QuickCreateTarea({ open, onOpenChange, onTareaCreated, defaultEmpresaId }: QuickCreateTareaProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [fullMode, setFullMode] = useState(false);
   const [createAnother, setCreateAnother] = useState(false);
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [consultores, setConsultores] = useState<any[]>([]);
-  const [customFields, setCustomFields] = useState<any[]>([]);
-  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [successAnim, setSuccessAnim] = useState(false);
+  const [empresaSearch, setEmpresaSearch] = useState('');
+
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
@@ -42,174 +54,92 @@ export default function QuickCreateTarea({ open, onOpenChange, onTareaCreated, d
   useEffect(() => {
     if (open) {
       fetchEmpresas();
-      fetchCustomFields();
-      if (defaultEmpresaId && !formData.empresa_id) {
-        setFormData(prev => ({ ...prev, empresa_id: defaultEmpresaId }));
-      }
+      if (defaultEmpresaId) setFormData(prev => ({ ...prev, empresa_id: defaultEmpresaId }));
     }
   }, [open, defaultEmpresaId]);
 
   useEffect(() => {
-    if (open && formData.empresa_id) {
-      fetchConsultores();
-    }
+    if (open && formData.empresa_id) fetchConsultores();
   }, [open, formData.empresa_id]);
 
   const fetchEmpresas = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('empresas')
-        .select('id, razon_social')
-        .order('razon_social');
-      if (error) throw error;
-      setEmpresas(data || []);
-    } catch (error) {
-      console.error('Error fetching empresas:', error);
-    }
+    const { data } = await supabase.from('empresas').select('id, razon_social').order('razon_social');
+    setEmpresas(data || []);
   };
 
   const fetchConsultores = async () => {
-    try {
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'consultor');
-
-      const consultorIds = rolesData?.map(r => r.user_id) || [];
-      if (consultorIds.length === 0) {
-        setConsultores([]);
-        return;
-      }
-
-      let query = supabase
-        .from('profiles')
-        .select('id, nombre_completo')
-        .in('id', consultorIds)
-        .order('nombre_completo');
-
-      if (formData.empresa_id) {
-        const { data: asignacionesData } = await supabase
-          .from('consultor_empresa_asignacion')
-          .select('consultor_id')
-          .eq('empresa_id', formData.empresa_id);
-
-        const consultoresAsignadosIds = asignacionesData?.map(a => a.consultor_id) || [];
-        if (consultoresAsignadosIds.length > 0) {
-          query = query.in('id', consultoresAsignadosIds);
-        } else {
-          setConsultores([]);
-          return;
-        }
-      }
-
-      const { data } = await query;
+    const { data: rolesData } = await supabase.from('user_roles').select('user_id').eq('role', 'consultor');
+    const ids = rolesData?.map(r => r.user_id) || [];
+    if (ids.length === 0) { setConsultores([]); return; }
+    if (formData.empresa_id) {
+      const { data: asig } = await supabase.from('consultor_empresa_asignacion').select('consultor_id').eq('empresa_id', formData.empresa_id);
+      const asigIds = asig?.map(a => a.consultor_id) || [];
+      if (asigIds.length === 0) { setConsultores([]); return; }
+      const { data } = await supabase.from('profiles').select('id, nombre_completo').in('id', asigIds).order('nombre_completo');
       setConsultores(data || []);
-    } catch (error) {
-      console.error('Error fetching consultores:', error);
+    } else {
+      const { data } = await supabase.from('profiles').select('id, nombre_completo').in('id', ids).order('nombre_completo');
+      setConsultores(data || []);
     }
   };
 
-  const fetchCustomFields = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('custom_fields')
-        .select('*')
-        .eq('activo', true)
-        .order('orden');
-      if (error) throw error;
-      setCustomFields(data || []);
-    } catch (error) {
-      console.error('Error fetching custom fields:', error);
-    }
-  };
+  const filteredEmpresas = useMemo(() =>
+    empresas.filter(e => e.razon_social.toLowerCase().includes(empresaSearch.toLowerCase())),
+    [empresas, empresaSearch]
+  );
 
   const handleTemplateSelect = (template: any) => {
     setFormData(prev => ({
       ...prev,
       titulo: template.titulo_template.replace('[EMPRESA]', empresas.find(e => e.id === prev.empresa_id)?.razon_social || ''),
       descripcion: template.descripcion_template || '',
-      prioridad: template.prioridad,
+      prioridad: template.prioridad || 'media',
       categoria_id: template.categoria_id || ''
     }));
-    
     if (template.duracion_dias && !formData.fecha_vencimiento) {
-      const fecha = new Date();
-      fecha.setDate(fecha.getDate() + template.duracion_dias);
-      setFormData(prev => ({
-        ...prev,
-        fecha_vencimiento: fecha.toISOString().split('T')[0]
-      }));
+      setFormData(prev => ({ ...prev, fecha_vencimiento: format(addDays(new Date(), template.duracion_dias), 'yyyy-MM-dd') }));
     }
   };
 
+  const setQuickDate = (type: 'today' | 'tomorrow' | 'nextWeek') => {
+    const now = new Date();
+    const date = type === 'today' ? now : type === 'tomorrow' ? addDays(now, 1) : addWeeks(now, 1);
+    setFormData(prev => ({ ...prev, fecha_vencimiento: format(date, 'yyyy-MM-dd') }));
+  };
+
   const resetForm = () => {
-    setFormData({
-      titulo: '',
-      descripcion: '',
-      prioridad: 'media',
-      fecha_vencimiento: '',
-      empresa_id: defaultEmpresaId || '',
-      consultor_asignado_id: '',
-      categoria_id: ''
-    });
-    setCustomFieldValues({});
+    setFormData({ titulo: '', descripcion: '', prioridad: 'media', fecha_vencimiento: '', empresa_id: defaultEmpresaId || '', consultor_asignado_id: '', categoria_id: '' });
+    setMoreOpen(false);
+    setEmpresaSearch('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!formData.titulo.trim() || !formData.empresa_id) {
-      toast.error('Por favor completa los campos requeridos');
+      toast.error('Título y empresa son requeridos');
       return;
     }
-
     setLoading(true);
-
     try {
-      const { data: tareaData, error: tareaError } = await supabase
-        .from('tareas')
-        .insert({
-          titulo: formData.titulo.trim(),
-          descripcion: formData.descripcion.trim() || null,
-          prioridad: formData.prioridad,
-          empresa_id: formData.empresa_id,
-          consultor_asignado_id: formData.consultor_asignado_id || null,
-          fecha_vencimiento: formData.fecha_vencimiento || null,
-          categoria_id: formData.categoria_id || null,
-          creado_por: user?.id
-        })
-        .select()
-        .single();
+      const { error } = await supabase.from('tareas').insert({
+        titulo: formData.titulo.trim(),
+        descripcion: formData.descripcion.trim() || null,
+        prioridad: formData.prioridad,
+        empresa_id: formData.empresa_id,
+        consultor_asignado_id: formData.consultor_asignado_id || null,
+        fecha_vencimiento: formData.fecha_vencimiento || null,
+        categoria_id: formData.categoria_id || null,
+        creado_por: user?.id
+      });
+      if (error) throw error;
 
-      if (tareaError) throw tareaError;
-
-      // Save custom field values if any
-      if (tareaData && Object.keys(customFieldValues).length > 0) {
-        const valuesToInsert = Object.entries(customFieldValues)
-          .filter(([_, value]) => value !== '')
-          .map(([fieldId, value]) => ({
-            tarea_id: tareaData.id,
-            custom_field_id: fieldId,
-            valor: value
-          }));
-
-        if (valuesToInsert.length > 0) {
-          const { error: valuesError } = await supabase
-            .from('tarea_custom_field_values')
-            .insert(valuesToInsert);
-          
-          if (valuesError) console.error('Error saving custom field values:', valuesError);
-        }
-      }
-
-      toast.success('Tarea creada exitosamente');
-      onTareaCreated();
-
-      if (createAnother) {
-        resetForm();
-      } else {
-        onOpenChange(false);
-      }
+      setSuccessAnim(true);
+      setTimeout(() => {
+        setSuccessAnim(false);
+        toast.success('Tarea creada');
+        onTareaCreated();
+        if (createAnother) { resetForm(); } else { onOpenChange(false); }
+      }, 500);
     } catch (error: any) {
       toast.error(error.message || 'Error al crear tarea');
     } finally {
@@ -217,188 +147,161 @@ export default function QuickCreateTarea({ open, onOpenChange, onTareaCreated, d
     }
   };
 
+  const selectedEmpresa = empresas.find(e => e.id === formData.empresa_id);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${fullMode ? 'sm:max-w-[700px]' : 'sm:max-w-[500px]'} max-h-[90vh] flex flex-col`}>
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="font-heading flex items-center gap-2">
-                <Zap className="w-5 h-5 text-primary" />
-                Quick Create
-              </DialogTitle>
-              <DialogDescription className="font-body">
-                Crea tareas rápidamente con campos esenciales
-              </DialogDescription>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setFullMode(!fullMode)}
-              className="gap-2"
-            >
-              {fullMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              {fullMode ? 'Compacto' : 'Completo'}
-            </Button>
-          </div>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-md flex flex-col p-0">
+        <SheetHeader className="px-6 pt-6 pb-3">
+          <SheetTitle className="font-heading flex items-center gap-2 text-lg">
+            <Zap className="w-5 h-5 text-primary" />
+            Quick Create
+          </SheetTitle>
+          <SheetDescription>Crea tareas rápidamente</SheetDescription>
+        </SheetHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="space-y-4 py-4 overflow-y-auto pr-2">
-            {/* Template Selector */}
-            {fullMode && (
-              <div className="space-y-2">
-                <Label className="font-heading">Usar Template</Label>
-                <TemplateSelector onSelect={handleTemplateSelect} />
+          <div className={cn("space-y-4 px-6 py-4 overflow-y-auto flex-1 transition-all", successAnim && "scale-95 opacity-50")}>
+            {successAnim && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80">
+                <div className="flex flex-col items-center gap-2 animate-in zoom-in-95">
+                  <div className="h-14 w-14 rounded-full bg-success/20 flex items-center justify-center">
+                    <Check className="h-7 w-7 text-success" />
+                  </div>
+                </div>
               </div>
             )}
 
+            <TemplateSelector onSelect={handleTemplateSelect} />
+
             {/* Título */}
-            <div className="space-y-2">
-              <Label htmlFor="titulo" className="font-heading">Título *</Label>
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Título *</Label>
               <Input
-                id="titulo"
                 value={formData.titulo}
                 onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                 placeholder="¿Qué necesitas hacer?"
-                required
                 maxLength={200}
-                className="font-body"
                 autoFocus
+                className="text-base font-medium"
               />
             </div>
 
-            {/* Empresa */}
-            <div className="space-y-2">
-              <Label htmlFor="empresa_id" className="font-heading">Empresa *</Label>
-              <Select
-                value={formData.empresa_id}
-                onValueChange={(value) => setFormData({ ...formData, empresa_id: value })}
-              >
-                <SelectTrigger className="font-body">
-                  <SelectValue placeholder="Selecciona una empresa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {empresas.map((empresa) => (
-                    <SelectItem key={empresa.id} value={empresa.id}>
-                      {empresa.razon_social}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Empresa searchable */}
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Empresa *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal">
+                    {selectedEmpresa ? selectedEmpresa.razon_social : <span className="text-muted-foreground">Buscar empresa...</span>}
+                    <Search className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[280px] p-0" align="start">
+                  <div className="p-2 border-b">
+                    <Input placeholder="Filtrar..." value={empresaSearch} onChange={(e) => setEmpresaSearch(e.target.value)} className="h-8 text-sm" />
+                  </div>
+                  <div className="max-h-[180px] overflow-y-auto p-1">
+                    {filteredEmpresas.map(e => (
+                      <button key={e.id} type="button" onClick={() => { setFormData(prev => ({ ...prev, empresa_id: e.id })); setEmpresaSearch(''); }}
+                        className={cn('w-full text-left px-3 py-2 rounded-md text-sm transition-colors', formData.empresa_id === e.id ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted')}>
+                        {e.razon_social}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
-            {/* Campos adicionales en modo completo */}
-            {fullMode && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="descripcion" className="font-heading">Descripción</Label>
-                  <Textarea
-                    id="descripcion"
-                    value={formData.descripcion}
-                    onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                    placeholder="Detalles adicionales..."
-                    maxLength={2000}
-                    className="font-body"
-                    rows={3}
-                  />
-                </div>
+            {/* Prioridad chips */}
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Prioridad</Label>
+              <div className="flex gap-2">
+                {PRIORIDADES.map(p => (
+                  <button key={p.value} type="button" onClick={() => setFormData(prev => ({ ...prev, prioridad: p.value }))}
+                    className={cn('px-3 py-1 rounded-full text-xs font-medium border transition-all',
+                      formData.prioridad === p.value ? cn(p.color, 'ring-1 ring-offset-1 ring-primary/30') : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'
+                    )}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="prioridad" className="font-heading">Prioridad</Label>
-                    <Select
-                      value={formData.prioridad}
-                      onValueChange={(value: any) => setFormData({ ...formData, prioridad: value })}
-                    >
-                      <SelectTrigger className="font-body">
-                        <SelectValue />
-                      </SelectTrigger>
+            {/* Quick date */}
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Vencimiento</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {[{ t: 'today', l: 'Hoy' }, { t: 'tomorrow', l: 'Mañana' }, { t: 'nextWeek', l: 'Próx. semana' }].map(({ t, l }) => (
+                  <button key={t} type="button" onClick={() => setQuickDate(t as any)}
+                    className="px-2.5 py-1 rounded-full text-xs font-medium bg-muted/50 text-muted-foreground hover:bg-muted transition-all border border-transparent">
+                    {l}
+                  </button>
+                ))}
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <button type="button" className="px-2.5 py-1 rounded-full text-xs font-medium bg-muted/50 text-muted-foreground hover:bg-muted transition-all flex items-center gap-1">
+                      <CalendarIcon className="h-3 w-3" />
+                      {formData.fecha_vencimiento ? format(new Date(formData.fecha_vencimiento + 'T12:00:00'), 'dd MMM', { locale: es }) : 'Elegir'}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={formData.fecha_vencimiento ? new Date(formData.fecha_vencimiento + 'T12:00:00') : undefined}
+                      onSelect={(d) => { if (d) setFormData(prev => ({ ...prev, fecha_vencimiento: format(d, 'yyyy-MM-dd') })); setDatePickerOpen(false); }}
+                      className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+                {formData.fecha_vencimiento && (
+                  <button type="button" onClick={() => setFormData(prev => ({ ...prev, fecha_vencimiento: '' }))} className="text-muted-foreground hover:text-destructive"><X className="h-3 w-3" /></button>
+                )}
+              </div>
+            </div>
+
+            {/* More options */}
+            <Collapsible open={moreOpen} onOpenChange={setMoreOpen}>
+              <CollapsibleTrigger asChild>
+                <button type="button" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full py-1">
+                  <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", moreOpen && "rotate-180")} />
+                  <span>Más opciones</span>
+                  <div className="flex-1 border-t border-dashed" />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-3 pt-2 animate-in slide-in-from-top-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Descripción</Label>
+                  <Textarea value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                    placeholder="Detalles..." maxLength={2000} rows={2} className="resize-none" />
+                </div>
+                {consultores.length > 0 && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Asignar a</Label>
+                    <Select value={formData.consultor_asignado_id} onValueChange={(v) => setFormData({ ...formData, consultor_asignado_id: v })}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecciona" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="media">Media</SelectItem>
-                        <SelectItem value="baja">Baja</SelectItem>
+                        {consultores.map(c => <SelectItem key={c.id} value={c.id}>{c.nombre_completo}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="fecha_vencimiento" className="font-heading">Vencimiento</Label>
-                    <Input
-                      id="fecha_vencimiento"
-                      type="date"
-                      value={formData.fecha_vencimiento}
-                      onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value })}
-                      className="font-body"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="consultor_asignado_id" className="font-heading">Asignar a</Label>
-                  <Select
-                    value={formData.consultor_asignado_id}
-                    onValueChange={(value) => setFormData({ ...formData, consultor_asignado_id: value })}
-                  >
-                    <SelectTrigger className="font-body">
-                      <SelectValue placeholder="Selecciona un consultor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {consultores.map((consultor) => (
-                        <SelectItem key={consultor.id} value={consultor.id}>
-                          {consultor.nombre_completo}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Custom Fields */}
-                {customFields.length > 0 && (
-                  <div className="space-y-3 border-t pt-4">
-                    <Label className="font-heading">Campos Personalizados</Label>
-                    {customFields.map(field => (
-                      <CustomFieldInput
-                        key={field.id}
-                        field={field}
-                        value={customFieldValues[field.id] || ''}
-                        onChange={(value) => setCustomFieldValues({
-                          ...customFieldValues,
-                          [field.id]: value
-                        })}
-                      />
-                    ))}
-                  </div>
                 )}
-              </>
-            )}
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
-          <DialogFooter className="flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="createAnother"
-                checked={createAnother}
-                onChange={(e) => setCreateAnother(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <Label htmlFor="createAnother" className="text-sm font-body cursor-pointer">
-                Crear otra
-              </Label>
-            </div>
+          {/* Footer */}
+          <div className="border-t px-6 py-4 flex items-center justify-between bg-muted/30">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <input type="checkbox" checked={createAnother} onChange={(e) => setCreateAnother(e.target.checked)} className="rounded border-input" />
+              Crear otra
+            </label>
             <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-heading">
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading} className="gradient-primary shadow-elegant font-heading">
+              <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              <Button type="submit" size="sm" disabled={loading} className="gradient-primary shadow-elegant font-heading">
                 {loading ? 'Creando...' : 'Crear'}
               </Button>
             </div>
-          </DialogFooter>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
