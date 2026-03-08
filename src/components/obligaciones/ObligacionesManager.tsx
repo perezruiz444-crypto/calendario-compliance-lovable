@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { format, differenceInDays, isPast, isValid, startOfWeek, getISOWeek } from 'date-fns';
+import { differenceInDays, isPast } from 'date-fns';
 import { 
   Plus, Upload, Trash2, Pencil, Search, 
   Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen, FileDown,
@@ -22,85 +22,23 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  CATEGORIA_LABELS, CATEGORIA_COLORS,
+  getCurrentPeriodKey, getPeriodLabel, formatDateShort, getVencimientoInfo, programaToCategoria,
+} from '@/lib/obligaciones';
 
 interface Props {
   empresaId: string;
   canEdit: boolean;
 }
 
-const CATEGORIA_LABELS: Record<string, string> = {
-  general: 'General', cert_iva_ieps: 'Cert. IVA/IEPS', immex: 'IMMEX',
-  prosec: 'PROSEC', padron: 'Padrón', otro: 'Otro',
-};
-
-const CATEGORIA_COLORS: Record<string, string> = {
-  general: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  cert_iva_ieps: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  immex: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  prosec: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  padron: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
-  otro: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300',
-};
-
 function getVencimientoBadge(fecha: string | null) {
-  if (!fecha) return null;
-  const date = new Date(fecha);
-  if (!isValid(date)) return null;
-  const days = differenceInDays(date, new Date());
-  if (isPast(date)) return <Badge variant="destructive" className="text-xs gap-1"><AlertCircle className="w-3 h-3" />Vencido</Badge>;
-  if (days <= 30) return <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-xs gap-1"><AlertCircle className="w-3 h-3" />{days}d</Badge>;
-  if (days <= 90) return <Badge className="bg-warning/20 text-warning border-warning/30 text-xs gap-1"><Calendar className="w-3 h-3" />{days}d</Badge>;
+  const info = getVencimientoInfo(fecha);
+  if (!info) return null;
+  if (info.status === 'vencido') return <Badge variant="destructive" className="text-xs gap-1"><AlertCircle className="w-3 h-3" />Vencido</Badge>;
+  if (info.status === 'urgente') return <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-xs gap-1"><AlertCircle className="w-3 h-3" />{info.days}d</Badge>;
+  if (info.status === 'proximo') return <Badge className="bg-warning/20 text-warning border-warning/30 text-xs gap-1"><Calendar className="w-3 h-3" />{info.days}d</Badge>;
   return <Badge className="bg-success/20 text-success border-success/30 text-xs gap-1"><CheckCircle2 className="w-3 h-3" />Vigente</Badge>;
-}
-
-function formatDateShort(fecha: string | null) {
-  if (!fecha) return '-';
-  const d = new Date(fecha);
-  return isValid(d) ? format(d, 'dd/MM/yyyy') : '-';
-}
-
-/** Get the current period key based on presentacion frequency */
-function getCurrentPeriodKey(presentacion: string | null): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const week = getISOWeek(now);
-
-  switch (presentacion?.toLowerCase()) {
-    case 'semanal': return `${year}-W${String(week).padStart(2, '0')}`;
-    case 'quincenal': {
-      const half = now.getDate() <= 15 ? '1' : '2';
-      return `${year}-${month}-Q${half}`;
-    }
-    case 'mensual': return `${year}-${month}`;
-    case 'bimestral': {
-      const bim = Math.ceil((now.getMonth() + 1) / 2);
-      return `${year}-B${bim}`;
-    }
-    case 'trimestral': {
-      const q = Math.ceil((now.getMonth() + 1) / 3);
-      return `${year}-T${q}`;
-    }
-    case 'semestral': {
-      const s = now.getMonth() < 6 ? '1' : '2';
-      return `${year}-S${s}`;
-    }
-    case 'anual': return `${year}`;
-    default: return `${year}-${month}`;
-  }
-}
-
-function getPeriodLabel(presentacion: string | null, periodKey: string): string {
-  switch (presentacion?.toLowerCase()) {
-    case 'semanal': return `Semana ${periodKey.split('-W')[1]}`;
-    case 'quincenal': return periodKey.includes('Q1') ? '1ra Quincena' : '2da Quincena';
-    case 'mensual': return format(new Date(periodKey + '-01'), 'MMMM yyyy');
-    case 'bimestral': return `Bimestre ${periodKey.split('-B')[1]}`;
-    case 'trimestral': return `Trimestre ${periodKey.split('-T')[1]}`;
-    case 'semestral': return `Semestre ${periodKey.split('-S')[1]}`;
-    case 'anual': return `Año ${periodKey}`;
-    default: return periodKey;
-  }
 }
 
 export function ObligacionesManager({ empresaId, canEdit }: Props) {
