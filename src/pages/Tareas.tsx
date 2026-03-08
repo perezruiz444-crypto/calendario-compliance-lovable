@@ -705,7 +705,7 @@ export default function Tareas() {
   const totalEnProgreso = tareas.filter(t => t.estado === 'en_progreso').length;
   const totalCompletadas = tareas.filter(t => t.estado === 'completada').length;
   const totalCanceladas = tareas.filter(t => t.estado === 'cancelada').length;
-  const hasFiltersApplied = filterEmpresa !== 'all' || filterConsultor !== 'all' || filterEstado !== 'all' || filterPrioridad !== 'all' || searchTerm !== '';
+  const hasFiltersApplied = filterEmpresa !== 'all' || filterConsultor !== 'all' || filterEstado !== 'all' || filterPrioridad !== 'all' || searchQuery !== '';
 
   // Bulk actions
   const handleSelectTarea = (tareaId: string) => {
