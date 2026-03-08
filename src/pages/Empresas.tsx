@@ -29,6 +29,7 @@ export default function Empresas() {
   const [selectedEmpresa, setSelectedEmpresa] = useState<{ id: string; nombre: string } | null>(null);
   const [deleteEmpresaId, setDeleteEmpresaId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth');
