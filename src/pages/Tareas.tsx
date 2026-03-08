@@ -5,7 +5,7 @@ import { useTareasShortcuts } from '@/hooks/useKeyboardShortcuts';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaDialog from '@/components/tareas/CreateTareaDialog';
 import QuickCreateTarea from '@/components/tareas/QuickCreateTarea';
@@ -14,6 +14,7 @@ import ManageCategoriesDialog from '@/components/tareas/ManageCategoriesDialog';
 import ManageCustomFields from '@/components/tareas/ManageCustomFields';
 import ManageTemplates from '@/components/tareas/ManageTemplates';
 import { ManageAutomations } from '@/components/tareas/ManageAutomations';
+import { ObligacionesActivasTab } from '@/components/obligaciones/ObligacionesActivasTab';
 import { Calendar as BigCalendar, momentLocalizer, View } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -337,7 +338,7 @@ export default function Tareas() {
   const [filterConsultor, setFilterConsultor] = useState<string>('all');
   
   // View mode
-  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'calendar'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'calendar' | 'obligaciones'>('list');
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   
   // Bulk selection
@@ -819,7 +820,7 @@ export default function Tareas() {
                 <LayoutGrid className="w-4 h-4 mr-1" />
                 Kanban
               </Button>
-              <Button
+               <Button
                 variant={viewMode === 'calendar' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('calendar')}
@@ -827,6 +828,15 @@ export default function Tareas() {
               >
                 <CalendarViewIcon className="w-4 h-4 mr-1" />
                 Calendario
+              </Button>
+              <Button
+                variant={viewMode === 'obligaciones' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('obligaciones')}
+                className="h-8"
+              >
+                <ClipboardList className="w-4 h-4 mr-1" />
+                Obligaciones
               </Button>
             </div>
             
@@ -1060,8 +1070,23 @@ export default function Tareas() {
           </Card>
         </div>
 
-        {/* Tareas View - List, Kanban or Calendar */}
-        {viewMode === 'list' ? (
+        {/* Tareas View - List, Kanban, Calendar or Obligaciones */}
+        {viewMode === 'obligaciones' ? (
+          <Card className="gradient-card shadow-card">
+            <CardHeader>
+              <CardTitle className="font-heading flex items-center gap-2">
+                <ClipboardList className="w-5 h-5" />
+                Obligaciones Activas
+              </CardTitle>
+              <CardDescription className="font-body">
+                Obligaciones legales activadas como pendientes de cumplimiento
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ObligacionesActivasTab />
+            </CardContent>
+          </Card>
+        ) : viewMode === 'list' ? (
           <Card className="gradient-card shadow-card">
             <CardHeader>
               <div className="flex items-center justify-between">

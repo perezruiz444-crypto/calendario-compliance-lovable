@@ -6,45 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, ClipboardList } from 'lucide-react';
-import { format, differenceInDays, parseISO, getISOWeek } from 'date-fns';
+import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, ClipboardList, ChevronDown, TrendingUp } from 'lucide-react';
+import { format, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DocumentosManager } from '@/components/documentos/DocumentosManager';
 import { SolicitudesServicio } from '@/components/solicitudes/SolicitudesServicio';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import { toast } from 'sonner';
-
-// Period key helpers (same logic as ObligacionesManager)
-function getCurrentPeriodKey(presentacion: string | null): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const week = getISOWeek(now);
-  switch (presentacion?.toLowerCase()) {
-    case 'semanal': return `${year}-W${String(week).padStart(2, '0')}`;
-    case 'quincenal': { const half = now.getDate() <= 15 ? '1' : '2'; return `${year}-${month}-Q${half}`; }
-    case 'mensual': return `${year}-${month}`;
-    case 'bimestral': { const bim = Math.ceil((now.getMonth() + 1) / 2); return `${year}-B${bim}`; }
-    case 'trimestral': { const q = Math.ceil((now.getMonth() + 1) / 3); return `${year}-T${q}`; }
-    case 'semestral': { const s = now.getMonth() < 6 ? '1' : '2'; return `${year}-S${s}`; }
-    case 'anual': return `${year}`;
-    default: return `${year}-${month}`;
-  }
-}
-
-function getPeriodLabel(presentacion: string | null, periodKey: string): string {
-  switch (presentacion?.toLowerCase()) {
-    case 'semanal': return `Semana ${periodKey.split('-W')[1]}`;
-    case 'quincenal': return periodKey.includes('Q1') ? '1ra Quincena' : '2da Quincena';
-    case 'mensual': return format(new Date(periodKey + '-01'), 'MMMM yyyy', { locale: es });
-    case 'bimestral': return `Bimestre ${periodKey.split('-B')[1]}`;
-    case 'trimestral': return `Trimestre ${periodKey.split('-T')[1]}`;
-    case 'semestral': return `Semestre ${periodKey.split('-S')[1]}`;
-    case 'anual': return `Año ${periodKey}`;
-    default: return periodKey;
-  }
-}
+import { getCurrentPeriodKey, getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
 
 export default function MiEmpresa() {
   const { user, role, loading } = useAuth();
@@ -239,6 +211,68 @@ export default function MiEmpresa() {
 
           {/* Obligaciones Tab */}
           <TabsContent value="obligaciones" className="space-y-4">
+            {/* Progress Summary Cards */}
+            {obligaciones.length > 0 && (() => {
+              const completadas = obligaciones.filter(ob => {
+                const pk = getCurrentPeriodKey(ob.presentacion);
+                return cumplimientos[`${ob.id}:${pk}`];
+              }).length;
+              const total = obligaciones.length;
+              const porVencer = obligaciones.filter(ob => {
+                if (!ob.fecha_vencimiento) return false;
+                const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
+                return dias >= 0 && dias <= 30;
+              }).length;
+              const pct = total > 0 ? Math.round((completadas / total) * 100) : 0;
+
+              return (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <Card className="bg-success/5 border-success/20">
+                      <CardContent className="pt-4 pb-4 flex items-center gap-3">
+                        <div className="bg-success/10 p-2 rounded-lg"><CheckCircle className="w-5 h-5 text-success" /></div>
+                        <div>
+                          <p className="text-2xl font-heading font-bold text-success">{completadas}</p>
+                          <p className="text-xs text-muted-foreground">Completadas este periodo</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-warning/5 border-warning/20">
+                      <CardContent className="pt-4 pb-4 flex items-center gap-3">
+                        <div className="bg-warning/10 p-2 rounded-lg"><ClipboardList className="w-5 h-5 text-warning" /></div>
+                        <div>
+                          <p className="text-2xl font-heading font-bold text-warning">{total - completadas}</p>
+                          <p className="text-xs text-muted-foreground">Pendientes</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-destructive/5 border-destructive/20">
+                      <CardContent className="pt-4 pb-4 flex items-center gap-3">
+                        <div className="bg-destructive/10 p-2 rounded-lg"><AlertCircle className="w-5 h-5 text-destructive" /></div>
+                        <div>
+                          <p className="text-2xl font-heading font-bold text-destructive">{porVencer}</p>
+                          <p className="text-xs text-muted-foreground">Próximas a vencer</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  {/* Progress Bar */}
+                  <Card>
+                    <CardContent className="pt-4 pb-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-heading font-medium flex items-center gap-1.5">
+                          <TrendingUp className="w-4 h-4" /> Cumplimiento del Periodo
+                        </span>
+                        <span className="text-lg font-heading font-bold text-primary">{pct}%</span>
+                      </div>
+                      <Progress value={pct} className="h-3" />
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()}
+
+            {/* Grouped by Category */}
             <Card>
               <CardHeader>
                 <CardTitle className="font-heading flex items-center gap-2">
@@ -251,43 +285,66 @@ export default function MiEmpresa() {
               <CardContent>
                 {obligaciones.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">No hay obligaciones asignadas</p>
-                ) : (
-                  <div className="space-y-3">
-                    {obligaciones.map(ob => {
-                      const periodKey = getCurrentPeriodKey(ob.presentacion);
-                      const mapKey = `${ob.id}:${periodKey}`;
-                      const isCompleted = cumplimientos[mapKey] || false;
-                      return (
-                        <div key={ob.id} className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${isCompleted ? 'bg-success/10 border-success/30' : ''}`}>
-                          <Checkbox
-                            checked={isCompleted}
-                            onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className={`font-heading font-medium text-sm ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
-                              {ob.nombre}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              {ob.presentacion && (
-                                <Badge variant="outline" className="text-xs">{ob.presentacion}</Badge>
-                              )}
-                              <span className="text-xs text-muted-foreground">
-                                {getPeriodLabel(ob.presentacion, periodKey)}
-                              </span>
-                              {ob.fecha_vencimiento && (() => {
-                                const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
-                                if (dias < 0) return <Badge variant="destructive" className="text-xs">Vencido</Badge>;
-                                if (dias <= 30) return <Badge className="bg-destructive/20 text-destructive text-xs">{dias}d</Badge>;
-                                return null;
-                              })()}
-                            </div>
-                          </div>
-                          {isCompleted && <CheckCircle className="w-5 h-5 text-success shrink-0" />}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                ) : (() => {
+                  // Group by category
+                  const grouped = obligaciones.reduce((acc: Record<string, any[]>, ob) => {
+                    const cat = ob.categoria || 'otro';
+                    if (!acc[cat]) acc[cat] = [];
+                    acc[cat].push(ob);
+                    return acc;
+                  }, {});
+
+                  return (
+                    <div className="space-y-3">
+                      {Object.entries(grouped).map(([cat, obs]) => (
+                        <Collapsible key={cat} defaultOpen>
+                          <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 hover:bg-muted/50 rounded px-2 transition-colors">
+                            <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform [&[data-state=open]]:rotate-180" />
+                            <Badge variant="outline" className={`text-xs ${CATEGORIA_COLORS[cat] || ''}`}>
+                              {CATEGORIA_LABELS[cat] || cat}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">({(obs as any[]).length})</span>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="pl-6 space-y-2 mt-1">
+                            {(obs as any[]).map(ob => {
+                              const periodKey = getCurrentPeriodKey(ob.presentacion);
+                              const mapKey = `${ob.id}:${periodKey}`;
+                              const isCompleted = cumplimientos[mapKey] || false;
+                              return (
+                                <div key={ob.id} className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${isCompleted ? 'bg-success/10 border-success/30' : ''}`}>
+                                  <Checkbox
+                                    checked={isCompleted}
+                                    onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`font-heading font-medium text-sm ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                                      {ob.nombre}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                      {ob.presentacion && (
+                                        <Badge variant="outline" className="text-xs">{ob.presentacion}</Badge>
+                                      )}
+                                      <span className="text-xs text-muted-foreground">
+                                        {getPeriodLabel(ob.presentacion, periodKey)}
+                                      </span>
+                                      {ob.fecha_vencimiento && (() => {
+                                        const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
+                                        if (dias < 0) return <Badge variant="destructive" className="text-xs">Vencido</Badge>;
+                                        if (dias <= 30) return <Badge className="bg-destructive/20 text-destructive text-xs">{dias}d</Badge>;
+                                        return null;
+                                      })()}
+                                    </div>
+                                  </div>
+                                  {isCompleted && <CheckCircle className="w-5 h-5 text-success shrink-0" />}
+                                </div>
+                              );
+                            })}
+                          </CollapsibleContent>
+                        </Collapsible>
+                      ))}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
