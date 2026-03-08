@@ -5,10 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { userSchema } from '@/lib/validation';
-import { z } from 'zod';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -19,11 +18,11 @@ interface CreateUserDialogProps {
 export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUserDialogProps) {
   const [loading, setLoading] = useState(false);
   const [empresas, setEmpresas] = useState<Array<{ id: string; razon_social: string }>>([]);
-  const [setupLink, setSetupLink] = useState<string | null>(null);
-  const [createdEmail, setCreatedEmail] = useState<string>('');
+  const [usePassword, setUsePassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     nombre_completo: '',
+    password: '',
     role: 'consultor' as 'administrador' | 'consultor' | 'cliente',
     empresa_id: ''
   });
@@ -41,163 +40,130 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
         .from('empresas')
         .select('id, razon_social')
         .order('razon_social');
-
       if (error) throw error;
       setEmpresas(data || []);
-    } catch (error: any) {
+    } catch {
       toast.error('Error al cargar empresas');
-      console.error(error);
     }
+  };
+
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Email inválido';
+    }
+    if (!formData.nombre_completo.trim()) {
+      newErrors.nombre_completo = 'El nombre es requerido';
+    }
+    if (formData.role === 'cliente' && !formData.empresa_id) {
+      newErrors.empresa_id = 'Debes seleccionar una empresa para el cliente';
+    }
+    if (usePassword && formData.password.length < 6) {
+      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
-    
-    // Validate form data (excluding password for invitations)
-    try {
-      const invitationSchema = z.object({
-        email: z.string().email('Email inválido'),
-        nombre_completo: z.string().min(1, 'El nombre es requerido').max(100, 'El nombre es muy largo'),
-        role: z.enum(['administrador', 'consultor', 'cliente']),
-        empresa_id: z.string().optional()
-      });
-      
-      const validationData = {
-        email: formData.email,
-        nombre_completo: formData.nombre_completo,
-        role: formData.role,
-        empresa_id: formData.empresa_id || undefined
-      };
-
-      // Validate that cliente role requires empresa_id
-      if (formData.role === 'cliente' && !formData.empresa_id) {
-        setErrors({ empresa_id: 'Debes seleccionar una empresa para el cliente' });
-        toast.error('Debes seleccionar una empresa para el cliente');
-        return;
-      }
-
-      invitationSchema.parse(validationData);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const fieldErrors: Record<string, string> = {};
-        error.issues.forEach((err) => {
-          if (err.path[0]) {
-            fieldErrors[err.path[0].toString()] = err.message;
-          }
-        });
-        setErrors(fieldErrors);
-        toast.error('Por favor corrige los errores en el formulario');
-        return;
-      }
+    if (!validate()) {
+      toast.error('Por favor corrige los errores en el formulario');
+      return;
     }
 
     setLoading(true);
-
     try {
-      const { data, error } = await supabase.functions.invoke('send-user-invitation', {
-        body: {
-          email: formData.email,
-          role: formData.role,
-          nombreCompleto: formData.nombre_completo,
-          empresaId: formData.empresa_id || null
-        },
-      });
+      if (usePassword) {
+        // Direct creation with password
+        const { data, error } = await supabase.functions.invoke('create-user', {
+          body: {
+            email: formData.email,
+            password: formData.password,
+            nombre_completo: formData.nombre_completo,
+            role: formData.role,
+            empresa_id: formData.empresa_id || null
+          },
+        });
+        if (error) throw new Error(error.message || 'Error al crear usuario');
+        if (data?.error) throw new Error(data.error);
 
-      if (error) {
-        throw new Error(error.message || 'Error al enviar invitación');
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      // Store setup link if provided
-      if (data?.setupLink) {
-        setSetupLink(data.setupLink);
-        setCreatedEmail(data.email);
-        
-        if (data?.emailSent) {
-          toast.success('Usuario creado y correo enviado. También puedes usar el enlace de respaldo.');
-        } else {
-          toast.success('Usuario creado. El correo no se pudo enviar, usa el enlace de configuración.');
-        }
+        toast.success(`Usuario ${formData.email} creado con contraseña exitosamente`);
+        resetAndClose();
+        onUserCreated();
       } else {
-        toast.success(data?.message || 'Usuario creado correctamente');
-        onOpenChange(false);
+        // Invitation flow
+        const { data, error } = await supabase.functions.invoke('send-user-invitation', {
+          body: {
+            email: formData.email,
+            role: formData.role,
+            nombreCompleto: formData.nombre_completo,
+            empresaId: formData.empresa_id || null
+          },
+        });
+        if (error) throw new Error(error.message || 'Error al enviar invitación');
+        if (data?.error) throw new Error(data.error);
+
+        if (data?.setupLink) {
+          // Show persistent toast with copy button instead of second dialog
+          toast.success(`Usuario ${data.email} creado`, {
+            description: data.emailSent
+              ? 'Correo enviado. También puedes copiar el enlace de configuración.'
+              : 'El correo no se pudo enviar. Copia el enlace de configuración.',
+            duration: 30000,
+            action: {
+              label: '📋 Copiar enlace',
+              onClick: () => {
+                navigator.clipboard.writeText(data.setupLink);
+                toast.success('Enlace copiado al portapapeles');
+              }
+            }
+          });
+        } else {
+          toast.success(data?.message || 'Usuario creado correctamente');
+        }
+
+        resetAndClose();
+        onUserCreated();
       }
-      
-      setFormData({ email: '', nombre_completo: '', role: 'consultor', empresa_id: '' });
-      onUserCreated();
     } catch (error: any) {
-      toast.error(error.message || 'Error al enviar invitación');
+      toast.error(error.message || 'Error al crear usuario');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCopyLink = () => {
-    if (setupLink) {
-      navigator.clipboard.writeText(setupLink);
-      toast.success('Enlace copiado al portapapeles');
-    }
-  };
-
-  const handleCloseWithLink = () => {
-    setSetupLink(null);
-    setCreatedEmail('');
+  const resetAndClose = () => {
+    setFormData({ email: '', nombre_completo: '', password: '', role: 'consultor', empresa_id: '' });
+    setErrors({});
+    setUsePassword(false);
     onOpenChange(false);
   };
-
-  // Show setup link dialog if we have one
-  if (setupLink) {
-    return (
-      <Dialog open={open} onOpenChange={handleCloseWithLink}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-heading">✅ Usuario Creado Exitosamente</DialogTitle>
-            <DialogDescription className="font-body">
-              Enlace de configuración para {createdEmail}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="p-4 bg-muted rounded-lg border-2 border-primary/20">
-              <p className="text-xs font-semibold text-muted-foreground mb-2 font-heading">ENLACE DE CONFIGURACIÓN:</p>
-              <code className="text-sm font-mono break-all block">{setupLink}</code>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleCopyLink} className="flex-1 gradient-primary shadow-elegant font-heading">
-                📋 Copiar Enlace
-              </Button>
-              <Button onClick={handleCloseWithLink} variant="outline" className="font-heading">
-                Cerrar
-              </Button>
-            </div>
-            <div className="bg-primary-light dark:bg-primary/10 p-3 rounded-lg border border-primary/20">
-              <p className="text-sm font-body text-foreground">
-                <strong>Instrucciones:</strong><br/>
-                1. Copia este enlace<br/>
-                2. Envíalo al usuario por WhatsApp, correo o mensaje<br/>
-                3. El usuario podrá establecer su contraseña (válido 7 días)
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Invitar Nuevo Usuario</DialogTitle>
+          <DialogTitle className="font-heading">Crear Nuevo Usuario</DialogTitle>
           <DialogDescription className="font-body">
-            Se enviará un email de invitación con un enlace para que el usuario establezca su contraseña
+            {usePassword
+              ? 'El usuario podrá iniciar sesión inmediatamente con la contraseña asignada'
+              : 'Se enviará un email de invitación con un enlace para establecer contraseña'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
+            {/* Mode toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/50">
+              <div className="space-y-0.5">
+                <Label className="font-heading text-sm">Crear con contraseña</Label>
+                <p className="text-xs text-muted-foreground font-body">
+                  {usePassword ? 'Asignarás la contraseña directamente' : 'Se enviará invitación por email'}
+                </p>
+              </div>
+              <Switch checked={usePassword} onCheckedChange={setUsePassword} />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="nombre_completo" className="font-heading">Nombre Completo</Label>
               <Input
@@ -210,6 +176,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
               />
               {errors.nombre_completo && <p className="text-sm text-destructive font-body">{errors.nombre_completo}</p>}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="email" className="font-heading">Correo Electrónico</Label>
               <Input
@@ -222,10 +189,25 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
                 className="font-body"
               />
               {errors.email && <p className="text-sm text-destructive font-body">{errors.email}</p>}
-              <p className="text-xs text-muted-foreground font-body">
-                El usuario recibirá un email para establecer su contraseña
-              </p>
             </div>
+
+            {usePassword && (
+              <div className="space-y-2">
+                <Label htmlFor="password" className="font-heading">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  minLength={6}
+                  placeholder="Mínimo 6 caracteres"
+                  className="font-body"
+                />
+                {errors.password && <p className="text-sm text-destructive font-body">{errors.password}</p>}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="font-heading">Rol</Label>
               <RadioGroup
@@ -246,6 +228,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
                 </div>
               </RadioGroup>
             </div>
+
             {formData.role === 'cliente' && (
               <div className="space-y-2">
                 <Label htmlFor="empresa_id" className="font-heading">Empresa *</Label>
@@ -273,7 +256,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
               Cancelar
             </Button>
             <Button type="submit" disabled={loading} className="gradient-primary shadow-elegant font-heading">
-              {loading ? 'Enviando...' : 'Enviar Invitación'}
+              {loading ? 'Creando...' : usePassword ? 'Crear Usuario' : 'Enviar Invitación'}
             </Button>
           </DialogFooter>
         </form>
