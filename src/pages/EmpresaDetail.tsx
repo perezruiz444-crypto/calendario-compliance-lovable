@@ -16,20 +16,11 @@ import { EmpresaPROSECCard } from '@/components/empresas/EmpresaPROSECCard';
 import { EmpresaCertificacionCard } from '@/components/empresas/EmpresaCertificacionCard';
 import { EmpresaObligacionesCard } from '@/components/empresas/EmpresaObligacionesCard';
 import { ObligacionesManager } from '@/components/obligaciones/ObligacionesManager';
+import { AgentesAduanalesCard } from '@/components/empresas/AgentesAduanalesCard';
+import { ApoderadosCard } from '@/components/empresas/ApoderadosCard';
+import { DomiciliosCard } from '@/components/empresas/DomiciliosCard';
 import { 
-  Building2, 
-  MapPin, 
-  Users, 
-  Ship, 
-  ArrowLeft,
-  Phone,
-  Hash,
-  Shield,
-  Scale,
-  UserCog,
-  CheckSquare,
-  Plus,
-  Repeat
+  ArrowLeft, Phone, UserCog, CheckSquare, Plus, Repeat
 } from 'lucide-react';
 
 export default function EmpresaDetail() {
@@ -38,7 +29,6 @@ export default function EmpresaDetail() {
   const navigate = useNavigate();
   const [empresa, setEmpresa] = useState<any>(null);
   const [domicilios, setDomicilios] = useState<any[]>([]);
-  const [miembros, setMiembros] = useState<any[]>([]);
   const [agentes, setAgentes] = useState<any[]>([]);
   const [apoderados, setApoderados] = useState<any[]>([]);
   const [tareas, setTareas] = useState<any[]>([]);
@@ -51,48 +41,32 @@ export default function EmpresaDetail() {
   const canEdit = role === 'administrador' || role === 'consultor';
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
-    }
+    if (!loading && !user) navigate('/auth');
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    if (id && user) {
-      fetchEmpresaData();
-    }
+    if (id && user) fetchEmpresaData();
   }, [id, user]);
 
   const fetchEmpresaData = async () => {
     setLoadingData(true);
     try {
       const { data: empresaData, error: empresaError } = await supabase
-        .from('empresas')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
+        .from('empresas').select('*').eq('id', id).maybeSingle();
 
       if (empresaError) throw empresaError;
-      if (!empresaData) {
-        toast.error('Empresa no encontrada');
-        navigate('/empresas');
-        return;
-      }
+      if (!empresaData) { toast.error('Empresa no encontrada'); navigate('/empresas'); return; }
       setEmpresa(empresaData);
 
-      const [domiciliosRes, miembrosRes, agentesRes, apoderadosRes, tareasRes] = await Promise.all([
+      const [domiciliosRes, agentesRes, apoderadosRes, tareasRes] = await Promise.all([
         supabase.from('domicilios_operacion').select('*').eq('empresa_id', id),
-        supabase.from('miembros_socios').select('*').eq('empresa_id', id),
         supabase.from('agentes_aduanales').select('*').eq('empresa_id', id),
         supabase.from('apoderados_legales').select('*').eq('empresa_id', id),
-        supabase.from('tareas').select(`
-          *,
-          profiles:consultor_asignado_id(nombre_completo),
-          categorias_tareas(nombre, color)
-        `).eq('empresa_id', id).order('created_at', { ascending: false }).limit(10)
+        supabase.from('tareas').select(`*, profiles:consultor_asignado_id(nombre_completo), categorias_tareas(nombre, color)`)
+          .eq('empresa_id', id).order('created_at', { ascending: false }).limit(10),
       ]);
 
       setDomicilios(domiciliosRes.data || []);
-      setMiembros(miembrosRes.data || []);
       setAgentes(agentesRes.data || []);
       setApoderados(apoderadosRes.data || []);
       setTareas(tareasRes.data || []);
@@ -115,9 +89,7 @@ export default function EmpresaDetail() {
   if (!empresa) {
     return (
       <DashboardLayout>
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Empresa no encontrada</p>
-        </div>
+        <div className="text-center py-12"><p className="text-muted-foreground">Empresa no encontrada</p></div>
       </DashboardLayout>
     );
   }
@@ -135,26 +107,17 @@ export default function EmpresaDetail() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-              {empresa.razon_social}
-            </h1>
+            <h1 className="text-3xl font-heading font-bold text-foreground mb-2">{empresa.razon_social}</h1>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <Badge variant="outline">{empresa.rfc}</Badge>
               {empresa.telefono && (
-                <span className="flex items-center gap-1">
-                  <Phone className="w-4 h-4" />
-                  {empresa.telefono}
-                </span>
+                <span className="flex items-center gap-1"><Phone className="w-4 h-4" />{empresa.telefono}</span>
               )}
             </div>
           </div>
           {role === 'administrador' && (
-            <Button 
-              variant="outline"
-              onClick={() => setConsultoresDialogOpen(true)}
-            >
-              <UserCog className="w-4 h-4 mr-2" />
-              Consultores
+            <Button variant="outline" onClick={() => setConsultoresDialogOpen(true)}>
+              <UserCog className="w-4 h-4 mr-2" />Consultores
             </Button>
           )}
         </div>
@@ -187,10 +150,8 @@ export default function EmpresaDetail() {
           </Card>
         </div>
 
-        {/* Obligaciones Section - Full Width */}
+        {/* Obligaciones */}
         <EmpresaObligacionesCard empresa={empresa} />
-
-        {/* Obligaciones Manager - Full CRUD */}
         <ObligacionesManager empresaId={id!} canEdit={canEdit} />
 
         {/* Main Content Grid */}
@@ -210,15 +171,13 @@ export default function EmpresaDetail() {
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <div>
                   <CardTitle className="font-heading flex items-center gap-2">
-                    <CheckSquare className="w-5 h-5" />
-                    Tareas Recientes
+                    <CheckSquare className="w-5 h-5" />Tareas Recientes
                   </CardTitle>
                   <CardDescription>{tareas.length} tarea(s)</CardDescription>
                 </div>
                 {canEdit && (
                   <Button size="sm" onClick={() => setCreateTareaDialogOpen(true)} className="gradient-primary">
-                    <Plus className="w-4 h-4 mr-1" />
-                    Nueva
+                    <Plus className="w-4 h-4 mr-1" />Nueva
                   </Button>
                 )}
               </CardHeader>
@@ -228,10 +187,7 @@ export default function EmpresaDetail() {
                     {tareas.slice(0, 5).map((tarea) => (
                       <div
                         key={tarea.id}
-                        onClick={() => {
-                          setSelectedTareaId(tarea.id);
-                          setDetailTareaDialogOpen(true);
-                        }}
+                        onClick={() => { setSelectedTareaId(tarea.id); setDetailTareaDialogOpen(true); }}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
                       >
                         <div className="flex-1 min-w-0">
@@ -239,17 +195,12 @@ export default function EmpresaDetail() {
                           <div className="flex gap-2 mt-1">
                             <Badge variant="outline" className={`text-xs ${
                               tarea.estado === 'pendiente' ? 'border-warning text-warning' :
-                              tarea.estado === 'en_progreso' ? 'border-primary text-primary' :
-                              'border-success text-success'
+                              tarea.estado === 'en_progreso' ? 'border-primary text-primary' : 'border-success text-success'
                             }`}>
-                              {tarea.estado === 'pendiente' ? 'Pendiente' :
-                               tarea.estado === 'en_progreso' ? 'En Progreso' : 'Completada'}
+                              {tarea.estado === 'pendiente' ? 'Pendiente' : tarea.estado === 'en_progreso' ? 'En Progreso' : 'Completada'}
                             </Badge>
                             {tarea.es_recurrente && (
-                              <Badge variant="secondary" className="text-xs">
-                                <Repeat className="w-3 h-3 mr-1" />
-                                Recurrente
-                              </Badge>
+                              <Badge variant="secondary" className="text-xs"><Repeat className="w-3 h-3 mr-1" />Recurrente</Badge>
                             )}
                           </div>
                         </div>
@@ -262,8 +213,7 @@ export default function EmpresaDetail() {
                     <p className="text-muted-foreground text-sm">Sin tareas</p>
                     {canEdit && (
                       <Button size="sm" variant="outline" className="mt-2" onClick={() => setCreateTareaDialogOpen(true)}>
-                        <Plus className="w-4 h-4 mr-1" />
-                        Crear Tarea
+                        <Plus className="w-4 h-4 mr-1" />Crear Tarea
                       </Button>
                     )}
                   </div>
@@ -271,104 +221,19 @@ export default function EmpresaDetail() {
               </CardContent>
             </Card>
 
-            {/* Agentes Aduanales */}
-            <Card className="gradient-card shadow-card">
-              <CardHeader>
-                <CardTitle className="font-heading flex items-center gap-2">
-                  <Hash className="w-5 h-5" />
-                  Agentes Aduanales
-                </CardTitle>
-                <CardDescription>{agentes.length} agente(s)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {agentes.length > 0 ? (
-                  <div className="space-y-2">
-                    {agentes.map((agente) => (
-                      <div key={agente.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{agente.nombre_agente}</p>
-                          <div className="flex gap-2 mt-1">
-                            <Badge variant="outline" className="text-xs">Patente: {agente.numero_patente}</Badge>
-                            {agente.estado && <Badge variant="secondary" className="text-xs">{agente.estado}</Badge>}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">Sin agentes registrados</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Apoderados Legales */}
-            <Card className="gradient-card shadow-card">
-              <CardHeader>
-                <CardTitle className="font-heading flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Apoderados Legales
-                </CardTitle>
-                <CardDescription>{apoderados.length} apoderado(s)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {apoderados.length > 0 ? (
-                  <div className="space-y-2">
-                    {apoderados.map((apoderado) => (
-                      <div key={apoderado.id} className="p-3 border rounded-lg">
-                        <p className="font-medium">{apoderado.nombre}</p>
-                        {apoderado.tipo_apoderado && (
-                          <Badge variant="outline" className="mt-1 text-xs">Tipo {apoderado.tipo_apoderado}</Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">Sin apoderados registrados</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Domicilios */}
-            <Card className="gradient-card shadow-card">
-              <CardHeader>
-                <CardTitle className="font-heading flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
-                  Domicilios de Operación
-                </CardTitle>
-                <CardDescription>{domicilios.length} domicilio(s)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {domicilios.length > 0 ? (
-                  <div className="space-y-2">
-                    {domicilios.map((domicilio) => (
-                      <div key={domicilio.id} className="p-3 border rounded-lg">
-                        {domicilio.tipo && <Badge variant="outline" className="mb-2 text-xs">{domicilio.tipo}</Badge>}
-                        <p className="text-sm">{domicilio.domicilio}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">Sin domicilios adicionales</p>
-                )}
-              </CardContent>
-            </Card>
+            {/* Editable Cards */}
+            <AgentesAduanalesCard empresaId={id!} agentes={agentes} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+            <ApoderadosCard empresaId={id!} apoderados={apoderados} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+            <DomiciliosCard empresaId={id!} domicilios={domicilios} canEdit={canEdit} onUpdate={fetchEmpresaData} />
           </div>
         </div>
       </div>
 
-      <ManageConsultoresDialog
-        open={consultoresDialogOpen}
-        onOpenChange={setConsultoresDialogOpen}
-        empresaId={id!}
-        empresaNombre={empresa?.razon_social || ''}
-      />
+      <ManageConsultoresDialog open={consultoresDialogOpen} onOpenChange={setConsultoresDialogOpen} empresaId={id!} empresaNombre={empresa?.razon_social || ''} />
 
-      <CreateTareaDialog 
-        open={createTareaDialogOpen} 
-        onOpenChange={(open) => {
-          setCreateTareaDialogOpen(open);
-          if (!open) fetchEmpresaData();
-        }}
+      <CreateTareaDialog
+        open={createTareaDialogOpen}
+        onOpenChange={(open) => { setCreateTareaDialogOpen(open); if (!open) fetchEmpresaData(); }}
         onTareaCreated={fetchEmpresaData}
         defaultEmpresaId={id}
       />
@@ -376,13 +241,7 @@ export default function EmpresaDetail() {
       {selectedTareaId && (
         <TareaDetailDialog
           open={detailTareaDialogOpen}
-          onOpenChange={(open) => {
-            setDetailTareaDialogOpen(open);
-            if (!open) {
-              fetchEmpresaData();
-              setSelectedTareaId(null);
-            }
-          }}
+          onOpenChange={(open) => { setDetailTareaDialogOpen(open); if (!open) { fetchEmpresaData(); setSelectedTareaId(null); } }}
           tareaId={selectedTareaId}
         />
       )}
