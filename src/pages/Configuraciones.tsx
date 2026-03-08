@@ -67,7 +67,7 @@ export default function Configuraciones() {
   const sections: SectionItem[] = [
     { id: 'perfil', label: 'Mi Perfil', description: 'Nombre, contacto y contraseña', icon: <User className="h-5 w-5" /> },
     { id: 'general', label: 'General', description: 'Apariencia y notificaciones push', icon: <Settings className="h-5 w-5" /> },
-    { id: 'colores', label: 'Colores', description: 'Personaliza la paleta de colores', icon: <Paintbrush className="h-5 w-5" /> },
+    { id: 'colores', label: 'Colores', description: 'Personaliza la paleta de colores', icon: <Paintbrush className="h-5 w-5" />, adminOnly: true },
     { id: 'notificaciones', label: 'Mis Notificaciones', description: 'Preferencias de alertas', icon: <Bell className="h-5 w-5" /> },
     { id: 'recordatorios', label: 'Recordatorios', description: 'Reglas de recordatorio automáticas', icon: <Clock className="h-5 w-5" />, adminOnly: true },
     { id: 'historial', label: 'Historial', description: 'Registro de notificaciones enviadas', icon: <History className="h-5 w-5" />, adminOnly: true },
