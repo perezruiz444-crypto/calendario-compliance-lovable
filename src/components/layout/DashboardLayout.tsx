@@ -93,6 +93,11 @@ export default function DashboardLayout({
     label: 'Usuarios',
     path: '/usuarios',
     roles: ['administrador']
+  }, {
+    icon: Settings,
+    label: 'Configuraciones',
+    path: '/configuraciones',
+    roles: ['administrador', 'consultor', 'cliente']
   }];
   const filteredNavItems = navItems.filter(item => role && item.roles.includes(role));
   const SidebarContent = () => <div className="flex flex-col h-full bg-sidebar overflow-hidden">
