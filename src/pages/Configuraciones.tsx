@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Mail, Shield, Palette, Bell, Settings, Clock, History } from 'lucide-react';
+import { Loader2, Mail, Shield, Palette, Bell, Settings, Clock, History, Paintbrush } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from 'next-themes';
