@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Plus, Building2, Copy, Trash2, MoreHorizontal, Search, Users, Eye } from 'lucide-react';
+import { Plus, Building2, Copy, Trash2, MoreHorizontal, Search, Users, Eye, CheckSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import QuickCreateEmpresa from '@/components/empresas/QuickCreateEmpresa';
 import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
@@ -29,6 +29,7 @@ export default function Empresas() {
   const [selectedEmpresa, setSelectedEmpresa] = useState<{ id: string; nombre: string } | null>(null);
   const [deleteEmpresaId, setDeleteEmpresaId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth');
@@ -44,6 +45,21 @@ export default function Empresas() {
         .order('created_at', { ascending: false });
       if (error) throw error;
       setEmpresas(data || []);
+
+      // Fetch pending task counts per empresa
+      if (data && data.length > 0) {
+        const { data: tareasData } = await supabase
+          .from('tareas')
+          .select('empresa_id')
+          .in('estado', ['pendiente', 'en_progreso']);
+        if (tareasData) {
+          const counts: Record<string, number> = {};
+          tareasData.forEach(t => {
+            counts[t.empresa_id] = (counts[t.empresa_id] || 0) + 1;
+          });
+          setTaskCounts(counts);
+        }
+      }
     } catch (error) {
       console.error('Error fetching empresas:', error);
     } finally {
@@ -203,6 +219,12 @@ export default function Empresas() {
                             {badges.map((b, i) => (
                               <Badge key={i} variant={b.variant} className="text-xs">{b.label}</Badge>
                             ))}
+                            {taskCounts[empresa.id] > 0 && (
+                              <Badge variant="secondary" className="text-xs gap-1">
+                                <CheckSquare className="w-3 h-3" />
+                                {taskCounts[empresa.id]} pendiente{taskCounts[empresa.id] > 1 ? 's' : ''}
+                              </Badge>
+                            )}
                           </div>
                           {empresa.domicilio_fiscal && (
                             <p className="text-sm text-muted-foreground font-body truncate">{empresa.domicilio_fiscal}</p>
