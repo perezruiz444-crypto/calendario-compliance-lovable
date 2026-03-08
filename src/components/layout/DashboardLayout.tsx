@@ -28,9 +28,6 @@ export default function DashboardLayout({
   const [empresaInfo, setEmpresaInfo] = useState<{
     razon_social: string;
   } | null>(null);
-  const [consultorEmpresaInfo, setConsultorEmpresaInfo] = useState<{
-    razon_social: string;
-  } | null>(null);
 
   // Fetch empresa info
   useEffect(() => {
