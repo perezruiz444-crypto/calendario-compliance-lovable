@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { CheckSquare, FileText, AlertTriangle, Clock, Shield } from 'lucide-react';
+import { CheckSquare, FileText, Shield } from 'lucide-react';
 import { AnalyticsData } from '@/hooks/useAnalytics';
 import { Badge } from '@/components/ui/badge';
 
@@ -15,53 +15,6 @@ export default function ClienteAnalytics({ data }: ClienteAnalyticsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Resumen rápido */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tareas Pendientes</CardTitle>
-            <Clock className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.tareasPendientes}</div>
-            <p className="text-xs text-muted-foreground">En progreso o pendientes</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completadas</CardTitle>
-            <CheckSquare className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">{data.tareasCompletadas}</div>
-            <p className="text-xs text-muted-foreground">De {data.totalTareas} totales</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Docs. por Vencer</CardTitle>
-            <FileText className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-warning">{data.documentosPorVencer}</div>
-            <p className="text-xs text-muted-foreground">Próximos 30 días</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Solicitudes</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.solicitudesPendientes}</div>
-            <p className="text-xs text-muted-foreground">Pendientes de respuesta</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Progreso de cumplimiento */}
       <Card className="gradient-card shadow-card">
         <CardHeader>
@@ -113,11 +66,7 @@ export default function ClienteAnalytics({ data }: ClienteAnalyticsProps) {
                   <div className="flex-1">
                     <p className="font-medium">{venc.tipo}</p>
                     <p className="text-sm text-muted-foreground">
-                      Vence: {new Date(venc.fecha).toLocaleDateString('es', { 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}
+                      Vence: {new Date(venc.fecha).toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
                   <Badge variant={venc.dias <= 7 ? 'destructive' : venc.dias <= 30 ? 'secondary' : 'default'}>

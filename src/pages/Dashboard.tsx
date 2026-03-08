@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -6,35 +6,26 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { supabase } from '@/integrations/supabase/client';
-import { Building2, CheckSquare, Users, TrendingUp, Calendar, Clock, AlertCircle, Shield, FileText, BarChart3 } from 'lucide-react';
-import { format, isAfter, isBefore, addDays, differenceInDays, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { Building2, CheckSquare, Users, AlertCircle, AlertTriangle, TrendingUp, Calendar, Clock, Target, FileText, Plus } from 'lucide-react';
+import { format } from 'date-fns';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import DashboardObligaciones from '@/components/dashboard/DashboardObligaciones';
+import DashboardMensajes from '@/components/dashboard/DashboardMensajes';
 import AdminAnalytics from '@/components/dashboard/AdminAnalytics';
 import ConsultorAnalytics from '@/components/dashboard/ConsultorAnalytics';
 import ClienteAnalytics from '@/components/dashboard/ClienteAnalytics';
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Buenos días';
+  if (hour < 19) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const { data: analyticsData, loading: analyticsLoading } = useAnalytics();
-  const [stats, setStats] = useState({
-    empresas: 0,
-    tareasPendientes: 0,
-    tareasCompletadas: 0,
-    usuarios: 0,
-    cumplimiento: 0
-  });
-  const [proximasTareas, setProximasTareas] = useState<any[]>([]);
-  const [empresaCliente, setEmpresaCliente] = useState<any>(null);
-  const [loadingData, setLoadingData] = useState(true);
-  const [showAnalytics, setShowAnalytics] = useState(true);
-  const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
-  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
-  const [filtroPrioridad, setFiltroPrioridad] = useState<string>('todos');
+  const { data, loading: analyticsLoading } = useAnalytics();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -42,108 +33,15 @@ export default function Dashboard() {
     }
   }, [user, loading, navigate]);
 
-  useEffect(() => {
-    if (user && role) {
-      fetchDashboardData();
-    }
-  }, [user, role, selectedEmpresaId]);
+  if (loading || analyticsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
-  const fetchDashboardData = async () => {
-    setLoadingData(true);
-    try {
-      // For cliente role, fetch their empresa info
-      if (role === 'cliente') {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('empresa_id')
-          .eq('id', user?.id)
-          .maybeSingle();
-
-        if (profile?.empresa_id) {
-          const { data: empresa } = await supabase
-            .from('empresas')
-            .select('*')
-            .eq('id', profile.empresa_id)
-            .maybeSingle();
-          
-          setEmpresaCliente(empresa);
-        }
-      }
-
-      // Fetch empresas count
-      let empresasQuery = supabase.from('empresas').select('id', { count: 'exact', head: true });
-      
-      // Fetch tareas - filter by selected empresa if applicable
-      let tareasQuery = supabase
-        .from('tareas')
-        .select('*')
-        .order('fecha_vencimiento', { ascending: true })
-        .limit(5);
-      
-      // For consultores and admins, filter by selected empresa
-      if ((role === 'consultor' || role === 'administrador') && selectedEmpresaId && selectedEmpresaId !== 'all') {
-        tareasQuery = tareasQuery.eq('empresa_id', selectedEmpresaId);
-      }
-
-      // Fetch usuarios count (only for admin)
-      const usuariosQuery = role === 'administrador' 
-        ? supabase.from('profiles').select('id', { count: 'exact', head: true })
-        : null;
-
-      const [empresasRes, tareasRes, usuariosRes] = await Promise.all([
-        empresasQuery,
-        tareasQuery,
-        usuariosQuery
-      ]);
-
-      const tareas = tareasRes.data || [];
-      const pendientes = tareas.filter(t => t.estado === 'pendiente' || t.estado === 'en_progreso');
-      const completadas = tareas.filter(t => t.estado === 'completada');
-      const totalTareas = tareas.length;
-      const cumplimiento = totalTareas > 0 ? Math.round((completadas.length / totalTareas) * 100) : 0;
-
-      setStats({
-        empresas: empresasRes.count || 0,
-        tareasPendientes: pendientes.length,
-        tareasCompletadas: completadas.length,
-        usuarios: usuariosRes?.count || 0,
-        cumplimiento
-      });
-
-      // Set próximas tareas
-      const today = new Date();
-      const nextWeek = addDays(today, 7);
-      const tareasProximas = tareas
-        .filter(t => {
-          if (!t.fecha_vencimiento) return false;
-          const fecha = new Date(t.fecha_vencimiento);
-          return isAfter(fecha, today) && isBefore(fecha, nextWeek);
-        })
-        .slice(0, 5);
-
-      // Fetch empresa names for tareas
-      if (tareasProximas.length > 0) {
-        const { data: empresasData } = await supabase
-          .from('empresas')
-          .select('id, razon_social')
-          .in('id', tareasProximas.map(t => t.empresa_id));
-
-        const empresasMap = empresasData?.reduce((acc, emp) => {
-          acc[emp.id] = emp.razon_social;
-          return acc;
-        }, {} as Record<string, string>) || {};
-
-        setProximasTareas(tareasProximas.map(t => ({
-          ...t,
-          empresa_nombre: empresasMap[t.empresa_id]
-        })));
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoadingData(false);
-    }
-  };
+  const firstName = data.nombreUsuario?.split(' ')[0] || 'Usuario';
 
   const getPrioridadColor = (prioridad: string) => {
     switch (prioridad) {
@@ -159,7 +57,6 @@ export default function Dashboard() {
       case 'pendiente': return 'bg-warning text-warning-foreground';
       case 'en_progreso': return 'bg-primary text-primary-foreground';
       case 'completada': return 'bg-success text-success-foreground';
-      case 'cancelada': return 'bg-muted';
       default: return 'bg-muted';
     }
   };
@@ -171,248 +68,87 @@ export default function Dashboard() {
     cancelada: 'Cancelada'
   };
 
-  if (loading || loadingData || analyticsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  const statCards = [
-    {
-      title: 'Empresas',
-      value: stats.empresas.toString(),
-      description: 'Empresas registradas',
-      icon: Building2,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
-      show: role !== 'cliente'
-    },
-    {
-      title: 'Tareas Pendientes',
-      value: stats.tareasPendientes.toString(),
-      description: 'Requieren atención',
-      icon: AlertCircle,
-      color: 'text-warning',
-      bgColor: 'bg-warning/10',
-      show: true
-    },
-    {
-      title: 'Completadas',
-      value: stats.tareasCompletadas.toString(),
-      description: 'Tareas finalizadas',
-      icon: CheckSquare,
-      color: 'text-success',
-      bgColor: 'bg-success/10',
-      show: true
-    },
-    {
-      title: 'Usuarios',
-      value: stats.usuarios.toString(),
-      description: 'Usuarios activos',
-      icon: Users,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
-      show: role === 'administrador'
-    },
+  // KPI cards based on role
+  const kpiCards = role === 'administrador' ? [
+    { title: 'Empresas Activas', value: data.totalEmpresas || 0, icon: Building2, color: 'text-primary', bgColor: 'bg-primary/10', sub: 'Total registradas' },
+    { title: 'Total Usuarios', value: data.totalUsuarios || 0, icon: Users, color: 'text-primary', bgColor: 'bg-primary/10', sub: `${data.totalConsultores || 0} consultores` },
+    { title: 'Tareas Vencidas', value: data.tareasVencidas, icon: AlertTriangle, color: 'text-destructive', bgColor: 'bg-destructive/10', sub: 'Requieren atención', valueColor: 'text-destructive' },
+    { title: 'Tasa Cumplimiento', value: `${data.totalTareas > 0 ? Math.round((data.tareasCompletadas / data.totalTareas) * 100) : 0}%`, icon: TrendingUp, color: 'text-success', bgColor: 'bg-success/10', sub: `${data.tareasCompletadas} completadas`, valueColor: 'text-success' },
+  ] : role === 'consultor' ? [
+    { title: 'Mis Empresas', value: data.misEmpresas || 0, icon: Building2, color: 'text-primary', bgColor: 'bg-primary/10', sub: 'Empresas asignadas' },
+    { title: 'Tareas Asignadas', value: data.tareasAsignadas || 0, icon: Target, color: 'text-primary', bgColor: 'bg-primary/10', sub: 'Directamente a mí' },
+    { title: 'Tareas Vencidas', value: data.tareasVencidas, icon: AlertTriangle, color: 'text-destructive', bgColor: 'bg-destructive/10', sub: 'Requieren atención', valueColor: 'text-destructive' },
+    { title: 'Completadas', value: data.tareasCompletadas, icon: CheckSquare, color: 'text-success', bgColor: 'bg-success/10', sub: `De ${data.totalTareas} totales`, valueColor: 'text-success' },
+  ] : [
+    { title: 'Tareas Pendientes', value: data.tareasPendientes, icon: Clock, color: 'text-warning', bgColor: 'bg-warning/10', sub: 'En progreso o pendientes' },
+    { title: 'Completadas', value: data.tareasCompletadas, icon: CheckSquare, color: 'text-success', bgColor: 'bg-success/10', sub: `De ${data.totalTareas} totales`, valueColor: 'text-success' },
+    { title: 'Docs. por Vencer', value: data.documentosPorVencer || 0, icon: FileText, color: 'text-warning', bgColor: 'bg-warning/10', sub: 'Próximos 30 días' },
+    { title: 'Solicitudes', value: data.solicitudesPendientes || 0, icon: AlertCircle, color: 'text-primary', bgColor: 'bg-primary/10', sub: 'Pendientes de respuesta' },
   ];
-
-  const getVencimientoAlert = (fecha: string | null) => {
-    if (!fecha) return null;
-    const dias = differenceInDays(parseISO(fecha), new Date());
-    
-    if (dias < 0) return { color: 'destructive', text: 'Vencido', dias };
-    if (dias <= 30) return { color: 'warning', text: `${dias} días`, dias };
-    return { color: 'default', text: `${dias} días`, dias };
-  };
 
   return (
     <DashboardLayout currentPage="/dashboard">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-                Dashboard
-              </h1>
-              <p className="text-muted-foreground font-body">
-                Bienvenido {role === 'administrador' ? 'Administrador' : role === 'consultor' ? 'Consultor' : 'Cliente'}
-              </p>
-            </div>
-            <Button
-              variant={showAnalytics ? "default" : "outline"}
-              onClick={() => setShowAnalytics(!showAnalytics)}
-              className="gap-2"
-            >
-              <BarChart3 className="w-4 h-4" />
-              {showAnalytics ? 'Vista Simple' : 'Analytics'}
+        {/* Header con saludo y acciones rápidas */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-heading font-bold text-foreground">
+              {getGreeting()}, {firstName}
+            </h1>
+            <p className="text-muted-foreground font-body mt-1">
+              Aquí tienes un resumen de tu actividad
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Button onClick={() => navigate('/tareas')} size="sm" className="gap-1.5">
+              <Plus className="w-4 h-4" /> Nueva Tarea
+            </Button>
+            {role !== 'cliente' && (
+              <Button onClick={() => navigate('/empresas')} variant="outline" size="sm" className="gap-1.5">
+                <Building2 className="w-4 h-4" /> Empresas
+              </Button>
+            )}
+            <Button onClick={() => navigate('/calendario')} variant="outline" size="sm" className="gap-1.5">
+              <Calendar className="w-4 h-4" /> Calendario
             </Button>
           </div>
         </div>
-        {/* Analytics Section */}
-        {showAnalytics && (
-          <>
-            {role === 'administrador' && <AdminAnalytics data={analyticsData} />}
-            {role === 'consultor' && <ConsultorAnalytics data={analyticsData} />}
-            {role === 'cliente' && <ClienteAnalytics data={analyticsData} />}
-          </>
-        )}
 
-        {/* Vista Simple - Original Dashboard */}
-        {!showAnalytics && (
-          <>
-            {/* Widget Mi Empresa para Clientes */}
-            {role === 'cliente' && empresaCliente && (
-              <Card className="gradient-card shadow-elegant border-primary/20">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="font-heading flex items-center gap-2">
-                        <Building2 className="w-5 h-5" />
-                        {empresaCliente.razon_social}
-                      </CardTitle>
-                      <CardDescription className="font-body">
-                        RFC: {empresaCliente.rfc}
-                      </CardDescription>
-                    </div>
-                    <Button 
-                      onClick={() => navigate('/mi-empresa')}
-                      className="gradient-primary shadow-elegant font-heading"
-                    >
-                      Ver Detalles
-                    </Button>
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {kpiCards.map((kpi) => {
+            const Icon = kpi.icon;
+            return (
+              <Card key={kpi.title} className="gradient-card shadow-elegant hover:shadow-card transition-smooth hover-scale">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-heading font-medium">{kpi.title}</CardTitle>
+                  <div className={`${kpi.bgColor} p-2 rounded-lg`}>
+                    <Icon className={`w-4 h-4 ${kpi.color}`} />
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {/* Alertas de vencimiento */}
-                  {(empresaCliente.cert_iva_ieps_fecha_vencimiento || 
-                    empresaCliente.matriz_seguridad_fecha_vencimiento || 
-                    empresaCliente.immex_fecha_fin) && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-heading font-medium flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4" />
-                        Próximos Vencimientos
-                      </p>
-                      
-                      {empresaCliente.cert_iva_ieps_fecha_vencimiento && 
-                       (() => {
-                         const alert = getVencimientoAlert(empresaCliente.cert_iva_ieps_fecha_vencimiento);
-                         return alert && alert.dias <= 90 ? (
-                           <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
-                             <div className="flex items-center gap-2">
-                               <Shield className="w-4 h-4 text-muted-foreground" />
-                               <span className="text-xs font-body">Cert. IVA/IEPS</span>
-                             </div>
-                             <Badge variant={alert.color as any} className="text-xs">
-                               {alert.text}
-                             </Badge>
-                           </div>
-                         ) : null;
-                       })()}
-                      
-                      {empresaCliente.matriz_seguridad_fecha_vencimiento && 
-                       (() => {
-                         const alert = getVencimientoAlert(empresaCliente.matriz_seguridad_fecha_vencimiento);
-                         return alert && alert.dias <= 90 ? (
-                           <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
-                             <div className="flex items-center gap-2">
-                               <Shield className="w-4 h-4 text-muted-foreground" />
-                               <span className="text-xs font-body">Matriz Seguridad</span>
-                             </div>
-                             <Badge variant={alert.color as any} className="text-xs">
-                               {alert.text}
-                             </Badge>
-                           </div>
-                         ) : null;
-                       })()}
-                      
-                      {empresaCliente.immex_fecha_fin && 
-                       (() => {
-                         const alert = getVencimientoAlert(empresaCliente.immex_fecha_fin);
-                         return alert && alert.dias <= 90 ? (
-                           <div className="flex items-center justify-between p-2 bg-background/50 rounded border">
-                             <div className="flex items-center gap-2">
-                               <FileText className="w-4 h-4 text-muted-foreground" />
-                               <span className="text-xs font-body">Programa IMMEX</span>
-                             </div>
-                             <Badge variant={alert.color as any} className="text-xs">
-                               {alert.text}
-                             </Badge>
-                           </div>
-                         ) : null;
-                       })()}
-                    </div>
-                  )}
+                <CardContent>
+                  <div className={`text-2xl font-heading font-bold ${(kpi as any).valueColor || ''}`}>{kpi.value}</div>
+                  <p className="text-xs text-muted-foreground font-body mt-1">{kpi.sub}</p>
                 </CardContent>
               </Card>
-            )}
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {statCards.filter(stat => stat.show).map((stat) => {
-                const Icon = stat.icon;
-                return (
-                  <Card key={stat.title} className="gradient-card shadow-elegant hover:shadow-card transition-smooth hover-scale">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-heading font-medium">
-                        {stat.title}
-                      </CardTitle>
-                      <div className={`${stat.bgColor} p-2 rounded-lg`}>
-                        <Icon className={`w-4 h-4 ${stat.color}`} />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-heading font-bold">{stat.value}</div>
-                      <p className="text-xs text-muted-foreground font-body mt-1">
-                        {stat.description}
-                      </p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+            );
+          })}
+        </div>
 
-            {/* Cumplimiento Progress */}
-            <Card className="gradient-card shadow-card">
-              <CardHeader>
-                <CardTitle className="font-heading flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Progreso de Cumplimiento
-                </CardTitle>
-                <CardDescription className="font-body">
-                  Porcentaje de tareas completadas
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-heading font-medium">Cumplimiento General</span>
-                    <span className="text-2xl font-heading font-bold text-primary">{stats.cumplimiento}%</span>
-                  </div>
-                  <Progress value={stats.cumplimiento} className="h-3" />
-                </div>
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                  <div className="space-y-1">
-                    <p className="text-xs font-heading font-medium text-muted-foreground">Completadas</p>
-                    <p className="text-lg font-heading font-bold text-success">{stats.tareasCompletadas}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-heading font-medium text-muted-foreground">Pendientes</p>
-                    <p className="text-lg font-heading font-bold text-warning">{stats.tareasPendientes}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Charts section (role-specific) */}
+        {role === 'administrador' && <AdminAnalytics data={data} />}
+        {role === 'consultor' && <ConsultorAnalytics data={data} />}
+        {role === 'cliente' && <ClienteAnalytics data={data} />}
 
-            {/* Grid con Obligaciones, Próximas Tareas y Calendario */}
-            {(role === 'administrador' || role === 'consultor') && (
-              <DashboardObligaciones />
-            )}
+        {/* Obligaciones (admin/consultor) */}
+        {(role === 'administrador' || role === 'consultor') && (
+          <DashboardObligaciones />
+        )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Próximas Tareas */}
-              <Card className="gradient-card shadow-card">
+        {/* Bottom grid: Próximas Tareas + Mensajes */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Próximas Tareas */}
+          <Card className="gradient-card shadow-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -421,125 +157,73 @@ export default function Dashboard() {
                     Próximas Tareas
                   </CardTitle>
                   <CardDescription className="font-body">
-                    Tareas con vencimiento en los próximos 7 días
+                    Próximas 10 tareas por vencer
                   </CardDescription>
                 </div>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/tareas')}
-                  className="font-heading"
-                  size="sm"
-                >
+                <Button variant="outline" size="sm" onClick={() => navigate('/tareas')} className="font-heading">
                   Ver Todas
                 </Button>
               </div>
-              
-              {/* Filtros */}
-              <div className="flex gap-2 mt-4 flex-wrap">
-                <select
-                  value={filtroEstado}
-                  onChange={(e) => setFiltroEstado(e.target.value)}
-                  className="text-sm border rounded-md px-3 py-1.5 bg-background font-body"
-                >
-                  <option value="todos">Todos los estados</option>
-                  <option value="pendiente">Pendiente</option>
-                  <option value="en_progreso">En Progreso</option>
-                  <option value="completada">Completada</option>
-                </select>
-                
-                <select
-                  value={filtroPrioridad}
-                  onChange={(e) => setFiltroPrioridad(e.target.value)}
-                  className="text-sm border rounded-md px-3 py-1.5 bg-background font-body"
-                >
-                  <option value="todos">Todas las prioridades</option>
-                  <option value="alta">Alta</option>
-                  <option value="media">Media</option>
-                  <option value="baja">Baja</option>
-                </select>
-              </div>
             </CardHeader>
             <CardContent>
-              {(() => {
-                const tareasFiltradas = proximasTareas.filter(tarea => {
-                  const cumpleEstado = filtroEstado === 'todos' || tarea.estado === filtroEstado;
-                  const cumplePrioridad = filtroPrioridad === 'todos' || tarea.prioridad === filtroPrioridad;
-                  return cumpleEstado && cumplePrioridad;
-                });
-                
-                return tareasFiltradas.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="mx-auto w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mb-4">
-                      <CheckSquare className="w-8 h-8 text-success" />
-                    </div>
-                    <p className="text-muted-foreground font-body mb-2">
-                      {proximasTareas.length === 0 
-                        ? '¡Excelente! No hay tareas próximas a vencer' 
-                        : 'No hay tareas que coincidan con los filtros'}
-                    </p>
-                    <p className="text-sm text-muted-foreground font-body">
-                      {proximasTareas.length === 0 
-                        ? 'Todas las tareas urgentes están bajo control'
-                        : 'Intenta ajustar los filtros'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                    {tareasFiltradas.map((tarea) => (
-                      <div 
-                        key={tarea.id} 
-                        className="border rounded-lg p-4 hover:border-primary transition-colors cursor-pointer hover-scale animate-fade-in"
-                        onClick={() => navigate('/tareas')}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <h4 className="font-heading font-semibold">{tarea.titulo}</h4>
-                              <Badge className={getPrioridadColor(tarea.prioridad)} variant="secondary">
-                                {tarea.prioridad}
-                              </Badge>
-                              <Badge className={getEstadoColor(tarea.estado)}>
-                                {estadoLabels[tarea.estado]}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground font-body flex-wrap">
-                              {tarea.empresa_nombre && (
-                                <span className="flex items-center gap-1">
-                                  <Building2 className="w-3 h-3" />
-                                  {tarea.empresa_nombre}
-                                </span>
-                              )}
-                              {tarea.fecha_vencimiento && (
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  Vence: {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
-                                </span>
-                              )}
-                            </div>
+              {data.proximasTareas.length === 0 ? (
+                <div className="text-center py-8">
+                  <CheckSquare className="w-10 h-10 text-success/40 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">¡Excelente! No hay tareas próximas a vencer</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {data.proximasTareas.map((tarea) => (
+                    <div
+                      key={tarea.id}
+                      className="border rounded-lg p-3 hover:border-primary transition-colors cursor-pointer"
+                      onClick={() => navigate('/tareas')}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="font-heading font-medium text-sm truncate">{tarea.titulo}</span>
+                            <Badge className={getPrioridadColor(tarea.prioridad)} variant="secondary">
+                              {tarea.prioridad}
+                            </Badge>
+                            <Badge className={getEstadoColor(tarea.estado)}>
+                              {estadoLabels[tarea.estado] || tarea.estado}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            {tarea.empresa_nombre && (
+                              <span className="flex items-center gap-1">
+                                <Building2 className="w-3 h-3" /> {tarea.empresa_nombre}
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
+                            </span>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                );
-              })()}
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-              {/* Calendario Widget */}
-              <DashboardCalendar 
-                height="500px"
-                onEventClick={(event) => {
-                  if (event.resource.type === 'tarea') {
-                    navigate('/tareas');
-                  } else if (event.resource.type === 'documento') {
-                    navigate(`/empresas/${event.resource.data.empresa_id}`);
-                  }
-                }}
-              />
-            </div>
-          </>
-        )}
+          {/* Mensajes */}
+          <DashboardMensajes mensajes={data.mensajesRecientes} totalNoLeidos={data.mensajesNoLeidos} />
+        </div>
+
+        {/* Calendario */}
+        <DashboardCalendar
+          height="500px"
+          onEventClick={(event) => {
+            if (event.resource.type === 'tarea') {
+              navigate('/tareas');
+            } else if (event.resource.type === 'documento') {
+              navigate(`/empresas/${event.resource.data.empresa_id}`);
+            }
+          }}
+        />
       </div>
     </DashboardLayout>
   );
