@@ -321,6 +321,11 @@ export default function Configuraciones() {
             )}
           </TabsContent>
 
+          {/* Colors Tab */}
+          <TabsContent value="colores">
+            <ThemeEditor />
+          </TabsContent>
+
           {/* My Notifications Tab */}
           <TabsContent value="notificaciones">
             <UserNotificationPreferences />
