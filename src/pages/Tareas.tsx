@@ -698,6 +698,14 @@ export default function Tareas() {
   const tareasPendientes = filteredTareas.filter(t => t.estado === 'pendiente');
   const tareasEnProgreso = filteredTareas.filter(t => t.estado === 'en_progreso');
   const tareasCompletadas = filteredTareas.filter(t => t.estado === 'completada');
+  const tareasCanceladas = filteredTareas.filter(t => t.estado === 'cancelada');
+
+  // Totals for context
+  const totalPendientes = tareas.filter(t => t.estado === 'pendiente').length;
+  const totalEnProgreso = tareas.filter(t => t.estado === 'en_progreso').length;
+  const totalCompletadas = tareas.filter(t => t.estado === 'completada').length;
+  const totalCanceladas = tareas.filter(t => t.estado === 'cancelada').length;
+  const hasFiltersApplied = filterEmpresa !== 'all' || filterConsultor !== 'all' || filterEstado !== 'all' || filterPrioridad !== 'all' || searchQuery !== '';
 
   // Bulk actions
   const handleSelectTarea = (tareaId: string) => {
@@ -1028,7 +1036,7 @@ export default function Tareas() {
             <CardContent>
               <div className="text-2xl font-heading font-bold">{tareasPendientes.length}</div>
               <p className="text-xs font-body text-muted-foreground">
-                Tareas por iniciar
+                {hasFiltersApplied ? `de ${totalPendientes} total` : 'Tareas por iniciar'}
               </p>
             </CardContent>
           </Card>
@@ -1046,7 +1054,7 @@ export default function Tareas() {
             <CardContent>
               <div className="text-2xl font-heading font-bold">{tareasEnProgreso.length}</div>
               <p className="text-xs font-body text-muted-foreground">
-                En desarrollo
+                {hasFiltersApplied ? `de ${totalEnProgreso} total` : 'En desarrollo'}
               </p>
             </CardContent>
           </Card>
@@ -1064,7 +1072,25 @@ export default function Tareas() {
             <CardContent>
               <div className="text-2xl font-heading font-bold">{tareasCompletadas.length}</div>
               <p className="text-xs font-body text-muted-foreground">
-                Finalizadas
+                {hasFiltersApplied ? `de ${totalCompletadas} total` : 'Finalizadas'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="gradient-card shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            onClick={() => setFilterEstado('cancelada')}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-heading font-medium">
+                Canceladas
+              </CardTitle>
+              <X className="h-4 w-4 text-muted-foreground group-hover:text-destructive transition-colors" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-heading font-bold">{tareasCanceladas.length}</div>
+              <p className="text-xs font-body text-muted-foreground">
+                {hasFiltersApplied ? `de ${totalCanceladas} total` : 'Descartadas'}
               </p>
             </CardContent>
           </Card>
@@ -1185,7 +1211,7 @@ export default function Tareas() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[600px]">
+              <div className="rbc-calendar-enhanced h-[600px]">
                 <BigCalendar
                   localizer={localizer}
                   events={calendarEvents}
@@ -1194,6 +1220,7 @@ export default function Tareas() {
                   onSelectEvent={handleSelectEvent}
                   views={['month', 'week', 'day', 'agenda']}
                   defaultView="month"
+                  popup
                   style={{ height: '100%' }}
                   messages={{
                     next: 'Siguiente',
@@ -1212,25 +1239,30 @@ export default function Tareas() {
                   }}
                   eventPropGetter={(event) => {
                     const tarea = event.resource;
-                    let backgroundColor = 'hsl(var(--primary))';
+                    let color = 'hsl(var(--primary))';
                     
                     if (tarea.prioridad === 'urgente') {
-                      backgroundColor = 'hsl(var(--destructive))';
+                      color = 'hsl(0, 84%, 60%)';
                     } else if (tarea.prioridad === 'alta') {
-                      backgroundColor = 'hsl(25, 95%, 53%)';
+                      color = 'hsl(25, 95%, 53%)';
                     } else if (tarea.prioridad === 'media') {
-                      backgroundColor = 'hsl(var(--warning))';
+                      color = 'hsl(45, 93%, 47%)';
                     } else if (tarea.prioridad === 'baja') {
-                      backgroundColor = 'hsl(var(--success))';
+                      color = 'hsl(142, 76%, 36%)';
                     }
                     
                     return {
                       style: {
-                        backgroundColor,
-                        borderRadius: '4px',
-                        opacity: 0.9,
-                        color: 'white',
+                        backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
+                        borderLeft: `3px solid ${color}`,
+                        borderRadius: '6px',
+                        color: 'inherit',
                         border: 'none',
+                        borderLeftWidth: '3px',
+                        borderLeftStyle: 'solid',
+                        borderLeftColor: color,
+                        fontSize: '0.72rem',
+                        fontWeight: 500,
                         display: 'block'
                       }
                     };
@@ -1265,7 +1297,7 @@ export default function Tareas() {
               ))}
             </div>
             <DragOverlay>
-              {activeDragId ? (
+              {activeDragId && tareas.find(t => t.id === activeDragId) ? (
                 <div className="opacity-50">
                   <TareaCard
                     tarea={tareas.find(t => t.id === activeDragId)!}
