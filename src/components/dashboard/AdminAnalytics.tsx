@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { Building2, Users, TrendingUp, FileText, AlertTriangle } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { TrendingUp, Users, FileText } from 'lucide-react';
 import { AnalyticsData } from '@/hooks/useAnalytics';
 import { Badge } from '@/components/ui/badge';
 
@@ -8,63 +8,11 @@ interface AdminAnalyticsProps {
   data: AnalyticsData;
 }
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--warning))', 'hsl(var(--success))', 'hsl(var(--destructive))'];
-
 export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
   return (
     <div className="space-y-6">
-      {/* Resumen rápido */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Empresas Activas</CardTitle>
-            <Building2 className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.totalEmpresas}</div>
-            <p className="text-xs text-muted-foreground">Total registradas</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Usuarios</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.totalUsuarios}</div>
-            <p className="text-xs text-muted-foreground">{data.totalConsultores} consultores</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tareas Vencidas</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{data.tareasVencidas}</div>
-            <p className="text-xs text-muted-foreground">Requieren atención</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tasa Cumplimiento</CardTitle>
-            <TrendingUp className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">
-              {data.totalTareas > 0 ? Math.round((data.tareasCompletadas / data.totalTareas) * 100) : 0}%
-            </div>
-            <p className="text-xs text-muted-foreground">{data.tareasCompletadas} completadas</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Gráficos principales */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Performance últimos 6 meses */}
         <Card className="gradient-card shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -88,7 +36,6 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
           </CardContent>
         </Card>
 
-        {/* Tareas por consultor */}
         <Card className="gradient-card shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

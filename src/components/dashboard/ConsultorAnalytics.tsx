@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { Building2, CheckSquare, TrendingUp, FileText, AlertTriangle, Target } from 'lucide-react';
+import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { TrendingUp, CheckSquare, FileText } from 'lucide-react';
 import { AnalyticsData } from '@/hooks/useAnalytics';
 import { Badge } from '@/components/ui/badge';
 
@@ -13,56 +13,7 @@ const COLORS = ['hsl(var(--warning))', 'hsl(var(--primary))', 'hsl(var(--success
 export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
   return (
     <div className="space-y-6">
-      {/* Resumen rápido */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Mis Empresas</CardTitle>
-            <Building2 className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.misEmpresas}</div>
-            <p className="text-xs text-muted-foreground">Empresas asignadas</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tareas Asignadas</CardTitle>
-            <Target className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.tareasAsignadas}</div>
-            <p className="text-xs text-muted-foreground">Directamente a mí</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tareas Vencidas</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{data.tareasVencidas}</div>
-            <p className="text-xs text-muted-foreground">Requieren atención</p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completadas</CardTitle>
-            <CheckSquare className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">{data.tareasCompletadas}</div>
-            <p className="text-xs text-muted-foreground">De {data.totalTareas} totales</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Gráficos principales */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Performance mensual */}
         <Card className="gradient-card shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -79,20 +30,12 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="completadas" 
-                  stroke="hsl(var(--success))" 
-                  name="Completadas" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--success))', r: 4 }}
-                />
+                <Line type="monotone" dataKey="completadas" stroke="hsl(var(--success))" name="Completadas" strokeWidth={2} dot={{ fill: 'hsl(var(--success))', r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Tareas por estado */}
         <Card className="gradient-card shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -104,17 +47,8 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
-                <Pie
-                  data={data.tareasPorEstado || []}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ estado, cantidad }) => `${estado}: ${cantidad}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="cantidad"
-                >
-                  {(data.tareasPorEstado || []).map((entry, index) => (
+                <Pie data={data.tareasPorEstado || []} cx="50%" cy="50%" labelLine={false} label={({ estado, cantidad }) => `${estado}: ${cantidad}`} outerRadius={80} fill="#8884d8" dataKey="cantidad">
+                  {(data.tareasPorEstado || []).map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -126,7 +60,6 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
         </Card>
       </div>
 
-      {/* Documentos próximos a vencer */}
       {data.documentosVencimiento && data.documentosVencimiento.length > 0 && (
         <Card className="gradient-card shadow-card">
           <CardHeader>
