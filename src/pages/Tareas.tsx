@@ -14,6 +14,7 @@ import ManageCategoriesDialog from '@/components/tareas/ManageCategoriesDialog';
 import ManageCustomFields from '@/components/tareas/ManageCustomFields';
 import ManageTemplates from '@/components/tareas/ManageTemplates';
 import { ManageAutomations } from '@/components/tareas/ManageAutomations';
+import { ObligacionesActivasTab } from '@/components/obligaciones/ObligacionesActivasTab';
 import { Calendar as BigCalendar, momentLocalizer, View } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
