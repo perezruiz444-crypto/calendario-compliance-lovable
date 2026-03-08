@@ -170,7 +170,7 @@ export default function EmpresaDetail() {
         </div>
 
         {/* Obligaciones */}
-        <EmpresaObligacionesCard empresa={empresa} />
+        <EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
         <ObligacionesManager empresaId={id!} canEdit={canEdit} />
 
         {/* Main Content Grid */}
