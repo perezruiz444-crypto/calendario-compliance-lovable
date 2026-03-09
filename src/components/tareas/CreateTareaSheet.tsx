@@ -264,10 +264,23 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
       titulo: template.titulo_template.replace('[EMPRESA]', empresas.find(e => e.id === prev.empresa_id)?.razon_social || ''),
       descripcion: template.descripcion_template || '',
       prioridad: template.prioridad || 'media',
-      categoria_id: template.categoria_id || ''
+      categoria_id: template.categoria_id || '',
+      // Apply recurrence from template
+      es_recurrente: template.campos_personalizados?.es_recurrente || false,
+      frecuencia_recurrencia: template.campos_personalizados?.frecuencia_recurrencia || 'mensual',
+      intervalo_recurrencia: template.campos_personalizados?.intervalo_recurrencia || 1,
     }));
     if (template.duracion_dias && !formData.fecha_vencimiento) {
       setFormData(prev => ({ ...prev, fecha_vencimiento: format(addDays(new Date(), template.duracion_dias), 'yyyy-MM-dd') }));
+    }
+    // Apply subtareas from template
+    const subtareas = (template.subtareas_template as { titulo: string; descripcion?: string }[]) || [];
+    if (subtareas.length > 0) {
+      setPendingSubtareas(subtareas);
+    }
+    // Open scheduling section if recurrence was applied
+    if (template.campos_personalizados?.es_recurrente) {
+      setSchedulingOpen(true);
     }
   };
 
