@@ -195,7 +195,7 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
         categoria_id: formData.categoria_id || null,
         duracion_dias: formData.duracion_dias ? parseInt(formData.duracion_dias) : null,
         es_publico: formData.es_publico,
-        subtareas_template: subtareasTemplate.length > 0 ? subtareasTemplate : [],
+        subtareas_template: (subtareasTemplate.length > 0 ? subtareasTemplate : []) as unknown as Json,
         campos_personalizados: formData.es_recurrente ? {
           es_recurrente: true,
           frecuencia_recurrencia: formData.frecuencia_recurrencia,
