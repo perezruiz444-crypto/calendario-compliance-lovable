@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList, GanttChart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
-import QuickCreateTarea from '@/components/tareas/QuickCreateTarea';
+
 import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
 import ManageCategoriesDialog from '@/components/tareas/ManageCategoriesDialog';
 import ManageCustomFields from '@/components/tareas/ManageCustomFields';
@@ -311,7 +311,7 @@ export default function Tareas() {
 
   // Keyboard shortcuts
   useTareasShortcuts({
-    onQuickCreate: () => setQuickCreateOpen(true),
+    onQuickCreate: () => setDialogOpen(true),
     onSearch: () => searchInputRef.current?.focus(),
     onListView: () => setViewMode('list'),
     onKanbanView: () => setViewMode('kanban'),
@@ -320,7 +320,7 @@ export default function Tareas() {
   const [tareas, setTareas] = useState<any[]>([]);
   const [loadingTareas, setLoadingTareas] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [categoriesDialogOpen, setCategoriesDialogOpen] = useState(false);
   const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
@@ -872,9 +872,9 @@ export default function Tareas() {
                   <Zap className="w-4 h-4 mr-2" />
                   Automatizaciones
                 </Button>
-                <Button onClick={() => setQuickCreateOpen(true)} className="font-heading gradient-primary">
+                <Button onClick={() => setDialogOpen(true)} className="font-heading gradient-primary">
                   <Plus className="w-4 h-4 mr-2" />
-                  Quick Create
+                  Nueva Tarea
                 </Button>
               </>
             )}
@@ -1336,11 +1336,6 @@ export default function Tareas() {
       <CreateTareaSheet 
         open={dialogOpen} 
         onOpenChange={handleDialogClose}
-        onTareaCreated={fetchTareas}
-      />
-      <QuickCreateTarea
-        open={quickCreateOpen}
-        onOpenChange={setQuickCreateOpen}
         onTareaCreated={fetchTareas}
       />
       {selectedTareaId && (
