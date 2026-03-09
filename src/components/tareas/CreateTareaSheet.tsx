@@ -307,6 +307,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
     setSchedulingOpen(false);
     setDetailsOpen(false);
     setCustomRecurrence(false);
+    setPendingSubtareas([]);
   };
 
   const handleSubmit = async () => {
