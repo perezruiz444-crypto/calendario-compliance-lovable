@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, ClipboardList, ChevronDown, TrendingUp } from 'lucide-react';
+import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, ClipboardList, ChevronDown, TrendingUp, ListTodo, Loader2 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DocumentosManager } from '@/components/documentos/DocumentosManager';
@@ -26,6 +26,8 @@ export default function MiEmpresa() {
   const [domicilios, setDomicilios] = useState<any[]>([]);
   const [obligaciones, setObligaciones] = useState<any[]>([]);
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
+  const [tareas, setTareas] = useState<any[]>([]);
+  const [completingTarea, setCompletingTarea] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
@@ -44,16 +46,18 @@ export default function MiEmpresa() {
         .from('profiles').select('empresa_id').eq('id', user?.id).maybeSingle();
       if (!profile?.empresa_id) { setLoadingData(false); return; }
 
-      const [empresaRes, apoderadosRes, domiciliosRes, obligacionesRes] = await Promise.all([
+      const [empresaRes, apoderadosRes, domiciliosRes, obligacionesRes, tareasRes] = await Promise.all([
         supabase.from('empresas').select('*').eq('id', profile.empresa_id).maybeSingle(),
         supabase.from('apoderados_legales').select('*').eq('empresa_id', profile.empresa_id),
         supabase.from('domicilios_operacion').select('*').eq('empresa_id', profile.empresa_id),
         supabase.from('obligaciones').select('*').eq('empresa_id', profile.empresa_id).eq('activa', true).order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
+        supabase.from('tareas').select('*').eq('empresa_id', profile.empresa_id).neq('estado', 'completada').order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
       ]);
 
       setEmpresa(empresaRes.data);
       setApoderados(apoderadosRes.data || []);
       setDomicilios(domiciliosRes.data || []);
+      setTareas(tareasRes.data || []);
       const obs = obligacionesRes.data || [];
       setObligaciones(obs);
 
@@ -202,8 +206,12 @@ export default function MiEmpresa() {
 
         {/* Tabs */}
         <Tabs defaultValue="obligaciones" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="obligaciones" className="font-heading">Obligaciones</TabsTrigger>
+            <TabsTrigger value="tareas" className="font-heading flex items-center gap-1.5">
+              Tareas
+              {tareas.length > 0 && <Badge variant="secondary" className="text-xs h-5 px-1.5">{tareas.length}</Badge>}
+            </TabsTrigger>
             <TabsTrigger value="programas" className="font-heading">Programas</TabsTrigger>
             <TabsTrigger value="certificaciones" className="font-heading">Certificaciones</TabsTrigger>
             <TabsTrigger value="domicilios" className="font-heading">Domicilios</TabsTrigger>
@@ -345,6 +353,80 @@ export default function MiEmpresa() {
                     </div>
                   );
                 })()}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tareas Tab */}
+          <TabsContent value="tareas" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-heading flex items-center gap-2">
+                  <ListTodo className="w-5 h-5" />
+                  Mis Tareas Pendientes
+                  <Badge variant="secondary" className="ml-2">{tareas.length}</Badge>
+                </CardTitle>
+                <CardDescription>Tareas asignadas a tu empresa que puedes marcar como completadas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {tareas.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">No hay tareas pendientes 🎉</p>
+                ) : (
+                  <div className="space-y-2">
+                    {tareas.map(tarea => {
+                      const isCompleting = completingTarea === tarea.id;
+                      const prioridadColors: Record<string, string> = {
+                        alta: 'bg-destructive/10 text-destructive border-destructive/30',
+                        media: 'bg-warning/10 text-warning border-warning/30',
+                        baja: 'bg-muted text-muted-foreground',
+                      };
+                      return (
+                        <div key={tarea.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                          <Checkbox
+                            disabled={isCompleting}
+                            onCheckedChange={async () => {
+                              setCompletingTarea(tarea.id);
+                              const { error } = await supabase
+                                .from('tareas')
+                                .update({ estado: 'completada' })
+                                .eq('id', tarea.id);
+                              if (error) {
+                                toast.error('Error al completar tarea');
+                              } else {
+                                setTareas(prev => prev.filter(t => t.id !== tarea.id));
+                                toast.success('Tarea completada');
+                              }
+                              setCompletingTarea(null);
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-heading font-medium text-sm truncate">{tarea.titulo}</p>
+                            {tarea.descripcion && (
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">{tarea.descripcion}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {tarea.prioridad && (
+                                <Badge variant="outline" className={`text-xs ${prioridadColors[tarea.prioridad] || ''}`}>
+                                  {tarea.prioridad}
+                                </Badge>
+                              )}
+                              {tarea.fecha_vencimiento && (
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {format(parseISO(tarea.fecha_vencimiento), 'dd/MM/yyyy', { locale: es })}
+                                </span>
+                              )}
+                              <Badge variant="outline" className="text-xs">
+                                {tarea.estado === 'en_progreso' ? 'En progreso' : 'Pendiente'}
+                              </Badge>
+                            </div>
+                          </div>
+                          {isCompleting && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
