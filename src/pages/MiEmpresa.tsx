@@ -57,6 +57,7 @@ export default function MiEmpresa() {
       setEmpresa(empresaRes.data);
       setApoderados(apoderadosRes.data || []);
       setDomicilios(domiciliosRes.data || []);
+      setTareas(tareasRes.data || []);
       const obs = obligacionesRes.data || [];
       setObligaciones(obs);
 
