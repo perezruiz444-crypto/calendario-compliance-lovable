@@ -320,7 +320,7 @@ export default function Tareas() {
   const [tareas, setTareas] = useState<any[]>([]);
   const [loadingTareas, setLoadingTareas] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [categoriesDialogOpen, setCategoriesDialogOpen] = useState(false);
   const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
