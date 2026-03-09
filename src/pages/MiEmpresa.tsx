@@ -26,6 +26,8 @@ export default function MiEmpresa() {
   const [domicilios, setDomicilios] = useState<any[]>([]);
   const [obligaciones, setObligaciones] = useState<any[]>([]);
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
+  const [tareas, setTareas] = useState<any[]>([]);
+  const [completingTarea, setCompletingTarea] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
