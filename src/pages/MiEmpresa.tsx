@@ -206,8 +206,12 @@ export default function MiEmpresa() {
 
         {/* Tabs */}
         <Tabs defaultValue="obligaciones" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="obligaciones" className="font-heading">Obligaciones</TabsTrigger>
+            <TabsTrigger value="tareas" className="font-heading flex items-center gap-1.5">
+              Tareas
+              {tareas.length > 0 && <Badge variant="secondary" className="text-xs h-5 px-1.5">{tareas.length}</Badge>}
+            </TabsTrigger>
             <TabsTrigger value="programas" className="font-heading">Programas</TabsTrigger>
             <TabsTrigger value="certificaciones" className="font-heading">Certificaciones</TabsTrigger>
             <TabsTrigger value="domicilios" className="font-heading">Domicilios</TabsTrigger>
