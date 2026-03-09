@@ -176,7 +176,7 @@ export default function DashboardCalendar({ onEventClick, height = '500px' }: Da
         tareas.forEach(tarea => {
           // Recurring tasks: generate all occurrences
           if (tarea.es_recurrente && tarea.frecuencia_recurrencia) {
-            const startDate = tarea.fecha_inicio_recurrencia || tarea.fecha_vencimiento;
+            const startDate = tarea.fecha_inicio_recurrencia || tarea.fecha_vencimiento || (tarea.created_at ? tarea.created_at.split('T')[0] : null);
             if (startDate) {
               const occurrences = generateRecurringDates(
                 startDate,
