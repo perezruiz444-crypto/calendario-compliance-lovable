@@ -872,9 +872,9 @@ export default function Tareas() {
                   <Zap className="w-4 h-4 mr-2" />
                   Automatizaciones
                 </Button>
-                <Button onClick={() => setQuickCreateOpen(true)} className="font-heading gradient-primary">
+                <Button onClick={() => setDialogOpen(true)} className="font-heading gradient-primary">
                   <Plus className="w-4 h-4 mr-2" />
-                  Quick Create
+                  Nueva Tarea
                 </Button>
               </>
             )}
