@@ -311,7 +311,7 @@ export default function Tareas() {
 
   // Keyboard shortcuts
   useTareasShortcuts({
-    onQuickCreate: () => setQuickCreateOpen(true),
+    onQuickCreate: () => setDialogOpen(true),
     onSearch: () => searchInputRef.current?.focus(),
     onListView: () => setViewMode('list'),
     onKanbanView: () => setViewMode('kanban'),
