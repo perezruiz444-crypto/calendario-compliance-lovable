@@ -1338,11 +1338,6 @@ export default function Tareas() {
         onOpenChange={handleDialogClose}
         onTareaCreated={fetchTareas}
       />
-      <QuickCreateTarea
-        open={quickCreateOpen}
-        onOpenChange={setQuickCreateOpen}
-        onTareaCreated={fetchTareas}
-      />
       {selectedTareaId && (
         <TareaDetailSheet
           open={detailDialogOpen}
