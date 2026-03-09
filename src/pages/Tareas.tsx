@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList, GanttChart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
-import QuickCreateTarea from '@/components/tareas/QuickCreateTarea';
+
 import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
 import ManageCategoriesDialog from '@/components/tareas/ManageCategoriesDialog';
 import ManageCustomFields from '@/components/tareas/ManageCustomFields';
