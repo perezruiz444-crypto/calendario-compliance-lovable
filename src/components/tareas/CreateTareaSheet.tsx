@@ -339,8 +339,21 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
         fecha_fin_recurrencia: formData.es_recurrente && formData.fecha_fin_recurrencia ? formData.fecha_fin_recurrencia : null,
       }));
 
-      const { error } = await supabase.from('tareas').insert(tareasToInsert);
+      const { data: insertedTareas, error } = await supabase.from('tareas').insert(tareasToInsert).select('id');
       if (error) throw error;
+
+      // Create subtareas from template if any
+      if (pendingSubtareas.length > 0 && insertedTareas && insertedTareas.length > 0) {
+        const subtareasToInsert = insertedTareas.flatMap(tarea =>
+          pendingSubtareas.map((sub, idx) => ({
+            tarea_id: tarea.id,
+            titulo: sub.titulo,
+            descripcion: sub.descripcion || null,
+            orden: idx,
+          }))
+        );
+        await supabase.from('subtareas').insert(subtareasToInsert);
+      }
 
       setSuccessAnim(true);
       setTimeout(() => {
