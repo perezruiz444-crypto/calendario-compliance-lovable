@@ -128,6 +128,7 @@ function SectionHeader({ icon: Icon, title, summary, isOpen, onToggle }: {
 export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, defaultEmpresaId, duplicateData }: CreateTareaSheetProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [pendingSubtareas, setPendingSubtareas] = useState<{ titulo: string; descripcion?: string }[]>([]);
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [consultores, setConsultores] = useState<any[]>([]);
   const [empresaSearch, setEmpresaSearch] = useState('');
