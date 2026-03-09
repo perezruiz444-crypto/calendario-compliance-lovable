@@ -357,6 +357,80 @@ export default function MiEmpresa() {
             </Card>
           </TabsContent>
 
+          {/* Tareas Tab */}
+          <TabsContent value="tareas" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-heading flex items-center gap-2">
+                  <ListTodo className="w-5 h-5" />
+                  Mis Tareas Pendientes
+                  <Badge variant="secondary" className="ml-2">{tareas.length}</Badge>
+                </CardTitle>
+                <CardDescription>Tareas asignadas a tu empresa que puedes marcar como completadas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {tareas.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">No hay tareas pendientes 🎉</p>
+                ) : (
+                  <div className="space-y-2">
+                    {tareas.map(tarea => {
+                      const isCompleting = completingTarea === tarea.id;
+                      const prioridadColors: Record<string, string> = {
+                        alta: 'bg-destructive/10 text-destructive border-destructive/30',
+                        media: 'bg-warning/10 text-warning border-warning/30',
+                        baja: 'bg-muted text-muted-foreground',
+                      };
+                      return (
+                        <div key={tarea.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                          <Checkbox
+                            disabled={isCompleting}
+                            onCheckedChange={async () => {
+                              setCompletingTarea(tarea.id);
+                              const { error } = await supabase
+                                .from('tareas')
+                                .update({ estado: 'completada' })
+                                .eq('id', tarea.id);
+                              if (error) {
+                                toast.error('Error al completar tarea');
+                              } else {
+                                setTareas(prev => prev.filter(t => t.id !== tarea.id));
+                                toast.success('Tarea completada');
+                              }
+                              setCompletingTarea(null);
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-heading font-medium text-sm truncate">{tarea.titulo}</p>
+                            {tarea.descripcion && (
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">{tarea.descripcion}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {tarea.prioridad && (
+                                <Badge variant="outline" className={`text-xs ${prioridadColors[tarea.prioridad] || ''}`}>
+                                  {tarea.prioridad}
+                                </Badge>
+                              )}
+                              {tarea.fecha_vencimiento && (
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {format(parseISO(tarea.fecha_vencimiento), 'dd/MM/yyyy', { locale: es })}
+                                </span>
+                              )}
+                              <Badge variant="outline" className="text-xs">
+                                {tarea.estado === 'en_progreso' ? 'En progreso' : 'Pendiente'}
+                              </Badge>
+                            </div>
+                          </div>
+                          {isCompleting && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Programas Tab */}
           <TabsContent value="programas" className="space-y-4">
             {empresa.immex_numero && (

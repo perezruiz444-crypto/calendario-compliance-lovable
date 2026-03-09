@@ -99,6 +99,88 @@ export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaForm
       </div>
 
       <div className="space-y-2">
+        <Label className="font-heading">Fecha de Última Renovación</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !formData.prosec_fecha_ultima_renovacion && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {formData.prosec_fecha_ultima_renovacion ? (
+                format(new Date(formData.prosec_fecha_ultima_renovacion), "PPP")
+              ) : (
+                <span>Seleccionar fecha</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 z-50" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <Calendar
+              mode="single"
+              selected={formData.prosec_fecha_ultima_renovacion ? new Date(formData.prosec_fecha_ultima_renovacion + 'T12:00:00') : undefined}
+              onSelect={(date) => {
+                if (date) {
+                  const year = date.getFullYear();
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const day = String(date.getDate()).padStart(2, '0');
+                  setFormData({ ...formData, prosec_fecha_ultima_renovacion: `${year}-${month}-${day}` });
+                }
+              }}
+              initialFocus
+              captionLayout="dropdown-buttons"
+              fromYear={1990}
+              toYear={2100}
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="font-heading">Fecha de Siguiente Renovación</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !formData.prosec_fecha_siguiente_renovacion && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {formData.prosec_fecha_siguiente_renovacion ? (
+                format(new Date(formData.prosec_fecha_siguiente_renovacion), "PPP")
+              ) : (
+                <span>Seleccionar fecha</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 z-50" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <Calendar
+              mode="single"
+              selected={formData.prosec_fecha_siguiente_renovacion ? new Date(formData.prosec_fecha_siguiente_renovacion + 'T12:00:00') : undefined}
+              onSelect={(date) => {
+                if (date) {
+                  const year = date.getFullYear();
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const day = String(date.getDate()).padStart(2, '0');
+                  setFormData({ ...formData, prosec_fecha_siguiente_renovacion: `${year}-${month}-${day}` });
+                }
+              }}
+              initialFocus
+              captionLayout="dropdown-buttons"
+              fromYear={1990}
+              toYear={2100}
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <div className="space-y-2">
         <Label className="font-heading">Sectores</Label>
         <div className="flex gap-2">
           <Input
