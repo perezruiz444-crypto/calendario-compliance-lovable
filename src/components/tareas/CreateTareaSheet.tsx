@@ -128,6 +128,7 @@ function SectionHeader({ icon: Icon, title, summary, isOpen, onToggle }: {
 export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, defaultEmpresaId, duplicateData }: CreateTareaSheetProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [pendingSubtareas, setPendingSubtareas] = useState<{ titulo: string; descripcion?: string }[]>([]);
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [consultores, setConsultores] = useState<any[]>([]);
   const [empresaSearch, setEmpresaSearch] = useState('');
@@ -263,10 +264,23 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
       titulo: template.titulo_template.replace('[EMPRESA]', empresas.find(e => e.id === prev.empresa_id)?.razon_social || ''),
       descripcion: template.descripcion_template || '',
       prioridad: template.prioridad || 'media',
-      categoria_id: template.categoria_id || ''
+      categoria_id: template.categoria_id || '',
+      // Apply recurrence from template
+      es_recurrente: template.campos_personalizados?.es_recurrente || false,
+      frecuencia_recurrencia: template.campos_personalizados?.frecuencia_recurrencia || 'mensual',
+      intervalo_recurrencia: template.campos_personalizados?.intervalo_recurrencia || 1,
     }));
     if (template.duracion_dias && !formData.fecha_vencimiento) {
       setFormData(prev => ({ ...prev, fecha_vencimiento: format(addDays(new Date(), template.duracion_dias), 'yyyy-MM-dd') }));
+    }
+    // Apply subtareas from template
+    const subtareas = (template.subtareas_template as { titulo: string; descripcion?: string }[]) || [];
+    if (subtareas.length > 0) {
+      setPendingSubtareas(subtareas);
+    }
+    // Open scheduling section if recurrence was applied
+    if (template.campos_personalizados?.es_recurrente) {
+      setSchedulingOpen(true);
     }
   };
 
@@ -293,6 +307,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
     setSchedulingOpen(false);
     setDetailsOpen(false);
     setCustomRecurrence(false);
+    setPendingSubtareas([]);
   };
 
   const handleSubmit = async () => {
@@ -324,8 +339,21 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
         fecha_fin_recurrencia: formData.es_recurrente && formData.fecha_fin_recurrencia ? formData.fecha_fin_recurrencia : null,
       }));
 
-      const { error } = await supabase.from('tareas').insert(tareasToInsert);
+      const { data: insertedTareas, error } = await supabase.from('tareas').insert(tareasToInsert).select('id');
       if (error) throw error;
+
+      // Create subtareas from template if any
+      if (pendingSubtareas.length > 0 && insertedTareas && insertedTareas.length > 0) {
+        const subtareasToInsert = insertedTareas.flatMap(tarea =>
+          pendingSubtareas.map((sub, idx) => ({
+            tarea_id: tarea.id,
+            titulo: sub.titulo,
+            descripcion: sub.descripcion || null,
+            orden: idx,
+          }))
+        );
+        await supabase.from('subtareas').insert(subtareasToInsert);
+      }
 
       setSuccessAnim(true);
       setTimeout(() => {

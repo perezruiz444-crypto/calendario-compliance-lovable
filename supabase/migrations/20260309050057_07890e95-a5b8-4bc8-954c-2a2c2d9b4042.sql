@@ -1,0 +1,1 @@
+ALTER TABLE public.tarea_templates ADD COLUMN subtareas_template jsonb DEFAULT '[]'::jsonb;

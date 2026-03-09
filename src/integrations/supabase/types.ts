@@ -1326,6 +1326,7 @@ export type Database = {
           id: string
           nombre: string
           prioridad: string | null
+          subtareas_template: Json | null
           titulo_template: string
           updated_at: string | null
           veces_usado: number | null
@@ -1343,6 +1344,7 @@ export type Database = {
           id?: string
           nombre: string
           prioridad?: string | null
+          subtareas_template?: Json | null
           titulo_template: string
           updated_at?: string | null
           veces_usado?: number | null
@@ -1360,6 +1362,7 @@ export type Database = {
           id?: string
           nombre?: string
           prioridad?: string | null
+          subtareas_template?: Json | null
           titulo_template?: string
           updated_at?: string | null
           veces_usado?: number | null
