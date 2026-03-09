@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -19,7 +20,7 @@ import { CategorySelector } from './CategorySelector';
 import { FileAttachments } from './FileAttachments';
 import { TemplateSelector } from './TemplateSelector';
 import { cn } from '@/lib/utils';
-import { format, addDays, addWeeks } from 'date-fns';
+import { format, addDays, addWeeks, addMonths, addYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   CalendarIcon, ChevronDown, Repeat, Paperclip, Tag, Search, Check, X, Sparkles, Building2, User
@@ -39,6 +40,42 @@ const PRIORIDADES = [
   { value: 'baja', label: 'Baja', color: 'bg-success/15 text-success-foreground border-success/30 hover:bg-success/25' },
 ] as const;
 
+const FRECUENCIA_LABELS: Record<string, string> = {
+  diaria: 'día(s)',
+  semanal: 'semana(s)',
+  quincenal: 'quincena(s)',
+  mensual: 'mes(es)',
+  trimestral: 'trimestre(s)',
+  anual: 'año(s)',
+};
+
+function generatePreviewDates(
+  startDateStr: string,
+  endDateStr: string | null,
+  frecuencia: string,
+  intervalo: number,
+  count: number = 5
+): Date[] {
+  const dates: Date[] = [];
+  const start = new Date(startDateStr + 'T12:00:00');
+  const maxDate = endDateStr ? new Date(endDateStr + 'T12:00:00') : addYears(new Date(), 1);
+  let current = new Date(start);
+
+  while (dates.length < count && current <= maxDate) {
+    dates.push(new Date(current));
+    switch (frecuencia) {
+      case 'diaria': current = addDays(current, intervalo); break;
+      case 'semanal': current = addDays(current, 7 * intervalo); break;
+      case 'quincenal': current = addDays(current, 14 * intervalo); break;
+      case 'mensual': current = addMonths(current, intervalo); break;
+      case 'trimestral': current = addMonths(current, 3 * intervalo); break;
+      case 'anual': current = addYears(current, intervalo); break;
+      default: current = addMonths(current, intervalo);
+    }
+  }
+  return dates;
+}
+
 export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, defaultEmpresaId, duplicateData }: CreateTareaSheetProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -48,8 +85,9 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
   const [attachments, setAttachments] = useState<any[]>([]);
   const [selectedEmpresaIds, setSelectedEmpresaIds] = useState<string[]>(defaultEmpresaId ? [defaultEmpresaId] : []);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [recurrenceOpen, setRecurrenceOpen] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [recStartPickerOpen, setRecStartPickerOpen] = useState(false);
+  const [recEndPickerOpen, setRecEndPickerOpen] = useState(false);
   const [successAnim, setSuccessAnim] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -82,6 +120,14 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
   useEffect(() => {
     if (open && formData.empresa_id) fetchConsultores();
   }, [open, formData.empresa_id]);
+
+  // Auto-fill recurrence start date when enabling recurrence
+  useEffect(() => {
+    if (formData.es_recurrente && !formData.fecha_inicio_recurrencia) {
+      const autoStart = formData.fecha_vencimiento || format(new Date(), 'yyyy-MM-dd');
+      setFormData(prev => ({ ...prev, fecha_inicio_recurrencia: autoStart }));
+    }
+  }, [formData.es_recurrente]);
 
   const fetchEmpresas = async () => {
     const { data } = await supabase.from('empresas').select('id, razon_social').order('razon_social');
@@ -120,6 +166,28 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
     return Math.round((filled / total) * 100);
   }, [formData]);
 
+  // Preview of next occurrences
+  const previewDates = useMemo(() => {
+    if (!formData.es_recurrente || !formData.fecha_inicio_recurrencia) return [];
+    return generatePreviewDates(
+      formData.fecha_inicio_recurrencia,
+      formData.fecha_fin_recurrencia || null,
+      formData.frecuencia_recurrencia,
+      formData.intervalo_recurrencia,
+      5
+    );
+  }, [formData.es_recurrente, formData.fecha_inicio_recurrencia, formData.fecha_fin_recurrencia, formData.frecuencia_recurrencia, formData.intervalo_recurrencia]);
+
+  // Human-readable recurrence summary
+  const recurrenceSummary = useMemo(() => {
+    if (!formData.es_recurrente) return '';
+    const freqLabel = FRECUENCIA_LABELS[formData.frecuencia_recurrencia] || formData.frecuencia_recurrencia;
+    const cada = formData.intervalo_recurrencia > 1 ? `cada ${formData.intervalo_recurrencia} ${freqLabel}` : `cada ${freqLabel.replace('(s)', '').replace('(es)', '')}`;
+    const desde = formData.fecha_inicio_recurrencia ? ` desde ${format(new Date(formData.fecha_inicio_recurrencia + 'T12:00:00'), 'dd MMM yyyy', { locale: es })}` : '';
+    const hasta = formData.fecha_fin_recurrencia ? ` hasta ${format(new Date(formData.fecha_fin_recurrencia + 'T12:00:00'), 'dd MMM yyyy', { locale: es })}` : ' (sin fecha fin)';
+    return `Se repite ${cada}${desde}${hasta}`;
+  }, [formData.es_recurrente, formData.frecuencia_recurrencia, formData.intervalo_recurrencia, formData.fecha_inicio_recurrencia, formData.fecha_fin_recurrencia]);
+
   const setQuickDate = (type: 'today' | 'tomorrow' | 'nextWeek') => {
     const now = new Date();
     let date: Date;
@@ -155,12 +223,16 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
     setSelectedEmpresaIds(defaultEmpresaId ? [defaultEmpresaId] : []);
     setEmpresaSearch('');
     setAdvancedOpen(false);
-    setRecurrenceOpen(false);
   };
 
   const handleSubmit = async () => {
     if (!formData.titulo.trim() || !formData.empresa_id) {
       toast.error('Título y empresa son requeridos');
+      return;
+    }
+    // Validate recurrence has a start date
+    if (formData.es_recurrente && !formData.fecha_inicio_recurrencia) {
+      toast.error('Las tareas recurrentes necesitan una fecha de inicio');
       return;
     }
     setLoading(true);
@@ -401,6 +473,132 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
               </div>
             </div>
 
+            {/* Recurrence toggle — prominent, right below due date */}
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Repeat className="h-4 w-4 text-primary" />
+                  <Label className="font-heading text-sm cursor-pointer">Tarea recurrente</Label>
+                </div>
+                <Switch
+                  checked={formData.es_recurrente}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, es_recurrente: checked }))}
+                />
+              </div>
+
+              {formData.es_recurrente && (
+                <div className="space-y-4 pt-1 animate-in slide-in-from-top-2 duration-200">
+                  {/* Frequency + interval */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">Frecuencia</Label>
+                      <Select value={formData.frecuencia_recurrencia} onValueChange={(v) => setFormData(prev => ({ ...prev, frecuencia_recurrencia: v }))}>
+                        <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="diaria">Diaria</SelectItem>
+                          <SelectItem value="semanal">Semanal</SelectItem>
+                          <SelectItem value="quincenal">Quincenal</SelectItem>
+                          <SelectItem value="mensual">Mensual</SelectItem>
+                          <SelectItem value="trimestral">Trimestral</SelectItem>
+                          <SelectItem value="anual">Anual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">Cada</Label>
+                      <Input type="number" min="1" value={formData.intervalo_recurrencia}
+                        onChange={(e) => setFormData(prev => ({ ...prev, intervalo_recurrencia: parseInt(e.target.value) || 1 }))}
+                        className="h-9 text-sm" />
+                    </div>
+                  </div>
+
+                  {/* Start / End dates with Calendar pickers */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">Inicio *</Label>
+                      <Popover open={recStartPickerOpen} onOpenChange={setRecStartPickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className={cn("w-full h-9 text-sm justify-start font-normal", !formData.fecha_inicio_recurrencia && "text-muted-foreground")}>
+                            <CalendarIcon className="h-3.5 w-3.5 mr-2 opacity-50" />
+                            {formData.fecha_inicio_recurrencia
+                              ? format(new Date(formData.fecha_inicio_recurrencia + 'T12:00:00'), 'dd MMM yyyy', { locale: es })
+                              : 'Seleccionar'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={formData.fecha_inicio_recurrencia ? new Date(formData.fecha_inicio_recurrencia + 'T12:00:00') : undefined}
+                            onSelect={(date) => {
+                              if (date) setFormData(prev => ({ ...prev, fecha_inicio_recurrencia: format(date, 'yyyy-MM-dd') }));
+                              setRecStartPickerOpen(false);
+                            }}
+                            className="p-3 pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">Fin (opcional)</Label>
+                      <Popover open={recEndPickerOpen} onOpenChange={setRecEndPickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className={cn("w-full h-9 text-sm justify-start font-normal", !formData.fecha_fin_recurrencia && "text-muted-foreground")}>
+                            <CalendarIcon className="h-3.5 w-3.5 mr-2 opacity-50" />
+                            {formData.fecha_fin_recurrencia
+                              ? format(new Date(formData.fecha_fin_recurrencia + 'T12:00:00'), 'dd MMM yyyy', { locale: es })
+                              : 'Sin fin'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={formData.fecha_fin_recurrencia ? new Date(formData.fecha_fin_recurrencia + 'T12:00:00') : undefined}
+                            onSelect={(date) => {
+                              if (date) setFormData(prev => ({ ...prev, fecha_fin_recurrencia: format(date, 'yyyy-MM-dd') }));
+                              setRecEndPickerOpen(false);
+                            }}
+                            className="p-3 pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {formData.fecha_fin_recurrencia && (
+                        <button type="button" onClick={() => setFormData(prev => ({ ...prev, fecha_fin_recurrencia: '' }))}
+                          className="text-xs text-muted-foreground hover:text-destructive mt-1 transition-colors">
+                          Quitar fecha fin
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Human-readable summary */}
+                  {recurrenceSummary && (
+                    <p className="text-xs text-muted-foreground italic bg-muted/50 rounded-md px-3 py-2">
+                      🔄 {recurrenceSummary}
+                    </p>
+                  )}
+
+                  {/* Preview of next occurrences */}
+                  {previewDates.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Próximas ocurrencias</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {previewDates.map((d, i) => (
+                          <Badge key={i} variant="outline" className="text-xs font-normal">
+                            {format(d, 'dd MMM yyyy', { locale: es })}
+                          </Badge>
+                        ))}
+                        {previewDates.length >= 5 && (
+                          <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
+                            ...más
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Descripción */}
             <div>
               <Label className="font-heading text-xs text-muted-foreground mb-1.5 block">Descripción</Label>
@@ -462,65 +660,6 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                   </Label>
                   <FileAttachments attachments={attachments} onAttachmentsChange={setAttachments} />
                 </div>
-
-                {/* Recurrence */}
-                <Collapsible open={recurrenceOpen} onOpenChange={setRecurrenceOpen}>
-                  <CollapsibleTrigger asChild>
-                    <div className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={formData.es_recurrente}
-                        onCheckedChange={(checked) => {
-                          setFormData(prev => ({ ...prev, es_recurrente: !!checked }));
-                          if (checked) setRecurrenceOpen(true);
-                        }}
-                      />
-                      <Label className="font-heading text-sm flex items-center gap-1.5 cursor-pointer">
-                        <Repeat className="h-3.5 w-3.5" />
-                        Tarea recurrente
-                      </Label>
-                    </div>
-                  </CollapsibleTrigger>
-                  {formData.es_recurrente && (
-                    <CollapsibleContent className="space-y-3 pt-3 pl-6 border-l-2 border-primary/20 ml-2 animate-in slide-in-from-top-2">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Frecuencia</Label>
-                          <Select value={formData.frecuencia_recurrencia} onValueChange={(v) => setFormData(prev => ({ ...prev, frecuencia_recurrencia: v }))}>
-                            <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="diaria">Diaria</SelectItem>
-                              <SelectItem value="semanal">Semanal</SelectItem>
-                              <SelectItem value="quincenal">Quincenal</SelectItem>
-                              <SelectItem value="mensual">Mensual</SelectItem>
-                              <SelectItem value="trimestral">Trimestral</SelectItem>
-                              <SelectItem value="anual">Anual</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Cada</Label>
-                          <Input type="number" min="1" value={formData.intervalo_recurrencia}
-                            onChange={(e) => setFormData(prev => ({ ...prev, intervalo_recurrencia: parseInt(e.target.value) || 1 }))}
-                            className="h-9 text-sm" />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Inicio</Label>
-                          <Input type="date" value={formData.fecha_inicio_recurrencia}
-                            onChange={(e) => setFormData(prev => ({ ...prev, fecha_inicio_recurrencia: e.target.value }))}
-                            className="h-9 text-sm" />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Fin (opcional)</Label>
-                          <Input type="date" value={formData.fecha_fin_recurrencia}
-                            onChange={(e) => setFormData(prev => ({ ...prev, fecha_fin_recurrencia: e.target.value }))}
-                            className="h-9 text-sm" />
-                        </div>
-                      </div>
-                    </CollapsibleContent>
-                  )}
-                </Collapsible>
               </CollapsibleContent>
             </Collapsible>
           </div>
