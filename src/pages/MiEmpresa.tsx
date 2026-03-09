@@ -46,11 +46,12 @@ export default function MiEmpresa() {
         .from('profiles').select('empresa_id').eq('id', user?.id).maybeSingle();
       if (!profile?.empresa_id) { setLoadingData(false); return; }
 
-      const [empresaRes, apoderadosRes, domiciliosRes, obligacionesRes] = await Promise.all([
+      const [empresaRes, apoderadosRes, domiciliosRes, obligacionesRes, tareasRes] = await Promise.all([
         supabase.from('empresas').select('*').eq('id', profile.empresa_id).maybeSingle(),
         supabase.from('apoderados_legales').select('*').eq('empresa_id', profile.empresa_id),
         supabase.from('domicilios_operacion').select('*').eq('empresa_id', profile.empresa_id),
         supabase.from('obligaciones').select('*').eq('empresa_id', profile.empresa_id).eq('activa', true).order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
+        supabase.from('tareas').select('*').eq('empresa_id', profile.empresa_id).neq('estado', 'completada').order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
       ]);
 
       setEmpresa(empresaRes.data);
