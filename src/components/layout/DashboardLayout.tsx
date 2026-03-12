@@ -25,7 +25,7 @@ export default function DashboardLayout({
     signOut
   } = useAuth();
   const navigate = useNavigate();
-  const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
+  const { selectedEmpresaId, setSelectedEmpresaId } = useEmpresaContext();
   const [empresaInfo, setEmpresaInfo] = useState<{
     razon_social: string;
   } | null>(null);
