@@ -396,7 +396,6 @@ export default function EmpresaDetail() {
             <EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
             <ObligacionesManager empresaId={id!} canEdit={canEdit} />
           </TabsContent>
-          </TabsContent>
         </Tabs>
       </div>
 
