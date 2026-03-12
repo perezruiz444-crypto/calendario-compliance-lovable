@@ -210,7 +210,7 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect: externalOnSelect, sel
                     key={empresa.id}
                     value={empresa.razon_social}
                     onSelect={() => {
-                      localStorage.setItem('selectedEmpresaId', empresa.id);
+                      
                       onEmpresaSelect(empresa.id);
                       setOpen(false);
                     }}
