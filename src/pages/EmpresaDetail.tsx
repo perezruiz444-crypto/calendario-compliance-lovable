@@ -19,6 +19,7 @@ import { EmpresaCertificacionCard } from '@/components/empresas/EmpresaCertifica
 import { EmpresaObligacionesCard } from '@/components/empresas/EmpresaObligacionesCard';
 import { ObligacionesManager } from '@/components/obligaciones/ObligacionesManager';
 import { AgentesAduanalesCard } from '@/components/empresas/AgentesAduanalesCard';
+import { EmpresaObligacionesActivasCard } from '@/components/empresas/EmpresaObligacionesActivasCard';
 import { ApoderadosCard } from '@/components/empresas/ApoderadosCard';
 import { DomiciliosCard } from '@/components/empresas/DomiciliosCard';
 import {
@@ -365,6 +366,9 @@ export default function EmpresaDetail() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Active Obligations */}
+            <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} />
           </TabsContent>
 
           {/* Información Tab */}
@@ -388,6 +392,7 @@ export default function EmpresaDetail() {
 
           {/* Obligaciones Tab */}
           <TabsContent value="obligaciones" className="space-y-6">
+            <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} />
             <EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
             <ObligacionesManager empresaId={id!} canEdit={canEdit} />
           </TabsContent>
