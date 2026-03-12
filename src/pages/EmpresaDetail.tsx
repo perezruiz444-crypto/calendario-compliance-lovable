@@ -392,8 +392,10 @@ export default function EmpresaDetail() {
 
           {/* Obligaciones Tab */}
           <TabsContent value="obligaciones" className="space-y-6">
+            <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} />
             <EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
             <ObligacionesManager empresaId={id!} canEdit={canEdit} />
+          </TabsContent>
           </TabsContent>
         </Tabs>
       </div>
