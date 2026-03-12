@@ -87,13 +87,8 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect: externalOnSelect, sel
         }
       }
       setEmpresas(empresasData || []);
-      const savedEmpresaId = localStorage.getItem('selectedEmpresaId');
       if (!selectedEmpresaId && empresasData && empresasData.length > 0) {
-        if (savedEmpresaId && (savedEmpresaId === 'all' || empresasData.find((e) => e.id === savedEmpresaId))) {
-          onEmpresaSelect(savedEmpresaId === 'all' ? 'all' : savedEmpresaId);
-        } else {
-          onEmpresaSelect(empresasData[0].id);
-        }
+        onEmpresaSelect(empresasData[0].id);
       }
     } catch (error) {
       console.error('Error fetching empresas:', error);
