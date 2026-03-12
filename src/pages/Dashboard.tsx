@@ -56,7 +56,8 @@ const estadoLabels: Record<string, string> = {
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const { data, loading: analyticsLoading, refetch } = useAnalytics();
+  const { selectedEmpresaId } = useEmpresaContext();
+  const { data, loading: analyticsLoading, refetch } = useAnalytics(selectedEmpresaId);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
