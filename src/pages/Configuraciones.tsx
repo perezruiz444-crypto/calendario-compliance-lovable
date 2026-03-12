@@ -50,7 +50,6 @@ interface SectionItem {
 export default function Configuraciones() {
   const { role } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { theme, setTheme } = useTheme();
   const { isSupported, permission, isSubscribed, requestPermission, unsubscribe } = usePushNotifications();
   const [settings, setSettings] = useState<NotificationSetting[]>([]);
   const [loading, setLoading] = useState(true);
