@@ -275,7 +275,9 @@ export function useAnalytics(empresaId?: string | null) {
     const empresaIds = asignaciones?.map(a => a.empresa_id) || [];
 
     let tareasQuery = supabase.from('tareas').select('*');
-    if (empresaIds.length > 0) {
+    if (empresaId && empresaId !== 'all') {
+      tareasQuery = tareasQuery.eq('empresa_id', empresaId);
+    } else if (empresaIds.length > 0) {
       tareasQuery = tareasQuery.or(`consultor_asignado_id.eq.${user?.id},empresa_id.in.(${empresaIds.join(',')})`);
     } else {
       tareasQuery = tareasQuery.eq('consultor_asignado_id', user?.id);
