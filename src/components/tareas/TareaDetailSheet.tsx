@@ -52,7 +52,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [saveIndicator, setSaveIndicator] = useState<string | null>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (open && tareaId) {
