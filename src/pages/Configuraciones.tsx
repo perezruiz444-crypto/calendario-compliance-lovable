@@ -327,14 +327,6 @@ export default function Configuraciones() {
                 </div>
               )}
 
-              {/* Colors with live preview */}
-              {activeSection === 'colores' && (
-                <div className="space-y-6">
-                  <ColorPreviewMini />
-                  <ThemeEditor />
-                </div>
-              )}
-
               {/* My Notifications */}
               {activeSection === 'notificaciones' && <UserNotificationPreferences />}
 
