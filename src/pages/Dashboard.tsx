@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,7 +55,8 @@ const estadoLabels: Record<string, string> = {
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const { data, loading: analyticsLoading, refetch } = useAnalytics();
+  const { selectedEmpresaId } = useEmpresaContext();
+  const { data, loading: analyticsLoading, refetch } = useAnalytics(selectedEmpresaId);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);

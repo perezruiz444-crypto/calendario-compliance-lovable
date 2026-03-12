@@ -2,10 +2,9 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { initThemeFromStorage } from "./components/configuraciones/ThemeEditor";
 
-// Apply saved theme before render (async, will apply when ready)
-initThemeFromStorage();
+// Clean up any residual theme styles from previous theme editor
+document.documentElement.removeAttribute('style');
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

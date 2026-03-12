@@ -1,7 +1,8 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2, LayoutDashboard, CheckSquare, Users, LogOut, Menu, Calendar as CalendarIcon, MessageSquare, FileText, Settings } from 'lucide-react';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
@@ -24,7 +25,7 @@ export default function DashboardLayout({
     signOut
   } = useAuth();
   const navigate = useNavigate();
-  const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
+  const { selectedEmpresaId, setSelectedEmpresaId } = useEmpresaContext();
   const [empresaInfo, setEmpresaInfo] = useState<{
     razon_social: string;
   } | null>(null);

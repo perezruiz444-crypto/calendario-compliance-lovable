@@ -66,7 +66,7 @@ const DEFAULT_DATA: AnalyticsData = {
   proximasTareas: [],
 };
 
-export function useAnalytics() {
+export function useAnalytics(empresaId?: string | null) {
   const { user, role } = useAuth();
   const [data, setData] = useState<AnalyticsData>(DEFAULT_DATA);
   const [loading, setLoading] = useState(true);
@@ -76,7 +76,7 @@ export function useAnalytics() {
       fetchAnalytics();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, role]);
+  }, [user?.id, role, empresaId]);
 
   const fetchCommonData = async () => {
     // Profile name
@@ -174,7 +174,9 @@ export function useAnalytics() {
       supabase.from('empresas').select('*', { count: 'exact', head: true }),
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'consultor'),
-      supabase.from('tareas').select('*'),
+      empresaId && empresaId !== 'all'
+        ? supabase.from('tareas').select('*').eq('empresa_id', empresaId)
+        : supabase.from('tareas').select('*'),
     ]);
 
     const tareas = tareasRes.data || [];
@@ -273,7 +275,9 @@ export function useAnalytics() {
     const empresaIds = asignaciones?.map(a => a.empresa_id) || [];
 
     let tareasQuery = supabase.from('tareas').select('*');
-    if (empresaIds.length > 0) {
+    if (empresaId && empresaId !== 'all') {
+      tareasQuery = tareasQuery.eq('empresa_id', empresaId);
+    } else if (empresaIds.length > 0) {
       tareasQuery = tareasQuery.or(`consultor_asignado_id.eq.${user?.id},empresa_id.in.(${empresaIds.join(',')})`);
     } else {
       tareasQuery = tareasQuery.eq('consultor_asignado_id', user?.id);

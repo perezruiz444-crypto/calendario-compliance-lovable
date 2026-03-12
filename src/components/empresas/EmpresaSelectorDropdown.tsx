@@ -17,10 +17,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 
 interface EmpresaSelectorProps {
-  onEmpresaSelect: (empresaId: string | null) => void;
-  selectedEmpresaId: string | null;
+  onEmpresaSelect?: (empresaId: string | null) => void;
+  selectedEmpresaId?: string | null;
 }
 
 function hashColor(str: string): string {
@@ -41,18 +42,17 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: EmpresaSelectorProps) {
+export function EmpresaSelectorDropdown({ onEmpresaSelect: externalOnSelect, selectedEmpresaId: externalSelectedId }: EmpresaSelectorProps) {
   const { user, role } = useAuth();
+  const empresaContext = useEmpresaContext();
+  
+  // Use context by default, allow prop override
+  const selectedEmpresaId = externalSelectedId ?? empresaContext.selectedEmpresaId;
+  const onEmpresaSelect = externalOnSelect ?? empresaContext.setSelectedEmpresaId;
+  
   const [open, setOpen] = useState(false);
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const savedEmpresaId = localStorage.getItem('selectedEmpresaId');
-    if (savedEmpresaId && !selectedEmpresaId) {
-      onEmpresaSelect(savedEmpresaId === 'all' ? 'all' : savedEmpresaId);
-    }
-  }, []);
 
   useEffect(() => {
     if (user && role) fetchEmpresas();
@@ -87,13 +87,8 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: 
         }
       }
       setEmpresas(empresasData || []);
-      const savedEmpresaId = localStorage.getItem('selectedEmpresaId');
       if (!selectedEmpresaId && empresasData && empresasData.length > 0) {
-        if (savedEmpresaId && (savedEmpresaId === 'all' || empresasData.find((e) => e.id === savedEmpresaId))) {
-          onEmpresaSelect(savedEmpresaId === 'all' ? 'all' : savedEmpresaId);
-        } else {
-          onEmpresaSelect(empresasData[0].id);
-        }
+        onEmpresaSelect(empresasData[0].id);
       }
     } catch (error) {
       console.error('Error fetching empresas:', error);
@@ -183,7 +178,7 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: 
                 <CommandItem
                   value="todas-empresas"
                   onSelect={() => {
-                    localStorage.setItem('selectedEmpresaId', 'all');
+                    
                     onEmpresaSelect('all');
                     setOpen(false);
                   }}
@@ -215,7 +210,7 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: 
                     key={empresa.id}
                     value={empresa.razon_social}
                     onSelect={() => {
-                      localStorage.setItem('selectedEmpresaId', empresa.id);
+                      
                       onEmpresaSelect(empresa.id);
                       setOpen(false);
                     }}

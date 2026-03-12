@@ -8,16 +8,13 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Loader2, Shield, Palette, Bell, Settings, Clock, History, Paintbrush, Search, ChevronRight, User, Lock } from 'lucide-react';
+import { Loader2, Shield, Bell, Settings, Clock, History, Search, ChevronRight, User, Lock } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useSearchParams } from 'react-router-dom';
-import { useTheme } from 'next-themes';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { UserNotificationPreferences } from '@/components/notifications/UserNotificationPreferences';
 import { ReminderRulesManager } from '@/components/notifications/ReminderRulesManager';
 import { NotificationHistory } from '@/components/notifications/NotificationHistory';
-import ThemeEditor from '@/components/configuraciones/ThemeEditor';
-import ColorPreviewMini from '@/components/configuraciones/ColorPreviewMini';
 import ProfileSection from '@/components/configuraciones/ProfileSection';
 import SecurityAuditSection from '@/components/configuraciones/SecurityAuditSection';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -53,7 +50,6 @@ interface SectionItem {
 export default function Configuraciones() {
   const { role } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { theme, setTheme } = useTheme();
   const { isSupported, permission, isSubscribed, requestPermission, unsubscribe } = usePushNotifications();
   const [settings, setSettings] = useState<NotificationSetting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,8 +62,7 @@ export default function Configuraciones() {
 
   const sections: SectionItem[] = [
     { id: 'perfil', label: 'Mi Perfil', description: 'Nombre, contacto y contraseña', icon: <User className="h-5 w-5" /> },
-    { id: 'general', label: 'General', description: 'Apariencia y notificaciones push', icon: <Settings className="h-5 w-5" /> },
-    { id: 'colores', label: 'Colores', description: 'Personaliza la paleta de colores', icon: <Paintbrush className="h-5 w-5" />, adminOnly: true },
+    { id: 'general', label: 'General', description: 'Notificaciones push', icon: <Settings className="h-5 w-5" /> },
     { id: 'notificaciones', label: 'Mis Notificaciones', description: 'Preferencias de alertas', icon: <Bell className="h-5 w-5" /> },
     { id: 'recordatorios', label: 'Recordatorios', description: 'Reglas de recordatorio automáticas', icon: <Clock className="h-5 w-5" />, adminOnly: true },
     { id: 'historial', label: 'Historial', description: 'Registro de notificaciones enviadas', icon: <History className="h-5 w-5" />, adminOnly: true },
@@ -118,11 +113,6 @@ export default function Configuraciones() {
     } finally {
       setUpdating(null);
     }
-  };
-
-  const handleThemeChange = (checked: boolean) => {
-    setTheme(checked ? 'dark' : 'light');
-    toast.success(`Tema ${checked ? 'oscuro' : 'claro'} activado`);
   };
 
   const handleTogglePush = async () => {
@@ -256,27 +246,6 @@ export default function Configuraciones() {
                       <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-base">
                           <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                            <Palette className="h-4 w-4 text-primary" />
-                          </div>
-                          Apariencia
-                        </CardTitle>
-                        <CardDescription>Personaliza cómo se ve la aplicación</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="dark-mode" className="text-sm font-medium">Modo oscuro</Label>
-                            <p className="text-xs text-muted-foreground">Activa el tema oscuro para reducir el brillo</p>
-                          </div>
-                          <Switch id="dark-mode" checked={theme === 'dark'} onCheckedChange={handleThemeChange} />
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="group hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
                             <Bell className="h-4 w-4 text-primary" />
                           </div>
                           Notificaciones Push
@@ -355,14 +324,6 @@ export default function Configuraciones() {
                       )}
                     </>
                   )}
-                </div>
-              )}
-
-              {/* Colors with live preview */}
-              {activeSection === 'colores' && (
-                <div className="space-y-6">
-                  <ColorPreviewMini />
-                  <ThemeEditor />
                 </div>
               )}
 
