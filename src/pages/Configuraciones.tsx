@@ -115,11 +115,6 @@ export default function Configuraciones() {
     }
   };
 
-  const handleThemeChange = (checked: boolean) => {
-    setTheme(checked ? 'dark' : 'light');
-    toast.success(`Tema ${checked ? 'oscuro' : 'claro'} activado`);
-  };
-
   const handleTogglePush = async () => {
     if (isSubscribed) await unsubscribe();
     else await requestPermission();
