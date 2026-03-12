@@ -308,6 +308,7 @@ function KanbanColumn({
 export default function Tareas() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
+  const { selectedEmpresaId } = useEmpresaContext();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Keyboard shortcuts
