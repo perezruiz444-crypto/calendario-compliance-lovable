@@ -1,255 +1,66 @@
 
-# Plan: Centro de Control de Notificaciones y Recordatorios
 
-## Objetivo
-Crear un sistema centralizado y configurable para gestionar todas las notificaciones y recordatorios automáticos del sistema.
+## Plan: Mejorar Reportes PDF + Corregir Obligaciones PDF + Mejorar Date Pickers
 
----
+### 3 problemas identificados
 
-## Nuevas Funcionalidades
+**1. Reporte PDF de gestión muy pobre en contenido**
+El PDF actual (`generateReportPDF`) solo muestra conteos agregados (totales por estado/prioridad). No incluye el detalle de las tareas individuales (titulo, empresa, consultor, vencimiento, prioridad, estado). Es un resumen vacío.
 
-### 1. Preferencias de Notificación por Usuario
+**2. Obligaciones PDF: columnas se solapan**
+Las posiciones fijas `cols = [15, 55, 120, 165, 200, 230, 260]` no dan suficiente espacio. La columna "Nombre" (55-120 = 65pts) es demasiado ancha y "Presentación" (165-200 = 35pts) choca con "Período" (200-230).
 
-Cada usuario podrá personalizar:
-- Qué notificaciones recibir (tareas, certificaciones, documentos, etc.)
-- Cómo recibirlas (email, push, ambas, ninguna)
-- Frecuencia de resúmenes (diario, semanal, nunca)
-
-### 2. Recordatorios Configurables de Vencimientos
-
-Panel para configurar cuántos días antes del vencimiento se envían alertas:
-- **Certificaciones**: 90, 60, 30, 15, 7 días (configurable)
-- **Obligaciones IMMEX/PROSEC**: Igual
-- **Documentos**: 30, 15, 7, 1 día
-
-### 3. Centro de Notificaciones Unificado
-
-Nueva sección en Configuraciones con:
-- Vista general de todas las reglas activas
-- Historial de notificaciones enviadas
-- Prueba de notificaciones
-- Horario de envío personalizado
+**3. Date pickers sin dropdown de mes/año**
+El componente `Calendar` ya tiene `captionLayout="dropdown-buttons"` por defecto, pero en `CreateTareaSheet.tsx` los 3 calendarios no pasan `fromYear`/`toYear` explícitamente. El componente ya tiene defaults de 1900-2100, así que los dropdowns deberían funcionar. El problema real puede ser que los dropdowns se ven feos/poco usables dentro del popover pequeño. Necesito mejorar el styling del caption dropdown en `calendar.tsx` para que se vea moderno y usable.
 
 ---
 
-## Cambios en Base de Datos
+### Cambios propuestos
 
-### Nueva Tabla: `user_notification_preferences`
-```sql
-CREATE TABLE user_notification_preferences (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  notification_key TEXT NOT NULL,
-  email_enabled BOOLEAN DEFAULT true,
-  push_enabled BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id, notification_key)
-);
+#### 1. `src/lib/pdfGenerator.ts` - Reporte de gestión completo
+
+Reescribir `generateReportPDF` para aceptar datos detallados y generar un PDF profesional:
+
+- **Nueva interfaz**: Recibir el array de tareas con titulo, empresa, consultor, prioridad, estado, fecha_vencimiento, fecha_creacion, descripcion
+- **Sección Resumen**: Mantener los KPIs actuales + agregar horas trabajadas, tareas vencidas
+- **Sección Detalle de Tareas**: Tabla con columnas (Titulo, Empresa, Consultor, Prioridad, Estado, Vencimiento, Creada)
+- **Sección Por Consultor**: Si hay datos, listar rendimiento individual (completadas/pendientes/tasa)
+- **Sección Por Empresa**: Desglose de tareas por empresa
+- **Sección Certificaciones**: Mantener la existente mejorada
+- **Tabla landscape** para el detalle de tareas (más espacio)
+
+#### 2. `src/pages/Reportes.tsx` - Pasar datos detallados al PDF
+
+Modificar el `fetchReportData` para guardar el array crudo de tareas con joins a empresa/consultor/categoria. Pasar esos datos enriquecidos a `generateReportPDF`.
+
+#### 3. `src/lib/pdfGenerator.ts` - Obligaciones: redistribuir columnas
+
+Ajustar las posiciones de columnas:
 ```
-
-### Nueva Tabla: `reminder_rules`
-```sql
-CREATE TABLE reminder_rules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nombre TEXT NOT NULL,
-  tipo TEXT NOT NULL, -- 'certificacion', 'immex', 'prosec', 'documento'
-  dias_antes INTEGER NOT NULL,
-  activa BOOLEAN DEFAULT true,
-  empresa_id UUID REFERENCES empresas(id), -- NULL = aplica a todas
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT now()
-);
+// Antes: [15, 55, 120, 165, 200, 230, 260]
+// Después: [15, 50, 100, 155, 195, 230, 260]
 ```
+- Reducir "Nombre" de 65pts a 50pts (truncar a 25 chars)
+- Dar más espacio a "Artículos" y "Presentación"
+- Truncar presentación a max chars para evitar overlap
 
-### Modificar Tabla: `profiles`
-```sql
-ALTER TABLE profiles ADD COLUMN 
-  resumen_frecuencia TEXT DEFAULT 'diario', -- 'diario', 'semanal', 'nunca'
-  resumen_hora INTEGER DEFAULT 8; -- Hora de envío (0-23)
-```
+#### 4. `src/components/ui/calendar.tsx` - Mejorar estilo de dropdowns
 
----
-
-## Nuevos Componentes
-
-### 1. `src/components/notifications/NotificationCenter.tsx`
-Panel principal que muestra:
-- Resumen de notificaciones activas
-- Accesos rápidos a configuración
-- Historial reciente
-
-### 2. `src/components/notifications/UserNotificationPreferences.tsx`
-Formulario para que cada usuario configure:
-- Switches para cada tipo de notificación
-- Toggle email/push por categoría
-- Selector de frecuencia de resumen
-
-### 3. `src/components/notifications/ReminderRulesManager.tsx`
-CRUD para reglas de recordatorio:
-- Tipo de vencimiento a monitorear
-- Días de anticipación
-- Empresa específica o todas
-- Activar/desactivar
-
-### 4. `src/components/notifications/NotificationHistory.tsx`
-Tabla con:
-- Últimas notificaciones enviadas
-- Estado (enviada, fallida, pendiente)
-- Tipo y destinatario
-- Filtros por fecha y tipo
+Agregar classNames para los dropdowns de mes y año:
+- `caption_dropdowns`: flex con gap para alinear bien
+- `dropdown_month` / `dropdown_year`: estilo de select más compacto y bonito
+- `dropdown`: estilo base con bordes redondeados, cursor pointer
+- Ajustar el `caption` para dar más espacio cuando hay dropdowns
 
 ---
 
-## Cambios en Archivos Existentes
+### Archivos afectados
 
-### `src/pages/Configuraciones.tsx`
-- Reorganizar en pestañas:
-  - **General** (tema, idioma)
-  - **Mis Notificaciones** (preferencias del usuario actual)
-  - **Recordatorios** (reglas de vencimientos - solo admin)
-  - **Sistema** (configuraciones globales - solo admin)
+| Archivo | Cambio |
+|---|---|
+| `src/lib/pdfGenerator.ts` | Reescribir `generateReportPDF` con detalle de tareas; ajustar columnas de obligaciones |
+| `src/pages/Reportes.tsx` | Guardar tareas detalladas y pasarlas al PDF |
+| `src/components/ui/calendar.tsx` | Mejorar classNames de dropdowns para mes/año |
 
-### `src/components/layout/DashboardLayout.tsx`
-- Ya existe acceso a Configuraciones en el dropdown de perfil
+No se necesita migración de base de datos.
 
-### Edge Function: `send-daily-summary`
-- Modificar para respetar preferencias por usuario
-- Verificar `user_notification_preferences` antes de enviar
-- Respetar horario y frecuencia configurados
-
----
-
-## Flujo de Usuario
-
-```text
-Usuario                    Sistema
-   │                          │
-   ├─► Ir a Configuraciones   │
-   │                          │
-   ├─► Pestaña "Mis Notificaciones"
-   │   ├─ Toggle: Tareas vencidas [Email ✓] [Push ✓]
-   │   ├─ Toggle: Certificaciones [Email ✓] [Push ✗]
-   │   ├─ Toggle: Resumen diario [Email ✓]
-   │   └─ Selector: Enviar resumen a las [8:00 AM ▼]
-   │                          │
-   ├─► Guardar ───────────────►├─► Actualiza user_notification_preferences
-   │                          │
-   │                          ├─► Cron Job (8:00 AM)
-   │                          │   ├─ Verifica preferencias de usuario
-   │                          │   ├─ Verifica frecuencia (diario/semanal)
-   │                          │   └─ Envía solo notificaciones habilitadas
-   │                          │
-   │◄─── Recibe email/push ───┤
-```
-
----
-
-## Interfaz: Vista de Preferencias por Usuario
-
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ Mis Preferencias de Notificación                                 │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  📋 TAREAS                                    Email    Push      │
-│  ├─ Tarea asignada                            [✓]      [✓]       │
-│  ├─ Recordatorio 3 días antes                 [✓]      [✗]       │
-│  ├─ Recordatorio 1 día antes                  [✓]      [✓]       │
-│  └─ Tarea vencida                             [✓]      [✓]       │
-│                                                                  │
-│  🏆 CERTIFICACIONES                           Email    Push      │
-│  ├─ Vencimiento 90 días                       [✓]      [✗]       │
-│  ├─ Vencimiento 30 días                       [✓]      [✓]       │
-│  └─ Vencimiento 15 días                       [✓]      [✓]       │
-│                                                                  │
-│  📊 RESUMEN                                                      │
-│  ├─ Frecuencia: [Diario ▼]                                       │
-│  └─ Hora de envío: [08:00 ▼]                                     │
-│                                                                  │
-│                                    [Restaurar Predeterminados]   │
-└──────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Interfaz: Reglas de Recordatorio (Admin)
-
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ Reglas de Recordatorio                          [+ Nueva Regla]  │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────────┐  │
-│  │ 🏆 Certificación IVA/IEPS - 30 días antes      [Activa ●]  │  │
-│  │    Aplica a: Todas las empresas                            │  │
-│  │    Última ejecución: Hace 2 días                           │  │
-│  │                                          [Editar] [Eliminar]│  │
-│  └────────────────────────────────────────────────────────────┘  │
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────────┐  │
-│  │ 📋 IMMEX - 15 días antes                       [Activa ●]  │  │
-│  │    Aplica a: Todas las empresas                            │  │
-│  │    Última ejecución: Hace 5 días                           │  │
-│  │                                          [Editar] [Eliminar]│  │
-│  └────────────────────────────────────────────────────────────┘  │
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────────┐  │
-│  │ 📄 Documentos - 7 días antes                   [Inactiva ○]│  │
-│  │    Aplica a: Empresa XYZ                                   │  │
-│  │    Última ejecución: Nunca                                 │  │
-│  │                                          [Editar] [Eliminar]│  │
-│  └────────────────────────────────────────────────────────────┘  │
-│                                                                  │
-└──────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Orden de Implementación
-
-1. **Fase 1: Base de Datos**
-   - Crear tabla `user_notification_preferences`
-   - Crear tabla `reminder_rules`
-   - Agregar columnas a `profiles`
-
-2. **Fase 2: Preferencias de Usuario**
-   - Crear componente `UserNotificationPreferences`
-   - Integrar en página de Configuraciones
-   - Migrar datos existentes
-
-3. **Fase 3: Reglas de Recordatorio**
-   - Crear componente `ReminderRulesManager`
-   - CRUD completo para reglas
-   - Vista solo para administradores
-
-4. **Fase 4: Actualizar Edge Functions**
-   - Modificar `send-daily-summary` para respetar preferencias
-   - Crear función para procesar `reminder_rules`
-   - Ajustar cron jobs según configuración
-
-5. **Fase 5: Historial y Monitoreo**
-   - Crear componente `NotificationHistory`
-   - Agregar logging de notificaciones enviadas
-   - Panel de estadísticas
-
----
-
-## Beneficios
-
-| Antes | Después |
-|-------|---------|
-| Configuración global fija | Personalizable por usuario |
-| Horario fijo (8:00 AM) | Horario configurable |
-| Sin control de canales | Email y Push independientes |
-| Recordatorios hardcodeados | Reglas dinámicas configurables |
-| Sin historial | Registro completo de envíos |
-
----
-
-## Notas Técnicas
-
-- Las preferencias de usuario se almacenan en `user_notification_preferences` con una entrada por cada tipo de notificación
-- El edge function `send-daily-summary` consultará esta tabla antes de enviar
-- Los defaults se toman de `notification_settings` (configuración global) cuando el usuario no tiene preferencia explícita
-- Se mantiene retrocompatibilidad: usuarios sin preferencias configuradas recibirán todo como antes
