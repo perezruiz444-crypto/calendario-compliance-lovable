@@ -178,7 +178,7 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect: externalOnSelect, sel
                 <CommandItem
                   value="todas-empresas"
                   onSelect={() => {
-                    localStorage.setItem('selectedEmpresaId', 'all');
+                    
                     onEmpresaSelect('all');
                     setOpen(false);
                   }}
