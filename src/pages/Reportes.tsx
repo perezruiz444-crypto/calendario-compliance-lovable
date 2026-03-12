@@ -453,6 +453,18 @@ export default function Reportes() {
       const minutosFacturables = timeEntries?.filter(e => e.facturable).reduce((sum, e) => sum + (e.duracion_minutos || 0), 0) || 0;
       const horasFacturables = Math.round((minutosFacturables / 60) * 10) / 10;
 
+      // Build detailed task list for PDF
+      const tareasDetalle = (tareas || []).map(t => ({
+        titulo: t.titulo,
+        empresa: empresaMap[t.empresa_id] || '-',
+        consultor: t.consultor_asignado_id ? (consultorMap[t.consultor_asignado_id] || 'Sin asignar') : 'Sin asignar',
+        prioridad: t.prioridad || 'media',
+        estado: t.estado || 'pendiente',
+        fecha_vencimiento: t.fecha_vencimiento,
+        created_at: t.created_at,
+        categoria: t.categoria_id ? (categoriaMap[t.categoria_id] || '-') : '-',
+      }));
+
       setReporteData({
         tareasPorEstado,
         tareasPorPrioridad,
@@ -466,6 +478,7 @@ export default function Reportes() {
         tiempoPorConsultor: tiempoPorConsultorArray,
         tiempoPorEmpresa: tiempoPorEmpresaArray,
         tiempoPorTarea: tiempoPorTareaArray,
+        tareasDetalle,
         resumen: {
           totalEmpresas: empresasData?.length || 0,
           totalTareas: total,
