@@ -19,6 +19,7 @@ import { EmpresaCertificacionCard } from '@/components/empresas/EmpresaCertifica
 import { EmpresaObligacionesCard } from '@/components/empresas/EmpresaObligacionesCard';
 import { ObligacionesManager } from '@/components/obligaciones/ObligacionesManager';
 import { AgentesAduanalesCard } from '@/components/empresas/AgentesAduanalesCard';
+import { EmpresaObligacionesActivasCard } from '@/components/empresas/EmpresaObligacionesActivasCard';
 import { ApoderadosCard } from '@/components/empresas/ApoderadosCard';
 import { DomiciliosCard } from '@/components/empresas/DomiciliosCard';
 import {
