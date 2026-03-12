@@ -18,6 +18,7 @@ import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormD
 import { BulkImportDialog, type ParsedRow } from './BulkImportDialog';
 import { CatalogoObligacionesDialog } from './CatalogoObligacionesDialog';
 import { generateObligacionesPDF } from '@/lib/pdfGenerator';
+import * as XLSX from 'xlsx';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
