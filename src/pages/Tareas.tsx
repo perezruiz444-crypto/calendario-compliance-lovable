@@ -416,7 +416,7 @@ export default function Tareas() {
   const fetchTareas = async () => {
     setLoadingTareas(true);
     try {
-      const { data: tareasData, error } = await supabase
+      let query = supabase
         .from('tareas')
         .select(`
           *,
@@ -424,6 +424,13 @@ export default function Tareas() {
           categorias_tareas(nombre, color)
         `)
         .order('created_at', { ascending: false });
+
+      // Filter by selected empresa from context
+      if (selectedEmpresaId && selectedEmpresaId !== 'all') {
+        query = query.eq('empresa_id', selectedEmpresaId);
+      }
+
+      const { data: tareasData, error } = await query;
 
       if (error) throw error;
 
