@@ -280,7 +280,7 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit }: Props) {
           open={!!editObl}
           onOpenChange={(open) => { if (!open) { setEditObl(null); fetchData(); } }}
           empresaId={empresaId}
-          obligacion={{
+          initialData={{
             id: editObl.id,
             nombre: editObl.nombre,
             categoria: editObl.categoria,
@@ -298,6 +298,17 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit }: Props) {
             numero_oficio: editObl.numero_oficio || '',
             responsable_id: editObl.responsable_id || '',
             responsable_tipo: editObl.responsable_tipo || '',
+          }}
+          onSubmit={async (data) => {
+            try {
+              const { id, ...rest } = data;
+              await supabase.from('obligaciones').update(rest).eq('id', editObl.id);
+              toast.success('Obligación actualizada');
+              setEditObl(null);
+              fetchData();
+            } catch {
+              toast.error('Error al actualizar');
+            }
           }}
         />
       )}
