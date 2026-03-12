@@ -366,6 +366,9 @@ export default function EmpresaDetail() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Active Obligations */}
+            <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} />
           </TabsContent>
 
           {/* Información Tab */}
