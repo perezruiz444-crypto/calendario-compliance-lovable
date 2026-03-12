@@ -470,7 +470,7 @@ export default function Tareas() {
     if (user) {
       fetchTareas();
     }
-  }, [user]);
+  }, [user, selectedEmpresaId]);
 
   const handleDialogClose = (open: boolean) => {
     setDialogOpen(open);
