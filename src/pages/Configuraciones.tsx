@@ -246,27 +246,6 @@ export default function Configuraciones() {
                       <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-base">
                           <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                            <Palette className="h-4 w-4 text-primary" />
-                          </div>
-                          Apariencia
-                        </CardTitle>
-                        <CardDescription>Personaliza cómo se ve la aplicación</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="dark-mode" className="text-sm font-medium">Modo oscuro</Label>
-                            <p className="text-xs text-muted-foreground">Activa el tema oscuro para reducir el brillo</p>
-                          </div>
-                          <Switch id="dark-mode" checked={theme === 'dark'} onCheckedChange={handleThemeChange} />
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="group hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
                             <Bell className="h-4 w-4 text-primary" />
                           </div>
                           Notificaciones Push
