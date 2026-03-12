@@ -66,7 +66,7 @@ const DEFAULT_DATA: AnalyticsData = {
   proximasTareas: [],
 };
 
-export function useAnalytics() {
+export function useAnalytics(empresaId?: string | null) {
   const { user, role } = useAuth();
   const [data, setData] = useState<AnalyticsData>(DEFAULT_DATA);
   const [loading, setLoading] = useState(true);
@@ -76,7 +76,7 @@ export function useAnalytics() {
       fetchAnalytics();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, role]);
+  }, [user?.id, role, empresaId]);
 
   const fetchCommonData = async () => {
     // Profile name
