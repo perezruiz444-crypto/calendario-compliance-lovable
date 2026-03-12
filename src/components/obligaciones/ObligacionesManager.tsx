@@ -300,6 +300,42 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
     toast.success('Reporte PDF generado');
   };
 
+  const handleExportExcel = () => {
+    const rows = filtered.map(ob => {
+      const periodKey = getCurrentPeriodKey(ob.presentacion);
+      const mapKey = `${ob.id}:${periodKey}`;
+      const isCompleted = cumplimientos[mapKey] || false;
+
+      return {
+        'Categoría': CATEGORIA_LABELS[ob.categoria] || ob.categoria,
+        'Nombre': ob.nombre,
+        'Artículos': ob.articulos || '-',
+        'Presentación': ob.presentacion || '-',
+        'Período Actual': ob.presentacion && ob.presentacion !== 'unica' 
+          ? getPeriodLabel(ob.presentacion, periodKey) : '-',
+        'Vencimiento': ob.fecha_vencimiento ? formatDateShort(ob.fecha_vencimiento) : '-',
+        'Estado': ob.estado,
+        'Activa': ob.activa ? 'Sí' : 'No',
+        'Cumplida': isCompleted ? 'Sí' : 'No',
+        'Responsable': ob.responsable_id ? (profiles[ob.responsable_id] || ob.responsable_tipo || '-') : (ob.responsable_tipo || '-'),
+        'Notas': ob.notas || '',
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Obligaciones');
+    
+    // Auto-size columns
+    const colWidths = Object.keys(rows[0] || {}).map(key => ({
+      wch: Math.max(key.length, ...rows.map(r => String((r as any)[key] || '').length)).toString().length + 2
+    }));
+    ws['!cols'] = colWidths;
+
+    XLSX.writeFile(wb, `obligaciones_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success('Reporte Excel generado');
+  };
+
   const filtered = obligaciones.filter(ob => {
     if (filterCategoria !== 'all' && ob.categoria !== filterCategoria) return false;
     if (filterResponsable === 'cliente' && ob.responsable_tipo !== 'cliente') return false;
