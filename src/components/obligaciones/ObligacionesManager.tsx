@@ -401,9 +401,14 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
             </SelectContent>
           </Select>
           {filtered.length > 0 && (
-            <Button size="sm" variant="outline" onClick={handleExportPDF}>
-              <FileDown className="w-4 h-4 mr-1" />PDF
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="outline" onClick={handleExportPDF}>
+                <FileDown className="w-4 h-4 mr-1" />PDF
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleExportExcel}>
+                <FileDown className="w-4 h-4 mr-1" />Excel
+              </Button>
+            </div>
           )}
           {canEdit && (
             <>
