@@ -174,7 +174,9 @@ export function useAnalytics(empresaId?: string | null) {
       supabase.from('empresas').select('*', { count: 'exact', head: true }),
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'consultor'),
-      supabase.from('tareas').select('*'),
+      empresaId && empresaId !== 'all'
+        ? supabase.from('tareas').select('*').eq('empresa_id', empresaId)
+        : supabase.from('tareas').select('*'),
     ]);
 
     const tareas = tareasRes.data || [];
