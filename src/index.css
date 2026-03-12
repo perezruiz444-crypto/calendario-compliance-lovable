@@ -50,15 +50,15 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Sidebar - Corporate Navy */
-    --sidebar-background: 210 100% 15%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 4 76% 49%;
+    /* Sidebar - Light/White */
+    --sidebar-background: 210 20% 98%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 210 100% 20%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 100% 18%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 210 100% 22%;
-    --sidebar-ring: 4 76% 49%;
+    --sidebar-accent: 210 20% 93%;
+    --sidebar-accent-foreground: 0 0% 20%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 210 100% 20%;
 
     /* Shadows & Effects */
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 20% / 0.05);
