@@ -42,18 +42,17 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export function EmpresaSelectorDropdown({ onEmpresaSelect, selectedEmpresaId }: EmpresaSelectorProps) {
+export function EmpresaSelectorDropdown({ onEmpresaSelect: externalOnSelect, selectedEmpresaId: externalSelectedId }: EmpresaSelectorProps) {
   const { user, role } = useAuth();
+  const empresaContext = useEmpresaContext();
+  
+  // Use context by default, allow prop override
+  const selectedEmpresaId = externalSelectedId ?? empresaContext.selectedEmpresaId;
+  const onEmpresaSelect = externalOnSelect ?? empresaContext.setSelectedEmpresaId;
+  
   const [open, setOpen] = useState(false);
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const savedEmpresaId = localStorage.getItem('selectedEmpresaId');
-    if (savedEmpresaId && !selectedEmpresaId) {
-      onEmpresaSelect(savedEmpresaId === 'all' ? 'all' : savedEmpresaId);
-    }
-  }, []);
 
   useEffect(() => {
     if (user && role) fetchEmpresas();
