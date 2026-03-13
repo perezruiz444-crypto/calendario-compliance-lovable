@@ -12,7 +12,7 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
   return (
     <div className="space-y-6">
       {/* Gráficos principales */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Card className="gradient-card shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -21,8 +21,8 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
             </CardTitle>
             <CardDescription>Tareas completadas vs pendientes</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardContent className="px-2 sm:px-6">
+            <ResponsiveContainer width="100%" height={250}>
               <LineChart data={data.tareasPerformance || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="mes" />
@@ -44,8 +44,8 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
             </CardTitle>
             <CardDescription>Distribución de tareas activas</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardContent className="px-2 sm:px-6">
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={data.tareasPorConsultor || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 

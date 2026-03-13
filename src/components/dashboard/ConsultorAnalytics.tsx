@@ -13,7 +13,7 @@ const COLORS = ['hsl(var(--warning))', 'hsl(var(--primary))', 'hsl(var(--success
 export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Card className="gradient-card shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -22,8 +22,8 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
             </CardTitle>
             <CardDescription>Tareas completadas por mes</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardContent className="px-2 sm:px-6">
+            <ResponsiveContainer width="100%" height={250}>
               <LineChart data={data.performanceMensual || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="mes" />
@@ -44,8 +44,8 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
             </CardTitle>
             <CardDescription>Estado actual de mis tareas</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardContent className="px-2 sm:px-6">
+            <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie data={data.tareasPorEstado || []} cx="50%" cy="50%" labelLine={false} label={({ estado, cantidad }) => `${estado}: ${cantidad}`} outerRadius={80} fill="#8884d8" dataKey="cantidad">
                   {(data.tareasPorEstado || []).map((_, index) => (
