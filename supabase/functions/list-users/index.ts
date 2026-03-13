@@ -24,14 +24,14 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Check if user is admin
+    // Check if user is admin or consultor
     const { data: roleData } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (roleData?.role !== 'administrador') {
+    if (!roleData || !['administrador', 'consultor'].includes(roleData.role)) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
