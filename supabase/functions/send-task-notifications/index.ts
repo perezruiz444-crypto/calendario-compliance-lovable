@@ -1,12 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
-
-
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
+import { corsHeaders } from '../_shared/cors.ts'
+import { sendEmail } from '../_shared/smtp.ts'
 
 interface TaskNotificationRequest {
   tareaId?: string;
@@ -14,10 +8,9 @@ interface TaskNotificationRequest {
   type: 'reminder' | 'assignment' | 'overdue';
 }
 
-serve(async (req: Request) => {
-  // Handle CORS preflight requests
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
@@ -49,7 +42,6 @@ serve(async (req: Request) => {
     let tareas: any[] = [];
 
     if (tareaId) {
-      // Send notification for specific task
       const { data, error } = await supabaseClient
         .from('tareas')
         .select(`
@@ -69,7 +61,6 @@ serve(async (req: Request) => {
       if (error) throw error;
       tareas = [data];
     } else if (consultorId) {
-      // Send notification for all pending tasks of a consultor
       const { data, error } = await supabaseClient
         .from('tareas')
         .select(`
@@ -114,9 +105,9 @@ serve(async (req: Request) => {
     }
 
     let notificacionesCreadas = 0;
+    let emailsEnviados = 0;
 
-    // Create notifications for each consultor
-    for (const [consultorId, consultorTareas] of Object.entries(tareasPorConsultor)) {
+    for (const [cId, consultorTareas] of Object.entries(tareasPorConsultor)) {
       const notificationType = type === 'reminder' ? 'recordatorio_tarea' :
                                type === 'assignment' ? 'tarea_asignada' :
                                'tarea_vencida';
@@ -124,15 +115,13 @@ serve(async (req: Request) => {
       const titulo = type === 'reminder' ? '🔔 Recordatorio de Tareas Pendientes' :
                      type === 'assignment' ? '✅ Nueva Tarea Asignada' :
                      '⚠️ Tareas Vencidas';
-      
-      const contenido = `Tienes ${consultorTareas.length} tarea(s) que requieren tu atención.`;
 
-      // Create notification for each task
+      // Create in-app notifications
       for (const tarea of consultorTareas) {
         const { error: notifError } = await supabaseClient
           .from('notificaciones')
           .insert({
-            user_id: consultorId,
+            user_id: cId,
             tipo: notificationType,
             titulo: titulo,
             contenido: tarea.titulo,
@@ -147,13 +136,79 @@ serve(async (req: Request) => {
           notificacionesCreadas++;
         }
       }
+
+      // Send real email to the consultor
+      try {
+        const { data: { user: consultorUser } } = await supabaseAdmin.auth.admin.getUserById(cId);
+        const { data: consultorProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('nombre_completo')
+          .eq('id', cId)
+          .single();
+
+        if (consultorUser?.email) {
+          const consultorName = consultorProfile?.nombre_completo || consultorUser.email;
+
+          // Build tasks table rows
+          const tareasRows = consultorTareas.map(t => {
+            const prioridadColor = t.prioridad === 'alta' ? '#e53e3e' : t.prioridad === 'media' ? '#d69e2e' : '#38a169';
+            const fechaVenc = t.fecha_vencimiento ? new Date(t.fecha_vencimiento).toLocaleDateString('es-MX') : 'Sin fecha';
+            return `
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px; color: #333;">${t.titulo}</td>
+                <td style="padding: 10px; color: #666;">${(t.empresas as any)?.razon_social || '-'}</td>
+                <td style="padding: 10px;"><span style="color: ${prioridadColor}; font-weight: bold;">${t.prioridad || '-'}</span></td>
+                <td style="padding: 10px; color: #666;">${fechaVenc}</td>
+              </tr>`;
+          }).join('');
+
+          const htmlBody = `
+            <html>
+              <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 700px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                  <h1 style="color: #333; margin-bottom: 10px;">${titulo}</h1>
+                  <p style="color: #555; font-size: 16px;">Hola ${consultorName},</p>
+                  <p style="color: #666; font-size: 14px;">Tienes ${consultorTareas.length} tarea(s) que requieren tu atención:</p>
+                  
+                  <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <thead>
+                      <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 10px; text-align: left; color: #555;">Tarea</th>
+                        <th style="padding: 10px; text-align: left; color: #555;">Empresa</th>
+                        <th style="padding: 10px; text-align: left; color: #555;">Prioridad</th>
+                        <th style="padding: 10px; text-align: left; color: #555;">Vencimiento</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${tareasRows}
+                    </tbody>
+                  </table>
+
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+                    <p style="color: #999; font-size: 12px;">
+                      Este es un correo automático de la plataforma de Compliance. Accede a tu panel para más detalles.
+                    </p>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `;
+
+          await sendEmail(consultorUser.email, titulo, htmlBody);
+          emailsEnviados++;
+          console.log(`Email sent to ${consultorUser.email}`);
+        }
+      } catch (emailError: any) {
+        console.error(`Error sending email to consultor ${cId}:`, emailError);
+      }
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `${notificacionesCreadas} notificación(es) creada(s)`,
-        notificacionesCreadas 
+        message: `${notificacionesCreadas} notificación(es) creada(s), ${emailsEnviados} email(s) enviado(s)`,
+        notificacionesCreadas,
+        emailsEnviados
       }),
       {
         status: 200,
@@ -170,5 +225,4 @@ serve(async (req: Request) => {
       }
     );
   }
-});
-
+})
