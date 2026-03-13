@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
 import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail } from '../_shared/smtp.ts'
+import { reportEmailTemplate } from '../_shared/email-templates.ts'
 
 interface ReportEmailRequest {
   empresaId: string;
