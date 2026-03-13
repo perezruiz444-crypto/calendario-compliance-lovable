@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
 
 import { corsHeaders } from '../_shared/cors.ts';
+import { sendEmail } from '../_shared/smtp.ts';
+import { userInvitationTemplate } from '../_shared/email-templates.ts';
 
 interface InvitationRequest {
   email: string;
@@ -131,25 +133,31 @@ serve(async (req: Request) => {
     const setupLink = resetData?.properties?.action_link || null;
     console.log('Backup setup link:', setupLink ? 'Generated' : 'Failed');
 
-    // Try to send invitation email via Supabase Auth
+    // Send invitation email via Resend with branded template
     let emailSent = false;
     try {
-      const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-        email,
-        {
-          data: userMetadata,
-          redirectTo: `${req.headers.get('origin') || 'https://3fd50525-4957-433e-99b5-f22cb124e7c8.lovableproject.com'}/set-password`
-        }
-      );
-
-      if (inviteError) {
-        console.log('Email sending failed:', inviteError.message);
-      } else {
-        emailSent = true;
-        console.log('Invitation email sent successfully to:', email);
-      }
+      const htmlBody = userInvitationTemplate(nombreCompleto, setupLink);
+      await sendEmail(email, `🎉 Invitación a ${nombreCompleto} - Compliance Platform`, htmlBody);
+      emailSent = true;
+      console.log('Invitation email sent successfully via Resend to:', email);
     } catch (emailError: any) {
       console.log('Email sending error:', emailError.message);
+      // Fallback: try Supabase Auth invite
+      try {
+        const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+          email,
+          {
+            data: userMetadata,
+            redirectTo: `${req.headers.get('origin') || 'https://3fd50525-4957-433e-99b5-f22cb124e7c8.lovableproject.com'}/set-password`
+          }
+        );
+        if (!inviteError) {
+          emailSent = true;
+          console.log('Fallback: Invitation email sent via Supabase Auth');
+        }
+      } catch (fallbackError: any) {
+        console.log('Fallback email also failed:', fallbackError.message);
+      }
     }
 
     return new Response(
