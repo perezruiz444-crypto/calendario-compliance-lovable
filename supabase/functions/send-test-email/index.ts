@@ -76,27 +76,10 @@ Deno.serve(async (req) => {
 
     const targetUserName = targetProfile?.nombre_completo || targetUser.email
 
-    // Build HTML email
-    const htmlBody = `
-      <html>
-        <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h1 style="color: #333; margin-bottom: 20px;">${subject}</h1>
-            <p style="color: #555; font-size: 16px; line-height: 1.6;">Hola ${targetUserName},</p>
-            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-              <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0;">${message}</p>
-            </div>
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                Este es un correo de prueba enviado desde la plataforma de Compliance.
-              </p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `
+    // Build HTML email using template
+    const htmlBody = testEmailTemplate(targetUserName, subject, message)
 
-    // Send real email via SMTP
+    // Send real email via Resend
     await sendEmail(targetUser.email, subject, htmlBody)
 
     console.log('Test email sent successfully via SMTP')

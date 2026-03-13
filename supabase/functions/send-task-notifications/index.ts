@@ -150,51 +150,14 @@ Deno.serve(async (req) => {
         if (consultorUser?.email) {
           const consultorName = consultorProfile?.nombre_completo || consultorUser.email;
 
-          // Build tasks table rows
-          const tareasRows = consultorTareas.map(t => {
-            const prioridadColor = t.prioridad === 'alta' ? '#e53e3e' : t.prioridad === 'media' ? '#d69e2e' : '#38a169';
-            const fechaVenc = t.fecha_vencimiento ? new Date(t.fecha_vencimiento).toLocaleDateString('es-MX') : 'Sin fecha';
-            return `
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 10px; color: #333;">${t.titulo}</td>
-                <td style="padding: 10px; color: #666;">${(t.empresas as any)?.razon_social || '-'}</td>
-                <td style="padding: 10px;"><span style="color: ${prioridadColor}; font-weight: bold;">${t.prioridad || '-'}</span></td>
-                <td style="padding: 10px; color: #666;">${fechaVenc}</td>
-              </tr>`;
-          }).join('');
+          const tareasData = consultorTareas.map(t => ({
+            titulo: t.titulo,
+            empresa: (t.empresas as any)?.razon_social || '-',
+            prioridad: t.prioridad || '-',
+            fechaVencimiento: t.fecha_vencimiento ? new Date(t.fecha_vencimiento).toLocaleDateString('es-MX') : 'Sin fecha',
+          }));
 
-          const htmlBody = `
-            <html>
-              <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
-                <div style="max-width: 700px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                  <h1 style="color: #333; margin-bottom: 10px;">${titulo}</h1>
-                  <p style="color: #555; font-size: 16px;">Hola ${consultorName},</p>
-                  <p style="color: #666; font-size: 14px;">Tienes ${consultorTareas.length} tarea(s) que requieren tu atención:</p>
-                  
-                  <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-                    <thead>
-                      <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                        <th style="padding: 10px; text-align: left; color: #555;">Tarea</th>
-                        <th style="padding: 10px; text-align: left; color: #555;">Empresa</th>
-                        <th style="padding: 10px; text-align: left; color: #555;">Prioridad</th>
-                        <th style="padding: 10px; text-align: left; color: #555;">Vencimiento</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${tareasRows}
-                    </tbody>
-                  </table>
-
-                  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-                    <p style="color: #999; font-size: 12px;">
-                      Este es un correo automático de la plataforma de Compliance. Accede a tu panel para más detalles.
-                    </p>
-                  </div>
-                </div>
-              </body>
-            </html>
-          `;
-
+          const htmlBody = taskNotificationTemplate(consultorName, titulo, tareasData);
           await sendEmail(consultorUser.email, titulo, htmlBody);
           emailsEnviados++;
           console.log(`Email sent to ${consultorUser.email}`);

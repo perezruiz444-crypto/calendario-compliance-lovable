@@ -157,54 +157,10 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Build summary HTML email
-        const htmlBody = `
-          <html>
-            <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
-              <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h1 style="color: #333; margin-bottom: 20px;">📋 Resumen Diario de Actividades</h1>
-                <p style="color: #555; font-size: 16px;">Hola ${profile.nombre_completo},</p>
-                <p style="color: #666; font-size: 14px;">Aquí tienes tu resumen de actividades pendientes:</p>
-                
-                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-                  ${summaryData.overdueTasks > 0 ? `
-                  <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 12px; color: #e53e3e; font-weight: bold;">⚠️ Tareas Vencidas</td>
-                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #e53e3e;">${summaryData.overdueTasks}</td>
-                  </tr>` : ''}
-                  ${summaryData.pendingTasks > 0 ? `
-                  <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 12px; color: #555;">📝 Tareas Pendientes</td>
-                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #333;">${summaryData.pendingTasks}</td>
-                  </tr>` : ''}
-                  ${summaryData.upcomingDeadlines > 0 ? `
-                  <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 12px; color: #555;">🔔 Tareas próximas a vencer (7 días)</td>
-                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #d69e2e;">${summaryData.upcomingDeadlines}</td>
-                  </tr>` : ''}
-                  ${summaryData.expiringCertifications > 0 ? `
-                  <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 12px; color: #555;">📜 Certificaciones próximas a vencer</td>
-                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #d69e2e;">${summaryData.expiringCertifications}</td>
-                  </tr>` : ''}
-                  ${summaryData.expiringDocuments > 0 ? `
-                  <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 12px; color: #555;">📄 Documentos próximos a vencer</td>
-                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #d69e2e;">${summaryData.expiringDocuments}</td>
-                  </tr>` : ''}
-                </table>
+        // Build summary HTML email using template
+        const htmlBody = dailySummaryTemplate(profile.nombre_completo, summaryData)
 
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-                  <p style="color: #999; font-size: 12px; margin: 0;">
-                    Este es un correo automático generado por la plataforma de Compliance. Accede a tu panel para más detalles.
-                  </p>
-                </div>
-              </div>
-            </body>
-          </html>
-        `
-
-        // Send real email via SMTP
+        // Send real email via Resend
         console.log(`Sending daily summary to ${user.email}`)
         
         try {

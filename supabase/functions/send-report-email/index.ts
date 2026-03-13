@@ -101,40 +101,16 @@ Deno.serve(async (req) => {
                        period === 'trimestre' ? 'Último Trimestre' :
                        period === 'semestre' ? 'Último Semestre' : 'Año Actual';
 
-    // Prepare email content
+    // Prepare email content using template
     const emailSubject = `📊 Reporte ${reportType} - ${periodText}`;
-    const emailBody = `
-      <html>
-        <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h1 style="color: #333; margin-bottom: 20px;">📊 Reporte de Tareas</h1>
-            
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-              <h2 style="color: #555; font-size: 18px; margin: 0 0 10px 0;">Empresa: ${empresa.razon_social}</h2>
-              <p style="color: #666; margin: 5px 0;"><strong>RFC:</strong> ${empresa.rfc}</p>
-              <p style="color: #666; margin: 5px 0;"><strong>Período:</strong> ${periodText}</p>
-              <p style="color: #666; margin: 5px 0;"><strong>Tipo de Reporte:</strong> ${reportType}</p>
-            </div>
+    const emailBody = reportEmailTemplate(
+      { razonSocial: empresa.razon_social, rfc: empresa.rfc },
+      periodText,
+      reportType,
+      reportData.resumen
+    );
 
-            <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-              <h3 style="color: #1976d2; font-size: 16px; margin: 0 0 10px 0;">Resumen</h3>
-              <p style="color: #555; margin: 5px 0;"><strong>Total de tareas:</strong> ${reportData.resumen.totalTareas}</p>
-              <p style="color: #555; margin: 5px 0;"><strong>Tareas completadas:</strong> ${reportData.resumen.tareasCompletadas}</p>
-              <p style="color: #555; margin: 5px 0;"><strong>Tareas pendientes:</strong> ${reportData.resumen.tareasPendientes}</p>
-              <p style="color: #555; margin: 5px 0;"><strong>Tasa de completitud:</strong> ${reportData.resumen.tasaCompletitud}%</p>
-            </div>
-
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-              <p style="color: #666; font-size: 14px; margin: 0;">
-                Este es un correo automático. Para ver más detalles, accede a tu panel de reportes en la plataforma.
-              </p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    // Send real email via SMTP to all clientes
+    // Send real email via Resend to all clientes
     let emailsSent = 0;
     for (const cliente of clienteEmails) {
       try {
