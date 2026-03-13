@@ -1,41 +1,33 @@
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  const hostname = Deno.env.get('SMTP_HOST');
-  const port = Number(Deno.env.get('SMTP_PORT') || '465');
-  const username = Deno.env.get('SMTP_USER');
-  const password = Deno.env.get('SMTP_PASSWORD');
-  const from = Deno.env.get('SMTP_FROM');
+  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  const from = Deno.env.get('SMTP_FROM') || 'onboarding@resend.dev';
 
-  if (!hostname || !username || !password || !from) {
-    throw new Error('SMTP configuration incomplete. Required: SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_FROM');
+  if (!resendApiKey) {
+    throw new Error('RESEND_API_KEY is not configured');
   }
 
-  console.log(`[SMTP] Sending email to ${to} via ${hostname}:${port}`);
+  console.log(`[Resend] Sending email to ${to} from ${from}`);
 
-  const client = new SMTPClient({
-    connection: {
-      hostname,
-      port,
-      tls: port === 465,
-      auth: {
-        username,
-        password,
-      },
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      subject,
+      html,
+    }),
   });
 
-  try {
-    await client.send({
-      from,
-      to,
-      subject,
-      content: "Este email requiere un cliente que soporte HTML.",
-      html,
-    });
+  const data = await res.json();
 
-    console.log(`[SMTP] Email sent successfully to ${to}`);
-  } finally {
-    await client.close();
+  if (!res.ok) {
+    console.error('[Resend] Error:', JSON.stringify(data));
+    throw new Error(`Resend API error: ${data.message || res.statusText}`);
   }
+
+  console.log(`[Resend] Email sent successfully to ${to}, id: ${data.id}`);
 }
