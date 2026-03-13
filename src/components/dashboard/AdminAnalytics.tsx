@@ -21,7 +21,7 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
             </CardTitle>
             <CardDescription>Tareas completadas vs pendientes</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 sm:px-6">
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={data.tareasPerformance || []}>
                 <CartesianGrid strokeDasharray="3 3" />
