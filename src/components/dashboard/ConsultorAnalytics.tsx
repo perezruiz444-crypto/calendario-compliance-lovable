@@ -44,7 +44,7 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
             </CardTitle>
             <CardDescription>Estado actual de mis tareas</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 sm:px-6">
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie data={data.tareasPorEstado || []} cx="50%" cy="50%" labelLine={false} label={({ estado, cantidad }) => `${estado}: ${cantidad}`} outerRadius={80} fill="#8884d8" dataKey="cantidad">

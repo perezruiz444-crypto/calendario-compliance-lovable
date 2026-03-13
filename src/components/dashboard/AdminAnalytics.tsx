@@ -44,7 +44,7 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
             </CardTitle>
             <CardDescription>Distribución de tareas activas</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 sm:px-6">
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={data.tareasPorConsultor || []}>
                 <CartesianGrid strokeDasharray="3 3" />
