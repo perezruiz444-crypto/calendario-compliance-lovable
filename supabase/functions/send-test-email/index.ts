@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
 import { corsHeaders } from '../_shared/cors.ts'
+import { sendEmail } from '../_shared/smtp.ts'
 
 interface TestEmailRequest {
   userId: string;
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Get the selected user's info (for display purposes)
+    // Get the selected user's info
     const { data: { user: targetUser }, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
 
     if (userError || !targetUser?.email) {
@@ -74,36 +75,36 @@ Deno.serve(async (req) => {
 
     const targetUserName = targetProfile?.nombre_completo || targetUser.email
 
-    // Use Supabase SMTP to send a magic link as test email
-    console.log(`Sending test email via Supabase SMTP to ${targetUser.email}`)
-    
-    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: targetUser.email,
-      options: {
-        redirectTo: `${Deno.env.get('SUPABASE_URL')}/dashboard`,
-      }
-    })
+    // Build HTML email
+    const htmlBody = `
+      <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h1 style="color: #333; margin-bottom: 20px;">${subject}</h1>
+            <p style="color: #555; font-size: 16px; line-height: 1.6;">Hola ${targetUserName},</p>
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+              <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0;">${message}</p>
+            </div>
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                Este es un correo de prueba enviado desde la plataforma de Compliance.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
 
-    if (magicLinkError) {
-      console.error('Supabase email error:', magicLinkError)
-      return new Response(JSON.stringify({ 
-        error: 'Failed to send test email via Supabase', 
-        details: magicLinkError.message 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    // Send real email via SMTP
+    await sendEmail(targetUser.email, subject, htmlBody)
 
-    console.log('Test email sent successfully via Supabase SMTP')
+    console.log('Test email sent successfully via SMTP')
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: `Test email sent to ${targetUser.email} via Supabase SMTP`,
+      message: `Correo de prueba enviado a ${targetUser.email} via SMTP`,
       sentTo: targetUser.email,
       targetUser: targetUserName,
-      note: 'A magic link email was sent using Supabase configured SMTP'
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

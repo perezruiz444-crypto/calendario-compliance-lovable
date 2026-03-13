@@ -1,10 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
+import { corsHeaders } from '../_shared/cors.ts'
+import { sendEmail } from '../_shared/smtp.ts'
 
 interface ReportEmailRequest {
   empresaId: string;
@@ -13,10 +9,9 @@ interface ReportEmailRequest {
   reportType: string;
 }
 
-serve(async (req: Request) => {
-  // Handle CORS preflight requests
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
@@ -77,25 +72,27 @@ serve(async (req: Request) => {
       throw new Error('No se encontraron usuarios con rol cliente para esta empresa');
     }
 
-    // Get emails from auth.users (we need to use admin client for this)
+    // Get emails from auth.users
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const clienteEmails: string[] = [];
+    const clienteEmails: { email: string; name: string }[] = [];
     for (const clienteId of clienteIds) {
-      const { data: userData, error: userDataError } = await supabaseAdmin.auth.admin.getUserById(clienteId);
+      const { data: userData } = await supabaseAdmin.auth.admin.getUserById(clienteId);
+      const profile = profiles.find(p => p.id === clienteId);
       if (userData?.user?.email) {
-        clienteEmails.push(userData.user.email);
+        clienteEmails.push({
+          email: userData.user.email,
+          name: profile?.nombre_completo || userData.user.email
+        });
       }
     }
 
     if (clienteEmails.length === 0) {
       throw new Error('No se encontraron emails de clientes');
     }
-
-    console.log('Sending emails to:', clienteEmails);
 
     // Prepare period text
     const periodText = period === 'mes_actual' ? 'Mes Actual' :
@@ -109,7 +106,7 @@ serve(async (req: Request) => {
       <html>
         <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
           <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h1 style="color: #333; margin-bottom: 20px;">Reporte de Tareas</h1>
+            <h1 style="color: #333; margin-bottom: 20px;">📊 Reporte de Tareas</h1>
             
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
               <h2 style="color: #555; font-size: 18px; margin: 0 0 10px 0;">Empresa: ${empresa.razon_social}</h2>
@@ -136,33 +133,18 @@ serve(async (req: Request) => {
       </html>
     `;
 
-    // Send email to all cliente emails using Supabase SMTP
+    // Send real email via SMTP to all clientes
     let emailsSent = 0;
-    for (const email of clienteEmails) {
+    for (const cliente of clienteEmails) {
       try {
-        console.log(`Sending report email via Supabase SMTP to ${email}`);
-        
-        // Use Supabase's email system to send the report
-        const { data: emailData, error: emailError } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'magiclink',
-          email: email,
-          options: {
-            redirectTo: `${Deno.env.get('SUPABASE_URL')}/reportes`,
-          }
-        });
-
-        if (emailError) {
-          console.error('Supabase email error for', email, ':', emailError);
-        } else {
-          emailsSent++;
-          console.log('Email sent successfully via Supabase SMTP to:', email);
-        }
+        console.log(`Sending report email via SMTP to ${cliente.email}`);
+        await sendEmail(cliente.email, emailSubject, emailBody);
+        emailsSent++;
+        console.log('Email sent successfully to:', cliente.email);
       } catch (emailError) {
-        console.error('Exception sending email to', email, ':', emailError);
+        console.error('Error sending email to', cliente.email, ':', emailError);
       }
     }
-
-    console.log('Creating report notifications for users:', clienteIds);
 
     // Create notifications for all cliente users
     let notificacionesCreadas = 0;
@@ -206,5 +188,4 @@ serve(async (req: Request) => {
       }
     );
   }
-});
-
+})

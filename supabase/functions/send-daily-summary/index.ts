@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
 import { corsHeaders } from '../_shared/cors.ts'
+import { sendEmail } from '../_shared/smtp.ts'
 
 interface DailySummaryData {
   pendingTasks: number
@@ -22,7 +23,6 @@ Deno.serve(async (req) => {
 
     console.log('Starting daily summary email job...')
 
-    // Get all active users with notifications enabled
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('profiles')
       .select('id, nombre_completo, notificaciones_activas')
@@ -42,7 +42,6 @@ Deno.serve(async (req) => {
 
     for (const profile of profiles || []) {
       try {
-        // Get user email from auth
         const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(profile.id)
         
         if (userError || !user?.email) {
@@ -75,7 +74,6 @@ Deno.serve(async (req) => {
           .gte('fecha_vencimiento', today)
           .lte('fecha_vencimiento', next7Days)
 
-        // Get user's empresa_id
         const { data: userRoles } = await supabaseAdmin
           .from('user_roles')
           .select('role')
@@ -86,19 +84,16 @@ Deno.serve(async (req) => {
         let expiringCerts = 0
 
         if (userRoles?.role === 'administrador' || userRoles?.role === 'consultor') {
-          // Get all empresas for admin/consultor
           const { data: empresas } = await supabaseAdmin
             .from('empresas')
             .select('id, immex_fecha_fin, prosec_fecha_fin, cert_iva_ieps_fecha_vencimiento, matriz_seguridad_fecha_vencimiento')
 
           for (const empresa of empresas || []) {
-            // Check expiring certifications
             if (empresa.immex_fecha_fin && empresa.immex_fecha_fin <= next7Days) expiringCerts++
             if (empresa.prosec_fecha_fin && empresa.prosec_fecha_fin <= next7Days) expiringCerts++
             if (empresa.cert_iva_ieps_fecha_vencimiento && empresa.cert_iva_ieps_fecha_vencimiento <= next7Days) expiringCerts++
             if (empresa.matriz_seguridad_fecha_vencimiento && empresa.matriz_seguridad_fecha_vencimiento <= next7Days) expiringCerts++
 
-            // Check expiring documents
             const { count: docsCount } = await supabaseAdmin
               .from('documentos')
               .select('id', { count: 'exact', head: true })
@@ -110,7 +105,6 @@ Deno.serve(async (req) => {
             expiringDocs += docsCount || 0
           }
         } else if (userRoles?.role === 'cliente') {
-          // Get cliente's empresa
           const { data: clientProfile } = await supabaseAdmin
             .from('profiles')
             .select('empresa_id')
@@ -151,7 +145,6 @@ Deno.serve(async (req) => {
           expiringDocuments: expiringDocs
         }
 
-        // Only send email if there's something to report
         const hasActivity = summaryData.pendingTasks > 0 || 
                            summaryData.overdueTasks > 0 || 
                            summaryData.upcomingDeadlines > 0 || 
@@ -163,56 +156,81 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Create a summary message
-        const summaryParts = []
-        if (summaryData.overdueTasks > 0) {
-          summaryParts.push(`${summaryData.overdueTasks} tarea(s) vencida(s)`)
-        }
-        if (summaryData.upcomingDeadlines > 0) {
-          summaryParts.push(`${summaryData.upcomingDeadlines} tarea(s) próxima(s) a vencer`)
-        }
-        if (summaryData.expiringCertifications > 0) {
-          summaryParts.push(`${summaryData.expiringCertifications} certificación(es) próxima(s) a vencer`)
-        }
-        if (summaryData.expiringDocuments > 0) {
-          summaryParts.push(`${summaryData.expiringDocuments} documento(s) próximo(s) a vencer`)
-        }
+        // Build summary HTML email
+        const htmlBody = `
+          <html>
+            <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+              <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h1 style="color: #333; margin-bottom: 20px;">📋 Resumen Diario de Actividades</h1>
+                <p style="color: #555; font-size: 16px;">Hola ${profile.nombre_completo},</p>
+                <p style="color: #666; font-size: 14px;">Aquí tienes tu resumen de actividades pendientes:</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                  ${summaryData.overdueTasks > 0 ? `
+                  <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px; color: #e53e3e; font-weight: bold;">⚠️ Tareas Vencidas</td>
+                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #e53e3e;">${summaryData.overdueTasks}</td>
+                  </tr>` : ''}
+                  ${summaryData.pendingTasks > 0 ? `
+                  <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px; color: #555;">📝 Tareas Pendientes</td>
+                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #333;">${summaryData.pendingTasks}</td>
+                  </tr>` : ''}
+                  ${summaryData.upcomingDeadlines > 0 ? `
+                  <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px; color: #555;">🔔 Tareas próximas a vencer (7 días)</td>
+                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #d69e2e;">${summaryData.upcomingDeadlines}</td>
+                  </tr>` : ''}
+                  ${summaryData.expiringCertifications > 0 ? `
+                  <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px; color: #555;">📜 Certificaciones próximas a vencer</td>
+                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #d69e2e;">${summaryData.expiringCertifications}</td>
+                  </tr>` : ''}
+                  ${summaryData.expiringDocuments > 0 ? `
+                  <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px; color: #555;">📄 Documentos próximos a vencer</td>
+                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #d69e2e;">${summaryData.expiringDocuments}</td>
+                  </tr>` : ''}
+                </table>
 
-        const summaryMessage = summaryParts.join(', ')
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+                  <p style="color: #999; font-size: 12px; margin: 0;">
+                    Este es un correo automático generado por la plataforma de Compliance. Accede a tu panel para más detalles.
+                  </p>
+                </div>
+              </div>
+            </body>
+          </html>
+        `
 
-        // Send email using Supabase SMTP with magic link
+        // Send real email via SMTP
         console.log(`Sending daily summary to ${user.email}`)
         
-        const { error: emailError } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'magiclink',
-          email: user.email,
-          options: {
-            redirectTo: `${Deno.env.get('SUPABASE_URL')}/dashboard`,
-            data: {
-              subject: 'Resumen Diario de Actividades',
-              summary: summaryMessage
-            }
-          }
-        })
-
-        if (emailError) {
-          console.error(`Failed to send email to ${user.email}:`, emailError)
-          emailsFailed++
-        } else {
+        try {
+          await sendEmail(user.email, '📋 Resumen Diario de Actividades', htmlBody)
           console.log(`Successfully sent email to ${user.email}`)
           emailsSent++
-          
-          // Create in-app notification
-          await supabaseAdmin
-            .from('notificaciones')
-            .insert({
-              user_id: profile.id,
-              tipo: 'resumen_diario',
-              titulo: 'Resumen Diario',
-              contenido: summaryMessage,
-              referencia_tipo: 'sistema'
-            })
+        } catch (emailError: any) {
+          console.error(`Failed to send email to ${user.email}:`, emailError)
+          emailsFailed++
         }
+
+        // Create in-app notification regardless of email result
+        const summaryParts = []
+        if (summaryData.overdueTasks > 0) summaryParts.push(`${summaryData.overdueTasks} tarea(s) vencida(s)`)
+        if (summaryData.upcomingDeadlines > 0) summaryParts.push(`${summaryData.upcomingDeadlines} tarea(s) próxima(s) a vencer`)
+        if (summaryData.expiringCertifications > 0) summaryParts.push(`${summaryData.expiringCertifications} certificación(es) próxima(s) a vencer`)
+        if (summaryData.expiringDocuments > 0) summaryParts.push(`${summaryData.expiringDocuments} documento(s) próximo(s) a vencer`)
+
+        await supabaseAdmin
+          .from('notificaciones')
+          .insert({
+            user_id: profile.id,
+            tipo: 'resumen_diario',
+            titulo: 'Resumen Diario',
+            contenido: summaryParts.join(', '),
+            referencia_tipo: 'sistema'
+          })
 
       } catch (userError: any) {
         console.error(`Error processing user ${profile.id}:`, userError)
