@@ -8,8 +8,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, ClipboardList, ChevronDown, TrendingUp, ListTodo, Loader2 } from 'lucide-react';
+import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, ClipboardList, ChevronDown, TrendingUp, ListTodo, Loader2, Search, History, User } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DocumentosManager } from '@/components/documentos/DocumentosManager';
@@ -17,6 +20,9 @@ import { SolicitudesServicio } from '@/components/solicitudes/SolicitudesServici
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import { toast } from 'sonner';
 import { getCurrentPeriodKey, getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
+import { CumplimientoHistorial } from '@/components/obligaciones/CumplimientoHistorial';
+import { EvidenciaCumplimiento } from '@/components/obligaciones/EvidenciaCumplimiento';
+import { ExportarCumplimientoButton } from '@/components/obligaciones/ExportarCumplimientoButton';
 
 export default function MiEmpresa() {
   const { user, role, loading } = useAuth();
@@ -26,9 +32,19 @@ export default function MiEmpresa() {
   const [domicilios, setDomicilios] = useState<any[]>([]);
   const [obligaciones, setObligaciones] = useState<any[]>([]);
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
+  const [responsables, setResponsables] = useState<Record<string, { nombre: string; tipo: string }>>({});
   const [tareas, setTareas] = useState<any[]>([]);
   const [completingTarea, setCompletingTarea] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState(true);
+
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterEstado, setFilterEstado] = useState<string>('todos');
+  const [filterCategoria, setFilterCategoria] = useState<string>('todas');
+
+  // Dialogs
+  const [historialObl, setHistorialObl] = useState<any | null>(null);
+  const [evidenciaObl, setEvidenciaObl] = useState<any | null>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth');
@@ -61,15 +77,32 @@ export default function MiEmpresa() {
       const obs = obligacionesRes.data || [];
       setObligaciones(obs);
 
+      // Fetch responsable names
+      const responsableIds = [...new Set(obs.filter((o: any) => o.responsable_id).map((o: any) => o.responsable_id))];
+      if (responsableIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, nombre_completo')
+          .in('id', responsableIds);
+        if (profilesData) {
+          const rMap: Record<string, { nombre: string; tipo: string }> = {};
+          profilesData.forEach((p: any) => {
+            const ob = obs.find((o: any) => o.responsable_id === p.id);
+            rMap[p.id] = { nombre: p.nombre_completo, tipo: ob?.responsable_tipo || 'consultor' };
+          });
+          setResponsables(rMap);
+        }
+      }
+
       if (obs.length > 0) {
-        const obIds = obs.map(o => o.id);
+        const obIds = obs.map((o: any) => o.id);
         const { data: cData } = await supabase
           .from('obligacion_cumplimientos')
           .select('obligacion_id, periodo_key')
           .in('obligacion_id', obIds);
         if (cData) {
           const map: Record<string, boolean> = {};
-          cData.forEach(c => { map[`${c.obligacion_id}:${c.periodo_key}`] = true; });
+          cData.forEach((c: any) => { map[`${c.obligacion_id}:${c.periodo_key}`] = true; });
           setCumplimientos(map);
         }
       }
@@ -93,12 +126,17 @@ export default function MiEmpresa() {
       setCumplimientos(prev => ({ ...prev, [mapKey]: false }));
       toast.success('Cumplimiento desmarcado');
     } else {
-      const { error } = await supabase.from('obligacion_cumplimientos').insert({
-        obligacion_id: obligacionId, periodo_key: periodKey, completada_por: user.id,
-      });
-      if (error) { toast.error('Error al marcar cumplimiento'); return; }
+      // Show evidence dialog instead of direct insert
+      const ob = obligaciones.find((o: any) => o.id === obligacionId);
+      setEvidenciaObl({ id: obligacionId, presentacion, periodoKey: periodKey, nombre: ob?.nombre });
+    }
+  };
+
+  const handleEvidenciaCompleted = () => {
+    if (evidenciaObl) {
+      const mapKey = `${evidenciaObl.id}:${evidenciaObl.periodoKey}`;
       setCumplimientos(prev => ({ ...prev, [mapKey]: true }));
-      toast.success(`Marcada como completada - ${getPeriodLabel(presentacion, periodKey)}`);
+      setEvidenciaObl(null);
     }
   };
 
@@ -110,6 +148,21 @@ export default function MiEmpresa() {
     if (dias <= 90) return { color: 'default', icon: Calendar, text: `${dias} días` };
     return { color: 'success', icon: CheckCircle, text: `${dias} días` };
   };
+
+  // Filtered obligations
+  const filteredObligaciones = obligaciones.filter((ob: any) => {
+    if (searchTerm && !ob.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (filterCategoria !== 'todas' && ob.categoria !== filterCategoria) return false;
+    if (filterEstado !== 'todos') {
+      const pk = getCurrentPeriodKey(ob.presentacion);
+      const isCompleted = cumplimientos[`${ob.id}:${pk}`] || false;
+      if (filterEstado === 'cumplida' && !isCompleted) return false;
+      if (filterEstado === 'pendiente' && isCompleted) return false;
+    }
+    return true;
+  });
+
+  const categorias = [...new Set(obligaciones.map((o: any) => o.categoria))];
 
   if (loading || loadingData) {
     return (
@@ -221,12 +274,12 @@ export default function MiEmpresa() {
           <TabsContent value="obligaciones" className="space-y-4">
             {/* Progress Summary Cards */}
             {obligaciones.length > 0 && (() => {
-              const completadas = obligaciones.filter(ob => {
+              const completadas = obligaciones.filter((ob: any) => {
                 const pk = getCurrentPeriodKey(ob.presentacion);
                 return cumplimientos[`${ob.id}:${pk}`];
               }).length;
               const total = obligaciones.length;
-              const porVencer = obligaciones.filter(ob => {
+              const porVencer = obligaciones.filter((ob: any) => {
                 if (!ob.fecha_vencimiento) return false;
                 const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
                 return dias >= 0 && dias <= 30;
@@ -280,22 +333,66 @@ export default function MiEmpresa() {
               );
             })()}
 
+            {/* Filters Bar */}
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                  <div className="relative flex-1 w-full sm:max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar obligación..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Select value={filterEstado} onValueChange={setFilterEstado}>
+                    <SelectTrigger className="w-full sm:w-[150px]">
+                      <SelectValue placeholder="Estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="pendiente">Pendientes</SelectItem>
+                      <SelectItem value="cumplida">Cumplidas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterCategoria} onValueChange={setFilterCategoria}>
+                    <SelectTrigger className="w-full sm:w-[160px]">
+                      <SelectValue placeholder="Categoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas</SelectItem>
+                      {categorias.map(cat => (
+                        <SelectItem key={cat} value={cat}>{CATEGORIA_LABELS[cat] || cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <ExportarCumplimientoButton
+                    obligaciones={obligaciones}
+                    cumplimientos={cumplimientos}
+                    empresaNombre={empresa.razon_social}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Grouped by Category */}
             <Card>
               <CardHeader>
                 <CardTitle className="font-heading flex items-center gap-2">
                   <ClipboardList className="w-5 h-5" />
                   Mis Obligaciones
-                  <Badge variant="secondary" className="ml-2">{obligaciones.length}</Badge>
+                  <Badge variant="secondary" className="ml-2">{filteredObligaciones.length}</Badge>
                 </CardTitle>
                 <CardDescription>Marca como completadas las obligaciones del periodo actual</CardDescription>
               </CardHeader>
               <CardContent>
-                {obligaciones.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No hay obligaciones asignadas</p>
+                {filteredObligaciones.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    {obligaciones.length === 0 ? 'No hay obligaciones asignadas' : 'No se encontraron obligaciones con los filtros aplicados'}
+                  </p>
                 ) : (() => {
-                  // Group by category
-                  const grouped = obligaciones.reduce((acc: Record<string, any[]>, ob) => {
+                  const grouped = filteredObligaciones.reduce((acc: Record<string, any[]>, ob: any) => {
                     const cat = ob.categoria || 'otro';
                     if (!acc[cat]) acc[cat] = [];
                     acc[cat].push(ob);
@@ -314,10 +411,12 @@ export default function MiEmpresa() {
                             <span className="text-xs text-muted-foreground">({(obs as any[]).length})</span>
                           </CollapsibleTrigger>
                           <CollapsibleContent className="pl-6 space-y-2 mt-1">
-                            {(obs as any[]).map(ob => {
+                            {(obs as any[]).map((ob: any) => {
                               const periodKey = getCurrentPeriodKey(ob.presentacion);
                               const mapKey = `${ob.id}:${periodKey}`;
                               const isCompleted = cumplimientos[mapKey] || false;
+                              const resp = ob.responsable_id ? responsables[ob.responsable_id] : null;
+
                               return (
                                 <div key={ob.id} className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${isCompleted ? 'bg-success/10 border-success/30' : ''}`}>
                                   <Checkbox
@@ -341,8 +440,23 @@ export default function MiEmpresa() {
                                         if (dias <= 30) return <Badge className="bg-destructive/20 text-destructive text-xs">{dias}d</Badge>;
                                         return null;
                                       })()}
+                                      {resp && (
+                                        <Badge variant="outline" className={`text-xs gap-1 ${resp.tipo === 'cliente' ? 'bg-accent/10 text-accent-foreground' : 'bg-primary/10 text-primary'}`}>
+                                          <User className="w-3 h-3" />
+                                          {resp.nombre.length > 15 ? resp.nombre.substring(0, 15) + '…' : resp.nombre}
+                                        </Badge>
+                                      )}
                                     </div>
                                   </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 shrink-0"
+                                    title="Ver historial"
+                                    onClick={() => setHistorialObl(ob)}
+                                  >
+                                    <History className="w-3.5 h-3.5" />
+                                  </Button>
                                   {isCompleted && <CheckCircle className="w-5 h-5 text-success shrink-0" />}
                                 </div>
                               );
@@ -549,6 +663,29 @@ export default function MiEmpresa() {
           </Card>
         </div>
       </div>
+
+      {/* Historial Dialog */}
+      {historialObl && (
+        <CumplimientoHistorial
+          open={!!historialObl}
+          onOpenChange={(open) => { if (!open) setHistorialObl(null); }}
+          obligacionId={historialObl.id}
+          obligacionNombre={historialObl.nombre}
+          presentacion={historialObl.presentacion}
+        />
+      )}
+
+      {/* Evidencia Dialog */}
+      {evidenciaObl && user && (
+        <EvidenciaCumplimiento
+          open={!!evidenciaObl}
+          onOpenChange={(open) => { if (!open) setEvidenciaObl(null); }}
+          obligacionId={evidenciaObl.id}
+          periodoKey={evidenciaObl.periodoKey}
+          userId={user.id}
+          onCompleted={handleEvidenciaCompleted}
+        />
+      )}
     </DashboardLayout>
   );
 }
