@@ -842,6 +842,7 @@ export type Database = {
           completada_en: string
           completada_por: string | null
           created_at: string
+          evidencia_url: string | null
           id: string
           notas: string | null
           obligacion_id: string
@@ -852,6 +853,7 @@ export type Database = {
           completada_en?: string
           completada_por?: string | null
           created_at?: string
+          evidencia_url?: string | null
           id?: string
           notas?: string | null
           obligacion_id: string
@@ -862,6 +864,7 @@ export type Database = {
           completada_en?: string
           completada_por?: string | null
           created_at?: string
+          evidencia_url?: string | null
           id?: string
           notas?: string | null
           obligacion_id?: string
