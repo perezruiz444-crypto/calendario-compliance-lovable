@@ -1,4 +1,4 @@
-import { SmtpClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   const hostname = Deno.env.get('SMTP_HOST');
@@ -13,26 +13,19 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
 
   console.log(`[SMTP] Sending email to ${to} via ${hostname}:${port}`);
 
-  const client = new SmtpClient();
+  const client = new SMTPClient({
+    connection: {
+      hostname,
+      port,
+      tls: port === 465,
+      auth: {
+        username,
+        password,
+      },
+    },
+  });
 
   try {
-    // Use connectTLS for port 465 (implicit TLS), startTls for port 587
-    if (port === 465) {
-      await client.connectTLS({
-        hostname,
-        port,
-        username,
-        password,
-      });
-    } else {
-      await client.connect({
-        hostname,
-        port,
-        username,
-        password,
-      });
-    }
-
     await client.send({
       from,
       to,
@@ -43,10 +36,6 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
 
     console.log(`[SMTP] Email sent successfully to ${to}`);
   } finally {
-    try {
-      await client.close();
-    } catch (_) {
-      // ignore close errors
-    }
+    await client.close();
   }
 }
