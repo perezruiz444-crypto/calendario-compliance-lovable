@@ -22,7 +22,7 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
             </CardTitle>
             <CardDescription>Tareas completadas por mes</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 sm:px-6">
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={data.performanceMensual || []}>
                 <CartesianGrid strokeDasharray="3 3" />
