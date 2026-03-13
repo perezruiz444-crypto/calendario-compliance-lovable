@@ -48,7 +48,14 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.tareasPorConsultor || []}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="nombre" angle={-45} textAnchor="end" height={100} />
+                <XAxis 
+                  dataKey="nombre" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={100} 
+                  tickFormatter={(value: string) => value.length > 15 ? value.substring(0, 15) + '…' : value}
+                  tick={{ fontSize: 12 }}
+                />
                 <YAxis />
                 <Tooltip />
                 <Legend />
