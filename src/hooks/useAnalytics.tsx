@@ -54,6 +54,10 @@ export interface AnalyticsData {
   // Common
   documentosVencimiento?: Array<{ nombre: string; empresa: string; dias: number }>;
   actividadReciente?: Array<{ tipo: string; descripcion: string; fecha: string }>;
+  
+  // Obligaciones
+  obligacionesPendientes?: number;
+  obligacionesActivas?: number;
 }
 
 const DEFAULT_DATA: AnalyticsData = {
