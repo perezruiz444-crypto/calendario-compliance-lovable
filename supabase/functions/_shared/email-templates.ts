@@ -4,6 +4,7 @@
 
 const BRAND_NAME = 'Calendario Compliance';
 const BRAND_TEAM = 'El Equipo de Compliance de Russell Bedford';
+const PLATFORM_URL = 'https://calendario-compliance.lovable.app';
 const DANGER_COLOR = '#dc2626';
 const WARNING_COLOR = '#d97706';
 const SUCCESS_COLOR = '#16a34a';
@@ -16,6 +17,7 @@ function baseLayout(content: string): string {
 <body style="margin:0;padding:20px;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;color:#000000;line-height:1.5;">
   <div style="max-width:600px;margin:0 auto;">
     ${content}
+    <p>Puedes <a href="${PLATFORM_URL}" style="color:#2563eb;text-decoration:underline;">ingresar a la plataforma</a> para ver más detalles.</p>
     <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
     <p>Saludos,<br>${BRAND_TEAM}</p>
     <p><small style="color:#999;">Este es un correo automático enviado desde ${BRAND_NAME}. Por favor no responda a este mensaje.</small></p>
