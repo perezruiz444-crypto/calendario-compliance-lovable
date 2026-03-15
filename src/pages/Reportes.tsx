@@ -44,6 +44,7 @@ export default function Reportes() {
     tiempoPorEmpresa: [] as any[],
     tiempoPorTarea: [] as any[],
     tareasDetalle: [] as any[],
+    obligacionesPendientesDetalle: [] as any[],
     resumen: {
       totalEmpresas: 0,
       totalTareas: 0,
