@@ -4,6 +4,7 @@
 
 const BRAND_NAME = 'Calendario Compliance';
 const BRAND_TEAM = 'El Equipo de Compliance de Russell Bedford';
+const PLATFORM_URL = 'https://calendario-compliance.lovable.app';
 const DANGER_COLOR = '#dc2626';
 const WARNING_COLOR = '#d97706';
 const SUCCESS_COLOR = '#16a34a';
