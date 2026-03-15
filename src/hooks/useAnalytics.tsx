@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { differenceInDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { getCurrentPeriodKey } from '@/lib/obligaciones';
 
 export interface ProximaTarea {
   id: string;
