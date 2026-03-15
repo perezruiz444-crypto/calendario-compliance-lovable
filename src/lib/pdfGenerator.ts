@@ -40,6 +40,12 @@ interface ReportData {
     razon_social: string;
   }>;
   tareasDetalle?: TareaDetalle[];
+  obligacionesPendientesDetalle?: Array<{
+    nombre: string;
+    empresa: string;
+    categoria: string;
+    fecha_vencimiento: string | null;
+  }>;
   rendimientoConsultores?: Array<{
     name: string;
     completadas: number;
