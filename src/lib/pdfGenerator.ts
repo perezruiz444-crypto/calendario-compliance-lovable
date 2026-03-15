@@ -40,6 +40,12 @@ interface ReportData {
     razon_social: string;
   }>;
   tareasDetalle?: TareaDetalle[];
+  obligacionesPendientesDetalle?: Array<{
+    nombre: string;
+    empresa: string;
+    categoria: string;
+    fecha_vencimiento: string | null;
+  }>;
   rendimientoConsultores?: Array<{
     name: string;
     completadas: number;
@@ -365,6 +371,41 @@ export async function generateReportPDF(
         doc.setTextColor(34, 139, 34);
         doc.text(`(${tc.facturable}h fact.)`, 145, y);
       }
+      y += 7;
+    });
+    y += 10;
+  }
+
+  // ── OBLIGACIONES PENDIENTES ──
+  const obPendientes = reportData.obligacionesPendientesDetalle || [];
+  if (obPendientes.length > 0) {
+    drawSectionTitle('OBLIGACIONES PENDIENTES DE CUMPLIMIENTO', [200, 50, 50]);
+    
+    const oCols = [20, 90, 140, 175];
+    const oLabels = ['Obligación', 'Empresa', 'Categoría', 'Vencimiento'];
+    
+    doc.setFillColor(200, 50, 50);
+    doc.rect(19, y - 5, pageWidth - 38, 8, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined!, 'bold');
+    oLabels.forEach((l, i) => doc.text(l, oCols[i], y));
+    doc.setFont(undefined!, 'normal');
+    y += 8;
+
+    doc.setFontSize(9);
+    obPendientes.forEach((ob, idx) => {
+      checkNewPage(8);
+      if (idx % 2 === 0) {
+        doc.setFillColor(255, 245, 245);
+        doc.rect(19, y - 4, pageWidth - 38, 7, 'F');
+      }
+      doc.setTextColor(50, 50, 50);
+      doc.text(ob.nombre.substring(0, 35), oCols[0], y);
+      doc.text(ob.empresa.substring(0, 25), oCols[1], y);
+      doc.text(ob.categoria.substring(0, 18), oCols[2], y);
+      const venc = ob.fecha_vencimiento ? new Date(ob.fecha_vencimiento).toLocaleDateString('es-MX') : '-';
+      doc.text(venc, oCols[3], y);
       y += 7;
     });
     y += 10;

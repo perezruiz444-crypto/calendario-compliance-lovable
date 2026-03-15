@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { differenceInDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { getCurrentPeriodKey } from '@/lib/obligaciones';
 
 export interface ProximaTarea {
   id: string;
@@ -53,6 +54,10 @@ export interface AnalyticsData {
   // Common
   documentosVencimiento?: Array<{ nombre: string; empresa: string; dias: number }>;
   actividadReciente?: Array<{ tipo: string; descripcion: string; fecha: string }>;
+  
+  // Obligaciones
+  obligacionesPendientes?: number;
+  obligacionesActivas?: number;
 }
 
 const DEFAULT_DATA: AnalyticsData = {
@@ -148,6 +153,58 @@ export function useAnalytics(empresaId?: string | null) {
       fecha_vencimiento: t.fecha_vencimiento,
       empresa_nombre: empMap[t.empresa_id] || 'N/A',
     }));
+  };
+
+  const fetchObligacionesPendientes = async (empresaFilter?: string | string[]) => {
+    let obQuery = supabase.from('obligaciones').select('id, nombre, presentacion, fecha_vencimiento, empresa_id').eq('activa', true);
+    if (typeof empresaFilter === 'string') {
+      obQuery = obQuery.eq('empresa_id', empresaFilter);
+    } else if (Array.isArray(empresaFilter) && empresaFilter.length > 0) {
+      obQuery = obQuery.in('empresa_id', empresaFilter);
+    }
+    const { data: obligaciones } = await obQuery;
+    if (!obligaciones || obligaciones.length === 0) return { activas: 0, pendientes: 0, proximasOb: [] as ProximaTarea[] };
+
+    const obIds = obligaciones.map(o => o.id);
+    const { data: cumplimientos } = await supabase
+      .from('obligacion_cumplimientos')
+      .select('obligacion_id, periodo_key')
+      .in('obligacion_id', obIds)
+      .eq('completada', true);
+
+    const cumplSet = new Set((cumplimientos || []).map(c => `${c.obligacion_id}:${c.periodo_key}`));
+    
+    const today = new Date();
+    let pendientes = 0;
+    const proximasOb: ProximaTarea[] = [];
+
+    // Get empresa names for display
+    const obEmpresaIds = [...new Set(obligaciones.map(o => o.empresa_id))];
+    const { data: empNames } = await supabase.from('empresas').select('id, razon_social').in('id', obEmpresaIds);
+    const empMap = empNames?.reduce((acc, e) => { acc[e.id] = e.razon_social; return acc; }, {} as Record<string, string>) || {};
+
+    for (const ob of obligaciones) {
+      const pk = getCurrentPeriodKey(ob.presentacion);
+      const isCumplida = cumplSet.has(`${ob.id}:${pk}`);
+      if (!isCumplida) {
+        pendientes++;
+        if (ob.fecha_vencimiento) {
+          const dias = differenceInDays(new Date(ob.fecha_vencimiento), today);
+          if (dias >= 0) {
+            proximasOb.push({
+              id: ob.id,
+              titulo: `[Obligación] ${ob.nombre}`,
+              estado: 'pendiente',
+              prioridad: dias <= 7 ? 'alta' : dias <= 30 ? 'media' : 'baja',
+              fecha_vencimiento: ob.fecha_vencimiento,
+              empresa_nombre: empMap[ob.empresa_id] || 'N/A',
+            });
+          }
+        }
+      }
+    }
+
+    return { activas: obligaciones.length, pendientes, proximasOb };
   };
 
   const fetchAnalytics = async () => {
@@ -247,11 +304,18 @@ export function useAnalytics(empresaId?: string | null) {
 
     const proximasTareas = await fetchProximasTareas(tareas);
 
+    // Fetch obligaciones pendientes
+    const obFilter = empresaId && empresaId !== 'all' ? empresaId : undefined;
+    const obData = await fetchObligacionesPendientes(obFilter);
+    const allProximas = [...proximasTareas, ...obData.proximasOb]
+      .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+      .slice(0, 10);
+
     setData({
       ...DEFAULT_DATA,
       ...common,
-      totalTareas,
-      tareasPendientes,
+      totalTareas: totalTareas + obData.activas,
+      tareasPendientes: tareasPendientes + obData.pendientes,
       tareasCompletadas,
       tareasVencidas,
       totalEmpresas: empresasRes.count || 0,
@@ -261,7 +325,9 @@ export function useAnalytics(empresaId?: string | null) {
       tareasPerformance,
       tareasPorConsultor,
       documentosVencimiento,
-      proximasTareas,
+      proximasTareas: allProximas,
+      obligacionesPendientes: obData.pendientes,
+      obligacionesActivas: obData.activas,
     });
   };
 
@@ -331,11 +397,18 @@ export function useAnalytics(empresaId?: string | null) {
 
     const proximasTareas = await fetchProximasTareas(tareas || []);
 
+    // Fetch obligaciones pendientes
+    const obFilter = empresaId && empresaId !== 'all' ? empresaId : (empresaIds.length > 0 ? empresaIds : undefined);
+    const obData = await fetchObligacionesPendientes(obFilter);
+    const allProximas = [...proximasTareas, ...obData.proximasOb]
+      .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+      .slice(0, 10);
+
     setData({
       ...DEFAULT_DATA,
       ...common,
-      totalTareas,
-      tareasPendientes,
+      totalTareas: totalTareas + obData.activas,
+      tareasPendientes: tareasPendientes + obData.pendientes,
       tareasCompletadas,
       tareasVencidas,
       misEmpresas,
@@ -343,7 +416,9 @@ export function useAnalytics(empresaId?: string | null) {
       performanceMensual,
       tareasPorEstado,
       documentosVencimiento,
-      proximasTareas,
+      proximasTareas: allProximas,
+      obligacionesPendientes: obData.pendientes,
+      obligacionesActivas: obData.activas,
     });
   };
 
@@ -404,19 +479,27 @@ export function useAnalytics(empresaId?: string | null) {
 
     const proximasTareas = await fetchProximasTareas(tareas);
 
+    // Fetch obligaciones pendientes for this empresa
+    const obData = await fetchObligacionesPendientes(common.empresa_id);
+    const allProximas = [...proximasTareas, ...obData.proximasOb]
+      .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+      .slice(0, 10);
+
     setData({
       ...DEFAULT_DATA,
       ...common,
-      totalTareas,
-      tareasPendientes,
+      totalTareas: totalTareas + obData.activas,
+      tareasPendientes: tareasPendientes + obData.pendientes,
       tareasCompletadas,
       tareasVencidas,
       documentosPorVencer,
       solicitudesPendientes: solicitudesRes.count || 0,
       proximosVencimientos,
       documentosVencimiento,
-      proximasTareas,
+      proximasTareas: allProximas,
       empresaCliente: empresa,
+      obligacionesPendientes: obData.pendientes,
+      obligacionesActivas: obData.activas,
     });
   };
 

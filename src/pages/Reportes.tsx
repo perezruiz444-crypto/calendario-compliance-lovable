@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, User, Filter, Mail, Send, FileDown, Clock } from 'lucide-react';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { getCurrentPeriodKey, CATEGORIA_LABELS } from '@/lib/obligaciones';
 import { es } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { generateReportPDF } from '@/lib/pdfGenerator';
@@ -43,6 +44,7 @@ export default function Reportes() {
     tiempoPorEmpresa: [] as any[],
     tiempoPorTarea: [] as any[],
     tareasDetalle: [] as any[],
+    obligacionesPendientesDetalle: [] as any[],
     resumen: {
       totalEmpresas: 0,
       totalTareas: 0,
@@ -485,6 +487,42 @@ export default function Reportes() {
         categoria: t.categoria_id ? (categoriaMap[t.categoria_id] || '-') : '-',
       }));
 
+      // Fetch obligaciones activas pendientes de cumplimiento
+      let obQuery = supabase.from('obligaciones').select('id, nombre, categoria, presentacion, fecha_vencimiento, empresa_id').eq('activa', true);
+      if (selectedEmpresa !== 'todas') {
+        obQuery = obQuery.eq('empresa_id', selectedEmpresa);
+      }
+      const { data: obligacionesActivas } = await obQuery;
+
+      let obligacionesPendientesDetalle: Array<{ nombre: string; empresa: string; categoria: string; fecha_vencimiento: string | null }> = [];
+      let obPendientesCount = 0;
+
+      if (obligacionesActivas && obligacionesActivas.length > 0) {
+        const obIds = obligacionesActivas.map(o => o.id);
+        const { data: cumplimientos } = await supabase
+          .from('obligacion_cumplimientos')
+          .select('obligacion_id, periodo_key')
+          .in('obligacion_id', obIds)
+          .eq('completada', true);
+
+        const cumplSet = new Set((cumplimientos || []).map(c => `${c.obligacion_id}:${c.periodo_key}`));
+
+        obligacionesPendientesDetalle = obligacionesActivas
+          .filter(ob => {
+            const pk = getCurrentPeriodKey(ob.presentacion);
+            return !cumplSet.has(`${ob.id}:${pk}`);
+          })
+          .map(ob => ({
+            nombre: ob.nombre,
+            empresa: empresaMap[ob.empresa_id] || empresasData?.find(e => e.id === ob.empresa_id)?.razon_social || '-',
+            categoria: CATEGORIA_LABELS[ob.categoria] || ob.categoria,
+            fecha_vencimiento: ob.fecha_vencimiento,
+          }));
+        obPendientesCount = obligacionesPendientesDetalle.length;
+      }
+
+      const tareasPendientesCount = tareas?.filter(t => t.estado === 'pendiente' || t.estado === 'en_progreso').length || 0;
+
       setReporteData({
         tareasPorEstado,
         tareasPorPrioridad,
@@ -499,11 +537,12 @@ export default function Reportes() {
         tiempoPorEmpresa: tiempoPorEmpresaArray,
         tiempoPorTarea: tiempoPorTareaArray,
         tareasDetalle,
+        obligacionesPendientesDetalle,
         resumen: {
           totalEmpresas: empresasData?.length || 0,
-          totalTareas: total,
+          totalTareas: total + (obligacionesActivas?.length || 0),
           tareasCompletadas: completadas,
-          tareasPendientes: tareas?.filter(t => t.estado === 'pendiente' || t.estado === 'en_progreso').length || 0,
+          tareasPendientes: tareasPendientesCount + obPendientesCount,
           certificacionesVencer: allVencimientos.length,
           tasaCompletitud,
           totalHorasTrabajadas,
@@ -536,6 +575,20 @@ export default function Reportes() {
       ['Tareas por Prioridad'],
       ...reporteData.tareasPorPrioridad.map(d => [d.name, d.value])
     ];
+
+    if (reporteData.obligacionesPendientesDetalle.length > 0) {
+      rows.push(
+        [''],
+        ['Obligaciones Pendientes de Cumplimiento'],
+        ['Nombre', 'Empresa', 'Categoría', 'Fecha Vencimiento'],
+        ...reporteData.obligacionesPendientesDetalle.map(o => [
+          o.nombre,
+          o.empresa,
+          o.categoria,
+          o.fecha_vencimiento ? format(new Date(o.fecha_vencimiento), 'dd/MM/yyyy') : '-'
+        ])
+      );
+    }
 
     if (tipoReporte === 'consultores' && reporteData.tareasPorConsultor.length > 0) {
       rows.push(
