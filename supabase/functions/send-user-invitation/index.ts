@@ -121,6 +121,17 @@ serve(async (req: Request) => {
 
     console.log('User created successfully:', userData.user.id);
 
+    // Assign role directly (triggers depend on email confirmation which doesn't happen with recovery links)
+    const { error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .insert({ user_id: userData.user.id, role });
+
+    if (roleError) {
+      console.error('Error assigning role:', roleError);
+    } else {
+      console.log('Role assigned successfully:', role);
+    }
+
     // Generate password setup link first (as backup)
     const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',

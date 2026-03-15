@@ -1,49 +1,255 @@
 
+# Plan: Centro de Control de Notificaciones y Recordatorios
 
-## Diagnóstico: Asignación de clientes via invitación no funciona
+## Objetivo
+Crear un sistema centralizado y configurable para gestionar todas las notificaciones y recordatorios automáticos del sistema.
 
-### Problema encontrado
+---
 
-Hay un **bug crítico** en el flujo de invitación (`send-user-invitation`). El rol nunca se asigna porque depende de una cadena de triggers que no se completa:
+## Nuevas Funcionalidades
+
+### 1. Preferencias de Notificación por Usuario
+
+Cada usuario podrá personalizar:
+- Qué notificaciones recibir (tareas, certificaciones, documentos, etc.)
+- Cómo recibirlas (email, push, ambas, ninguna)
+- Frecuencia de resúmenes (diario, semanal, nunca)
+
+### 2. Recordatorios Configurables de Vencimientos
+
+Panel para configurar cuántos días antes del vencimiento se envían alertas:
+- **Certificaciones**: 90, 60, 30, 15, 7 días (configurable)
+- **Obligaciones IMMEX/PROSEC**: Igual
+- **Documentos**: 30, 15, 7, 1 día
+
+### 3. Centro de Notificaciones Unificado
+
+Nueva sección en Configuraciones con:
+- Vista general de todas las reglas activas
+- Historial de notificaciones enviadas
+- Prueba de notificaciones
+- Horario de envío personalizado
+
+---
+
+## Cambios en Base de Datos
+
+### Nueva Tabla: `user_notification_preferences`
+```sql
+CREATE TABLE user_notification_preferences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  notification_key TEXT NOT NULL,
+  email_enabled BOOLEAN DEFAULT true,
+  push_enabled BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, notification_key)
+);
+```
+
+### Nueva Tabla: `reminder_rules`
+```sql
+CREATE TABLE reminder_rules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre TEXT NOT NULL,
+  tipo TEXT NOT NULL, -- 'certificacion', 'immex', 'prosec', 'documento'
+  dias_antes INTEGER NOT NULL,
+  activa BOOLEAN DEFAULT true,
+  empresa_id UUID REFERENCES empresas(id), -- NULL = aplica a todas
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### Modificar Tabla: `profiles`
+```sql
+ALTER TABLE profiles ADD COLUMN 
+  resumen_frecuencia TEXT DEFAULT 'diario', -- 'diario', 'semanal', 'nunca'
+  resumen_hora INTEGER DEFAULT 8; -- Hora de envío (0-23)
+```
+
+---
+
+## Nuevos Componentes
+
+### 1. `src/components/notifications/NotificationCenter.tsx`
+Panel principal que muestra:
+- Resumen de notificaciones activas
+- Accesos rápidos a configuración
+- Historial reciente
+
+### 2. `src/components/notifications/UserNotificationPreferences.tsx`
+Formulario para que cada usuario configure:
+- Switches para cada tipo de notificación
+- Toggle email/push por categoría
+- Selector de frecuencia de resumen
+
+### 3. `src/components/notifications/ReminderRulesManager.tsx`
+CRUD para reglas de recordatorio:
+- Tipo de vencimiento a monitorear
+- Días de anticipación
+- Empresa específica o todas
+- Activar/desactivar
+
+### 4. `src/components/notifications/NotificationHistory.tsx`
+Tabla con:
+- Últimas notificaciones enviadas
+- Estado (enviada, fallida, pendiente)
+- Tipo y destinatario
+- Filtros por fecha y tipo
+
+---
+
+## Cambios en Archivos Existentes
+
+### `src/pages/Configuraciones.tsx`
+- Reorganizar en pestañas:
+  - **General** (tema, idioma)
+  - **Mis Notificaciones** (preferencias del usuario actual)
+  - **Recordatorios** (reglas de vencimientos - solo admin)
+  - **Sistema** (configuraciones globales - solo admin)
+
+### `src/components/layout/DashboardLayout.tsx`
+- Ya existe acceso a Configuraciones en el dropdown de perfil
+
+### Edge Function: `send-daily-summary`
+- Modificar para respetar preferencias por usuario
+- Verificar `user_notification_preferences` antes de enviar
+- Respetar horario y frecuencia configurados
+
+---
+
+## Flujo de Usuario
 
 ```text
-Flujo esperado:
-  1. Se crea usuario con email_confirm: false
-  2. Usuario usa recovery link → establece contraseña
-  3. Trigger update_invitation_on_user_confirm detecta email_confirmed_at → actualiza invitation a "accepted"
-  4. Trigger assign_role_on_invitation_accepted → inserta en user_roles
-
-Problema:
-  - El recovery link NO confirma el email (email_confirmed_at queda NULL)
-  - El paso 3 nunca se ejecuta → rol nunca se asigna
-  - useAuth detecta que no hay rol → cierra sesión automáticamente
-  - El usuario queda bloqueado sin poder entrar
+Usuario                    Sistema
+   │                          │
+   ├─► Ir a Configuraciones   │
+   │                          │
+   ├─► Pestaña "Mis Notificaciones"
+   │   ├─ Toggle: Tareas vencidas [Email ✓] [Push ✓]
+   │   ├─ Toggle: Certificaciones [Email ✓] [Push ✗]
+   │   ├─ Toggle: Resumen diario [Email ✓]
+   │   └─ Selector: Enviar resumen a las [8:00 AM ▼]
+   │                          │
+   ├─► Guardar ───────────────►├─► Actualiza user_notification_preferences
+   │                          │
+   │                          ├─► Cron Job (8:00 AM)
+   │                          │   ├─ Verifica preferencias de usuario
+   │                          │   ├─ Verifica frecuencia (diario/semanal)
+   │                          │   └─ Envía solo notificaciones habilitadas
+   │                          │
+   │◄─── Recibe email/push ───┤
 ```
 
-En contraste, el flujo de **creación directa con contraseña** (`create-user`) funciona correctamente porque inserta el rol directamente en `user_roles`.
+---
 
-### Solución
+## Interfaz: Vista de Preferencias por Usuario
 
-**Modificar `supabase/functions/send-user-invitation/index.ts`**: Después de crear el usuario, insertar directamente el rol en `user_roles` (igual que hace `create-user`), en lugar de depender de la cadena de triggers.
-
-Cambio concreto — agregar después de la línea `console.log('User created successfully:')`:
-
-```typescript
-// Assign role directly (triggers depend on email confirmation which doesn't happen with recovery links)
-const { error: roleError } = await supabaseAdmin
-  .from('user_roles')
-  .insert({ user_id: userData.user.id, role });
-
-if (roleError) {
-  console.error('Error assigning role:', roleError);
-}
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│ Mis Preferencias de Notificación                                 │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  📋 TAREAS                                    Email    Push      │
+│  ├─ Tarea asignada                            [✓]      [✓]       │
+│  ├─ Recordatorio 3 días antes                 [✓]      [✗]       │
+│  ├─ Recordatorio 1 día antes                  [✓]      [✓]       │
+│  └─ Tarea vencida                             [✓]      [✓]       │
+│                                                                  │
+│  🏆 CERTIFICACIONES                           Email    Push      │
+│  ├─ Vencimiento 90 días                       [✓]      [✗]       │
+│  ├─ Vencimiento 30 días                       [✓]      [✓]       │
+│  └─ Vencimiento 15 días                       [✓]      [✓]       │
+│                                                                  │
+│  📊 RESUMEN                                                      │
+│  ├─ Frecuencia: [Diario ▼]                                       │
+│  └─ Hora de envío: [08:00 ▼]                                     │
+│                                                                  │
+│                                    [Restaurar Predeterminados]   │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-Esto hace que el usuario tenga su rol desde el momento de creación, igual que en el flujo directo. La cadena de triggers queda como respaldo redundante.
+---
 
-**No se requieren cambios** en la UI (`CreateUserDialog`, `EditUserDialog`, `MiEmpresa`) ni en la lógica de autenticación — todo lo demás está correcto.
+## Interfaz: Reglas de Recordatorio (Admin)
 
-### Verificación post-fix
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│ Reglas de Recordatorio                          [+ Nueva Regla]  │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ 🏆 Certificación IVA/IEPS - 30 días antes      [Activa ●]  │  │
+│  │    Aplica a: Todas las empresas                            │  │
+│  │    Última ejecución: Hace 2 días                           │  │
+│  │                                          [Editar] [Eliminar]│  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ 📋 IMMEX - 15 días antes                       [Activa ●]  │  │
+│  │    Aplica a: Todas las empresas                            │  │
+│  │    Última ejecución: Hace 5 días                           │  │
+│  │                                          [Editar] [Eliminar]│  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ 📄 Documentos - 7 días antes                   [Inactiva ○]│  │
+│  │    Aplica a: Empresa XYZ                                   │  │
+│  │    Última ejecución: Nunca                                 │  │
+│  │                                          [Editar] [Eliminar]│  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
 
-Una vez aplicado, Marlene Villalpando (u otros clientes creados por invitación) podrán iniciar sesión correctamente y ver su empresa asignada en `/mi-empresa`.
+---
 
+## Orden de Implementación
+
+1. **Fase 1: Base de Datos**
+   - Crear tabla `user_notification_preferences`
+   - Crear tabla `reminder_rules`
+   - Agregar columnas a `profiles`
+
+2. **Fase 2: Preferencias de Usuario**
+   - Crear componente `UserNotificationPreferences`
+   - Integrar en página de Configuraciones
+   - Migrar datos existentes
+
+3. **Fase 3: Reglas de Recordatorio**
+   - Crear componente `ReminderRulesManager`
+   - CRUD completo para reglas
+   - Vista solo para administradores
+
+4. **Fase 4: Actualizar Edge Functions**
+   - Modificar `send-daily-summary` para respetar preferencias
+   - Crear función para procesar `reminder_rules`
+   - Ajustar cron jobs según configuración
+
+5. **Fase 5: Historial y Monitoreo**
+   - Crear componente `NotificationHistory`
+   - Agregar logging de notificaciones enviadas
+   - Panel de estadísticas
+
+---
+
+## Beneficios
+
+| Antes | Después |
+|-------|---------|
+| Configuración global fija | Personalizable por usuario |
+| Horario fijo (8:00 AM) | Horario configurable |
+| Sin control de canales | Email y Push independientes |
+| Recordatorios hardcodeados | Reglas dinámicas configurables |
+| Sin historial | Registro completo de envíos |
+
+---
+
+## Notas Técnicas
+
+- Las preferencias de usuario se almacenan en `user_notification_preferences` con una entrada por cada tipo de notificación
+- El edge function `send-daily-summary` consultará esta tabla antes de enviar
+- Los defaults se toman de `notification_settings` (configuración global) cuando el usuario no tiene preferencia explícita
+- Se mantiene retrocompatibilidad: usuarios sin preferencias configuradas recibirán todo como antes
