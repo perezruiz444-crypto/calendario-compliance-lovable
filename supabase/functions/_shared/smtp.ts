@@ -5,7 +5,8 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   const port = Number(Deno.env.get('SMTP_PORT') || '465');
   const user = Deno.env.get('SMTP_USER');
   const pass = Deno.env.get('SMTP_PASSWORD');
-  const from = Deno.env.get('SMTP_FROM') || user || '';
+  const fromEmail = Deno.env.get('SMTP_FROM') || user || '';
+  const from = `Equipo Compliance Russell Bedford <${fromEmail}>`;
 
   if (!host || !user || !pass) {
     throw new Error('SMTP configuration incomplete: SMTP_HOST, SMTP_USER, and SMTP_PASSWORD are required');
