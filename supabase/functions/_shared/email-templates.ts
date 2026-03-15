@@ -150,6 +150,32 @@ export function reportEmailTemplate(
   `);
 }
 
+// ---- New Message Notification ----
+export function newMessageTemplate(recipientName: string, senderName: string, asunto: string, contenido: string): string {
+  const preview = contenido.length > 300 ? contenido.substring(0, 300) + '...' : contenido;
+
+  return baseLayout(`
+    <h2 style="margin:0 0 16px;">Nuevo Mensaje</h2>
+    <p>Hola <strong>${recipientName}</strong>,</p>
+    <p>Has recibido un nuevo mensaje de <strong>${senderName}</strong>:</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;border:1px solid ${BORDER_COLOR};">
+      <tr style="border-bottom:1px solid ${BORDER_COLOR};">
+        <td style="padding:10px 8px;font-size:13px;font-weight:600;width:100px;">De</td>
+        <td style="padding:10px 8px;font-size:14px;">${senderName}</td>
+      </tr>
+      <tr style="border-bottom:1px solid ${BORDER_COLOR};">
+        <td style="padding:10px 8px;font-size:13px;font-weight:600;">Asunto</td>
+        <td style="padding:10px 8px;font-size:14px;">${asunto}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 8px;font-size:13px;font-weight:600;vertical-align:top;">Mensaje</td>
+        <td style="padding:10px 8px;font-size:14px;">${preview}</td>
+      </tr>
+    </table>
+    <p>Ingresa a la plataforma para ver el mensaje completo y responder.</p>
+  `);
+}
+
 // ---- User Invitation ----
 export function userInvitationTemplate(userName: string, setupLink: string | null): string {
   const linkSection = setupLink

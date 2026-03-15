@@ -75,7 +75,7 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('mensajes')
         .insert({
           remitente_id: user?.id,
@@ -83,9 +83,17 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
           empresa_id: formData.empresa_id || null,
           asunto: formData.asunto.trim(),
           contenido: formData.contenido.trim()
-        });
+        })
+        .select('id');
 
       if (error) throw error;
+
+      // Send email notification (fire and forget)
+      if (data && data.length > 0) {
+        supabase.functions.invoke('send-message-notification', {
+          body: { mensaje_id: data[0].id }
+        }).catch(err => console.error('Error sending email notification:', err));
+      }
 
       toast.success('Mensaje enviado exitosamente');
       setFormData({
