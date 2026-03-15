@@ -304,11 +304,18 @@ export function useAnalytics(empresaId?: string | null) {
 
     const proximasTareas = await fetchProximasTareas(tareas);
 
+    // Fetch obligaciones pendientes
+    const obFilter = empresaId && empresaId !== 'all' ? empresaId : undefined;
+    const obData = await fetchObligacionesPendientes(obFilter);
+    const allProximas = [...proximasTareas, ...obData.proximasOb]
+      .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+      .slice(0, 10);
+
     setData({
       ...DEFAULT_DATA,
       ...common,
-      totalTareas,
-      tareasPendientes,
+      totalTareas: totalTareas + obData.activas,
+      tareasPendientes: tareasPendientes + obData.pendientes,
       tareasCompletadas,
       tareasVencidas,
       totalEmpresas: empresasRes.count || 0,
@@ -318,7 +325,9 @@ export function useAnalytics(empresaId?: string | null) {
       tareasPerformance,
       tareasPorConsultor,
       documentosVencimiento,
-      proximasTareas,
+      proximasTareas: allProximas,
+      obligacionesPendientes: obData.pendientes,
+      obligacionesActivas: obData.activas,
     });
   };
 
