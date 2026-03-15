@@ -576,6 +576,20 @@ export default function Reportes() {
       ...reporteData.tareasPorPrioridad.map(d => [d.name, d.value])
     ];
 
+    if (reporteData.obligacionesPendientesDetalle.length > 0) {
+      rows.push(
+        [''],
+        ['Obligaciones Pendientes de Cumplimiento'],
+        ['Nombre', 'Empresa', 'Categoría', 'Fecha Vencimiento'],
+        ...reporteData.obligacionesPendientesDetalle.map(o => [
+          o.nombre,
+          o.empresa,
+          o.categoria,
+          o.fecha_vencimiento ? format(new Date(o.fecha_vencimiento), 'dd/MM/yyyy') : '-'
+        ])
+      );
+    }
+
     if (tipoReporte === 'consultores' && reporteData.tareasPorConsultor.length > 0) {
       rows.push(
         [''],
