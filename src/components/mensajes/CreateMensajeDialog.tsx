@@ -87,6 +87,13 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
 
       if (error) throw error;
 
+      // Send email notification (fire and forget)
+      if (data && data.length > 0) {
+        supabase.functions.invoke('send-message-notification', {
+          body: { mensaje_id: data[0].id }
+        }).catch(err => console.error('Error sending email notification:', err));
+      }
+
       toast.success('Mensaje enviado exitosamente');
       setFormData({
         destinatario_id: '',
