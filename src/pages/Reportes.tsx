@@ -166,31 +166,51 @@ export default function Reportes() {
     try {
       const { startDate, endDate } = getDateRange();
 
-      // Build filters
-      let tareasQuery = supabase
+      // Query 1: Tareas del periodo (por created_at) para timeline y gráficas
+      let tareasDelPeriodoQuery = supabase
         .from('tareas')
         .select('*, empresa_id, consultor_asignado_id, categoria_id')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
+      // Query 2: Tareas pendientes/en_progreso SIN filtro de fecha (siempre relevantes)
+      let tareasPendientesQuery = supabase
+        .from('tareas')
+        .select('*, empresa_id, consultor_asignado_id, categoria_id')
+        .in('estado', ['pendiente', 'en_progreso'] as any);
+
+      // Aplicar filtros compartidos a ambas queries
       if (selectedEmpresa !== 'todas') {
-        tareasQuery = tareasQuery.eq('empresa_id', selectedEmpresa);
+        tareasDelPeriodoQuery = tareasDelPeriodoQuery.eq('empresa_id', selectedEmpresa);
+        tareasPendientesQuery = tareasPendientesQuery.eq('empresa_id', selectedEmpresa);
       }
 
       if (selectedConsultor !== 'todos') {
-        tareasQuery = tareasQuery.eq('consultor_asignado_id', selectedConsultor);
+        tareasDelPeriodoQuery = tareasDelPeriodoQuery.eq('consultor_asignado_id', selectedConsultor);
+        tareasPendientesQuery = tareasPendientesQuery.eq('consultor_asignado_id', selectedConsultor);
       }
 
       if (selectedCategoria !== 'todas') {
-        tareasQuery = tareasQuery.eq('categoria_id', selectedCategoria);
+        tareasDelPeriodoQuery = tareasDelPeriodoQuery.eq('categoria_id', selectedCategoria);
+        tareasPendientesQuery = tareasPendientesQuery.eq('categoria_id', selectedCategoria);
       }
 
       if (selectedEstado !== 'todos') {
-        tareasQuery = tareasQuery.eq('estado', selectedEstado as any);
+        tareasDelPeriodoQuery = tareasDelPeriodoQuery.eq('estado', selectedEstado as any);
+        tareasPendientesQuery = tareasPendientesQuery.eq('estado', selectedEstado as any);
       }
 
-      const { data: tareas, error: tareasError } = await tareasQuery;
+      const [{ data: tareasDelPeriodo, error: tareasError }, { data: tareasPendientesData, error: pendientesError }] = await Promise.all([
+        tareasDelPeriodoQuery,
+        tareasPendientesQuery
+      ]);
       if (tareasError) throw tareasError;
+      if (pendientesError) throw pendientesError;
+
+      // Merge: tareas del periodo + pendientes/en_progreso que no estén ya incluidas
+      const tareasDelPeriodoIds = new Set(tareasDelPeriodo?.map(t => t.id) || []);
+      const tareasPendientesExtra = (tareasPendientesData || []).filter(t => !tareasDelPeriodoIds.has(t.id));
+      const tareas = [...(tareasDelPeriodo || []), ...tareasPendientesExtra];
 
       // Fetch empresas
       let empresasQuery = supabase.from('empresas').select('*');
