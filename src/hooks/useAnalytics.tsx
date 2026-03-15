@@ -479,19 +479,27 @@ export function useAnalytics(empresaId?: string | null) {
 
     const proximasTareas = await fetchProximasTareas(tareas);
 
+    // Fetch obligaciones pendientes for this empresa
+    const obData = await fetchObligacionesPendientes(common.empresa_id);
+    const allProximas = [...proximasTareas, ...obData.proximasOb]
+      .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+      .slice(0, 10);
+
     setData({
       ...DEFAULT_DATA,
       ...common,
-      totalTareas,
-      tareasPendientes,
+      totalTareas: totalTareas + obData.activas,
+      tareasPendientes: tareasPendientes + obData.pendientes,
       tareasCompletadas,
       tareasVencidas,
       documentosPorVencer,
       solicitudesPendientes: solicitudesRes.count || 0,
       proximosVencimientos,
       documentosVencimiento,
-      proximasTareas,
+      proximasTareas: allProximas,
       empresaCliente: empresa,
+      obligacionesPendientes: obData.pendientes,
+      obligacionesActivas: obData.activas,
     });
   };
 
