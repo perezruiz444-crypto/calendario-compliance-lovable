@@ -11,6 +11,8 @@ interface ConsultorAnalyticsProps {
 const COLORS = ['hsl(var(--warning))', 'hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--muted))'];
 
 export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
+  const totalTareasPorEstado = (data.tareasPorEstado || []).reduce((sum, e) => sum + e.cantidad, 0);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -47,13 +49,26 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
           <CardContent className="px-2 sm:px-6">
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
-                <Pie data={data.tareasPorEstado || []} cx="50%" cy="50%" labelLine={false} label={({ estado, cantidad }) => `${estado}: ${cantidad}`} outerRadius={80} fill="#8884d8" dataKey="cantidad">
+                <Pie
+                  data={data.tareasPorEstado || []}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={4}
+                  dataKey="cantidad"
+                  strokeWidth={2}
+                  stroke="hsl(var(--background))"
+                  label={({ estado, cantidad }) => `${estado}: ${cantidad}`}
+                >
                   {(data.tareasPorEstado || []).map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
                 <Legend />
+                <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-xl font-bold">{totalTareasPorEstado}</text>
+                <text x="50%" y="56%" textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-[10px]">Total</text>
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -70,12 +85,12 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
             <CardDescription>Documentos próximos a vencer (90 días)</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {data.documentosVencimiento.map((doc, index) => (
                 <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:border-primary transition-colors">
                   <div className="flex-1">
-                    <p className="font-medium">{doc.nombre}</p>
-                    <p className="text-sm text-muted-foreground">{doc.empresa}</p>
+                    <p className="font-medium text-sm">{doc.nombre}</p>
+                    <p className="text-xs text-muted-foreground">{doc.empresa}</p>
                   </div>
                   <Badge variant={doc.dias <= 7 ? 'destructive' : doc.dias <= 30 ? 'secondary' : 'default'}>
                     {doc.dias <= 0 ? 'Vencido' : `${doc.dias} días`}

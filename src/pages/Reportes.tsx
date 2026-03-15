@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, User, Filter, Mail, Send, FileDown, Clock } from 'lucide-react';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, User, Filter, Mail, Send, FileDown, Clock, TrendingUp, CheckCircle2, XCircle } from 'lucide-react';
+import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import { getCurrentPeriodKey, CATEGORIA_LABELS } from '@/lib/obligaciones';
 import { es } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
@@ -967,58 +968,140 @@ export default function Reportes() {
           </TabsList>
 
           <TabsContent value="estado" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="gradient-card shadow-card">
-                <CardHeader>
-                  <CardTitle className="font-heading">Tareas por Estado</CardTitle>
-                  <CardDescription className="font-body">Distribución de tareas según su estado</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={reporteData.tareasPorEstado}>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                      <XAxis dataKey="name" style={{ fontSize: '12px' }} />
-                      <YAxis style={{ fontSize: '12px' }} />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="value" name="Cantidad" radius={[8, 8, 0, 0]}>
-                        {reporteData.tareasPorEstado.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={ESTADO_COLORS[entry.name as keyof typeof ESTADO_COLORS] || 'hsl(var(--primary))'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+            {/* Status summary cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: 'Pendiente', icon: Clock, color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/30', count: reporteData.tareasPorEstado.find(e => e.name === 'Pendiente')?.value || 0 },
+                { label: 'En Progreso', icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/30', count: reporteData.tareasPorEstado.find(e => e.name === 'En Progreso')?.value || 0 },
+                { label: 'Completada', icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10', border: 'border-success/30', count: reporteData.tareasPorEstado.find(e => e.name === 'Completada')?.value || 0 },
+                { label: 'Cancelada', icon: XCircle, color: 'text-muted-foreground', bg: 'bg-muted/50', border: 'border-muted', count: reporteData.tareasPorEstado.find(e => e.name === 'Cancelada')?.value || 0 },
+              ].map(item => {
+                const total = reporteData.resumen.totalTareas || 1;
+                const pct = Math.round((item.count / total) * 100);
+                return (
+                  <Card key={item.label} className={`${item.border} border-2`}>
+                    <CardContent className="pt-5 pb-4 px-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`${item.bg} p-2 rounded-lg`}>
+                          <item.icon className={`w-5 h-5 ${item.color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-muted-foreground truncate">{item.label}</p>
+                          <p className={`text-2xl font-heading font-bold ${item.color}`}>{item.count}</p>
+                        </div>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className={`h-full ${item.bg} rounded-full transition-all duration-500`} style={{ width: `${pct}%`, backgroundColor: `var(--${item.label === 'Pendiente' ? 'warning' : item.label === 'En Progreso' ? 'primary' : item.label === 'Completada' ? 'success' : 'muted-foreground'})`, opacity: 0.6 }} />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{pct}% del total</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Donut chart for status */}
               <Card className="gradient-card shadow-card">
                 <CardHeader>
-                  <CardTitle className="font-heading">Tareas por Prioridad</CardTitle>
-                  <CardDescription className="font-body">Distribución según nivel de prioridad</CardDescription>
+                  <CardTitle className="font-heading">Distribución por Estado</CardTitle>
+                  <CardDescription className="font-body">Vista general de tareas y obligaciones</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
-                        data={reporteData.tareasPorPrioridad}
+                        data={reporteData.tareasPorEstado.filter(e => e.value > 0)}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={100}
-                        fill="hsl(var(--primary))"
+                        innerRadius={70}
+                        outerRadius={110}
+                        paddingAngle={4}
                         dataKey="value"
+                        strokeWidth={2}
+                        stroke="hsl(var(--background))"
                       >
-                        {reporteData.tareasPorPrioridad.map((entry, index) => (
+                        {reporteData.tareasPorEstado.filter(e => e.value > 0).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={ESTADO_COLORS[entry.name as keyof typeof ESTADO_COLORS] || 'hsl(var(--primary))'} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => [value, 'Tareas']} />
+                      <Legend iconType="circle" />
+                      {/* Central label */}
+                      <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-3xl font-bold">{reporteData.resumen.totalTareas}</text>
+                      <text x="50%" y="56%" textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-xs">Total</text>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Donut chart for priority */}
+              <Card className="gradient-card shadow-card">
+                <CardHeader>
+                  <CardTitle className="font-heading">Distribución por Prioridad</CardTitle>
+                  <CardDescription className="font-body">Nivel de urgencia de las tareas</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={reporteData.tareasPorPrioridad.filter(e => e.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={110}
+                        paddingAngle={4}
+                        dataKey="value"
+                        strokeWidth={2}
+                        stroke="hsl(var(--background))"
+                      >
+                        {reporteData.tareasPorPrioridad.filter(e => e.value > 0).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={PRIORIDAD_COLORS[entry.name as keyof typeof PRIORIDAD_COLORS] || 'hsl(var(--primary))'} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip formatter={(value: number) => [value, 'Tareas']} />
+                      <Legend iconType="circle" />
                     </PieChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Obligaciones pendientes table */}
+            {reporteData.obligacionesPendientesDetalle.length > 0 && (
+              <Card className="gradient-card shadow-card border-warning/20">
+                <CardHeader>
+                  <CardTitle className="font-heading flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-warning" />
+                    Obligaciones Pendientes de Cumplimiento
+                  </CardTitle>
+                  <CardDescription className="font-body">Obligaciones activas sin cumplir en el periodo actual</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {reporteData.obligacionesPendientesDetalle.map((ob, idx) => {
+                      const dias = ob.fecha_vencimiento ? differenceInDays(new Date(ob.fecha_vencimiento), new Date()) : null;
+                      return (
+                        <div key={idx} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:border-warning/50 transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{ob.nombre}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs text-muted-foreground">{ob.empresa}</span>
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{ob.categoria}</span>
+                            </div>
+                          </div>
+                          {dias !== null && (
+                            <Badge variant={dias <= 0 ? 'destructive' : dias <= 7 ? 'destructive' : dias <= 30 ? 'secondary' : 'default'}>
+                              {dias <= 0 ? 'Vencida' : `${dias}d`}
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="consultor" className="space-y-6">
@@ -1077,11 +1160,13 @@ export default function Reportes() {
                         data={reporteData.tareasPorCategoria}
                         cx="50%"
                         cy="50%"
-                        labelLine={true}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        innerRadius={60}
                         outerRadius={120}
-                        fill="hsl(var(--primary))"
+                        paddingAngle={3}
                         dataKey="value"
+                        strokeWidth={2}
+                        stroke="hsl(var(--background))"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
                         {reporteData.tareasPorCategoria.map((entry, index) => {
                           const colors = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))'];
@@ -1124,37 +1209,42 @@ export default function Reportes() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {reporteData.rendimientoConsultores.map((consultor, idx) => (
-                    <div key={idx} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <User className="w-5 h-5 text-primary" />
-                          <h4 className="font-heading font-semibold">{consultor.name}</h4>
+                  {reporteData.rendimientoConsultores.map((consultor, idx) => {
+                    const progressColor = consultor.tasa < 50 ? 'from-destructive to-destructive/70' : consultor.tasa < 80 ? 'from-warning to-warning/70' : 'from-success to-success/70';
+                    return (
+                      <div key={idx} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-primary/10 p-2 rounded-full">
+                              <User className="w-5 h-5 text-primary" />
+                            </div>
+                            <h4 className="font-heading font-semibold">{consultor.name}</h4>
+                          </div>
+                          <span className={`text-2xl font-heading font-bold ${consultor.tasa < 50 ? 'text-destructive' : consultor.tasa < 80 ? 'text-warning' : 'text-success'}`}>{consultor.tasa}%</span>
                         </div>
-                        <span className="text-2xl font-heading font-bold text-primary">{consultor.tasa}%</span>
+                        <div className="grid grid-cols-3 gap-4 text-sm mb-3">
+                          <div className="text-center p-2 rounded-lg bg-muted/50">
+                            <p className="text-muted-foreground font-body text-xs">Total</p>
+                            <p className="font-heading font-bold text-lg">{consultor.total}</p>
+                          </div>
+                          <div className="text-center p-2 rounded-lg bg-success/10">
+                            <p className="text-muted-foreground font-body text-xs">Completadas</p>
+                            <p className="font-heading font-bold text-lg text-success">{consultor.completadas}</p>
+                          </div>
+                          <div className="text-center p-2 rounded-lg bg-warning/10">
+                            <p className="text-muted-foreground font-body text-xs">Pendientes</p>
+                            <p className="font-heading font-bold text-lg text-warning">{consultor.pendientes}</p>
+                          </div>
+                        </div>
+                        <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full bg-gradient-to-r ${progressColor} rounded-full transition-all duration-500`} 
+                            style={{ width: `${consultor.tasa}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground font-body">Total</p>
-                          <p className="font-heading font-bold">{consultor.total}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground font-body">Completadas</p>
-                          <p className="font-heading font-bold text-success">{consultor.completadas}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground font-body">Pendientes</p>
-                          <p className="font-heading font-bold text-warning">{consultor.pendientes}</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary transition-all" 
-                          style={{ width: `${consultor.tasa}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {reporteData.rendimientoConsultores.length === 0 && (
                     <p className="text-center text-muted-foreground font-body py-8">
                       No hay datos de rendimiento disponibles
