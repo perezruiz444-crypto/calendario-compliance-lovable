@@ -1,40 +1,25 @@
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import nodemailer from "npm:nodemailer@6.9.10";
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  const hostname = Deno.env.get('SMTP_HOST');
+  const host = Deno.env.get('SMTP_HOST');
   const port = Number(Deno.env.get('SMTP_PORT') || '465');
-  const username = Deno.env.get('SMTP_USER');
-  const password = Deno.env.get('SMTP_PASSWORD');
-  const from = Deno.env.get('SMTP_FROM') || username || '';
+  const user = Deno.env.get('SMTP_USER');
+  const pass = Deno.env.get('SMTP_PASSWORD');
+  const from = Deno.env.get('SMTP_FROM') || user || '';
 
-  if (!hostname || !username || !password) {
+  if (!host || !user || !pass) {
     throw new Error('SMTP configuration incomplete: SMTP_HOST, SMTP_USER, and SMTP_PASSWORD are required');
   }
 
-  console.log(`[SMTP] Sending email to ${to} from ${from} via ${hostname}:${port}`);
+  console.log(`[SMTP] Sending email to ${to} from ${from} via ${host}:${port}`);
 
-  const client = new SMTPClient({
-    connection: {
-      hostname,
-      port,
-      tls: port === 465,
-      auth: {
-        username,
-        password,
-      },
-    },
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
   });
 
-  try {
-    await client.send({
-      from,
-      to,
-      subject,
-      content: "text/html",
-      html,
-    });
-    console.log(`[SMTP] Email sent successfully to ${to}`);
-  } finally {
-    await client.close();
-  }
+  await transporter.sendMail({ from, to, subject, html });
+  console.log(`[SMTP] Email sent successfully to ${to}`);
 }
