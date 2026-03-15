@@ -155,6 +155,58 @@ export function useAnalytics(empresaId?: string | null) {
     }));
   };
 
+  const fetchObligacionesPendientes = async (empresaFilter?: string | string[]) => {
+    let obQuery = supabase.from('obligaciones').select('id, nombre, presentacion, fecha_vencimiento, empresa_id').eq('activa', true);
+    if (typeof empresaFilter === 'string') {
+      obQuery = obQuery.eq('empresa_id', empresaFilter);
+    } else if (Array.isArray(empresaFilter) && empresaFilter.length > 0) {
+      obQuery = obQuery.in('empresa_id', empresaFilter);
+    }
+    const { data: obligaciones } = await obQuery;
+    if (!obligaciones || obligaciones.length === 0) return { activas: 0, pendientes: 0, proximasOb: [] as ProximaTarea[] };
+
+    const obIds = obligaciones.map(o => o.id);
+    const { data: cumplimientos } = await supabase
+      .from('obligacion_cumplimientos')
+      .select('obligacion_id, periodo_key')
+      .in('obligacion_id', obIds)
+      .eq('completada', true);
+
+    const cumplSet = new Set((cumplimientos || []).map(c => `${c.obligacion_id}:${c.periodo_key}`));
+    
+    const today = new Date();
+    let pendientes = 0;
+    const proximasOb: ProximaTarea[] = [];
+
+    // Get empresa names for display
+    const obEmpresaIds = [...new Set(obligaciones.map(o => o.empresa_id))];
+    const { data: empNames } = await supabase.from('empresas').select('id, razon_social').in('id', obEmpresaIds);
+    const empMap = empNames?.reduce((acc, e) => { acc[e.id] = e.razon_social; return acc; }, {} as Record<string, string>) || {};
+
+    for (const ob of obligaciones) {
+      const pk = getCurrentPeriodKey(ob.presentacion);
+      const isCumplida = cumplSet.has(`${ob.id}:${pk}`);
+      if (!isCumplida) {
+        pendientes++;
+        if (ob.fecha_vencimiento) {
+          const dias = differenceInDays(new Date(ob.fecha_vencimiento), today);
+          if (dias >= 0) {
+            proximasOb.push({
+              id: ob.id,
+              titulo: `[Obligación] ${ob.nombre}`,
+              estado: 'pendiente',
+              prioridad: dias <= 7 ? 'alta' : dias <= 30 ? 'media' : 'baja',
+              fecha_vencimiento: ob.fecha_vencimiento,
+              empresa_nombre: empMap[ob.empresa_id] || 'N/A',
+            });
+          }
+        }
+      }
+    }
+
+    return { activas: obligaciones.length, pendientes, proximasOb };
+  };
+
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
