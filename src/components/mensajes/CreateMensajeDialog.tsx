@@ -75,7 +75,7 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('mensajes')
         .insert({
           remitente_id: user?.id,
@@ -83,7 +83,8 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
           empresa_id: formData.empresa_id || null,
           asunto: formData.asunto.trim(),
           contenido: formData.contenido.trim()
-        });
+        })
+        .select('id');
 
       if (error) throw error;
 
