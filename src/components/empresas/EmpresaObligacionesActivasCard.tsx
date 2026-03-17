@@ -300,15 +300,28 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit }: Props) {
             responsable_tipo: editObl.responsable_tipo || '',
           }}
           onSubmit={async (data) => {
-            try {
-              const { id, ...rest } = data;
-              await supabase.from('obligaciones').update(rest).eq('id', editObl.id);
-              toast.success('Obligación actualizada');
-              setEditObl(null);
-              fetchData();
-            } catch {
-              toast.error('Error al actualizar');
-            }
+            const { error } = await supabase.from('obligaciones').update({
+              categoria: data.categoria,
+              nombre: data.nombre,
+              descripcion: data.descripcion || null,
+              articulos: data.articulos || null,
+              presentacion: data.presentacion || null,
+              fecha_autorizacion: data.fecha_autorizacion || null,
+              fecha_vencimiento: data.fecha_vencimiento || null,
+              fecha_renovacion: data.fecha_renovacion || null,
+              fecha_inicio: data.fecha_inicio || null,
+              fecha_fin: data.fecha_fin || null,
+              numero_oficio: data.numero_oficio || null,
+              estado: data.estado,
+              notas: data.notas || null,
+              activa: data.activa,
+              responsable_tipo: data.responsable_tipo || null,
+              responsable_id: data.responsable_id || null,
+            }).eq('id', editObl.id);
+            if (error) { toast.error('Error al actualizar'); return; }
+            toast.success('Obligación actualizada');
+            setEditObl(null);
+            fetchData();
           }}
         />
       )}
