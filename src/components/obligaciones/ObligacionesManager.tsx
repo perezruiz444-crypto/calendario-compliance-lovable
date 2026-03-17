@@ -466,9 +466,13 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
               </thead>
               <tbody>
                 {filtered.map(ob => {
-                  const periodKey = getCurrentPeriodKey(ob.presentacion);
+                  const recurring = isRecurring(ob.presentacion);
+                  const next = getNextVencimiento(ob.fecha_vencimiento, ob.presentacion, cumplimientoKeys, ob.id);
+                  const periodKey = next?.periodKey || getCurrentPeriodKey(ob.presentacion);
                   const mapKey = `${ob.id}:${periodKey}`;
                   const isCompleted = cumplimientos[mapKey] || false;
+                  const displayDate = next ? format(next.date, 'dd/MM/yyyy') : formatDateShort(ob.fecha_vencimiento);
+                  const vencInfo = next ? getVencimientoInfo(format(next.date, 'yyyy-MM-dd')) : getVencimientoInfo(ob.fecha_vencimiento);
 
                   return (
                     <tr key={ob.id} className={`border-b last:border-0 hover:bg-muted/50 transition-colors ${isCompleted ? 'bg-success/5' : ''}`}>
@@ -505,7 +509,12 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                           <span className="text-xs text-muted-foreground">-</span>
                         )}
                       </td>
-                      <td className="p-2 hidden md:table-cell text-muted-foreground capitalize">{ob.presentacion || '-'}</td>
+                      <td className="p-2 hidden md:table-cell">
+                        <div className="flex items-center gap-1">
+                          {recurring && <RefreshCw className="w-3 h-3 text-muted-foreground" />}
+                          <span className="text-muted-foreground capitalize">{ob.presentacion || '-'}</span>
+                        </div>
+                      </td>
                       <td className="p-2 hidden lg:table-cell">
                         {ob.presentacion && ob.presentacion !== 'unica' ? (
                           <Badge variant={isCompleted ? 'default' : 'outline'} className={`text-xs ${isCompleted ? 'bg-success text-success-foreground' : ''}`}>
@@ -517,8 +526,8 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                       </td>
                       <td className="p-2">
                         <div className="flex items-center gap-2">
-                          <span>{formatDateShort(ob.fecha_vencimiento)}</span>
-                          {getVencimientoBadge(ob.fecha_vencimiento)}
+                          <span>{displayDate}</span>
+                          {vencInfo && getVencimientoBadge(next ? format(next.date, 'yyyy-MM-dd') : ob.fecha_vencimiento)}
                         </div>
                       </td>
                       <td className="p-2"><Badge variant="outline" className="text-xs capitalize">{ob.estado}</Badge></td>
