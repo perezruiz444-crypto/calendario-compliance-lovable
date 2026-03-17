@@ -26,7 +26,9 @@ import {
 import {
   CATEGORIA_LABELS, CATEGORIA_COLORS,
   getCurrentPeriodKey, getPeriodLabel, formatDateShort, getVencimientoInfo, programaToCategoria,
+  getNextVencimiento, isRecurring,
 } from '@/lib/obligaciones';
+import { format } from 'date-fns';
 
 interface Props {
   empresaId: string;
