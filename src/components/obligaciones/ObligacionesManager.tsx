@@ -12,7 +12,7 @@ import { differenceInDays, isPast } from 'date-fns';
 import { 
   Plus, Upload, Trash2, Pencil, Search, 
   Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen, FileDown,
-  Zap, User, Users, ToggleLeft, ToggleRight
+  Zap, User, Users, ToggleLeft, ToggleRight, RefreshCw
 } from 'lucide-react';
 import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormDialog';
 import { BulkImportDialog, type ParsedRow } from './BulkImportDialog';
