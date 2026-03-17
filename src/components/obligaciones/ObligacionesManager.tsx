@@ -164,7 +164,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       numero_oficio: data.numero_oficio || null,
       estado: data.estado,
       notas: data.notas || null,
-      activa: data.activa,
+      activa: data.activa || !!data.fecha_vencimiento || !!data.fecha_inicio || !!data.fecha_fin,
       responsable_tipo: data.responsable_tipo || null,
       responsable_id: data.responsable_id || null,
     }).select('id').single();
@@ -192,7 +192,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       numero_oficio: data.numero_oficio || null,
       estado: data.estado,
       notas: data.notas || null,
-      activa: data.activa,
+      activa: data.activa || !!data.fecha_vencimiento || !!data.fecha_inicio || !!data.fecha_fin,
       responsable_tipo: data.responsable_tipo || null,
       responsable_id: data.responsable_id || null,
     }).eq('id', data.id);
