@@ -64,7 +64,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       .from('obligaciones')
       .select('*')
       .eq('empresa_id', empresaId)
-      .order('fecha_vencimiento', { ascending: true, nullsFirst: false });
+      .order('created_at', { ascending: false });
     if (error) { toast.error('Error al cargar obligaciones'); console.error(error); }
     else {
       setObligaciones(data || []);
