@@ -518,6 +518,20 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                       {canEdit && (
                         <td className="p-2 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className={`h-7 w-7 ${ob.activa ? 'text-primary' : 'text-muted-foreground'}`}
+                              title={ob.activa ? 'Desactivar' : 'Activar'}
+                              onClick={async () => {
+                                const { error } = await supabase.from('obligaciones').update({ activa: !ob.activa }).eq('id', ob.id);
+                                if (error) { toast.error('Error al cambiar estado'); return; }
+                                toast.success(ob.activa ? 'Obligación desactivada' : 'Obligación activada');
+                                fetchObligaciones();
+                              }}
+                            >
+                              {ob.activa ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
+                            </Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(ob)}><Pencil className="w-3.5 h-3.5" /></Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(ob.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                           </div>
