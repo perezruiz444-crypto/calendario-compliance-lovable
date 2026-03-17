@@ -1,57 +1,54 @@
 
 
-# Plan: Simplificar el formulario de obligaciones
+# Plan: Manejo de obligaciones recurrentes
 
 ## Problema actual
 
-El formulario tiene **5 campos de fecha** (autorización, vencimiento, renovación, inicio, fin) + un toggle de activación + selección de responsable en 2 pasos. Esto genera confusion sobre que campos son necesarios y como activar una obligacion.
+Hoy el sistema tiene el campo `presentacion` (mensual, trimestral, anual, etc.) y ya rastrea cumplimiento por periodo via `obligacion_cumplimientos` con `periodo_key`. Sin embargo, hay un problema fundamental:
 
-## Propuesta: Reorganizar en 2 pasos claros
+- `fecha_vencimiento` es una fecha fija que no se recalcula automaticamente
+- Una obligacion mensual con vencimiento "15 de enero" no genera automaticamente el siguiente vencimiento "15 de febrero"
+- El usuario tiene que actualizar manualmente la fecha cada periodo
 
-### Paso 1 — Datos de la obligacion (simplificado)
-Mantener: nombre, categoria, articulos, presentacion, descripcion, notas, numero_oficio.
+## Solucion propuesta
 
-Reducir fechas a **solo 1 campo visible por defecto**: `Fecha de vencimiento`. Los demas campos (fecha_autorizacion, fecha_renovacion, fecha_inicio, fecha_fin) se ocultan detras de un enlace "Mostrar mas fechas" tipo collapsible. Esto reduce el ruido visual drasticamente.
+Cuando una obligacion tiene `presentacion` recurrente (no "unica"), el sistema debe:
 
-### Paso 2 — Activacion simplificada
-Eliminar el toggle manual. La logica es:
-- Si tiene `fecha_vencimiento` → se activa automaticamente, el campo de responsable aparece inline debajo de la fecha de vencimiento.
-- Si NO tiene fecha → permanece inactiva (solo informativa/catalogo).
-- En el listado general, el toggle manual ya existente permite override.
+1. **Usar `fecha_vencimiento` como fecha base del primer vencimiento**
+2. **Calcular automaticamente el proximo vencimiento** basado en la periodicidad
+3. **Mostrar el proximo vencimiento en la UI** sin modificar la fecha original en BD
 
-Ademas, unificar la seleccion de responsable: en lugar de 2 selects (tipo + persona), usar **1 solo select** que agrupe clientes y consultores con headers de grupo.
+### Logica de calculo
 
-## Cambios en codigo
+```
+fecha_base = fecha_vencimiento (ej: 15 enero 2026)
+presentacion = "mensual"
+→ proximos vencimientos: 15 feb, 15 mar, 15 abr...
+→ el "proximo" es el primer vencimiento futuro no completado
+```
+
+### Cambios
 
 | Archivo | Cambio |
 |---------|--------|
-| `ObligacionFormDialog.tsx` | Colapsar fechas secundarias en un Collapsible. Mover responsable inline bajo fecha_vencimiento. Eliminar toggle "Activar". Unificar select de responsable con grupos. Quitar campo "estado" (se calcula automatico por fecha). |
+| `src/lib/obligaciones.ts` | Agregar funcion `getNextVencimiento(fechaBase, presentacion, cumplimientos)` que calcula el proximo vencimiento no completado |
+| `src/components/obligaciones/ObligacionesActivasTab.tsx` | Mostrar "Proximo vencimiento" calculado en lugar de la fecha fija, ordenar por proximo vencimiento |
+| `src/components/obligaciones/ObligacionesManager.tsx` | En la tabla, mostrar proximo vencimiento para recurrentes. Indicar visualmente que es recurrente |
+| `src/components/obligaciones/ObligacionFormDialog.tsx` | Simplificar: colapsar fechas secundarias, quitar toggle manual (activacion implicita por fecha_vencimiento), unificar select de responsable en 1 solo agrupado |
 
-### Logica de activacion resultante
-```
-fecha_vencimiento presente → activa = true, mostrar campo responsable
-fecha_vencimiento vacia → activa = false (override posible desde listado)
-```
+### Activacion simplificada (del plan anterior pendiente)
 
-### UI resultante del formulario
-```text
-┌─────────────────────────────────┐
-│ Nombre *                        │
-│ Categoría *    │ Presentación   │
-│ Artículo(s)                     │
-│ Nº Oficio                       │
-│                                 │
-│ 📅 Fecha de Vencimiento         │
-│    [input date]                 │
-│    👤 Responsable: [select]     │  ← solo si hay fecha
-│                                 │
-│ ▸ Más fechas (autorización,     │  ← collapsible, cerrado
-│   renovación, inicio, fin)      │
-│                                 │
-│ Descripción                     │
-│ Notas                           │
-└─────────────────────────────────┘
-```
+El formulario se simplifica al mismo tiempo:
+- Solo `fecha_vencimiento` visible por defecto
+- Fechas secundarias en collapsible
+- Si tiene `fecha_vencimiento` → activa automaticamente
+- Si tiene `presentacion` recurrente → muestra indicador de recurrencia y calcula proximos vencimientos
+- Responsable en 1 solo select agrupado (clientes / consultores)
 
-Este diseno reduce de ~12 campos visibles a ~7, y la activacion es implicita al poner una fecha de vencimiento.
+### UI en el listado de activas
+
+Para obligaciones recurrentes se mostrara:
+- Badge con la periodicidad (ej: "Mensual")
+- "Proximo: 15/mar/2026" calculado automaticamente
+- El checkbox de cumplimiento ya funciona por periodo, no cambia
 
