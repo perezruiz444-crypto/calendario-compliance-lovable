@@ -133,6 +133,10 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
   const update = (field: keyof ObligacionFormData, value: string | boolean) => {
     setForm(prev => {
       const updated = { ...prev, [field]: value };
+      // Auto-activate when a date is assigned
+      if (['fecha_vencimiento', 'fecha_inicio', 'fecha_fin'].includes(field) && value) {
+        updated.activa = true;
+      }
       // Clear responsable fields when deactivating
       if (field === 'activa' && !value) {
         updated.responsable_tipo = '';
