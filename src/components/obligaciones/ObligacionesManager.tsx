@@ -12,7 +12,7 @@ import { differenceInDays, isPast } from 'date-fns';
 import { 
   Plus, Upload, Trash2, Pencil, Search, 
   Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen, FileDown,
-  Zap, User, Users, ToggleLeft, ToggleRight
+  Zap, User, Users, ToggleLeft, ToggleRight, RefreshCw
 } from 'lucide-react';
 import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormDialog';
 import { BulkImportDialog, type ParsedRow } from './BulkImportDialog';
@@ -26,7 +26,9 @@ import {
 import {
   CATEGORIA_LABELS, CATEGORIA_COLORS,
   getCurrentPeriodKey, getPeriodLabel, formatDateShort, getVencimientoInfo, programaToCategoria,
+  getNextVencimiento, isRecurring,
 } from '@/lib/obligaciones';
+import { format } from 'date-fns';
 
 interface Props {
   empresaId: string;
@@ -45,6 +47,7 @@ function getVencimientoBadge(fecha: string | null) {
 export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const { user } = useAuth();
   const [obligaciones, setObligaciones] = useState<any[]>([]);
+  const [cumplimientoKeys, setCumplimientoKeys] = useState<Set<string>>(new Set());
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -90,10 +93,14 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
 
     if (!error && data) {
       const map: Record<string, boolean> = {};
+      const keys = new Set<string>();
       data.forEach(c => {
-        map[`${c.obligacion_id}:${c.periodo_key}`] = true;
+        const k = `${c.obligacion_id}:${c.periodo_key}`;
+        map[k] = true;
+        keys.add(k);
       });
       setCumplimientos(map);
+      setCumplimientoKeys(keys);
     }
   };
 
@@ -459,9 +466,13 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
               </thead>
               <tbody>
                 {filtered.map(ob => {
-                  const periodKey = getCurrentPeriodKey(ob.presentacion);
+                  const recurring = isRecurring(ob.presentacion);
+                  const next = getNextVencimiento(ob.fecha_vencimiento, ob.presentacion, cumplimientoKeys, ob.id);
+                  const periodKey = next?.periodKey || getCurrentPeriodKey(ob.presentacion);
                   const mapKey = `${ob.id}:${periodKey}`;
                   const isCompleted = cumplimientos[mapKey] || false;
+                  const displayDate = next ? format(next.date, 'dd/MM/yyyy') : formatDateShort(ob.fecha_vencimiento);
+                  const vencInfo = next ? getVencimientoInfo(format(next.date, 'yyyy-MM-dd')) : getVencimientoInfo(ob.fecha_vencimiento);
 
                   return (
                     <tr key={ob.id} className={`border-b last:border-0 hover:bg-muted/50 transition-colors ${isCompleted ? 'bg-success/5' : ''}`}>
@@ -498,7 +509,12 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                           <span className="text-xs text-muted-foreground">-</span>
                         )}
                       </td>
-                      <td className="p-2 hidden md:table-cell text-muted-foreground capitalize">{ob.presentacion || '-'}</td>
+                      <td className="p-2 hidden md:table-cell">
+                        <div className="flex items-center gap-1">
+                          {recurring && <RefreshCw className="w-3 h-3 text-muted-foreground" />}
+                          <span className="text-muted-foreground capitalize">{ob.presentacion || '-'}</span>
+                        </div>
+                      </td>
                       <td className="p-2 hidden lg:table-cell">
                         {ob.presentacion && ob.presentacion !== 'unica' ? (
                           <Badge variant={isCompleted ? 'default' : 'outline'} className={`text-xs ${isCompleted ? 'bg-success text-success-foreground' : ''}`}>
@@ -510,8 +526,8 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                       </td>
                       <td className="p-2">
                         <div className="flex items-center gap-2">
-                          <span>{formatDateShort(ob.fecha_vencimiento)}</span>
-                          {getVencimientoBadge(ob.fecha_vencimiento)}
+                          <span>{displayDate}</span>
+                          {vencInfo && getVencimientoBadge(next ? format(next.date, 'yyyy-MM-dd') : ob.fecha_vencimiento)}
                         </div>
                       </td>
                       <td className="p-2"><Badge variant="outline" className="text-xs capitalize">{ob.estado}</Badge></td>
