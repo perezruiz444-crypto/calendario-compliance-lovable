@@ -93,10 +93,14 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
 
     if (!error && data) {
       const map: Record<string, boolean> = {};
+      const keys = new Set<string>();
       data.forEach(c => {
-        map[`${c.obligacion_id}:${c.periodo_key}`] = true;
+        const k = `${c.obligacion_id}:${c.periodo_key}`;
+        map[k] = true;
+        keys.add(k);
       });
       setCumplimientos(map);
+      setCumplimientoKeys(keys);
     }
   };
 
