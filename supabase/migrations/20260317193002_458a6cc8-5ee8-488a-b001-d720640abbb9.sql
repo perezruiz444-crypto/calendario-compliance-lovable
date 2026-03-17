@@ -1,0 +1,1 @@
+UPDATE obligaciones SET activa = true WHERE activa = false AND (fecha_vencimiento IS NOT NULL OR fecha_inicio IS NOT NULL OR fecha_fin IS NOT NULL);
