@@ -1,4 +1,4 @@
-import { format, differenceInDays, isPast, isValid, getISOWeek } from 'date-fns';
+import { format, differenceInDays, isPast, isValid, getISOWeek, addWeeks, addMonths, addYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // ─── Category constants ───────────────────────────────────────────────
