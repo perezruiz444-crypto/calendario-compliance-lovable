@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { ClipboardList, Building2, Calendar, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
-import { getCurrentPeriodKey, getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS, getVencimientoInfo, formatDateShort } from '@/lib/obligaciones';
-import { differenceInDays } from 'date-fns';
+import { ClipboardList, Building2, Calendar, CheckCircle2, AlertCircle, Zap, RefreshCw } from 'lucide-react';
+import {
+  getCurrentPeriodKey, getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS,
+  getVencimientoInfo, formatDateShort, getNextVencimiento, isRecurring,
+} from '@/lib/obligaciones';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export function ObligacionesActivasTab() {
   const { user } = useAuth();
   const [obligaciones, setObligaciones] = useState<any[]>([]);
-  const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
+  const [cumplimientoKeys, setCumplimientoKeys] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,33 +46,32 @@ export function ObligacionesActivasTab() {
         .select('obligacion_id, periodo_key')
         .in('obligacion_id', obIds);
       if (cData) {
-        const map: Record<string, boolean> = {};
-        cData.forEach(c => { map[`${c.obligacion_id}:${c.periodo_key}`] = true; });
-        setCumplimientos(map);
+        const keys = new Set<string>();
+        cData.forEach(c => keys.add(`${c.obligacion_id}:${c.periodo_key}`));
+        setCumplimientoKeys(keys);
       }
     }
     setLoading(false);
   };
 
-  const toggleCumplimiento = async (obligacionId: string, presentacion: string | null) => {
+  const toggleCumplimiento = async (obligacionId: string, periodKey: string) => {
     if (!user) return;
-    const periodKey = getCurrentPeriodKey(presentacion);
     const mapKey = `${obligacionId}:${periodKey}`;
-    const isCompleted = cumplimientos[mapKey];
+    const isCompleted = cumplimientoKeys.has(mapKey);
 
     if (isCompleted) {
       const { error } = await supabase.from('obligacion_cumplimientos').delete()
         .eq('obligacion_id', obligacionId).eq('periodo_key', periodKey);
       if (error) { toast.error('Error al desmarcar'); return; }
-      setCumplimientos(prev => ({ ...prev, [mapKey]: false }));
+      setCumplimientoKeys(prev => { const n = new Set(prev); n.delete(mapKey); return n; });
       toast.success('Cumplimiento desmarcado');
     } else {
       const { error } = await supabase.from('obligacion_cumplimientos').insert({
         obligacion_id: obligacionId, periodo_key: periodKey, completada_por: user.id,
       });
       if (error) { toast.error('Error al marcar cumplimiento'); return; }
-      setCumplimientos(prev => ({ ...prev, [mapKey]: true }));
-      toast.success(`Completada - ${getPeriodLabel(presentacion, periodKey)}`);
+      setCumplimientoKeys(prev => new Set(prev).add(mapKey));
+      toast.success('Período completado');
     }
   };
 
@@ -95,14 +97,28 @@ export function ObligacionesActivasTab() {
     );
   }
 
-  const pendientes = obligaciones.filter(ob => {
-    const pk = getCurrentPeriodKey(ob.presentacion);
-    return !cumplimientos[`${ob.id}:${pk}`];
+  // Calculate next vencimiento for each obligation
+  const obWithNext = obligaciones.map(ob => {
+    const next = getNextVencimiento(ob.fecha_vencimiento, ob.presentacion, cumplimientoKeys, ob.id);
+    return { ...ob, _next: next };
   });
 
-  const completadas = obligaciones.filter(ob => {
-    const pk = getCurrentPeriodKey(ob.presentacion);
-    return cumplimientos[`${ob.id}:${pk}`];
+  // Sort by next vencimiento date
+  obWithNext.sort((a, b) => {
+    if (!a._next && !b._next) return 0;
+    if (!a._next) return 1;
+    if (!b._next) return -1;
+    return a._next.date.getTime() - b._next.date.getTime();
+  });
+
+  const pendientes = obWithNext.filter(ob => {
+    if (!ob._next) return true;
+    return !cumplimientoKeys.has(`${ob.id}:${ob._next.periodKey}`);
+  });
+
+  const completadas = obWithNext.filter(ob => {
+    if (!ob._next) return false;
+    return cumplimientoKeys.has(`${ob.id}:${ob._next.periodKey}`);
   });
 
   return (
@@ -122,11 +138,16 @@ export function ObligacionesActivasTab() {
 
       {/* List */}
       <div className="space-y-3">
-        {obligaciones.map(ob => {
-          const periodKey = getCurrentPeriodKey(ob.presentacion);
+        {obWithNext.map(ob => {
+          const next = ob._next;
+          const periodKey = next?.periodKey || getCurrentPeriodKey(ob.presentacion);
           const mapKey = `${ob.id}:${periodKey}`;
-          const isCompleted = cumplimientos[mapKey] || false;
-          const vInfo = getVencimientoInfo(ob.fecha_vencimiento);
+          const isCompleted = cumplimientoKeys.has(mapKey);
+          const recurring = isRecurring(ob.presentacion);
+
+          // Use next calculated date for vencimiento info
+          const displayDate = next ? format(next.date, 'dd/MM/yyyy') : formatDateShort(ob.fecha_vencimiento);
+          const vInfo = next ? getVencimientoInfo(format(next.date, 'yyyy-MM-dd')) : getVencimientoInfo(ob.fecha_vencimiento);
 
           return (
             <div key={ob.id} className={`group relative p-4 border rounded-lg transition-all bg-card hover:shadow-md ${isCompleted ? 'bg-success/5 border-success/30' : ''}`}
@@ -142,7 +163,7 @@ export function ObligacionesActivasTab() {
               <div className="flex items-start gap-3">
                 <Checkbox
                   checked={isCompleted}
-                  onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
+                  onCheckedChange={() => toggleCumplimiento(ob.id, periodKey)}
                   className="mt-1"
                 />
                 <div className="flex-1 min-w-0">
@@ -150,9 +171,17 @@ export function ObligacionesActivasTab() {
                     <h4 className={`font-heading font-semibold ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
                       {ob.nombre}
                     </h4>
-                    <Badge variant="outline" className={`text-xs shrink-0 ${CATEGORIA_COLORS[ob.categoria] || ''}`}>
-                      {CATEGORIA_LABELS[ob.categoria] || ob.categoria}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {recurring && (
+                        <Badge variant="outline" className="text-xs gap-1">
+                          <RefreshCw className="w-3 h-3" />
+                          {ob.presentacion}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className={`text-xs ${CATEGORIA_COLORS[ob.categoria] || ''}`}>
+                        {CATEGORIA_LABELS[ob.categoria] || ob.categoria}
+                      </Badge>
+                    </div>
                   </div>
                   {ob.descripcion && (
                     <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{ob.descripcion}</p>
@@ -161,12 +190,15 @@ export function ObligacionesActivasTab() {
                     {ob.empresas?.razon_social && (
                       <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{ob.empresas.razon_social}</span>
                     )}
-                    {ob.presentacion && (
-                      <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{getPeriodLabel(ob.presentacion, periodKey)}</span>
+                    {ob.presentacion && next && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {getPeriodLabel(ob.presentacion, periodKey)}
+                      </span>
                     )}
-                    {ob.fecha_vencimiento && (
-                      <span className={`flex items-center gap-1 ${vInfo?.status === 'vencido' || vInfo?.status === 'urgente' ? 'text-destructive font-medium' : ''}`}>
-                        Vence: {formatDateShort(ob.fecha_vencimiento)}
+                    {next && (
+                      <span className={`flex items-center gap-1 font-medium ${vInfo?.status === 'vencido' || vInfo?.status === 'urgente' ? 'text-destructive' : ''}`}>
+                        {recurring ? 'Próximo:' : 'Vence:'} {displayDate}
                       </span>
                     )}
                   </div>

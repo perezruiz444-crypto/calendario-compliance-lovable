@@ -92,3 +92,91 @@ export function programaToCategoria(programa: string): string {
   if (lower.includes('general')) return 'general';
   return 'otro';
 }
+
+// ─── Recurrence: next vencimiento calculation ─────────────────────────
+function addPeriod(date: Date, presentacion: string): Date {
+  switch (presentacion.toLowerCase()) {
+    case 'semanal': return addWeeks(date, 1);
+    case 'quincenal': return addWeeks(date, 2);
+    case 'mensual': return addMonths(date, 1);
+    case 'bimestral': return addMonths(date, 2);
+    case 'trimestral': return addMonths(date, 3);
+    case 'semestral': return addMonths(date, 6);
+    case 'anual': return addYears(date, 1);
+    default: return date;
+  }
+}
+
+/**
+ * Given a base due date and periodicity, calculates the next upcoming
+ * vencimiento that hasn't been completed yet.
+ * Returns the original fecha_vencimiento for non-recurring ("unica") obligations.
+ */
+export function getNextVencimiento(
+  fechaVencimiento: string | null,
+  presentacion: string | null,
+  completedPeriodKeys: Set<string>,
+  obligacionId: string
+): { date: Date; periodKey: string } | null {
+  if (!fechaVencimiento) return null;
+  const base = new Date(fechaVencimiento + 'T12:00:00');
+  if (!isValid(base)) return null;
+
+  // Non-recurring: return the fixed date
+  if (!presentacion || presentacion.toLowerCase() === 'unica') {
+    const pk = getCurrentPeriodKey(presentacion);
+    return { date: base, periodKey: pk };
+  }
+
+  // For recurring: iterate from base forward until we find an uncompleted period
+  let current = new Date(base);
+  const now = new Date();
+  const maxIterations = 120; // safety: ~10 years of monthly
+
+  for (let i = 0; i < maxIterations; i++) {
+    const pk = getPeriodKeyForDate(current, presentacion);
+    const mapKey = `${obligacionId}:${pk}`;
+    
+    if (!completedPeriodKeys.has(mapKey)) {
+      return { date: current, periodKey: pk };
+    }
+    current = addPeriod(current, presentacion);
+  }
+
+  // All checked periods are completed, return next one
+  return { date: current, periodKey: getPeriodKeyForDate(current, presentacion) };
+}
+
+/** Get period key for a specific date (not necessarily "now") */
+function getPeriodKeyForDate(date: Date, presentacion: string): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const week = getISOWeek(date);
+
+  switch (presentacion.toLowerCase()) {
+    case 'semanal': return `${year}-W${String(week).padStart(2, '0')}`;
+    case 'quincenal': {
+      const half = date.getDate() <= 15 ? '1' : '2';
+      return `${year}-${month}-Q${half}`;
+    }
+    case 'mensual': return `${year}-${month}`;
+    case 'bimestral': {
+      const bim = Math.ceil((date.getMonth() + 1) / 2);
+      return `${year}-B${bim}`;
+    }
+    case 'trimestral': {
+      const q = Math.ceil((date.getMonth() + 1) / 3);
+      return `${year}-T${q}`;
+    }
+    case 'semestral': {
+      const s = date.getMonth() < 6 ? '1' : '2';
+      return `${year}-S${s}`;
+    }
+    case 'anual': return `${year}`;
+    default: return `${year}-${month}`;
+  }
+}
+
+export function isRecurring(presentacion: string | null): boolean {
+  return !!presentacion && presentacion.toLowerCase() !== 'unica';
+}
