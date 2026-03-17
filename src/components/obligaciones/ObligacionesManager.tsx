@@ -47,6 +47,7 @@ function getVencimientoBadge(fecha: string | null) {
 export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const { user } = useAuth();
   const [obligaciones, setObligaciones] = useState<any[]>([]);
+  const [cumplimientoKeys, setCumplimientoKeys] = useState<Set<string>>(new Set());
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
