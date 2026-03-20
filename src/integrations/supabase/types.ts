@@ -880,6 +880,38 @@ export type Database = {
           },
         ]
       }
+      obligacion_responsables: {
+        Row: {
+          created_at: string | null
+          id: string
+          obligacion_id: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          obligacion_id: string
+          tipo?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          obligacion_id?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligacion_responsables_obligacion_id_fkey"
+            columns: ["obligacion_id"]
+            isOneToOne: false
+            referencedRelation: "obligaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       obligaciones: {
         Row: {
           activa: boolean

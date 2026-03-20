@@ -106,20 +106,44 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
 
   useEffect(() => { fetchObligaciones(); }, [empresaId]);
 
-  // Fetch profile names for responsable display
+  // Fetch responsable names from junction table
+  const [responsablesMap, setResponsablesMap] = useState<Record<string, { id: string; nombre: string; tipo: string }[]>>({});
+  
   useEffect(() => {
-    const ids = obligaciones.filter(o => o.responsable_id).map(o => o.responsable_id);
-    if (ids.length === 0) return;
-    const uniqueIds = [...new Set(ids)];
-    const fetchProfiles = async () => {
-      const { data } = await supabase.from('profiles').select('id, nombre_completo').in('id', uniqueIds);
-      if (data) {
-        const map: Record<string, string> = {};
-        data.forEach(p => { map[p.id] = p.nombre_completo; });
-        setProfiles(map);
+    if (obligaciones.length === 0) return;
+    const fetchResponsables = async () => {
+      const obIds = obligaciones.map(o => o.id);
+      const { data } = await supabase
+        .from('obligacion_responsables')
+        .select('obligacion_id, user_id, tipo')
+        .in('obligacion_id', obIds);
+      if (!data || data.length === 0) {
+        // Fallback: check legacy responsable_id
+        const legacyIds = obligaciones.filter(o => o.responsable_id).map(o => o.responsable_id);
+        if (legacyIds.length > 0) {
+          const { data: pData } = await supabase.from('profiles').select('id, nombre_completo').in('id', [...new Set(legacyIds)]);
+          if (pData) {
+            const map: Record<string, string> = {};
+            pData.forEach(p => { map[p.id] = p.nombre_completo; });
+            setProfiles(map);
+          }
+        }
+        return;
       }
+      const userIds = [...new Set(data.map(r => r.user_id))];
+      const { data: pData } = await supabase.from('profiles').select('id, nombre_completo').in('id', userIds);
+      const profileMap: Record<string, string> = {};
+      if (pData) pData.forEach(p => { profileMap[p.id] = p.nombre_completo; });
+      setProfiles(profileMap);
+      
+      const rMap: Record<string, { id: string; nombre: string; tipo: string }[]> = {};
+      data.forEach(r => {
+        if (!rMap[r.obligacion_id]) rMap[r.obligacion_id] = [];
+        rMap[r.obligacion_id].push({ id: r.user_id, nombre: profileMap[r.user_id] || '', tipo: r.tipo });
+      });
+      setResponsablesMap(rMap);
     };
-    fetchProfiles();
+    fetchResponsables();
   }, [obligaciones]);
 
   const toggleCumplimiento = async (obligacionId: string, presentacion: string | null) => {
@@ -154,6 +178,20 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   };
 
 
+  const syncResponsables = async (obligacionId: string, responsableIds: string[], usuarios?: { id: string; nombre: string; tipo: string }[]) => {
+    // Delete existing
+    await supabase.from('obligacion_responsables').delete().eq('obligacion_id', obligacionId);
+    // Insert new
+    if (responsableIds.length > 0) {
+      const inserts = responsableIds.map(uid => ({
+        obligacion_id: obligacionId,
+        user_id: uid,
+        tipo: 'responsable',
+      }));
+      await supabase.from('obligacion_responsables').insert(inserts);
+    }
+  };
+
   const handleCreate = async (data: ObligacionFormData) => {
     setSaving(true);
     const { data: inserted, error } = await supabase.from('obligaciones').insert({
@@ -172,11 +210,15 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       estado: data.estado,
       notas: data.notas || null,
       activa: data.activa || !!data.fecha_vencimiento,
-      responsable_tipo: data.responsable_tipo || null,
-      responsable_id: data.responsable_id || null,
+      responsable_tipo: null,
+      responsable_id: null,
     }).select();
+    if (error) { toast.error('Error al crear obligación'); setSaving(false); return; }
+    // Sync responsables
+    if (inserted && inserted.length > 0 && data.responsable_ids?.length > 0) {
+      await syncResponsables(inserted[0].id, data.responsable_ids);
+    }
     setSaving(false);
-    if (error) { toast.error('Error al crear obligación'); return; }
     toast.success('Obligación creada');
     setFormOpen(false);
     fetchObligaciones();
@@ -200,11 +242,13 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       estado: data.estado,
       notas: data.notas || null,
       activa: data.activa || !!data.fecha_vencimiento,
-      responsable_tipo: data.responsable_tipo || null,
-      responsable_id: data.responsable_id || null,
+      responsable_tipo: null,
+      responsable_id: null,
     }).eq('id', data.id);
+    if (error) { toast.error('Error al actualizar'); setSaving(false); return; }
+    // Sync responsables
+    await syncResponsables(data.id, data.responsable_ids || []);
     setSaving(false);
-    if (error) { toast.error('Error al actualizar'); return; }
     toast.success('Obligación actualizada');
     setFormOpen(false);
     setEditData(null);
@@ -287,6 +331,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       activa: ob.activa || false,
       responsable_tipo: ob.responsable_tipo || '',
       responsable_id: ob.responsable_id || '',
+      responsable_ids: [],
     });
     setFormOpen(true);
   };
@@ -500,10 +545,19 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                         </div>
                       </td>
                       <td className="p-2 hidden md:table-cell">
-                        {ob.responsable_tipo ? (
+                        {(responsablesMap[ob.id]?.length > 0) ? (
+                          <div className="flex flex-wrap gap-1">
+                            {responsablesMap[ob.id].map(r => (
+                              <Badge key={r.id} variant="outline" className="text-xs gap-1">
+                                <User className="w-3 h-3" />
+                                {r.nombre || r.tipo}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : ob.responsable_id ? (
                           <div className="flex items-center gap-1">
-                            {ob.responsable_tipo === 'cliente' ? <User className="w-3 h-3 text-muted-foreground" /> : <Users className="w-3 h-3 text-muted-foreground" />}
-                            <span className="text-xs capitalize">{ob.responsable_id ? (profiles[ob.responsable_id] || ob.responsable_tipo) : ob.responsable_tipo}</span>
+                            <User className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-xs">{profiles[ob.responsable_id] || ob.responsable_tipo || '-'}</span>
                           </div>
                         ) : (
                           <span className="text-xs text-muted-foreground">-</span>
