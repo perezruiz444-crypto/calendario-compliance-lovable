@@ -545,10 +545,19 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                         </div>
                       </td>
                       <td className="p-2 hidden md:table-cell">
-                        {ob.responsable_tipo ? (
+                        {(responsablesMap[ob.id]?.length > 0) ? (
+                          <div className="flex flex-wrap gap-1">
+                            {responsablesMap[ob.id].map(r => (
+                              <Badge key={r.id} variant="outline" className="text-xs gap-1">
+                                <User className="w-3 h-3" />
+                                {r.nombre || r.tipo}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : ob.responsable_id ? (
                           <div className="flex items-center gap-1">
-                            {ob.responsable_tipo === 'cliente' ? <User className="w-3 h-3 text-muted-foreground" /> : <Users className="w-3 h-3 text-muted-foreground" />}
-                            <span className="text-xs capitalize">{ob.responsable_id ? (profiles[ob.responsable_id] || ob.responsable_tipo) : ob.responsable_tipo}</span>
+                            <User className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-xs">{profiles[ob.responsable_id] || ob.responsable_tipo || '-'}</span>
                           </div>
                         ) : (
                           <span className="text-xs text-muted-foreground">-</span>
