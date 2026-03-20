@@ -178,6 +178,20 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   };
 
 
+  const syncResponsables = async (obligacionId: string, responsableIds: string[], usuarios?: { id: string; nombre: string; tipo: string }[]) => {
+    // Delete existing
+    await supabase.from('obligacion_responsables').delete().eq('obligacion_id', obligacionId);
+    // Insert new
+    if (responsableIds.length > 0) {
+      const inserts = responsableIds.map(uid => ({
+        obligacion_id: obligacionId,
+        user_id: uid,
+        tipo: 'responsable',
+      }));
+      await supabase.from('obligacion_responsables').insert(inserts);
+    }
+  };
+
   const handleCreate = async (data: ObligacionFormData) => {
     setSaving(true);
     const { data: inserted, error } = await supabase.from('obligaciones').insert({
@@ -196,11 +210,15 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       estado: data.estado,
       notas: data.notas || null,
       activa: data.activa || !!data.fecha_vencimiento,
-      responsable_tipo: data.responsable_tipo || null,
-      responsable_id: data.responsable_id || null,
+      responsable_tipo: null,
+      responsable_id: null,
     }).select();
+    if (error) { toast.error('Error al crear obligación'); setSaving(false); return; }
+    // Sync responsables
+    if (inserted && inserted.length > 0 && data.responsable_ids?.length > 0) {
+      await syncResponsables(inserted[0].id, data.responsable_ids);
+    }
     setSaving(false);
-    if (error) { toast.error('Error al crear obligación'); return; }
     toast.success('Obligación creada');
     setFormOpen(false);
     fetchObligaciones();
