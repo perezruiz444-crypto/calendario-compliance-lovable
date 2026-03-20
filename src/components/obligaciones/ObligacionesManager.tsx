@@ -331,6 +331,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       activa: ob.activa || false,
       responsable_tipo: ob.responsable_tipo || '',
       responsable_id: ob.responsable_id || '',
+      responsable_ids: [],
     });
     setFormOpen(true);
   };
