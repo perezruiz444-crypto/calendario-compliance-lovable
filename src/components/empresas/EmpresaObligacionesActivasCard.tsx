@@ -298,6 +298,7 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit }: Props) {
             numero_oficio: editObl.numero_oficio || '',
             responsable_id: editObl.responsable_id || '',
             responsable_tipo: editObl.responsable_tipo || '',
+            responsable_ids: [],
           }}
           onSubmit={async (data) => {
             const { error } = await supabase.from('obligaciones').update({
