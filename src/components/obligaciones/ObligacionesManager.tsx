@@ -106,20 +106,44 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
 
   useEffect(() => { fetchObligaciones(); }, [empresaId]);
 
-  // Fetch profile names for responsable display
+  // Fetch responsable names from junction table
+  const [responsablesMap, setResponsablesMap] = useState<Record<string, { id: string; nombre: string; tipo: string }[]>>({});
+  
   useEffect(() => {
-    const ids = obligaciones.filter(o => o.responsable_id).map(o => o.responsable_id);
-    if (ids.length === 0) return;
-    const uniqueIds = [...new Set(ids)];
-    const fetchProfiles = async () => {
-      const { data } = await supabase.from('profiles').select('id, nombre_completo').in('id', uniqueIds);
-      if (data) {
-        const map: Record<string, string> = {};
-        data.forEach(p => { map[p.id] = p.nombre_completo; });
-        setProfiles(map);
+    if (obligaciones.length === 0) return;
+    const fetchResponsables = async () => {
+      const obIds = obligaciones.map(o => o.id);
+      const { data } = await supabase
+        .from('obligacion_responsables')
+        .select('obligacion_id, user_id, tipo')
+        .in('obligacion_id', obIds);
+      if (!data || data.length === 0) {
+        // Fallback: check legacy responsable_id
+        const legacyIds = obligaciones.filter(o => o.responsable_id).map(o => o.responsable_id);
+        if (legacyIds.length > 0) {
+          const { data: pData } = await supabase.from('profiles').select('id, nombre_completo').in('id', [...new Set(legacyIds)]);
+          if (pData) {
+            const map: Record<string, string> = {};
+            pData.forEach(p => { map[p.id] = p.nombre_completo; });
+            setProfiles(map);
+          }
+        }
+        return;
       }
+      const userIds = [...new Set(data.map(r => r.user_id))];
+      const { data: pData } = await supabase.from('profiles').select('id, nombre_completo').in('id', userIds);
+      const profileMap: Record<string, string> = {};
+      if (pData) pData.forEach(p => { profileMap[p.id] = p.nombre_completo; });
+      setProfiles(profileMap);
+      
+      const rMap: Record<string, { id: string; nombre: string; tipo: string }[]> = {};
+      data.forEach(r => {
+        if (!rMap[r.obligacion_id]) rMap[r.obligacion_id] = [];
+        rMap[r.obligacion_id].push({ id: r.user_id, nombre: profileMap[r.user_id] || '', tipo: r.tipo });
+      });
+      setResponsablesMap(rMap);
     };
-    fetchProfiles();
+    fetchResponsables();
   }, [obligaciones]);
 
   const toggleCumplimiento = async (obligacionId: string, presentacion: string | null) => {
