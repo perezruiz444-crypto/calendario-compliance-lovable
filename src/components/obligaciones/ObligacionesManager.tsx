@@ -242,11 +242,13 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
       estado: data.estado,
       notas: data.notas || null,
       activa: data.activa || !!data.fecha_vencimiento,
-      responsable_tipo: data.responsable_tipo || null,
-      responsable_id: data.responsable_id || null,
+      responsable_tipo: null,
+      responsable_id: null,
     }).eq('id', data.id);
+    if (error) { toast.error('Error al actualizar'); setSaving(false); return; }
+    // Sync responsables
+    await syncResponsables(data.id, data.responsable_ids || []);
     setSaving(false);
-    if (error) { toast.error('Error al actualizar'); return; }
     toast.success('Obligación actualizada');
     setFormOpen(false);
     setEditData(null);

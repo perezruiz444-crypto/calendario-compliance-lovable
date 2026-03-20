@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronDown, Calendar, User, Users, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,7 @@ export interface ObligacionFormData {
   activa: boolean;
   responsable_tipo: string;
   responsable_id: string;
+  responsable_ids: string[];
 }
 
 const EMPTY_FORM: ObligacionFormData = {
@@ -44,6 +46,7 @@ const EMPTY_FORM: ObligacionFormData = {
   fecha_autorizacion: '', fecha_vencimiento: '', fecha_renovacion: '',
   fecha_inicio: '', fecha_fin: '', numero_oficio: '', estado: 'vigente', notas: '',
   activa: false, responsable_tipo: '', responsable_id: '',
+  responsable_ids: [],
 };
 
 interface Props {
@@ -63,24 +66,39 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
   useEffect(() => {
     if (open) {
       const data = initialData ? { ...EMPTY_FORM, ...initialData } : { ...EMPTY_FORM };
+      if (!data.responsable_ids) data.responsable_ids = [];
       setForm(data);
-      // Open secondary dates if any are filled
       setDatesOpen(!!(data.fecha_autorizacion || data.fecha_renovacion || data.fecha_inicio || data.fecha_fin));
     }
   }, [open, initialData]);
 
-  // Fetch available users when empresaId is available and fecha_vencimiento is set
   useEffect(() => {
-    if (open && form.fecha_vencimiento && empresaId) {
+    if (open && empresaId) {
       fetchUsuarios();
     }
-  }, [open, form.fecha_vencimiento, empresaId]);
+  }, [open, empresaId]);
+
+  // Load existing responsables when editing
+  useEffect(() => {
+    if (open && initialData?.id && empresaId) {
+      loadExistingResponsables(initialData.id);
+    }
+  }, [open, initialData?.id]);
+
+  const loadExistingResponsables = async (obligacionId: string) => {
+    const { data } = await supabase
+      .from('obligacion_responsables')
+      .select('user_id')
+      .eq('obligacion_id', obligacionId);
+    if (data && data.length > 0) {
+      setForm(prev => ({ ...prev, responsable_ids: data.map(r => r.user_id) }));
+    }
+  };
 
   const fetchUsuarios = async () => {
     if (!empresaId) return;
     const results: { id: string; nombre: string; tipo: string }[] = [];
 
-    // Get clients of this empresa
     const { data: clientProfiles } = await supabase
       .from('profiles')
       .select('id, nombre_completo')
@@ -100,7 +118,6 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
       }
     }
 
-    // Get consultores assigned to this empresa
     const { data: consultorAssignments } = await supabase
       .from('consultor_empresa_asignacion')
       .select('consultor_id')
@@ -125,7 +142,6 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nombre.trim() || !form.categoria) return;
-    // Implicit activation: activa = true when fecha_vencimiento is set
     const submittedData = {
       ...form,
       activa: form.activa || !!form.fecha_vencimiento,
@@ -133,16 +149,22 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
     onSubmit(submittedData);
   };
 
-  const update = (field: keyof ObligacionFormData, value: string | boolean) => {
+  const update = (field: keyof ObligacionFormData, value: string | boolean | string[]) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const toggleResponsable = (userId: string) => {
     setForm(prev => {
-      const updated = { ...prev, [field]: value };
-      return updated;
+      const ids = prev.responsable_ids || [];
+      const newIds = ids.includes(userId)
+        ? ids.filter(id => id !== userId)
+        : [...ids, userId];
+      return { ...prev, responsable_ids: newIds };
     });
   };
 
   const clientes = usuarios.filter(u => u.tipo === 'cliente');
   const consultores = usuarios.filter(u => u.tipo === 'consultor');
-
   const isRecurring = form.presentacion && form.presentacion !== 'unica';
 
   return (
@@ -154,7 +176,6 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* ── Core fields ── */}
           <div>
             <Label>Nombre *</Label>
             <Input value={form.nombre} onChange={e => update('nombre', e.target.value)} placeholder="Ej: Renovación Certificación IVA" required />
@@ -199,7 +220,7 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
             </div>
           </div>
 
-          {/* ── Primary date: Fecha de Vencimiento ── */}
+          {/* Primary date + Responsables */}
           <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
             <div>
               <Label className="flex items-center gap-1.5 text-sm font-semibold">
@@ -230,56 +251,57 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
               )}
             </div>
 
-            {/* ── Responsable (visible only when fecha_vencimiento is set) ── */}
-            {form.fecha_vencimiento && (
+            {/* Multi-select responsables */}
+            {form.fecha_vencimiento && usuarios.length > 0 && (
               <div className="pt-2 border-t border-border/50">
-                <Label className="text-xs font-medium">Responsable</Label>
-                <Select
-                  value={form.responsable_id || '__none__'}
-                  onValueChange={v => {
-                    if (v === '__none__') {
-                      update('responsable_id', '');
-                      update('responsable_tipo', '');
-                    } else {
-                      const found = usuarios.find(u => u.id === v);
-                      if (found) {
-                        setForm(prev => ({ ...prev, responsable_id: v, responsable_tipo: found.tipo }));
-                      }
-                    }
-                  }}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Sin asignar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Sin asignar</SelectItem>
-                    {consultores.length > 0 && (
-                      <SelectGroup>
-                        <SelectLabel className="flex items-center gap-1.5">
-                          <Users className="w-3 h-3" /> Consultores
-                        </SelectLabel>
-                        {consultores.map(u => (
-                          <SelectItem key={u.id} value={u.id}>{u.nombre}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
-                    {clientes.length > 0 && (
-                      <SelectGroup>
-                        <SelectLabel className="flex items-center gap-1.5">
-                          <User className="w-3 h-3" /> Clientes
-                        </SelectLabel>
-                        {clientes.map(u => (
-                          <SelectItem key={u.id} value={u.id}>{u.nombre}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
-                  </SelectContent>
-                </Select>
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  Responsables
+                  {(form.responsable_ids?.length || 0) > 0 && (
+                    <Badge variant="secondary" className="text-xs ml-1">
+                      {form.responsable_ids.length}
+                    </Badge>
+                  )}
+                </Label>
+                <div className="mt-2 space-y-2 max-h-[180px] overflow-y-auto">
+                  {consultores.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium flex items-center gap-1 mb-1.5">
+                        <Users className="w-3 h-3" /> Consultores
+                      </p>
+                      {consultores.map(u => (
+                        <label key={u.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-muted/50 cursor-pointer transition-colors">
+                          <Checkbox
+                            checked={form.responsable_ids?.includes(u.id) || false}
+                            onCheckedChange={() => toggleResponsable(u.id)}
+                          />
+                          <span className="text-sm">{u.nombre}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  {clientes.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium flex items-center gap-1 mb-1.5">
+                        <User className="w-3 h-3" /> Clientes
+                      </p>
+                      {clientes.map(u => (
+                        <label key={u.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-muted/50 cursor-pointer transition-colors">
+                          <Checkbox
+                            checked={form.responsable_ids?.includes(u.id) || false}
+                            onCheckedChange={() => toggleResponsable(u.id)}
+                          />
+                          <span className="text-sm">{u.nombre}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
-          {/* ── Secondary dates (collapsible) ── */}
+          {/* Secondary dates (collapsible) */}
           <Collapsible open={datesOpen} onOpenChange={setDatesOpen}>
             <CollapsibleTrigger asChild>
               <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-full">
@@ -310,7 +332,6 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
             </CollapsibleContent>
           </Collapsible>
 
-          {/* ── Description & Notes ── */}
           <div>
             <Label>Descripción</Label>
             <Textarea value={form.descripcion} onChange={e => update('descripcion', e.target.value)} placeholder="Descripción de la obligación" rows={2} />
