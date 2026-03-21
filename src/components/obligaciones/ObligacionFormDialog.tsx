@@ -252,7 +252,7 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
             </div>
 
             {/* Multi-select responsables */}
-            {form.fecha_vencimiento && usuarios.length > 0 && (
+{usuarios.length > 0 && (
               <div className="pt-2 border-t border-border/50">
                 <Label className="text-xs font-medium flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5" />
