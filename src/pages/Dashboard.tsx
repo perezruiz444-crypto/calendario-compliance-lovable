@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import DashboardObligaciones from '@/components/dashboard/DashboardObligaciones';
+import EmpresaComplianceSemaforo from '@/components/dashboard/EmpresaComplianceSemaforo';
 import DashboardMensajes from '@/components/dashboard/DashboardMensajes';
 import AdminAnalytics from '@/components/dashboard/AdminAnalytics';
 import ConsultorAnalytics from '@/components/dashboard/ConsultorAnalytics';
@@ -161,10 +162,13 @@ export default function Dashboard() {
         {role === 'consultor' && <ConsultorAnalytics data={data} />}
         {role === 'cliente' && <ClienteAnalytics data={data} />}
 
-        {/* Obligaciones (admin/consultor) */}
-        {(role === 'administrador' || role === 'consultor') && (
-          <DashboardObligaciones />
-        )}
+       {/* Obligaciones + Semáforo (admin/consultor) */}
+{(role === 'administrador' || role === 'consultor') && (
+  <>
+    <DashboardObligaciones />
+    <EmpresaComplianceSemaforo />
+  </>
+)}
 
         {/* Bottom grid: Próximas Tareas + Mensajes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
