@@ -1,11 +1,3 @@
-/**
- * OnboardingEmpresaWizard — reemplaza CreateEmpresaDialog
- *
- * 3 pasos:
- * 1. Datos generales (RFC, razón social, domicilio)
- * 2. Programas activos (IMMEX, PROSEC, Padrón, Cert IVA/IEPS, OEA)
- * 3. Generación automática de obligaciones recurrentes
- */
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -18,8 +10,6 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { CheckCircle2, ChevronRight, ChevronLeft, Building2, FileCheck, Zap } from 'lucide-react';
 import { addMonths, addYears, format } from 'date-fns';
-
-// ── Catálogo de obligaciones por programa ─────────────────────────────
 
 interface ObligacionTemplate {
   nombre: string;
@@ -59,15 +49,13 @@ const OBLIGACIONES_POR_PROGRAMA: Record<string, ObligacionTemplate[]> = {
 };
 
 const PROGRAMAS = [
-  { key: 'immex',       label: 'IMMEX',                icon: '🏭', desc: 'Industria Manufacturera, Maquiladora y de Servicios de Exportación' },
-  { key: 'prosec',      label: 'PROSEC',               icon: '📊', desc: 'Programas de Promoción Sectorial' },
-  { key: 'padron',      label: 'Padrón de Importadores', icon: '📋', desc: 'Padrón General y Sectoriales' },
-  { key: 'cert_iva_ieps', label: 'Cert. IVA/IEPS',    icon: '🛡️', desc: 'Certificación de IVA e IEPS' },
-  { key: 'oea',         label: 'OEA',                  icon: '⭐', desc: 'Operador Económico Autorizado' },
-  { key: 'general',     label: 'Obligaciones Generales', icon: '📁', desc: 'OVL, declaraciones y obligaciones comunes' },
+  { key: 'immex',         label: 'IMMEX',                  icon: '🏭', desc: 'Industria Manufacturera, Maquiladora y de Servicios de Exportación' },
+  { key: 'prosec',        label: 'PROSEC',                 icon: '📊', desc: 'Programas de Promoción Sectorial' },
+  { key: 'padron',        label: 'Padrón de Importadores', icon: '📋', desc: 'Padrón General y Sectoriales' },
+  { key: 'cert_iva_ieps', label: 'Cert. IVA/IEPS',        icon: '🛡️', desc: 'Certificación de IVA e IEPS' },
+  { key: 'oea',           label: 'OEA',                    icon: '⭐', desc: 'Operador Económico Autorizado' },
+  { key: 'general',       label: 'Obligaciones Generales', icon: '📁', desc: 'OVL, declaraciones y obligaciones comunes' },
 ];
-
-// ── Step indicator ────────────────────────────────────────────────────
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
@@ -90,15 +78,11 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
   );
 }
 
-// ── Props ─────────────────────────────────────────────────────────────
-
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEmpresaCreated: () => void;
 }
-
-// ── Main wizard ───────────────────────────────────────────────────────
 
 export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaCreated }: Props) {
   const { user } = useAuth();
@@ -107,13 +91,11 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
   const [createdEmpresaId, setCreatedEmpresaId] = useState<string | null>(null);
   const [generatedCount, setGeneratedCount] = useState(0);
 
-  // Step 1 — datos generales
   const [formData, setFormData] = useState({
     razon_social: '', rfc: '', domicilio_fiscal: '', telefono: '', actividad_economica: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Step 2 — programas seleccionados
   const [selectedPrograms, setSelectedPrograms] = useState<Set<string>>(new Set(['general']));
   const [selectedObligaciones, setSelectedObligaciones] = useState<Set<string>>(new Set(
     OBLIGACIONES_POR_PROGRAMA['general'].map((_, i) => `general-${i}`)
@@ -123,7 +105,7 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
     const next = new Set(selectedPrograms);
     const nextObs = new Set(selectedObligaciones);
     if (next.has(key)) {
-      if (key === 'general') return; // general siempre activo
+      if (key === 'general') return;
       next.delete(key);
       OBLIGACIONES_POR_PROGRAMA[key]?.forEach((_, i) => nextObs.delete(`${key}-${i}`));
     } else {
@@ -152,7 +134,6 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
     return Object.keys(errs).length === 0;
   };
 
-  // ── Step 1 submit: crear empresa ────────────────────────────────────
   const handleCreateEmpresa = async () => {
     if (!validate()) return;
     setLoading(true);
@@ -175,11 +156,9 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
     }
   };
 
-  // ── Step 2 submit: generar obligaciones ────────────────────────────
   const handleGenerateObligaciones = async () => {
     if (!createdEmpresaId) return;
     setLoading(true);
-
     const toInsert: any[] = [];
     const baseDate = new Date();
 
@@ -188,8 +167,6 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
       templates.forEach((tmpl, i) => {
         const key = `${prog}-${i}`;
         if (!selectedObligaciones.has(key)) return;
-
-        // Calcular fecha de vencimiento base según periodicidad
         let fechaVenc: Date;
         switch (tmpl.presentacion.toLowerCase()) {
           case 'mensual':    fechaVenc = addMonths(baseDate, 1); break;
@@ -199,7 +176,6 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
           case 'anual':      fechaVenc = addYears(baseDate, 1); break;
           default:           fechaVenc = addMonths(baseDate, 1);
         }
-
         toInsert.push({
           empresa_id: createdEmpresaId,
           nombre: tmpl.nombre,
@@ -229,7 +205,6 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
   };
 
   const handleFinish = () => {
-    // Reset
     setStep(0);
     setFormData({ razon_social: '', rfc: '', domicilio_fiscal: '', telefono: '', actividad_economica: '' });
     setSelectedPrograms(new Set(['general']));
@@ -242,12 +217,10 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
   };
 
   const stepTitles = ['Datos de la empresa', 'Programas activos', '¡Listo!'];
-  const stepIcons = [Building2, FileCheck, Zap];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[620px] max-h-[92vh] overflow-y-auto p-0">
-        {/* Top bar */}
         <div className="bg-primary px-6 py-5">
           <DialogHeader>
             <DialogTitle className="text-white font-heading text-lg">
@@ -261,43 +234,23 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
         </div>
 
         <div className="p-6">
-
-          {/* ── STEP 0: Datos generales ─────────────────────────── */}
           {step === 0 && (
             <div className="space-y-4">
               <div>
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Razón Social *</Label>
-                <Input
-                  className="mt-1"
-                  placeholder="Ej. Grupo Industrial Norte S.A. de C.V."
-                  value={formData.razon_social}
-                  onChange={e => setFormData(p => ({ ...p, razon_social: e.target.value }))}
-                />
+                <Input className="mt-1" placeholder="Ej. Grupo Industrial Norte S.A. de C.V." value={formData.razon_social} onChange={e => setFormData(p => ({ ...p, razon_social: e.target.value }))} />
                 {errors.razon_social && <p className="text-xs text-destructive mt-1">{errors.razon_social}</p>}
               </div>
-
               <div>
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">RFC *</Label>
-                <Input
-                  className="mt-1 uppercase"
-                  placeholder="Ej. GIN980512AB3"
-                  value={formData.rfc}
-                  onChange={e => setFormData(p => ({ ...p, rfc: e.target.value.toUpperCase() }))}
-                />
+                <Input className="mt-1 uppercase" placeholder="Ej. GIN980512AB3" value={formData.rfc} onChange={e => setFormData(p => ({ ...p, rfc: e.target.value.toUpperCase() }))} />
                 {errors.rfc && <p className="text-xs text-destructive mt-1">{errors.rfc}</p>}
               </div>
-
               <div>
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Domicilio Fiscal *</Label>
-                <Input
-                  className="mt-1"
-                  placeholder="Calle, número, colonia, municipio, estado, CP"
-                  value={formData.domicilio_fiscal}
-                  onChange={e => setFormData(p => ({ ...p, domicilio_fiscal: e.target.value }))}
-                />
+                <Input className="mt-1" placeholder="Calle, número, colonia, municipio, estado, CP" value={formData.domicilio_fiscal} onChange={e => setFormData(p => ({ ...p, domicilio_fiscal: e.target.value }))} />
                 {errors.domicilio_fiscal && <p className="text-xs text-destructive mt-1">{errors.domicilio_fiscal}</p>}
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Teléfono</Label>
@@ -308,53 +261,34 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
                   <Input className="mt-1" placeholder="Ej. Manufactura" value={formData.actividad_economica} onChange={e => setFormData(p => ({ ...p, actividad_economica: e.target.value }))} />
                 </div>
               </div>
-
               <div className="flex justify-end pt-2">
                 <Button onClick={handleCreateEmpresa} disabled={loading} className="gap-2">
-                  {loading ? 'Creando...' : 'Continuar'}
-                  <ChevronRight className="w-4 h-4" />
+                  {loading ? 'Creando...' : 'Continuar'} <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
             </div>
           )}
 
-          {/* ── STEP 1: Programas y obligaciones ───────────────── */}
           {step === 1 && (
             <div className="space-y-5">
-              <p className="text-sm text-muted-foreground">
-                Selecciona los programas activos de la empresa. Se generarán automáticamente las obligaciones recurrentes correspondientes.
-              </p>
-
-              {/* Selector de programas */}
+              <p className="text-sm text-muted-foreground">Selecciona los programas activos. Se generarán automáticamente las obligaciones recurrentes correspondientes.</p>
               <div className="grid grid-cols-2 gap-2">
                 {PROGRAMAS.map(p => (
-                  <button
-                    key={p.key}
-                    onClick={() => toggleProgram(p.key)}
-                    disabled={p.key === 'general'}
+                  <button key={p.key} onClick={() => toggleProgram(p.key)} disabled={p.key === 'general'}
                     className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-all ${
-                      selectedPrograms.has(p.key)
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                        : 'border-border hover:border-muted-foreground/40'
-                    } ${p.key === 'general' ? 'opacity-70' : ''}`}
-                  >
+                      selectedPrograms.has(p.key) ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : 'border-border hover:border-muted-foreground/40'
+                    } ${p.key === 'general' ? 'opacity-70' : ''}`}>
                     <span className="text-xl shrink-0">{p.icon}</span>
                     <div>
                       <p className="text-sm font-semibold">{p.label}</p>
                       <p className="text-xs text-muted-foreground leading-tight">{p.desc}</p>
                     </div>
-                    {selectedPrograms.has(p.key) && (
-                      <CheckCircle2 className="w-4 h-4 text-primary shrink-0 ml-auto mt-0.5" />
-                    )}
+                    {selectedPrograms.has(p.key) && <CheckCircle2 className="w-4 h-4 text-primary shrink-0 ml-auto mt-0.5" />}
                   </button>
                 ))}
               </div>
-
-              {/* Obligaciones que se van a generar */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                  Obligaciones a generar ({selectedObligaciones.size})
-                </p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Obligaciones a generar ({selectedObligaciones.size})</p>
                 <div className="border border-border rounded-lg overflow-hidden max-h-[260px] overflow-y-auto">
                   {Array.from(selectedPrograms).map(prog => {
                     const templates = OBLIGACIONES_POR_PROGRAMA[prog] || [];
@@ -368,11 +302,7 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
                           const key = `${prog}-${i}`;
                           return (
                             <label key={key} className="flex items-start gap-3 px-3 py-2.5 hover:bg-muted/30 cursor-pointer border-b border-border last:border-0">
-                              <Checkbox
-                                checked={selectedObligaciones.has(key)}
-                                onCheckedChange={() => toggleObligacion(key)}
-                                className="mt-0.5"
-                              />
+                              <Checkbox checked={selectedObligaciones.has(key)} onCheckedChange={() => toggleObligacion(key)} className="mt-0.5" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium leading-snug">{tmpl.nombre}</p>
                                 <div className="flex items-center gap-2 mt-0.5">
@@ -388,11 +318,8 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
                   })}
                 </div>
               </div>
-
               <div className="flex justify-between pt-2">
-                <Button variant="outline" onClick={() => setStep(0)} className="gap-2">
-                  <ChevronLeft className="w-4 h-4" /> Atrás
-                </Button>
+                <Button variant="outline" onClick={() => setStep(0)} className="gap-2"><ChevronLeft className="w-4 h-4" /> Atrás</Button>
                 <Button onClick={handleGenerateObligaciones} disabled={loading || selectedObligaciones.size === 0} className="gap-2">
                   {loading ? 'Generando...' : `Generar ${selectedObligaciones.size} obligación${selectedObligaciones.size !== 1 ? 'es' : ''}`}
                   <Zap className="w-4 h-4" />
@@ -401,24 +328,21 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
             </div>
           )}
 
-          {/* ── STEP 2: Confirmación ─────────────────────────────── */}
           {step === 2 && (
             <div className="text-center py-6 space-y-5">
               <div className="w-16 h-16 rounded-full bg-success/15 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-8 h-8 text-success" />
               </div>
-
               <div>
                 <h3 className="font-heading font-bold text-xl text-foreground">¡Empresa configurada!</h3>
                 <p className="text-muted-foreground text-sm mt-1">{formData.razon_social}</p>
               </div>
-
               <div className="flex flex-col gap-3 max-w-xs mx-auto">
                 <div className="flex items-center gap-3 bg-success/10 rounded-lg px-4 py-3">
                   <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
                   <span className="text-sm font-medium text-success">Empresa registrada en el sistema</span>
                 </div>
-                <div className="flex items-center gap-3 bg-primary/8 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-3 bg-primary/10 rounded-lg px-4 py-3">
                   <Zap className="w-5 h-5 text-primary shrink-0" />
                   <span className="text-sm font-medium text-primary">{generatedCount} obligaciones generadas automáticamente</span>
                 </div>
@@ -427,14 +351,8 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
                   <span className="text-sm text-muted-foreground">Las obligaciones ya aparecen en el calendario</span>
                 </div>
               </div>
-
-              <p className="text-xs text-muted-foreground">
-                Puedes agregar o editar obligaciones desde la página de la empresa en cualquier momento.
-              </p>
-
-              <Button onClick={handleFinish} size="lg" className="w-full mt-2">
-                Ir a la empresa →
-              </Button>
+              <p className="text-xs text-muted-foreground">Puedes agregar o editar obligaciones desde la página de la empresa en cualquier momento.</p>
+              <Button onClick={handleFinish} size="lg" className="w-full mt-2">Ir a la empresa →</Button>
             </div>
           )}
         </div>
