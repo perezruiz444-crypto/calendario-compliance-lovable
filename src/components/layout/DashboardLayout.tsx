@@ -173,7 +173,7 @@ const SidebarContent = () => (
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-64 border-r border-border/60 shadow-sm">
+      <aside className="hidden lg:block w-64 border-r border-border/60 shadow-sm overflow-visible">
         <SidebarContent />
       </aside>
 
