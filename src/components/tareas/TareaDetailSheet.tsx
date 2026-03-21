@@ -17,6 +17,7 @@ import { es } from 'date-fns/locale';
 import SendNotificationDialog from './SendNotificationDialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { MultipleAssignees } from './MultipleAssignees';
 
 interface TareaDetailSheetProps {
   open: boolean;
