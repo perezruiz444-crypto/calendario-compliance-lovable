@@ -1,501 +1,307 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar as BigCalendar, momentLocalizer, type DateHeaderProps } from 'react-big-calendar';
-import moment from 'moment';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import listPlugin from '@fullcalendar/list';
+import interactionPlugin from '@fullcalendar/interaction';
+import { EventClickArg, DatesSetArg, EventContentArg } from '@fullcalendar/core';
+import esLocale from '@fullcalendar/core/locales/es';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Calendar, AlertCircle } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
+import { isPast, startOfDay, format } from 'date-fns';
+import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
 
-const localizer = momentLocalizer(moment);
-
-// Generate recurring dates within a range (up to 1 year ahead)
-function generateRecurringDates(
-  startDateStr: string,
-  endDateStr: string | null,
-  frecuencia: string,
-  intervalo: number
-): Date[] {
-  const dates: Date[] = [];
-  const start = new Date(startDateStr + 'T12:00:00');
-  const now = new Date();
-  const maxDate = endDateStr 
-    ? new Date(endDateStr + 'T12:00:00') 
-    : new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
-  
-  let current = new Date(start);
-  const maxOccurrences = 365;
-  let count = 0;
-
-  while (current <= maxDate && count < maxOccurrences) {
-    dates.push(new Date(current));
-    count++;
-    
-    switch (frecuencia) {
-      case 'diaria':
-        current.setDate(current.getDate() + intervalo);
-        break;
-      case 'semanal':
-        current.setDate(current.getDate() + 7 * intervalo);
-        break;
-      case 'quincenal':
-        current.setDate(current.getDate() + 14 * intervalo);
-        break;
-      case 'mensual':
-        current.setMonth(current.getMonth() + intervalo);
-        break;
-      case 'trimestral':
-        current.setMonth(current.getMonth() + 3 * intervalo);
-        break;
-      case 'anual':
-        current.setFullYear(current.getFullYear() + intervalo);
-        break;
-      default:
-        current.setMonth(current.getMonth() + intervalo);
-    }
-  }
-
-  return dates;
-}
-
-interface CalendarEvent {
+interface FcEvent {
   id: string;
   title: string;
-  start: Date;
-  end: Date;
-  resource: {
+  start: string;
+  end?: string;
+  backgroundColor: string;
+  borderColor: string;
+  textColor: string;
+  extendedProps: {
     type: 'tarea' | 'documento' | 'programa' | 'obligacion';
     prioridad?: string;
     estado?: string;
+    rawId?: string;
+    empresaId?: string;
     data: any;
   };
 }
 
 interface DashboardCalendarProps {
-  onEventClick?: (event: CalendarEvent) => void;
+  onEventClick?: (event: any) => void;
   height?: string;
 }
 
-export default function DashboardCalendar({ onEventClick, height = '500px' }: DashboardCalendarProps) {
+function eventColor(type: string, prioridad?: string, isOverdue?: boolean): { bg: string; border: string } {
+  if (isOverdue) return { bg: 'hsl(0 84% 60% / 0.15)', border: 'hsl(0 84% 60%)' };
+  if (type === 'tarea') {
+    if (prioridad === 'alta')  return { bg: 'hsl(25 95% 53% / 0.15)', border: 'hsl(25 95% 53%)' };
+    if (prioridad === 'media') return { bg: 'hsl(48 96% 53% / 0.15)', border: 'hsl(48 96% 53%)' };
+    if (prioridad === 'baja')  return { bg: 'hsl(142 71% 45% / 0.15)', border: 'hsl(142 71% 45%)' };
+    return { bg: 'hsl(var(--primary) / 0.12)', border: 'hsl(var(--primary))' };
+  }
+  if (type === 'documento')  return { bg: 'hsl(221 83% 53% / 0.12)', border: 'hsl(221 83% 53%)' };
+  if (type === 'programa')   return { bg: 'hsl(340 82% 52% / 0.12)', border: 'hsl(340 82% 52%)' };
+  if (type === 'obligacion') return { bg: 'hsl(262 83% 58% / 0.12)', border: 'hsl(262 83% 58%)' };
+  return { bg: 'hsl(var(--muted))', border: 'hsl(var(--border))' };
+}
+
+function EventContent({ eventInfo }: { eventInfo: EventContentArg }) {
+  const { extendedProps, title } = eventInfo.event;
+  const typeIcon = extendedProps.type === 'tarea'    ? '📋' :
+                   extendedProps.type === 'documento' ? '📄' :
+                   extendedProps.type === 'programa'  ? '🏭' : '⚖️';
+  return (
+    <div className="flex items-center gap-1 px-1.5 py-0.5 w-full overflow-hidden text-[11px] font-medium leading-tight">
+      <span className="shrink-0 text-[10px]">{typeIcon}</span>
+      <span className="truncate">{title}</span>
+    </div>
+  );
+}
+
+export default function DashboardCalendar({ onEventClick, height = '580px' }: DashboardCalendarProps) {
   const { user, role } = useAuth();
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<string>('month');
+  const calRef = useRef<FullCalendar>(null);
+  const [events, setEvents] = useState<FcEvent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedObId, setSelectedObId] = useState<string | null>(null);
 
-  // Build a map of date -> event counts by type for badges
-  const eventCountsByDate = useMemo(() => {
-    const map: Record<string, { tareas: number; documentos: number; programas: number }> = {};
-    events.forEach(ev => {
-      const key = moment(ev.start).format('YYYY-MM-DD');
-      if (!map[key]) map[key] = { tareas: 0, documentos: 0, programas: 0 };
-      if (ev.resource.type === 'tarea') map[key].tareas++;
-      else if (ev.resource.type === 'documento') map[key].documentos++;
-      else map[key].programas++; // programa + obligacion
-    });
-    return map;
-  }, [events]);
-
-  const CustomDateHeader = useCallback(({ date, label }: DateHeaderProps) => {
-    const key = moment(date).format('YYYY-MM-DD');
-    const counts = eventCountsByDate[key];
-    const hasEvents = counts && (counts.tareas + counts.documentos + counts.programas > 0);
-
-    return (
-      <div className="rbc-date-header-custom">
-        <span className="rbc-date-number">{label}</span>
-        {hasEvents && (
-          <div className="rbc-date-badges">
-            {counts.tareas > 0 && (
-              <TooltipProvider delayDuration={200}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="rbc-badge rbc-badge-tarea">{counts.tareas}</span>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
-                    {counts.tareas} tarea{counts.tareas > 1 ? 's' : ''}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            {counts.documentos > 0 && (
-              <TooltipProvider delayDuration={200}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="rbc-badge rbc-badge-documento">{counts.documentos}</span>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
-                    {counts.documentos} documento{counts.documentos > 1 ? 's' : ''}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            {counts.programas > 0 && (
-              <TooltipProvider delayDuration={200}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="rbc-badge rbc-badge-programa">{counts.programas}</span>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
-                    {counts.programas} programa{counts.programas > 1 ? 's' : ''}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }, [eventCountsByDate]);
-
-  useEffect(() => {
-    if (user && role) {
-      fetchCalendarEvents();
-    }
-  }, [user, role]);
-
-  const fetchCalendarEvents = async () => {
+  const fetchEvents = useCallback(async (start: Date, end: Date) => {
+    if (!user) return;
     setLoading(true);
-    try {
-      const allEvents: CalendarEvent[] = [];
 
-      // Fetch tareas
-      // Fetch all tareas (including recurring ones without fecha_vencimiento)
-      const { data: tareas, error: tareasError } = await supabase
-        .from('tareas')
-        .select(`
-          *,
-          empresas(razon_social)
-        `)
-        .order('created_at', { ascending: false });
+    const startStr = format(start, 'yyyy-MM-dd');
+    const endStr   = format(end,   'yyyy-MM-dd');
+    const allEvents: FcEvent[] = [];
+    const today = startOfDay(new Date());
 
-      if (tareasError) throw tareasError;
+    const { data: obs } = await supabase
+      .from('obligaciones')
+      .select('id, nombre, empresa_id, categoria, fecha_vencimiento, empresas(razon_social)')
+      .eq('activa', true)
+      .gte('fecha_vencimiento', startStr)
+      .lte('fecha_vencimiento', endStr);
 
-      if (tareas) {
-        tareas.forEach(tarea => {
-          // Recurring tasks: generate all occurrences
-          if (tarea.es_recurrente && tarea.frecuencia_recurrencia) {
-            const startDate = tarea.fecha_inicio_recurrencia || tarea.fecha_vencimiento || (tarea.created_at ? tarea.created_at.split('T')[0] : null);
-            if (startDate) {
-              const occurrences = generateRecurringDates(
-                startDate,
-                tarea.fecha_fin_recurrencia,
-                tarea.frecuencia_recurrencia,
-                tarea.intervalo_recurrencia || 1
-              );
-              occurrences.forEach((occDate, idx) => {
-                allEvents.push({
-                  id: `${tarea.id}-rec-${idx}`,
-                  title: `🔄 ${tarea.titulo}`,
-                  start: occDate,
-                  end: occDate,
-                  resource: {
-                    type: 'tarea',
-                    prioridad: tarea.prioridad,
-                    estado: tarea.estado,
-                    data: tarea
-                  }
-                });
-              });
-            }
-          } else if (tarea.fecha_vencimiento) {
-            // Non-recurring tasks with a due date
-            const baseDate = new Date(tarea.fecha_vencimiento + 'T12:00:00');
-            allEvents.push({
-              id: tarea.id,
-              title: `📋 ${tarea.titulo}`,
-              start: baseDate,
-              end: baseDate,
-              resource: {
-                type: 'tarea',
-                prioridad: tarea.prioridad,
-                estado: tarea.estado,
-                data: tarea
-              }
-            });
-          }
-        });
-      }
-
-      // Fetch documentos vencimiento
-      const { data: documentos, error: docsError } = await supabase
-        .from('documentos')
-        .select(`
-          *,
-          empresas(razon_social)
-        `)
-        .not('fecha_vencimiento', 'is', null);
-
-      if (docsError) throw docsError;
-
-      if (documentos) {
-        documentos.forEach(doc => {
-          if (doc.fecha_vencimiento) {
-            allEvents.push({
-              id: doc.id,
-              title: `📄 ${doc.nombre}`,
-              start: new Date(doc.fecha_vencimiento + 'T12:00:00'),
-              end: new Date(doc.fecha_vencimiento + 'T12:00:00'),
-              resource: {
-                type: 'documento',
-                data: doc
-              }
-            });
-          }
-        });
-      }
-
-      // Fetch empresas programas vencimiento
-      const { data: empresas, error: empresasError } = await supabase
-        .from('empresas')
-        .select('*');
-
-      if (empresasError) throw empresasError;
-
-      if (empresas) {
-        empresas.forEach(empresa => {
-          // IMMEX
-          if (empresa.immex_fecha_fin) {
-            allEvents.push({
-              id: `immex-${empresa.id}`,
-              title: `🏭 IMMEX - ${empresa.razon_social}`,
-              start: new Date(empresa.immex_fecha_fin + 'T12:00:00'),
-              end: new Date(empresa.immex_fecha_fin + 'T12:00:00'),
-              resource: {
-                type: 'programa',
-                data: { tipo: 'IMMEX', empresa }
-              }
-            });
-          }
-
-          // PROSEC
-          if (empresa.prosec_fecha_fin) {
-            allEvents.push({
-              id: `prosec-${empresa.id}`,
-              title: `📊 PROSEC - ${empresa.razon_social}`,
-              start: new Date(empresa.prosec_fecha_fin + 'T12:00:00'),
-              end: new Date(empresa.prosec_fecha_fin + 'T12:00:00'),
-              resource: {
-                type: 'programa',
-                data: { tipo: 'PROSEC', empresa }
-              }
-            });
-          }
-
-          // Certificación IVA/IEPS
-          if (empresa.cert_iva_ieps_fecha_vencimiento) {
-            allEvents.push({
-              id: `cert-${empresa.id}`,
-              title: `🛡️ Cert. IVA/IEPS - ${empresa.razon_social}`,
-              start: new Date(empresa.cert_iva_ieps_fecha_vencimiento + 'T12:00:00'),
-              end: new Date(empresa.cert_iva_ieps_fecha_vencimiento + 'T12:00:00'),
-              resource: {
-                type: 'programa',
-                data: { tipo: 'Certificación', empresa }
-              }
-            });
-          }
-
-          // Matriz Seguridad
-          if (empresa.matriz_seguridad_fecha_vencimiento) {
-            allEvents.push({
-              id: `matriz-${empresa.id}`,
-              title: `🔐 Matriz Seg. - ${empresa.razon_social}`,
-              start: new Date(empresa.matriz_seguridad_fecha_vencimiento + 'T12:00:00'),
-              end: new Date(empresa.matriz_seguridad_fecha_vencimiento + 'T12:00:00'),
-              resource: {
-                type: 'programa',
-                data: { tipo: 'Matriz Seguridad', empresa }
-              }
-            });
-          }
-        });
-      }
-
-      // Fetch only active obligaciones with dates
-      const { data: obligaciones, error: obError } = await supabase
-        .from('obligaciones')
-        .select('*, empresas(razon_social)')
-        .eq('activa', true)
-        .or('fecha_vencimiento.not.is.null,fecha_renovacion.not.is.null');
-
-      if (!obError && obligaciones) {
-        obligaciones.forEach(ob => {
-          const dateStr = ob.fecha_vencimiento || ob.fecha_renovacion;
-          if (dateStr) {
-            allEvents.push({
-              id: `ob-${ob.id}`,
-              title: `📋 ${ob.nombre}${ob.empresas?.razon_social ? ` - ${ob.empresas.razon_social}` : ''}`,
-              start: new Date(dateStr + 'T12:00:00'),
-              end: new Date(dateStr + 'T12:00:00'),
-              resource: {
-                type: 'obligacion',
-                data: ob
-              }
-            });
-          }
-        });
-      }
-
-      setEvents(allEvents);
-    } catch (error) {
-      console.error('Error fetching calendar events:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los eventos del calendario',
-        variant: 'destructive'
+    (obs || []).forEach(ob => {
+      const d = new Date(ob.fecha_vencimiento + 'T12:00:00');
+      const overdue = d < today;
+      const { bg, border } = eventColor('obligacion', undefined, overdue);
+      allEvents.push({
+        id: `ob-${ob.id}`,
+        title: `${ob.nombre}${ob.empresas?.razon_social ? ` · ${ob.empresas.razon_social}` : ''}`,
+        start: ob.fecha_vencimiento,
+        backgroundColor: bg,
+        borderColor: border,
+        textColor: 'hsl(var(--foreground))',
+        extendedProps: { type: 'obligacion', rawId: ob.id, empresaId: ob.empresa_id, data: ob },
       });
-    } finally {
-      setLoading(false);
-    }
-  };
+    });
 
-  const eventStyleGetter = (event: CalendarEvent) => {
-    let color = 'hsl(var(--primary))';
-    
-    if (event.resource.type === 'tarea') {
-      const prioridad = event.resource.prioridad;
-      if (prioridad === 'urgente') {
-        color = 'hsl(var(--destructive))';
-      } else if (prioridad === 'alta') {
-        color = 'hsl(25, 95%, 53%)';
-      } else if (prioridad === 'media') {
-        color = 'hsl(var(--warning))';
-      } else if (prioridad === 'baja') {
-        color = 'hsl(var(--success))';
-      }
-    } else if (event.resource.type === 'documento') {
-      color = 'hsl(221, 83%, 53%)';
-    } else if (event.resource.type === 'programa') {
-      color = 'hsl(340, 82%, 52%)';
-    } else if (event.resource.type === 'obligacion') {
-      color = 'hsl(262, 83%, 58%)';
-    }
+    const { data: tareas } = await supabase
+      .from('tareas')
+      .select('id, titulo, prioridad, estado, fecha_vencimiento, empresa_id, empresas(razon_social)')
+      .not('estado', 'in', '(completada,cancelada)')
+      .gte('fecha_vencimiento', startStr)
+      .lte('fecha_vencimiento', endStr);
 
-    // Check if overdue
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const eventDate = new Date(event.start);
-    eventDate.setHours(0, 0, 0, 0);
-    
-    if (eventDate < today) {
-      color = 'hsl(var(--destructive))';
-    }
-    
-    return {
-      style: {
-        backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
-        borderLeft: `3px solid ${color}`,
-        borderRadius: '6px',
-        color: 'hsl(var(--foreground))',
-        border: 'none',
-        borderLeftWidth: '3px',
-        borderLeftStyle: 'solid' as const,
-        borderLeftColor: color,
-        display: 'block',
-        fontSize: '0.72rem',
-        fontWeight: 500,
-      }
-    };
-  };
+    (tareas || []).forEach(t => {
+      const d = new Date(t.fecha_vencimiento + 'T12:00:00');
+      const overdue = d < today;
+      const { bg, border } = eventColor('tarea', t.prioridad, overdue);
+      allEvents.push({
+        id: `tarea-${t.id}`,
+        title: t.titulo,
+        start: t.fecha_vencimiento,
+        backgroundColor: bg,
+        borderColor: border,
+        textColor: 'hsl(var(--foreground))',
+        extendedProps: { type: 'tarea', rawId: t.id, prioridad: t.prioridad, estado: t.estado, data: t },
+      });
+    });
 
-  const handleSelectEvent = (event: CalendarEvent) => {
+    const { data: docs } = await supabase
+      .from('documentos')
+      .select('id, nombre, empresa_id, fecha_vencimiento, empresas(razon_social)')
+      .not('fecha_vencimiento', 'is', null)
+      .gte('fecha_vencimiento', startStr)
+      .lte('fecha_vencimiento', endStr);
+
+    (docs || []).forEach(doc => {
+      const { bg, border } = eventColor('documento');
+      allEvents.push({
+        id: `doc-${doc.id}`,
+        title: `${doc.nombre}${doc.empresas?.razon_social ? ` · ${doc.empresas.razon_social}` : ''}`,
+        start: doc.fecha_vencimiento,
+        backgroundColor: bg,
+        borderColor: border,
+        textColor: 'hsl(var(--foreground))',
+        extendedProps: { type: 'documento', rawId: doc.id, empresaId: doc.empresa_id, data: doc },
+      });
+    });
+
+    const { data: empresas } = await supabase
+      .from('empresas')
+      .select('id, razon_social, immex_fecha_fin, prosec_fecha_fin, cert_iva_ieps_fecha_vencimiento, matriz_seguridad_fecha_vencimiento');
+
+    (empresas || []).forEach(e => {
+      const progs = [
+        { label: 'IMMEX',          date: e.immex_fecha_fin },
+        { label: 'PROSEC',         date: e.prosec_fecha_fin },
+        { label: 'Cert. IVA/IEPS', date: e.cert_iva_ieps_fecha_vencimiento },
+        { label: 'Matriz Seg.',    date: e.matriz_seguridad_fecha_vencimiento },
+      ];
+      progs.forEach(({ label, date }) => {
+        if (!date || date < startStr || date > endStr) return;
+        const overdue = new Date(date + 'T12:00:00') < today;
+        const { bg, border } = eventColor('programa', undefined, overdue);
+        allEvents.push({
+          id: `prog-${label}-${e.id}`,
+          title: `${label} · ${e.razon_social}`,
+          start: date,
+          backgroundColor: bg,
+          borderColor: border,
+          textColor: 'hsl(var(--foreground))',
+          extendedProps: { type: 'programa', empresaId: e.id, data: { tipo: label, empresa: e } },
+        });
+      });
+    });
+
+    setEvents(allEvents);
+    setLoading(false);
+  }, [user]);
+
+  const handleDatesSet = useCallback((arg: DatesSetArg) => {
+    setDateRange({ start: arg.start, end: arg.end });
+    fetchEvents(arg.start, arg.end);
+  }, [fetchEvents]);
+
+  const handleEventClick = useCallback((arg: EventClickArg) => {
+    const { extendedProps } = arg.event;
+    if (extendedProps.type === 'obligacion' && extendedProps.rawId) {
+      setSelectedObId(extendedProps.rawId);
+      setSheetOpen(true);
+      return;
+    }
     if (onEventClick) {
-      onEventClick(event);
+      onEventClick({ id: arg.event.id, title: arg.event.title, start: arg.event.start, end: arg.event.end, resource: extendedProps });
     } else {
-      // Default behavior - show toast with event info
-      const eventInfo = event.resource.type === 'tarea' 
-        ? `Tarea: ${event.title}\nEstado: ${event.resource.estado}\nPrioridad: ${event.resource.prioridad}`
-        : event.resource.type === 'documento'
-        ? `Documento: ${event.title}\nVence: ${event.start.toLocaleDateString()}`
-        : `Programa: ${event.title}\nVence: ${event.start.toLocaleDateString()}`;
-      
-      toast({
-        title: 'Evento del Calendario',
-        description: eventInfo
-      });
+      toast.info(arg.event.title, { description: `${extendedProps.type} · ${arg.event.start?.toLocaleDateString('es-MX')}` });
     }
-  };
+  }, [onEventClick]);
 
-  if (loading) {
-    return (
+  if (!user) return null;
+
+  return (
+    <>
       <Card className="gradient-card shadow-card">
-        <CardHeader>
-          <CardTitle className="font-heading flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Calendario
-          </CardTitle>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="font-heading flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Calendario de Vencimientos
+              </CardTitle>
+              <CardDescription className="font-body">
+                Obligaciones, tareas y programas · click para ver detalle
+              </CardDescription>
+            </div>
+            {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />}
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {[
+              { label: 'Vencido',    color: 'hsl(0 84% 60%)' },
+              { label: 'Obligación', color: 'hsl(262 83% 58%)' },
+              { label: 'Tarea alta', color: 'hsl(25 95% 53%)' },
+              { label: 'Documento',  color: 'hsl(221 83% 53%)' },
+              { label: 'Programa',   color: 'hsl(340 82% 52%)' },
+            ].map(({ label, color }) => (
+              <span key={label} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
+                {label}
+              </span>
+            ))}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center" style={{ height }}>
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div style={{ height }}>
+            <FullCalendar
+              ref={calRef}
+              plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
+              locale={esLocale}
+              initialView="dayGridMonth"
+              headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' }}
+              buttonText={{ today: 'Hoy', month: 'Mes', listMonth: 'Agenda' }}
+              events={events}
+              eventContent={(info) => <EventContent eventInfo={info} />}
+              eventClick={handleEventClick}
+              datesSet={handleDatesSet}
+              height="100%"
+              dayMaxEvents={3}
+              moreLinkText={n => `+${n} más`}
+              nowIndicator
+              eventDisplay="block"
+              eventBorderWidth={0}
+            />
           </div>
         </CardContent>
       </Card>
-    );
-  }
 
-  return (
-    <Card className="gradient-card shadow-card">
-      <CardHeader>
-        <CardTitle className="font-heading flex items-center gap-2">
-          <Calendar className="w-5 h-5" />
-          Calendario de Eventos
-        </CardTitle>
-        <CardDescription className="font-body">
-          Tareas, vencimientos de documentos y programas
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {events.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-              <AlertCircle className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground font-body">
-              No hay eventos programados
-            </p>
-          </div>
-        ) : (
-          <div style={{ height }} className="rbc-calendar-enhanced">
-            <BigCalendar
-              localizer={localizer}
-              events={events}
-              startAccessor="start"
-              endAccessor="end"
-              onSelectEvent={handleSelectEvent}
-              views={['month', 'week', 'day', 'agenda']}
-              defaultView="month"
-              view={currentView as any}
-              onView={(view) => setCurrentView(view)}
-              popup
-              style={{ height: '100%' }}
-              components={{
-                month: {
-                  dateHeader: CustomDateHeader,
-                },
-              }}
-              messages={{
-                next: 'Siguiente',
-                previous: 'Anterior',
-                today: 'Hoy',
-                month: 'Mes',
-                week: 'Semana',
-                day: 'Día',
-                agenda: 'Agenda',
-                date: 'Fecha',
-                time: 'Hora',
-                event: 'Evento',
-                noEventsInRange: 'No hay eventos en este rango',
-                allDay: 'Todo el día',
-                showMore: (total) => `+${total} más`,
-              }}
-              eventPropGetter={eventStyleGetter}
-            />
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      <ObligacionDetailSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        obligacionId={selectedObId}
+        onCumplimientoChange={() => { if (dateRange) fetchEvents(dateRange.start, dateRange.end); }}
+      />
+
+      <style>{`
+        .fc { font-family: inherit; }
+        .fc .fc-toolbar-title { font-size: 1.1rem; font-weight: 700; }
+        .fc .fc-button {
+          background: hsl(var(--background)) !important;
+          border: 1px solid hsl(var(--border)) !important;
+          color: hsl(var(--muted-foreground)) !important;
+          border-radius: 9999px !important;
+          padding: 5px 14px !important;
+          font-size: 0.78rem !important;
+          font-weight: 500 !important;
+          box-shadow: none !important;
+          transition: all 0.15s !important;
+        }
+        .fc .fc-button:hover { background: hsl(var(--muted)) !important; color: hsl(var(--foreground)) !important; }
+        .fc .fc-button-active, .fc .fc-button-primary:not(:disabled).fc-button-active {
+          background: hsl(var(--primary)) !important;
+          color: hsl(var(--primary-foreground)) !important;
+          border-color: hsl(var(--primary)) !important;
+        }
+        .fc .fc-button-group { gap: 3px; }
+        .fc .fc-col-header-cell { background: transparent; }
+        .fc .fc-col-header-cell-cushion {
+          font-size: 0.68rem; font-weight: 600;
+          text-transform: uppercase; letter-spacing: 0.06em;
+          color: hsl(var(--muted-foreground)); padding: 8px 4px;
+        }
+        .fc .fc-daygrid-day { background: hsl(var(--card)); }
+        .fc .fc-daygrid-day:hover { background: hsl(var(--muted) / 0.4); }
+        .fc .fc-daygrid-day.fc-day-today { background: hsl(var(--primary) / 0.05); }
+        .fc .fc-daygrid-day-number { font-size: 0.78rem; color: hsl(var(--foreground)); font-weight: 500; padding: 4px 6px; }
+        .fc .fc-day-today .fc-daygrid-day-number { color: hsl(var(--primary)); font-weight: 700; }
+        .fc td, .fc th { border-color: hsl(var(--border) / 0.5) !important; }
+        .fc .fc-scrollgrid { border-color: hsl(var(--border) / 0.5) !important; border-radius: var(--radius); overflow: hidden; }
+        .fc-event { border-radius: 5px !important; border-left-width: 3px !important; cursor: pointer !important; }
+        .fc-event:hover { opacity: 0.85; transform: translateY(-1px); transition: all 0.1s; }
+        .fc .fc-list-event:hover td { background: hsl(var(--muted) / 0.4) !important; cursor: pointer; }
+        .fc .fc-list-day-cushion { background: hsl(var(--muted) / 0.6) !important; }
+        .fc .fc-list-event-dot { border-radius: 50% !important; }
+        .fc .fc-more-link { font-size: 0.72rem; color: hsl(var(--primary)); font-weight: 600; }
+        .fc .fc-popover { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: var(--radius); box-shadow: 0 8px 24px hsl(var(--foreground) / 0.12); }
+        .fc .fc-popover-header { background: hsl(var(--muted) / 0.5); border-radius: var(--radius) var(--radius) 0 0; }
+      `}</style>
+    </>
   );
 }
