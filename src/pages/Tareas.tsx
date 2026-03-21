@@ -351,8 +351,41 @@ export default function Tareas() {
   const [bulkActionMode, setBulkActionMode] = useState(false);
   
   // Calendar
-  const localizer = momentLocalizer(moment);
-  
+ <div className="h-[600px]">
+  <FullCalendar
+    plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
+    locale={esLocale}
+    initialView="dayGridMonth"
+    headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' }}
+    buttonText={{ today: 'Hoy', month: 'Mes', listMonth: 'Agenda' }}
+    events={calendarEvents.map(e => ({
+      id: e.id,
+      title: e.title,
+      start: e.start.toISOString().split('T')[0],
+      backgroundColor: (() => {
+        const p = e.resource?.prioridad;
+        if (p === 'alta')  return 'hsl(25 95% 53% / 0.15)';
+        if (p === 'media') return 'hsl(48 96% 53% / 0.15)';
+        if (p === 'baja')  return 'hsl(142 71% 45% / 0.15)';
+        return 'hsl(var(--primary) / 0.12)';
+      })(),
+      borderColor: (() => {
+        const p = e.resource?.prioridad;
+        if (p === 'alta')  return 'hsl(25 95% 53%)';
+        if (p === 'media') return 'hsl(48 96% 53%)';
+        if (p === 'baja')  return 'hsl(142 71% 45%)';
+        return 'hsl(var(--primary))';
+      })(),
+      textColor: 'hsl(var(--foreground))',
+      extendedProps: { resource: e.resource },
+    }))}
+    eventClick={(arg) => handleSelectEvent({ id: arg.event.id })}
+    height="100%"
+    dayMaxEvents={3}
+    moreLinkText={n => `+${n} más`}
+    nowIndicator
+  />
+</div>
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
