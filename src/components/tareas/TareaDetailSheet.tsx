@@ -49,7 +49,6 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
   const [consultores, setConsultores] = useState<any[]>([]);
   const [categorias, setCategorias] = useState<any[]>([]);
 
-  // Inline editing state
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [saveIndicator, setSaveIndicator] = useState<string | null>(null);
@@ -181,7 +180,6 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0">
         <SheetHeader className="px-6 pt-6 pb-4 border-b">
-          {/* Editable Title */}
           <div className="flex items-start gap-2">
             {editingField === 'titulo' ? (
               <div className="flex-1 flex gap-2">
@@ -207,7 +205,6 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
           </div>
           <SheetDescription className="sr-only">Detalle de la tarea</SheetDescription>
 
-          {/* Estado chips */}
           <div className="flex flex-wrap gap-2 pt-2">
             {ESTADOS.map(e => (
               <button
@@ -231,7 +228,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
         <ScrollArea className="h-[calc(100vh-180px)]">
           <div className="px-6 py-5 space-y-5">
 
-            {/* Prioridad chips */}
+            {/* Prioridad */}
             <div>
               <label className="text-xs font-heading text-muted-foreground mb-1.5 block">Prioridad</label>
               <div className="flex gap-2 items-center">
@@ -287,7 +284,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
               </div>
             </div>
 
-            {/* Empresa (read-only) */}
+            {/* Empresa */}
             {tarea.empresas && (
               <div>
                 <label className="text-xs font-heading text-muted-foreground mb-1 block">Empresa</label>
@@ -295,9 +292,9 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
               </div>
             )}
 
-            {/* Consultor asignado */}
+            {/* Consultor principal */}
             <div>
-              <label className="text-xs font-heading text-muted-foreground mb-1.5 block">Asignado a</label>
+              <label className="text-xs font-heading text-muted-foreground mb-1.5 block">Responsable principal</label>
               <div className="flex items-center gap-2">
                 <Select
                   value={tarea.consultor_asignado_id || ''}
@@ -318,6 +315,15 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                 </Select>
                 <SavedIndicator field="consultor_asignado_id" />
               </div>
+            </div>
+
+            {/* Asignados adicionales */}
+            <div className="border border-border rounded-lg p-3">
+              <MultipleAssignees
+                tareaId={tareaId}
+                empresaId={tarea?.empresa_id}
+                canEdit={true}
+              />
             </div>
 
             {/* Categoría */}
@@ -350,7 +356,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
               </div>
             </div>
 
-            {/* Descripción editable */}
+            {/* Descripción */}
             <div>
               <label className="text-xs font-heading text-muted-foreground mb-1.5 block">Descripción</label>
               {editingField === 'descripcion' ? (
@@ -383,7 +389,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
               <SavedIndicator field="descripcion" />
             </div>
 
-            {/* Recurrencia info */}
+            {/* Recurrencia */}
             {tarea.es_recurrente && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg">
                 <Repeat className="h-4 w-4" />
