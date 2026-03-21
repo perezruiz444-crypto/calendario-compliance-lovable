@@ -20,6 +20,7 @@ import ConsultorAnalytics from '@/components/dashboard/ConsultorAnalytics';
 import ClienteAnalytics from '@/components/dashboard/ClienteAnalytics';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
 import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
+import AgendaHoy from '@/components/dashboard/AgendaHoy';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -90,7 +91,6 @@ export default function Dashboard() {
     }
   };
 
-  // KPI cards based on role
   const kpiCards = role === 'administrador' ? [
     { title: 'Empresas Activas', value: data.totalEmpresas || 0, icon: Building2, color: 'text-primary', bgColor: 'bg-primary/10', sub: 'Total registradas' },
     { title: 'Total Usuarios', value: data.totalUsuarios || 0, icon: Users, color: 'text-primary', bgColor: 'bg-primary/10', sub: `${data.totalConsultores || 0} consultores` },
@@ -111,7 +111,7 @@ export default function Dashboard() {
   return (
     <DashboardLayout currentPage="/dashboard">
       <div className="space-y-6">
-        {/* Header con saludo y acciones rápidas */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-heading font-bold text-foreground">
@@ -136,6 +136,9 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Agenda del día */}
+        {(role === 'administrador' || role === 'consultor') && <AgendaHoy />}
+
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {kpiCards.map((kpi) => {
@@ -157,22 +160,21 @@ export default function Dashboard() {
           })}
         </div>
 
-        {/* Charts section (role-specific) */}
+        {/* Charts */}
         {role === 'administrador' && <AdminAnalytics data={data} />}
         {role === 'consultor' && <ConsultorAnalytics data={data} />}
         {role === 'cliente' && <ClienteAnalytics data={data} />}
 
-       {/* Obligaciones + Semáforo (admin/consultor) */}
-{(role === 'administrador' || role === 'consultor') && (
-  <>
-    <DashboardObligaciones />
-    <EmpresaComplianceSemaforo />
-  </>
-)}
+        {/* Obligaciones + Semáforo */}
+        {(role === 'administrador' || role === 'consultor') && (
+          <>
+            <DashboardObligaciones />
+            <EmpresaComplianceSemaforo />
+          </>
+        )}
 
-        {/* Bottom grid: Próximas Tareas + Mensajes */}
+        {/* Tareas + Mensajes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Próximas Tareas */}
           <Card className="gradient-card shadow-card">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -245,7 +247,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Mensajes */}
           <DashboardMensajes mensajes={data.mensajesRecientes} totalNoLeidos={data.mensajesNoLeidos} />
         </div>
 
