@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { differenceInDays, isPast } from 'date-fns';
+import { differenceInDays, isPast, format } from 'date-fns';
 import { 
   Plus, Upload, Trash2, Pencil, Search, 
   Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen, FileDown,
