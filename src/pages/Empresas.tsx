@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Plus, Building2, Copy, Trash2, MoreHorizontal, Search, Users, Eye, CheckSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import QuickCreateEmpresa from '@/components/empresas/QuickCreateEmpresa';
+import OnboardingEmpresaWizard from '@/components/empresas/OnboardingEmpresaWizard';
 import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -271,7 +271,7 @@ export default function Empresas() {
         </Card>
       </div>
 
-      <QuickCreateEmpresa
+      <OnboardingEmpresaWizard
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onEmpresaCreated={(empresaId) => {
