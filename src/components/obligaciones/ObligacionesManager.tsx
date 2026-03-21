@@ -28,7 +28,7 @@ import {
   getCurrentPeriodKey, getPeriodLabel, formatDateShort, getVencimientoInfo, programaToCategoria,
   getNextVencimiento, isRecurring,
 } from '@/lib/obligaciones';
-import { format } from 'date-fns';
+import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
 
 interface Props {
   empresaId: string;
@@ -59,7 +59,9 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const [editData, setEditData] = useState<ObligacionFormData | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filterResponsable, setFilterResponsable] = useState('all');
-  const [profiles, setProfiles] = useState<Record<string, string>>({});
+const [profiles, setProfiles] = useState<Record<string, string>>({});
+const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+const [selectedObId, setSelectedObId] = useState<string | null>(null);
 
   const fetchObligaciones = async () => {
     setLoading(true);
@@ -539,8 +541,13 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
                         <div className="flex items-center gap-1.5">
                           {ob.activa && <Zap className="w-3.5 h-3.5 text-primary shrink-0" />}
                           <div>
-                            <p className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>{ob.nombre}</p>
-                            {ob.descripcion && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{ob.descripcion}</p>}
+                           <button
+  className={`font-medium text-left hover:text-primary transition-colors ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
+  onClick={() => { setSelectedObId(ob.id); setDetailSheetOpen(true); }}
+>
+  {ob.nombre}
+</button>
+{ob.descripcion && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{ob.descripcion}</p>}
                           </div>
                         </div>
                       </td>
@@ -634,6 +641,12 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
         loading={saving}
       />
 
+      <ObligacionDetailSheet
+        open={detailSheetOpen}
+        onOpenChange={setDetailSheetOpen}
+        obligacionId={selectedObId}
+        onCumplimientoChange={() => fetchObligaciones()}
+      />
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
