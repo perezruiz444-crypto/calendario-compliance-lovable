@@ -71,8 +71,8 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
 
   const filteredNav = navItems.filter(item => role && item.roles.includes(role));
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full overflow-hidden" style={{ background: 'hsl(var(--sidebar-background))' }}>
+const SidebarContent = () => (
+    <div className="flex flex-col h-full" style={{ background: 'hsl(var(--sidebar-background))' }}>
 
       {/* Brand header */}
       <div className="relative overflow-hidden px-5 pt-6 pb-5">
