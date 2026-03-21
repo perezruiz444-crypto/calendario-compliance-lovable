@@ -8,7 +8,8 @@ import esLocale from '@fullcalendar/core/locales/es';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Calendar, AlertCircle } from 'lucide-react';
+import { Calendar, AlertCircle, Building2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { isPast, startOfDay, format } from 'date-fns';
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
@@ -69,8 +70,18 @@ export default function DashboardCalendar({ onEventClick, height = '580px' }: Da
   const [events, setEvents] = useState<FcEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
+ const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedObId, setSelectedObId] = useState<string | null>(null);
+  const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
+  const [filterEmpresaId, setFilterEmpresaId] = useState<string>('all');
+
+  useEffect(() => {
+    supabase
+      .from('empresas')
+      .select('id, razon_social')
+      .order('razon_social')
+      .then(({ data }) => setEmpresas(data || []));
+  }, []);
 
   const fetchEvents = useCallback(async (start: Date, end: Date) => {
     if (!user) return;
@@ -172,9 +183,13 @@ export default function DashboardCalendar({ onEventClick, height = '580px' }: Da
       });
     });
 
-    setEvents(allEvents);
+    const filtered = filterEmpresaId === 'all'
+      ? allEvents
+      : allEvents.filter(e => e.extendedProps.empresaId === filterEmpresaId);
+
+    setEvents(filtered);
     setLoading(false);
-  }, [user]);
+  }, [user, filterEmpresaId]);
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
     setDateRange({ start: arg.start, end: arg.end });
@@ -213,7 +228,28 @@ export default function DashboardCalendar({ onEventClick, height = '580px' }: Da
             </div>
             {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />}
           </div>
+          {empresas.length > 1 && (
+            <div className="mt-3">
+              <Select value={filterEmpresaId} onValueChange={(v) => {
+                setFilterEmpresaId(v);
+                if (dateRange) fetchEvents(dateRange.start, dateRange.end);
+              }}>
+                <SelectTrigger className="w-[220px] h-8 text-xs gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+                  <SelectValue placeholder="Todas las empresas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las empresas</SelectItem>
+                  {empresas.map(e => (
+                    <SelectItem key={e.id} value={e.id}>{e.razon_social}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2 mt-2">
+            
             {[
               { label: 'Vencido',    color: 'hsl(0 84% 60%)' },
               { label: 'Obligación', color: 'hsl(262 83% 58%)' },
