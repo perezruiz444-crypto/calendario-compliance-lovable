@@ -167,7 +167,7 @@ export function EmpresaSelectorDropdown({ onEmpresaSelect: externalOnSelect, sel
         </button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-[280px] p-0" align="start" side="bottom">
+  <PopoverContent className="w-[280px] p-0" align="start" side="bottom" sideOffset={4} style={{ zIndex: 9999 }}>
         <Command>
           <CommandInput placeholder="Buscar empresa..." className="font-body text-sm" />
           <CommandEmpty className="font-body text-sm py-4">No se encontró la empresa.</CommandEmpty>
