@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { usePushNotifications } from './usePushNotifications';
+import { differenceInDays, isValid } from 'date-fns';
 
 export interface Notification {
   id: string;
@@ -15,16 +16,85 @@ export interface Notification {
   created_at: string;
 }
 
+async function insertVencimientoAlerts(userId: string) {
+  try {
+    const { data: obs } = await (supabase as any)
+      .from('obligaciones')
+      .select('id, nombre, empresa_id, fecha_vencimiento, empresas(razon_social)')
+      .eq('activa', true)
+      .not('fecha_vencimiento', 'is', null);
+
+    if (!obs || obs.length === 0) return;
+
+    const UMBRALES = [1, 7, 30];
+    const today = new Date();
+
+    for (const ob of obs) {
+      const d = new Date(ob.fecha_vencimiento);
+      if (!isValid(d)) continue;
+      const daysLeft = differenceInDays(d, today);
+
+      for (const umbral of UMBRALES) {
+        if (daysLeft !== umbral) continue;
+
+        const { data: existing } = await (supabase as any)
+          .from('notificaciones')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('referencia_id', ob.id)
+          .eq('tipo', `vencimiento_${umbral}d`)
+          .maybeSingle();
+
+        if (existing) continue;
+
+        const label = daysLeft === 1 ? 'mañana' : `en ${daysLeft} días`;
+        await (supabase as any).from('notificaciones').insert({
+          user_id: userId,
+          tipo: `vencimiento_${umbral}d`,
+          titulo: `Vence ${label}: ${ob.nombre}`,
+          contenido: ob.empresas?.razon_social
+            ? `Empresa: ${ob.empresas.razon_social} · ${d.toLocaleDateString('es-MX')}`
+            : d.toLocaleDateString('es-MX'),
+          referencia_id: ob.id,
+          referencia_tipo: 'obligacion',
+          leida: false,
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('insertVencimientoAlerts:', e);
+  }
+}
+
 export function useNotifications() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  
-  // Get push notification functions safely
+
   const pushNotifications = usePushNotifications();
   const showNotification = pushNotifications?.showNotification;
   const permission = pushNotifications?.permission || 'default';
+
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await (supabase as any)
+        .from('notificaciones')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(25);
+
+      if (error) throw error;
+      setNotifications(data || []);
+      setUnreadCount(data?.filter((n: any) => !n.leida).length || 0);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -35,69 +105,27 @@ export function useNotifications() {
     }
 
     fetchNotifications();
-    const cleanup = subscribeToNotifications();
-    return cleanup;
-  }, [user]);
+    insertVencimientoAlerts(user.id);
 
-  const fetchNotifications = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await (supabase as any)
-        .from('notificaciones')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-
-      setNotifications(data || []);
-      setUnreadCount(data?.filter((n: any) => !n.leida).length || 0);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const subscribeToNotifications = () => {
-    if (!user) return () => {};
-
-    const channel = supabase
+    const channel = (supabase as any)
       .channel('notificaciones-changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notificaciones',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Notification change:', payload);
-          
+        { event: '*', schema: 'public', table: 'notificaciones', filter: `user_id=eq.${user.id}` },
+        (payload: any) => {
           if (payload.eventType === 'INSERT') {
-            const newNotification = payload.new as Notification;
-            setNotifications(prev => [newNotification, ...prev]);
+            const n = payload.new as Notification;
+            setNotifications(prev => [n, ...prev]);
             setUnreadCount(prev => prev + 1);
-            
-            // Show push notification if available
             if (permission === 'granted' && showNotification) {
-              showNotification(newNotification.titulo, {
-                body: newNotification.contenido || '',
-                tag: newNotification.id,
-                data: {
-                  referencia_id: newNotification.referencia_id,
-                  referencia_tipo: newNotification.referencia_tipo,
-                  url: getNotificationUrl(newNotification)
-                }
+              showNotification(n.titulo, {
+                body: n.contenido || '',
+                tag: n.id,
+                data: { referencia_id: n.referencia_id, referencia_tipo: n.referencia_tipo, url: getNotificationUrl(n) },
               });
             }
           } else if (payload.eventType === 'UPDATE') {
-            setNotifications(prev => 
-              prev.map(n => n.id === payload.new.id ? payload.new as Notification : n)
-            );
+            setNotifications(prev => prev.map(n => n.id === payload.new.id ? payload.new as Notification : n));
             if ((payload.new as Notification).leida && !(payload.old as Notification).leida) {
               setUnreadCount(prev => Math.max(0, prev - 1));
             }
@@ -111,19 +139,15 @@ export function useNotifications() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const { error } = await (supabase as any)
+      await (supabase as any)
         .from('notificaciones')
         .update({ leida: true })
         .eq('id', notificationId);
-
-      if (error) throw error;
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -131,16 +155,12 @@ export function useNotifications() {
 
   const markAllAsRead = async () => {
     if (!user) return;
-
     try {
-      const { error } = await (supabase as any)
+      await (supabase as any)
         .from('notificaciones')
         .update({ leida: true })
         .eq('user_id', user.id)
         .eq('leida', false);
-
-      if (error) throw error;
-
       setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
       setUnreadCount(0);
     } catch (error) {
@@ -148,32 +168,18 @@ export function useNotifications() {
     }
   };
 
-  return {
-    notifications,
-    loading,
-    unreadCount,
-    markAsRead,
-    markAllAsRead,
-    refetch: fetchNotifications
-  };
+  return { notifications, loading, unreadCount, markAsRead, markAllAsRead, refetch: fetchNotifications };
 }
 
-// Helper function to get notification URL
 function getNotificationUrl(notification: Notification): string {
   const { referencia_tipo, referencia_id } = notification;
-  
   if (!referencia_tipo || !referencia_id) return '/dashboard';
-  
   switch (referencia_tipo) {
-    case 'tarea':
-      return `/tareas?tarea=${referencia_id}`;
-    case 'mensaje':
-      return `/mensajes?mensaje=${referencia_id}`;
-    case 'solicitud':
-      return `/dashboard?solicitud=${referencia_id}`;
-    case 'empresa':
-      return `/empresas/${referencia_id}`;
-    default:
-      return '/dashboard';
+    case 'tarea':      return `/tareas?tarea=${referencia_id}`;
+    case 'mensaje':    return `/mensajes?mensaje=${referencia_id}`;
+    case 'solicitud':  return `/dashboard?solicitud=${referencia_id}`;
+    case 'empresa':    return `/empresas/${referencia_id}`;
+    case 'obligacion': return `/empresas`;
+    default:           return '/dashboard';
   }
 }
