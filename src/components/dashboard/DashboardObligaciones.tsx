@@ -157,6 +157,7 @@ type ActiveFilter = 'all' | 'vencidas' | 'semana' | 'mes' | 'cumplidas';
 export default function DashboardObligaciones() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { selectedEmpresaId } = useEmpresaContext();
   const [obligaciones, setObligaciones] = useState<any[]>([]);
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
