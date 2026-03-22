@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 import {
   Building2, AlertCircle, CheckCircle2, ArrowRight,
   AlertTriangle, Clock, Calendar, ChevronRight,
@@ -163,17 +164,22 @@ export default function DashboardObligaciones() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
 
-  useEffect(() => { fetchObligaciones(); }, []);
+  useEffect(() => { fetchObligaciones(); }, [selectedEmpresaId]);
 
   const fetchObligaciones = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+  let query = supabase
       .from('obligaciones')
       .select('*, empresas(razon_social)')
       .eq('activa', true)
       .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
       .limit(30);
 
+    if (selectedEmpresaId && selectedEmpresaId !== 'all') {
+      query = query.eq('empresa_id', selectedEmpresaId);
+    }
+
+    const { data, error } = await query;
     if (error) { setLoading(false); return; }
 
     const obs = data || [];
