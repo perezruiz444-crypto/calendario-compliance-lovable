@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentPeriodKey, getVencimientoInfo } from '@/lib/obligaciones';
 import { Building2, ChevronRight } from 'lucide-react';
@@ -41,19 +42,26 @@ function progressColor(nivel: SemaforoLevel) {
 export default function EmpresaComplianceSemaforo() {
   const { user, role } = useAuth();
   const navigate = useNavigate();
+  const { selectedEmpresaId } = useEmpresaContext();
   const [empresas, setEmpresas] = useState<EmpresaStats[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [selectedEmpresaId]);
 
   const fetchData = async () => {
     setLoading(true);
 
     // 1. Traer empresas visibles al usuario
-    const { data: empData } = await supabase
+  let empQuery = supabase
       .from('empresas')
       .select('id, razon_social, immex_numero, prosec_numero, padron_general_numero')
       .order('razon_social');
+
+    if (selectedEmpresaId && selectedEmpresaId !== 'all') {
+      empQuery = empQuery.eq('id', selectedEmpresaId);
+    }
+
+    const { data: empData } = await empQuery;
 
     if (!empData || empData.length === 0) { setLoading(false); return; }
 
