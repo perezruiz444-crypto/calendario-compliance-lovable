@@ -5,14 +5,13 @@
  */
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentPeriodKey, getVencimientoInfo } from '@/lib/obligaciones';
+import { getCurrentPeriodKey } from '@/lib/obligaciones';
 import { Building2, ChevronRight } from 'lucide-react';
-import { differenceInDays, isPast, isValid } from 'date-fns';
+import { isPast, isValid } from 'date-fns';
 
 type SemaforoLevel = 'rojo' | 'amarillo' | 'verde';
 
