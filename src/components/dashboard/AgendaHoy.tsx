@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 import { getCurrentPeriodKey, formatDateShort, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
 import { differenceInDays, isToday, isTomorrow, isPast, isValid, startOfDay, endOfDay, addDays } from 'date-fns';
 import { AlertCircle, CheckCircle2, Clock, Building2, ChevronRight, Sun } from 'lucide-react';
@@ -21,10 +22,11 @@ interface AgendaItem {
 export default function AgendaHoy() {
   const { user, role } = useAuth();
   const navigate = useNavigate();
+  const { selectedEmpresaId } = useEmpresaContext();
   const [items, setItems] = useState<AgendaItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { if (user) fetchItems(); }, [user]);
+  useEffect(() => { if (user) fetchItems(); }, [user, selectedEmpresaId]);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -35,13 +37,18 @@ export default function AgendaHoy() {
 
     const result: AgendaItem[] = [];
 
-    const { data: obs } = await supabase
+   let obsQuery = supabase
       .from('obligaciones')
       .select('*, empresas(id, razon_social)')
       .eq('activa', true)
       .lte('fecha_vencimiento', rangeFin)
       .gte('fecha_vencimiento', rangeInicio);
 
+    if (selectedEmpresaId && selectedEmpresaId !== 'all') {
+      obsQuery = obsQuery.eq('empresa_id', selectedEmpresaId);
+    }
+
+    const { data: obs } = await obsQuery;
     if (obs && obs.length > 0) {
       const { data: cumplData } = await supabase
         .from('obligacion_cumplimientos')
@@ -69,12 +76,18 @@ export default function AgendaHoy() {
       });
     }
 
-    const { data: tareas } = await supabase
+ let tareasQuery = supabase
       .from('tareas')
       .select('*, empresas(id, razon_social)')
       .not('estado', 'in', '(completada,cancelada)')
       .lte('fecha_vencimiento', rangeFin)
       .gte('fecha_vencimiento', rangeInicio);
+
+    if (selectedEmpresaId && selectedEmpresaId !== 'all') {
+      tareasQuery = tareasQuery.eq('empresa_id', selectedEmpresaId);
+    }
+
+    const { data: tareas } = await tareasQuery;
 
     (tareas || []).forEach(t => {
       if (!t.fecha_vencimiento) return;
