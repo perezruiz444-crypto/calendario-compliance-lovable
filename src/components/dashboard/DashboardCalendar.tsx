@@ -74,7 +74,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
  const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedObId, setSelectedObId] = useState<string | null>(null);
   const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
-  const [filterEmpresaId, setFilterEmpresaId] = useState<string>('all');
+  
 
   useEffect(() => {
     supabase
@@ -233,10 +233,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
           </div>
           {empresas.length > 1 && (
             <div className="mt-3">
-              <Select value={filterEmpresaId} onValueChange={(v) => {
-                setFilterEmpresaId(v);
-                if (dateRange) fetchEvents(dateRange.start, dateRange.end);
-              }}>
+             
                 <SelectTrigger className="w-[220px] h-8 text-xs gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
                   <SelectValue placeholder="Todas las empresas" />
