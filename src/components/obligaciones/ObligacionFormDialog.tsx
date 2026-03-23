@@ -45,7 +45,7 @@ const EMPTY_FORM: ObligacionFormData = {
   categoria: 'general', nombre: '', descripcion: '', articulos: '', presentacion: '',
   fecha_autorizacion: '', fecha_vencimiento: '', fecha_renovacion: '',
   fecha_inicio: '', fecha_fin: '', numero_oficio: '', estado: 'vigente', notas: '',
-  activa: false, responsable_tipo: '', responsable_id: '',
+  activa: true, responsable_tipo: '', responsable_id: '',
   responsable_ids: [],
 };
 
