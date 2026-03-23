@@ -15,6 +15,7 @@ import { getCurrentPeriodKey, CATEGORIA_LABELS } from '@/lib/obligaciones';
 import { es } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { generateReportPDF } from '@/lib/pdfGenerator';
+import { ..., FileDown } from 'lucide-react';
 
 export default function Reportes() {
   const { user, role, loading } = useAuth();
@@ -630,6 +631,27 @@ export default function Reportes() {
   };
 
   if (loading || loadingData) {
+    const exportObligacionesExcel = () => {
+    if (!reporteData.obligacionesPendientesDetalle?.length) {
+      toast.error('No hay obligaciones pendientes para exportar');
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(
+      reporteData.obligacionesPendientesDetalle.map(o => ({
+        'Obligación': o.nombre,
+        'Empresa': o.empresa,
+        'Programa': CATEGORIA_LABELS[o.categoria] || o.categoria,
+        'Vencimiento': o.fecha_vencimiento
+          ? new Date(o.fecha_vencimiento).toLocaleDateString('es-MX')
+          : '—',
+        'Estado': 'Pendiente',
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Obligaciones');
+    XLSX.writeFile(wb, `obligaciones-pendientes-${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success('Excel exportado correctamente');
+  };
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -664,6 +686,10 @@ export default function Reportes() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={exportObligacionesExcel} variant="outline" className="font-heading gap-1.5">
+              <FileDown className="w-4 h-4" />
+              Obligaciones Excel
+            </Button>
             <Button onClick={exportToCSV} className="font-heading" variant="outline">
               <Download className="w-4 h-4 mr-2" />
               Exportar CSV
