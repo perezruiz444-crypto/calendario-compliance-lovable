@@ -14,14 +14,16 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   onAssign: (items: any[]) => void;
   loading?: boolean;
+  empresaId?: string;
 }
 
-export function CatalogoObligacionesDialog({ open, onOpenChange, onAssign, loading }: Props) {
+export function CatalogoObligacionesDialog({ open, onOpenChange, onAssign, loading, empresaId }: Props) {
   const { role } = useAuth();
   const [catalogo, setCatalogo] = useState<any[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
+  const [yaAsignados, setYaAsignados] = useState<Set<string>>(new Set());
 
   const fetchCatalogo = async () => {
     setLoadingCatalog(true);
@@ -34,14 +36,24 @@ export function CatalogoObligacionesDialog({ open, onOpenChange, onAssign, loadi
     setLoadingCatalog(false);
   };
 
-  useEffect(() => {
+ useEffect(() => {
     if (open) {
       fetchCatalogo();
       setSelected(new Set());
       setSearch('');
+      if (empresaId) fetchYaAsignados();
     }
   }, [open]);
 
+  const fetchYaAsignados = async () => {
+    if (!empresaId) return;
+    const { data } = await supabase
+      .from('obligaciones')
+      .select('nombre')
+      .eq('empresa_id', empresaId)
+      .eq('activa', true);
+    setYaAsignados(new Set((data || []).map(o => o.nombre)));
+  };
   const toggleSelect = (id: string) => {
     setSelected(prev => {
       const next = new Set(prev);
@@ -114,13 +126,25 @@ export function CatalogoObligacionesDialog({ open, onOpenChange, onAssign, loadi
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(item => (
-                    <tr key={item.id} className="border-t hover:bg-muted/50 cursor-pointer" onClick={() => toggleSelect(item.id)}>
+                  {filtered.map(item => {
+                    const yaAsignada = yaAsignados.has(item.nombre);
+                    return (
+                    <tr key={item.id} className={`border-t cursor-pointer ${yaAsignada ? 'bg-success/5 opacity-60' : 'hover:bg-muted/50'}`}
+                      onClick={() => !yaAsignada && toggleSelect(item.id)}>>
                       <td className="p-2" onClick={e => e.stopPropagation()}>
                         <Checkbox checked={selected.has(item.id)} onCheckedChange={() => toggleSelect(item.id)} />
                       </td>
                       <td className="p-2"><Badge variant="outline" className="text-xs">{item.programa}</Badge></td>
-                      <td className="p-2 font-medium">{item.nombre}</td>
+                    <td className="p-2 font-medium">
+                        <div className="flex items-center gap-2">
+                          {item.nombre}
+                          {yaAsignada && (
+                            <span className="text-[10px] font-semibold text-success bg-success/10 px-1.5 py-0.5 rounded">
+                              Ya asignada
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-2 hidden md:table-cell text-muted-foreground">{item.articulos || '-'}</td>
                       <td className="p-2 hidden md:table-cell text-muted-foreground">{item.presentacion || '-'}</td>
                      <td className="p-2" onClick={e => e.stopPropagation()}>
@@ -130,8 +154,9 @@ export function CatalogoObligacionesDialog({ open, onOpenChange, onAssign, loadi
                           </Button>
                         )}
                       </td>
-                    </tr>
-                  ))}
+                   </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
