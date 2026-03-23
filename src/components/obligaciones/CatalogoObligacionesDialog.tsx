@@ -130,7 +130,7 @@ export function CatalogoObligacionesDialog({ open, onOpenChange, onAssign, loadi
                     const yaAsignada = yaAsignados.has(item.nombre);
                     return (
                     <tr key={item.id} className={`border-t cursor-pointer ${yaAsignada ? 'bg-success/5 opacity-60' : 'hover:bg-muted/50'}`}
-                      onClick={() => !yaAsignada && toggleSelect(item.id)}>>
+                      onClick={() => !yaAsignada && toggleSelect(item.id)}>
                       <td className="p-2" onClick={e => e.stopPropagation()}>
                         <Checkbox checked={selected.has(item.id)} onCheckedChange={() => toggleSelect(item.id)} />
                       </td>
