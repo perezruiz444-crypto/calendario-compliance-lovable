@@ -630,8 +630,7 @@ export default function Reportes() {
     a.click();
   };
 
-  if (loading || loadingData) {
-    const exportObligacionesExcel = () => {
+  const exportObligacionesExcel = () => {
     if (!reporteData.obligacionesPendientesDetalle?.length) {
       toast.error('No hay obligaciones pendientes para exportar');
       return;
@@ -652,6 +651,8 @@ export default function Reportes() {
     XLSX.writeFile(wb, `obligaciones-pendientes-${new Date().toISOString().split('T')[0]}.xlsx`);
     toast.success('Excel exportado correctamente');
   };
+
+  if (loading || loadingData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
