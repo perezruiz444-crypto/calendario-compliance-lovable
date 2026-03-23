@@ -179,6 +179,21 @@ export default function DashboardObligaciones() {
       query = query.eq('empresa_id', selectedEmpresaId);
     }
 
+    // Clientes solo ven las obligaciones donde están asignados
+    if (role === 'cliente' && user) {
+      const { data: asignadas } = await supabase
+        .from('obligacion_responsables')
+        .select('obligacion_id')
+        .eq('user_id', user.id);
+      const ids = (asignadas || []).map(a => a.obligacion_id);
+      if (ids.length === 0) {
+        setObligaciones([]);
+        setLoading(false);
+        return;
+      }
+      query = query.in('id', ids);
+    }
+
     const { data, error } = await query;
     if (error) { setLoading(false); return; }
 
