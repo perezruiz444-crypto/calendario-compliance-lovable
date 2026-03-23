@@ -5,8 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { BookOpen, Search, Trash2 } from 'lucide-react';
+import { BookOpen, Search, Trash2, Plus } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function CatalogoObligacionesDialog({ open, onOpenChange, onAssign, loading }: Props) {
+  const { role } = useAuth();
   const [catalogo, setCatalogo] = useState<any[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
