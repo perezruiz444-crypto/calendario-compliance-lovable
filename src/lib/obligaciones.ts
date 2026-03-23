@@ -84,13 +84,13 @@ export function getVencimientoInfo(fecha: string | null): { status: 'vencido' | 
 
 // ─── Programa to categoría mapping ────────────────────────────────────
 export function programaToCategoria(programa: string): string {
-  const lower = programa.toLowerCase();
-  if (lower.includes('immex')) return 'immex';
-  if (lower.includes('prosec')) return 'prosec';
-  if (lower.includes('cert') || lower.includes('iva') || lower.includes('ieps')) return 'cert_iva_ieps';
-  if (lower.includes('padr')) return 'padron';
-  if (lower.includes('general')) return 'general';
-  return 'otro';
+  const p = (programa || '').toLowerCase().trim();
+  if (p.includes('immex'))                          return 'immex';
+  if (p.includes('prosec'))                         return 'prosec';
+  if (p.includes('padrón') || p.includes('padron')) return 'padron';
+  if (p.includes('iva') || p.includes('ieps') ||
+      p.includes('cert') || p.includes('oea'))      return 'cert_iva_ieps';
+  return 'general';
 }
 
 // ─── Recurrence: next vencimiento calculation ─────────────────────────
