@@ -35,6 +35,7 @@ interface FcEvent {
 interface DashboardCalendarProps {
   onEventClick?: (event: any) => void;
   height?: string;
+  filterEmpresaId?: string | null;
 }
 
 function eventColor(type: string, prioridad?: string, isOverdue?: boolean): { bg: string; border: string } {
@@ -64,7 +65,7 @@ function EventContent({ eventInfo }: { eventInfo: EventContentArg }) {
   );
 }
 
-export default function DashboardCalendar({ onEventClick, height = '580px' }: DashboardCalendarProps) {
+export default function DashboardCalendar({ onEventClick, height = '580px', filterEmpresaId }: DashboardCalendarProps) {
   const { user, role } = useAuth();
   const calRef = useRef<FullCalendar>(null);
   const [events, setEvents] = useState<FcEvent[]>([]);
@@ -183,9 +184,11 @@ export default function DashboardCalendar({ onEventClick, height = '580px' }: Da
       });
     });
 
-    const filtered = filterEmpresaId === 'all'
+    const filtered = (!filterEmpresaId || filterEmpresaId === 'all')
       ? allEvents
       : allEvents.filter(e => e.extendedProps.empresaId === filterEmpresaId);
+
+    setEvents(filtered);
 
     setEvents(filtered);
     setLoading(false);
