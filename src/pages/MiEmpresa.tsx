@@ -66,7 +66,7 @@ export default function MiEmpresa() {
         supabase.from('empresas').select('*').eq('id', profile.empresa_id).maybeSingle(),
         supabase.from('apoderados_legales').select('*').eq('empresa_id', profile.empresa_id),
         supabase.from('domicilios_operacion').select('*').eq('empresa_id', profile.empresa_id),
-        supabase.from('obligaciones').select('*').eq('empresa_id', profile.empresa_id).eq('activa', true).order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
+        supabase.from('obligacion_responsables').select('obligacion_id').eq('user_id', user.id),
         supabase.from('tareas').select('*').eq('empresa_id', profile.empresa_id).neq('estado', 'completada').order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
       ]);
 
@@ -74,7 +74,17 @@ export default function MiEmpresa() {
       setApoderados(apoderadosRes.data || []);
       setDomicilios(domiciliosRes.data || []);
       setTareas(tareasRes.data || []);
-      const obs = obligacionesRes.data || [];
+      const idsAsignadas = (obligacionesRes.data || []).map((r: any) => r.obligacion_id);
+      let obs: any[] = [];
+      if (idsAsignadas.length > 0) {
+        const { data: obsData } = await supabase
+          .from('obligaciones')
+          .select('*')
+          .in('id', idsAsignadas)
+          .eq('activa', true)
+          .order('fecha_vencimiento', { ascending: true, nullsFirst: false });
+        obs = obsData || [];
+      }
       setObligaciones(obs);
 
       // Fetch responsable names
