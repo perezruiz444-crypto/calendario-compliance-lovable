@@ -231,22 +231,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
             </div>
             {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />}
           </div>
-          {empresas.length > 1 && (
-            <div className="mt-3">
-             
-                <SelectTrigger className="w-[220px] h-8 text-xs gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
-                  <SelectValue placeholder="Todas las empresas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las empresas</SelectItem>
-                  {empresas.map(e => (
-                    <SelectItem key={e.id} value={e.id}>{e.razon_social}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+         
 
           <div className="flex flex-wrap gap-2 mt-2">
             
