@@ -634,11 +634,12 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
 
       <BulkImportDialog open={bulkOpen} onOpenChange={setBulkOpen} onImport={handleBulkImport} loading={saving} />
 
-      <CatalogoObligacionesDialog
+     <CatalogoObligacionesDialog
         open={catalogOpen}
         onOpenChange={setCatalogOpen}
         onAssign={handleAssignFromCatalog}
         loading={saving}
+        empresaId={empresaId}
       />
 
       <ObligacionDetailSheet
