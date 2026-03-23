@@ -311,8 +311,8 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
       articulos: item.articulos || null,
       presentacion: item.presentacion || null,
       estado: 'vigente',
+      activa: true,
     }));
-
     const { error } = await supabase.from('obligaciones').insert(inserts);
     setSaving(false);
     if (error) { toast.error('Error al asignar obligaciones'); return; }
