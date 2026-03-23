@@ -30,6 +30,7 @@ import {
   Building2, FileText, Users, ClipboardList, TrendingUp, X
 } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
+import { CumplimientoResumenEmpresa } from '@/components/obligaciones/CumplimientoResumenEmpresa';
 
 export default function EmpresaDetail() {
   const { id } = useParams();
@@ -392,6 +393,19 @@ export default function EmpresaDetail() {
 
           {/* Obligaciones Tab */}
           <TabsContent value="obligaciones" className="space-y-6">
+            {/* Resumen de cumplimiento últimos 6 meses */}
+            <Card className="gradient-card shadow-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="font-heading text-base flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                  Historial de Cumplimiento
+                </CardTitle>
+                <CardDescription className="font-body">Últimos 6 periodos por obligación</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CumplimientoResumenEmpresa empresaId={id!} />
+              </CardContent>
+            </Card>
             <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} />
             <EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
             <ObligacionesManager empresaId={id!} canEdit={canEdit} />
