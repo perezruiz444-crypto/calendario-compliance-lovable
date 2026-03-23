@@ -48,17 +48,39 @@ async function insertVencimientoAlerts(userId: string) {
         if (existing) continue;
 
         const label = daysLeft === 1 ? 'mañana' : `en ${daysLeft} días`;
-        await (supabase as any).from('notificaciones').insert({
-          user_id: userId,
-          tipo: `vencimiento_${umbral}d`,
-          titulo: `Vence ${label}: ${ob.nombre}`,
-          contenido: ob.empresas?.razon_social
-            ? `Empresa: ${ob.empresas.razon_social} · ${d.toLocaleDateString('es-MX')}`
-            : d.toLocaleDateString('es-MX'),
-          referencia_id: ob.id,
-          referencia_tipo: 'obligacion',
-          leida: false,
-        });
+        // Notificar al usuario actual + a los responsables asignados
+        const { data: responsables } = await (supabase as any)
+          .from('obligacion_responsables')
+          .select('user_id')
+          .eq('obligacion_id', ob.id);
+
+        const destinatarios = new Set<string>([userId]);
+        (responsables || []).forEach((r: any) => destinatarios.add(r.user_id));
+
+        for (const destinatario of destinatarios) {
+          // Verificar que no exista ya la notificación para este destinatario
+          const { data: existingForUser } = await (supabase as any)
+            .from('notificaciones')
+            .select('id')
+            .eq('user_id', destinatario)
+            .eq('referencia_id', ob.id)
+            .eq('tipo', `vencimiento_${umbral}d`)
+            .maybeSingle();
+
+          if (existingForUser) continue;
+
+          await (supabase as any).from('notificaciones').insert({
+            user_id: destinatario,
+            tipo: `vencimiento_${umbral}d`,
+            titulo: `Vence ${label}: ${ob.nombre}`,
+            contenido: ob.empresas?.razon_social
+              ? `Empresa: ${ob.empresas.razon_social} · ${d.toLocaleDateString('es-MX')}`
+              : d.toLocaleDateString('es-MX'),
+            referencia_id: ob.id,
+            referencia_tipo: 'obligacion',
+            leida: false,
+          });
+        }
       }
     }
   } catch (e) {
