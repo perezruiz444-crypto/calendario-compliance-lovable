@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { CatalogoAdmin } from '@/components/configuraciones/CatalogoAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -8,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Loader2, Shield, Bell, Settings, Clock, History, Search, ChevronRight, User, Lock } from 'lucide-react';
+import { Loader2, Shield, Bell, Settings, Clock, History, Search, ChevronRight, User, Lock, BookOpen } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useSearchParams } from 'react-router-dom';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -67,6 +68,7 @@ export default function Configuraciones() {
     { id: 'recordatorios', label: 'Recordatorios', description: 'Reglas de recordatorio automáticas', icon: <Clock className="h-5 w-5" />, adminOnly: true },
     { id: 'historial', label: 'Historial', description: 'Registro de notificaciones enviadas', icon: <History className="h-5 w-5" />, adminOnly: true },
     { id: 'seguridad', label: 'Seguridad', description: 'Auditoría y actividad del sistema', icon: <Lock className="h-5 w-5" />, adminOnly: true },
+    { id: 'catalogo', label: 'Catálogo', description: 'Catálogo maestro de obligaciones', icon: <BookOpen className="h-5 w-5" />, adminOnly: true },
   ];
 
   const visibleSections = sections.filter(s => {
@@ -338,8 +340,10 @@ export default function Configuraciones() {
 
               {/* Security & Audit (Admin) */}
               {activeSection === 'seguridad' && isAdmin && <SecurityAuditSection />}
-            </div>
-          </main>
+
+              {/* Catálogo de Obligaciones (Admin) */}
+              {activeSection === 'catalogo' && isAdmin && <CatalogoAdmin />}
+            </div>          </main>
         </div>
       </div>
     </DashboardLayout>
