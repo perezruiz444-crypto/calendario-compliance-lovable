@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
+import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
 export default function Calendario() {
   const { user, loading } = useAuth();
+  const { selectedEmpresaId } = useEmpresaContext();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,8 +40,9 @@ export default function Calendario() {
         </div>
 
         {/* Dashboard Calendar */}
-        <DashboardCalendar 
+       <DashboardCalendar
           height="700px"
+          filterEmpresaId={selectedEmpresaId}
           onEventClick={(event) => {
             if (event.resource.type === 'tarea') {
               navigate('/tareas');
