@@ -156,7 +156,7 @@ function GroupHeader({
 type ActiveFilter = 'all' | 'vencidas' | 'semana' | 'mes' | 'cumplidas';
 
 export default function DashboardObligaciones() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const navigate = useNavigate();
   const { selectedEmpresaId } = useEmpresaContext();
   const [obligaciones, setObligaciones] = useState<any[]>([]);
