@@ -15,7 +15,7 @@ import { getCurrentPeriodKey, CATEGORIA_LABELS } from '@/lib/obligaciones';
 import { es } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { generateReportPDF } from '@/lib/pdfGenerator';
-import { ..., FileDown } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 export default function Reportes() {
   const { user, role, loading } = useAuth();
