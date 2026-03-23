@@ -123,10 +123,12 @@ export function CatalogoObligacionesDialog({ open, onOpenChange, onAssign, loadi
                       <td className="p-2 font-medium">{item.nombre}</td>
                       <td className="p-2 hidden md:table-cell text-muted-foreground">{item.articulos || '-'}</td>
                       <td className="p-2 hidden md:table-cell text-muted-foreground">{item.presentacion || '-'}</td>
-                      <td className="p-2" onClick={e => e.stopPropagation()}>
-                        <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => handleDelete(item.id)}>
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                     <td className="p-2" onClick={e => e.stopPropagation()}>
+                        {role === 'administrador' && (
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => handleDelete(item.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}
