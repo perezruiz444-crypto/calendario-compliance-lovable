@@ -67,13 +67,15 @@ export function getPeriodLabel(presentacion: string | null, periodKey: string): 
 // ─── Formatting helpers ───────────────────────────────────────────────
 export function formatDateShort(fecha: string | null): string {
   if (!fecha) return '-';
-  const d = new Date(fecha);
+  // Append T12:00:00 for date-only strings to avoid UTC-midnight timezone shifts
+  const d = new Date(fecha.includes('T') ? fecha : fecha + 'T12:00:00');
   return isValid(d) ? format(d, 'dd/MM/yyyy') : '-';
 }
 
 export function getVencimientoInfo(fecha: string | null): { status: 'vencido' | 'urgente' | 'proximo' | 'vigente'; days: number } | null {
   if (!fecha) return null;
-  const date = new Date(fecha);
+  // Append T12:00:00 for date-only strings to avoid UTC-midnight timezone shifts
+  const date = new Date(fecha.includes('T') ? fecha : fecha + 'T12:00:00');
   if (!isValid(date)) return null;
   const days = differenceInDays(date, new Date());
   if (isPast(date)) return { status: 'vencido', days };

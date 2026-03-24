@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -33,6 +33,26 @@ Deno.serve(async (req) => {
     const today = new Date().toISOString().split('T')[0]
     const next7Days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     const next30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+    // Load configurable dias_antes per program type from reminder_rules
+    const { data: reminderRules } = await supabaseAdmin
+      .from('reminder_rules')
+      .select('tipo, dias_antes')
+      .eq('activa', true)
+
+    const diasAntesByTipo: Record<string, number> = {}
+    for (const rule of reminderRules || []) {
+      if (!diasAntesByTipo[rule.tipo] || rule.dias_antes > diasAntesByTipo[rule.tipo]) {
+        diasAntesByTipo[rule.tipo] = rule.dias_antes
+      }
+    }
+    const getDias = (tipo: string) => diasAntesByTipo[tipo] ?? 30
+
+    // Helper: get renewal cutoff date string for a program type
+    const getRenewalCutoff = (tipo: string): string => {
+      const dias = getDias(tipo)
+      return new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    }
 
     const { data: profiles } = await supabaseAdmin
       .from('profiles')
@@ -76,6 +96,7 @@ Deno.serve(async (req) => {
         let obligacionesSemana: any[] = []
         let obligacionesMes: any[] = []
         let certificacionesVencer: any[] = []
+        let renovacionesProximas: { empresa: string; programa: string; fecha: string; diasRestantes: number }[] = []
 
         if (role === 'administrador' || role === 'consultor') {
           // Todas las obligaciones activas
@@ -108,19 +129,75 @@ Deno.serve(async (req) => {
             .limit(10)
           obligacionesMes = obsMes || []
 
-          // Certificaciones de programas
+          // Renovaciones de programas (usa fecha_renovar + configurable dias_antes)
           const { data: empresas } = await supabaseAdmin
             .from('empresas')
-            .select('razon_social, immex_fecha_fin, prosec_fecha_fin, cert_iva_ieps_fecha_vencimiento, matriz_seguridad_fecha_vencimiento')
+            .select(`
+              razon_social,
+              immex_fecha_fin,
+              immex_fecha_autorizacion,
+              immex_periodo_renovacion_meses,
+              prosec_fecha_fin,
+              prosec_fecha_siguiente_renovacion,
+              cert_iva_ieps_fecha_vencimiento,
+              cert_iva_ieps_fecha_renovar,
+              matriz_seguridad_fecha_vencimiento,
+              matriz_seguridad_fecha_renovar
+            `)
 
-          for (const e of empresas || []) {
-            const progs = [
+          for (const e of (empresas || [])) {
+            // CERTIVA: prefer fecha_renovar, fallback to fecha_vencimiento
+            const certFecha = e.cert_iva_ieps_fecha_renovar || e.cert_iva_ieps_fecha_vencimiento
+            const certCutoff = getRenewalCutoff('certificacion')
+            if (certFecha && certFecha >= today && certFecha <= certCutoff) {
+              const dias = Math.ceil((new Date(certFecha + 'T12:00:00').getTime() - Date.now()) / 86400000)
+              renovacionesProximas.push({ empresa: e.razon_social, programa: 'Cert. IVA/IEPS', fecha: certFecha, diasRestantes: dias })
+            }
+
+            // PROSEC: prefer fecha_siguiente_renovacion, fallback to fecha_fin
+            const prosecFecha = e.prosec_fecha_siguiente_renovacion || e.prosec_fecha_fin
+            const prosecCutoff = getRenewalCutoff('prosec')
+            if (prosecFecha && prosecFecha >= today && prosecFecha <= prosecCutoff) {
+              const dias = Math.ceil((new Date(prosecFecha + 'T12:00:00').getTime() - Date.now()) / 86400000)
+              renovacionesProximas.push({ empresa: e.razon_social, programa: 'PROSEC', fecha: prosecFecha, diasRestantes: dias })
+            }
+
+            // Matriz de Seguridad: prefer fecha_renovar, fallback to fecha_vencimiento
+            const matrizFecha = e.matriz_seguridad_fecha_renovar || e.matriz_seguridad_fecha_vencimiento
+            const matrizCutoff = getRenewalCutoff('matriz_seguridad')
+            if (matrizFecha && matrizFecha >= today && matrizFecha <= matrizCutoff) {
+              const dias = Math.ceil((new Date(matrizFecha + 'T12:00:00').getTime() - Date.now()) / 86400000)
+              renovacionesProximas.push({ empresa: e.razon_social, programa: 'Matriz de Seguridad', fecha: matrizFecha, diasRestantes: dias })
+            }
+
+            // IMMEX: calculate from autorización + period, or use immex_fecha_fin
+            const immexCutoff = getRenewalCutoff('immex')
+            if (e.immex_fecha_autorizacion && e.immex_periodo_renovacion_meses) {
+              const autDate = new Date(e.immex_fecha_autorizacion + 'T12:00:00')
+              const meses = e.immex_periodo_renovacion_meses as number
+              let nextRenewal = new Date(autDate)
+              const nowDate = new Date()
+              while (nextRenewal <= nowDate) {
+                nextRenewal = new Date(nextRenewal.setMonth(nextRenewal.getMonth() + meses))
+              }
+              const nextStr = nextRenewal.toISOString().split('T')[0]
+              if (nextStr >= today && nextStr <= immexCutoff) {
+                const dias = Math.ceil((nextRenewal.getTime() - Date.now()) / 86400000)
+                renovacionesProximas.push({ empresa: e.razon_social, programa: 'IMMEX', fecha: nextStr, diasRestantes: dias })
+              }
+            } else if (e.immex_fecha_fin && e.immex_fecha_fin >= today && e.immex_fecha_fin <= immexCutoff) {
+              const dias = Math.ceil((new Date(e.immex_fecha_fin + 'T12:00:00').getTime() - Date.now()) / 86400000)
+              renovacionesProximas.push({ empresa: e.razon_social, programa: 'IMMEX', fecha: e.immex_fecha_fin, diasRestantes: dias })
+            }
+
+            // Keep legacy certificacionesVencer for backwards compatibility (use vencimiento dates within 30 days)
+            const legacyProgs = [
               { label: 'IMMEX', date: e.immex_fecha_fin },
               { label: 'PROSEC', date: e.prosec_fecha_fin },
               { label: 'Cert. IVA/IEPS', date: e.cert_iva_ieps_fecha_vencimiento },
               { label: 'Matriz Seguridad', date: e.matriz_seguridad_fecha_vencimiento },
             ]
-            for (const p of progs) {
+            for (const p of legacyProgs) {
               if (p.date && p.date >= today && p.date <= next30Days) {
                 certificacionesVencer.push({ empresa: e.razon_social, tipo: p.label, fecha: p.date })
               }
@@ -165,7 +242,8 @@ Deno.serve(async (req) => {
           obligacionesVencidas.length > 0 ||
           obligacionesSemana.length > 0 ||
           obligacionesMes.length > 0 ||
-          certificacionesVencer.length > 0
+          certificacionesVencer.length > 0 ||
+          renovacionesProximas.length > 0
 
         if (!hasContent) {
           console.log(`Nothing to report for ${profile.nombre_completo}`)
@@ -203,6 +281,7 @@ Deno.serve(async (req) => {
             categoria: o.categoria,
           })),
           certificacionesVencer,
+          renovacionesProximas,
         })
 
         try {

@@ -157,6 +157,13 @@ interface CertItem {
   fecha: string;
 }
 
+interface RenovacionItem {
+  empresa: string;
+  programa: string;
+  fecha: string;
+  diasRestantes: number;
+}
+
 interface WeeklySummaryData {
   tareasVencidas: WeeklyItem[];
   tareasSemana: WeeklyItem[];
@@ -164,6 +171,7 @@ interface WeeklySummaryData {
   obligacionesSemana: WeeklyItem[];
   obligacionesMes: WeeklyItem[];
   certificacionesVencer: CertItem[];
+  renovacionesProximas?: RenovacionItem[];
 }
 
 const CATEGORIA_LABELS: Record<string, string> = {
@@ -172,10 +180,11 @@ const CATEGORIA_LABELS: Record<string, string> = {
 };
 
 export function weeklySummaryTemplate(userName: string, data: WeeklySummaryData): string {
-  const totalVencidas = data.obligacionesVencidas.length + data.tareasVencidas.length;
-  const totalSemana   = data.obligacionesSemana.length + data.tareasSemana.length;
-  const totalMes      = data.obligacionesMes.length;
-  const totalCerts    = data.certificacionesVencer.length;
+  const totalVencidas     = data.obligacionesVencidas.length + data.tareasVencidas.length;
+  const totalSemana       = data.obligacionesSemana.length + data.tareasSemana.length;
+  const totalMes          = data.obligacionesMes.length;
+  const totalCerts        = data.certificacionesVencer.length;
+  const totalRenovaciones = (data.renovacionesProximas || []).length;
 
   const kpis = `
     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:8px;overflow:hidden;margin:16px 0;">
@@ -183,9 +192,13 @@ export function weeklySummaryTemplate(userName: string, data: WeeklySummaryData)
         ${kpiCell('Vencidas', totalVencidas, totalVencidas > 0 ? RED : GRAY)}
         ${kpiCell('Esta semana', totalSemana, totalSemana > 0 ? AMBER : GRAY)}
         ${kpiCell('Este mes', totalMes, totalMes > 0 ? '#0ea5e9' : GRAY)}
-        <td style="text-align:center;padding:14px 8px;">
+        <td style="text-align:center;padding:14px 8px;border-right:1px solid ${BORDER};">
           <p style="margin:0;font-size:26px;font-weight:800;color:${totalCerts > 0 ? AMBER : GRAY};">${totalCerts}</p>
           <p style="margin:3px 0 0;font-size:10px;color:${GRAY};text-transform:uppercase;letter-spacing:0.5px;">Certif. por vencer</p>
+        </td>
+        <td style="text-align:center;padding:14px 8px;">
+          <p style="margin:0;font-size:26px;font-weight:800;color:${totalRenovaciones > 0 ? '#7c3aed' : GRAY};">${totalRenovaciones}</p>
+          <p style="margin:3px 0 0;font-size:10px;color:${GRAY};text-transform:uppercase;letter-spacing:0.5px;">Renovaciones</p>
         </td>
       </tr>
     </table>`;
@@ -242,13 +255,24 @@ export function weeklySummaryTemplate(userName: string, data: WeeklySummaryData)
     sections += `</table>`;
   }
 
-  // Certificaciones
+  // Certificaciones (vencimiento)
   if (data.certificacionesVencer.length > 0) {
     sections += sectionHeader('Programas y certificaciones próximos a vencer', AMBER);
     sections += `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:8px;overflow:hidden;">`;
     sections += data.certificacionesVencer.map(c =>
       obligacionRow(c.tipo, c.empresa, c.fecha, AMBER, 'Programa')
     ).join('');
+    sections += `</table>`;
+  }
+
+  // Renovaciones próximas de programas
+  if (data.renovacionesProximas && data.renovacionesProximas.length > 0) {
+    sections += sectionHeader('🔄 Renovaciones próximas de programas', '#7c3aed');
+    sections += `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ddd6fe;border-radius:8px;overflow:hidden;background:#faf5ff;">`;
+    sections += data.renovacionesProximas.map(r => {
+      const urgency = r.diasRestantes <= 7 ? RED : r.diasRestantes <= 30 ? AMBER : '#7c3aed';
+      return obligacionRow(r.programa, r.empresa, r.fecha, urgency, `${r.diasRestantes}d`);
+    }).join('');
     sections += `</table>`;
   }
 
