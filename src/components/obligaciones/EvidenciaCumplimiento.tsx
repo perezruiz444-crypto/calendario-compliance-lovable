@@ -21,6 +21,17 @@ export function EvidenciaCumplimiento({ open, onOpenChange, obligacionId, period
   const [uploading, setUploading] = useState(false);
 
   const handleSubmit = async (withEvidence: boolean) => {
+    if (withEvidence && file) {
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Solo se permiten archivos PDF, JPG, PNG o WEBP');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('El archivo no puede pesar más de 10MB');
+        return;
+      }
+    }
     setUploading(true);
     let evidenciaUrl: string | null = null;
 
