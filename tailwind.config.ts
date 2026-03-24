@@ -13,9 +13,10 @@ export default {
       },
     },
     extend: {
-      fontFamily: {
-        heading: ['Inter', 'sans-serif'],
-        body: ['Merriweather', 'serif'],
+    fontFamily: {
+        heading: ['Fraunces', 'Georgia', 'serif'],
+        body: ['DM Sans', 'system-ui', 'sans-serif'],
+        mono: ['DM Mono', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
