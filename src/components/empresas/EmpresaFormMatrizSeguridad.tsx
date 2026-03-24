@@ -26,7 +26,7 @@ export default function EmpresaFormMatrizSeguridad({ formData, setFormData }: Em
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {formData[field] ? (
-              format(new Date(formData[field]), "PPP")
+              format(new Date(formData[field] + 'T12:00:00'), "PPP")
             ) : (
               <span>Seleccionar fecha</span>
             )}
@@ -35,7 +35,7 @@ export default function EmpresaFormMatrizSeguridad({ formData, setFormData }: Em
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
-            selected={formData[field] ? new Date(formData[field]) : undefined}
+            selected={formData[field] ? new Date(formData[field] + 'T12:00:00') : undefined}
             onSelect={(date) => setFormData({ ...formData, [field]: date?.toISOString().split('T')[0] })}
             initialFocus
             className={cn("p-3 pointer-events-auto")}

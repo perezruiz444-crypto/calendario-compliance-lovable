@@ -93,6 +93,18 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit }: Props) {
 
   useEffect(() => { fetchData(); }, [empresaId]);
 
+  // Auto-refresh when obligations change (e.g. when ObligacionesManager creates/updates one)
+  useEffect(() => {
+    const channel = supabase
+      .channel(`obligaciones-activas-card-${empresaId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'obligaciones', filter: `empresa_id=eq.${empresaId}` },
+        () => fetchData()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [empresaId]);
+
   const toggleCumplimiento = async (obl: Obligacion) => {
     if (!user) return;
     const periodKey = getCurrentPeriodKey(obl.presentacion);

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { ChevronDown, Calendar, User, Users, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -97,46 +98,48 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
 
   const fetchUsuarios = async () => {
     if (!empresaId) return;
-    const results: { id: string; nombre: string; tipo: string }[] = [];
+    try {
+      const results: { id: string; nombre: string; tipo: string }[] = [];
 
-    const { data: clientProfiles } = await supabase
-      .from('profiles')
-      .select('id, nombre_completo')
-      .eq('empresa_id', empresaId);
-    
-    if (clientProfiles) {
-      for (const p of clientProfiles) {
+      // Clientes: batch role check instead of N+1 queries
+      const { data: clientProfiles } = await supabase
+        .from('profiles')
+        .select('id, nombre_completo')
+        .eq('empresa_id', empresaId);
+
+      if (clientProfiles && clientProfiles.length > 0) {
         const { data: roleData } = await supabase
           .from('user_roles')
-          .select('role')
-          .eq('user_id', p.id)
+          .select('user_id')
           .eq('role', 'cliente')
-          .maybeSingle();
-        if (roleData) {
-          results.push({ id: p.id, nombre: p.nombre_completo, tipo: 'cliente' });
-        }
+          .in('user_id', clientProfiles.map(p => p.id));
+        const clientRoleIds = new Set((roleData || []).map(r => r.user_id));
+        clientProfiles
+          .filter(p => clientRoleIds.has(p.id))
+          .forEach(p => results.push({ id: p.id, nombre: p.nombre_completo, tipo: 'cliente' }));
       }
-    }
 
-    const { data: consultorAssignments } = await supabase
-      .from('consultor_empresa_asignacion')
-      .select('consultor_id')
-      .eq('empresa_id', empresaId);
+      // Consultores: batch profile fetch instead of N+1 queries
+      const { data: consultorAssignments } = await supabase
+        .from('consultor_empresa_asignacion')
+        .select('consultor_id')
+        .eq('empresa_id', empresaId);
 
-    if (consultorAssignments) {
-      for (const a of consultorAssignments) {
-        const { data: profile } = await supabase
+      if (consultorAssignments && consultorAssignments.length > 0) {
+        const { data: consultorProfiles } = await supabase
           .from('profiles')
           .select('id, nombre_completo')
-          .eq('id', a.consultor_id)
-          .maybeSingle();
-        if (profile) {
-          results.push({ id: profile.id, nombre: profile.nombre_completo, tipo: 'consultor' });
-        }
+          .in('id', consultorAssignments.map(a => a.consultor_id));
+        (consultorProfiles || []).forEach(p =>
+          results.push({ id: p.id, nombre: p.nombre_completo, tipo: 'consultor' })
+        );
       }
-    }
 
-    setUsuarios(results);
+      setUsuarios(results);
+    } catch (err) {
+      console.error('Error fetching usuarios:', err);
+      toast.error('Error al cargar consultores y clientes');
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {

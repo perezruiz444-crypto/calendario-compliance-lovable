@@ -21,6 +21,7 @@ import ClienteAnalytics from '@/components/dashboard/ClienteAnalytics';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
 import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
 import AgendaHoy from '@/components/dashboard/AgendaHoy';
+import RenovacionesWidget from '@/components/dashboard/RenovacionesWidget';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -165,10 +166,11 @@ export default function Dashboard() {
         {role === 'consultor' && <ConsultorAnalytics data={data} />}
         {role === 'cliente' && <ClienteAnalytics data={data} />}
 
-        {/* Obligaciones + Semáforo */}
+        {/* Obligaciones + Semáforo + Renovaciones */}
         {(role === 'administrador' || role === 'consultor') && (
           <>
             <DashboardObligaciones />
+            <RenovacionesWidget />
             <EmpresaComplianceSemaforo />
           </>
         )}
