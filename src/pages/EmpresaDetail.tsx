@@ -27,9 +27,9 @@ import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
 import {
-  Phone, UserCog, CheckSquare, Plus, Repeat, Pencil, Clock, AlertTriangle,
-  Building2, FileText, Users, ClipboardList, TrendingUp, X, CheckCircle2,
-  ShieldCheck, AlertCircle, CalendarDays, ChevronRight, MapPin, Zap,
+  Phone, UserCog, CheckSquare, Plus, Pencil, Clock, AlertTriangle,
+  Building2, FileText, Users, TrendingUp, X, CheckCircle2,
+  ShieldCheck, AlertCircle, CalendarDays, ChevronRight, MapPin,
   Target, BarChart3
 } from 'lucide-react';
 import { differenceInDays, format, isValid } from 'date-fns';
