@@ -1,45 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Calendario Compliance | Sistema de Gestión</title>
-    <meta name="description" content="Sistema de gestión para cumplimiento regulatorio.">
+    <title>Calendario Compliance | Comercio Exterior</title>
+    <meta name="description" content="Sistema de gestión de cumplimiento regulatorio para empresas con programas IMMEX, PROSEC, Padrón y certificaciones de Comercio Exterior.">
+    <meta name="author" content="Calendario Compliance" />
+
+    <!-- Fonts: DM Sans (UI) + Fraunces (Headings) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
-    <meta name="author" content="Lovable" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400&display=swap" rel="stylesheet">
+
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#6366f1" />
+    <meta name="theme-color" content="#003366" />
 
-    
-    
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
+    <meta property="og:title" content="Calendario Compliance | Comercio Exterior">
+    <meta property="og:description" content="Sistema de gestión de cumplimiento regulatorio para Comercio Exterior.">
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-    <meta property="og:title" content="Calendario Compliance | Sistema de Gestión">
-  <meta name="twitter:title" content="Calendario Compliance | Sistema de Gestión">
-  <meta property="og:description" content="Sistema de gestión para cumplimiento regulatorio.">
-  <meta name="twitter:description" content="Sistema de gestión para cumplimiento regulatorio.">
-</head>
-
+    <meta name="twitter:title" content="Calendario Compliance | Comercio Exterior">
+    <meta name="twitter:description" content="Sistema de gestión de cumplimiento regulatorio para Comercio Exterior.">
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Register service worker for push notifications
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/service-worker.js')
-            .then(registration => {
-              console.log('Service Worker registered:', registration);
-            })
-            .catch(error => {
-              console.log('Service Worker registration failed:', error);
-            });
+            .then(r => console.log('SW registered:', r))
+            .catch(e => console.log('SW failed:', e));
         });
       }
     </script>
