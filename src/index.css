@@ -2,184 +2,368 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* ═══════════════════════════════════════════════════════════════
+   CALENDARIO COMPLIANCE — Design System
+   Institucional Premium · Navy + Rojo · DM Sans + Fraunces
+═══════════════════════════════════════════════════════════════ */
 
 @layer base {
   :root {
-    /* Russell Bedford Corporate Colors */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 20%;
+    /* ── Core palette ── */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 20%;
+    --card-foreground: 215 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 20%;
+    --popover-foreground: 215 25% 15%;
 
-    /* Corporate Navy Blue #003366 */
+    /* Navy #003366 */
     --primary: 210 100% 20%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 210 100% 25%;
-    --primary-light: 210 100% 95%;
+    --primary-light: 210 60% 96%;
 
-    /* Neutral Grays */
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 20%;
+    --secondary: 210 15% 95%;
+    --secondary-foreground: 215 25% 20%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 210 15% 95%;
+    --muted-foreground: 215 15% 45%;
 
-    /* Corporate Red/Orange Accent #D52B1E */
+    /* Red accent #D52B1E */
     --accent: 4 76% 49%;
     --accent-foreground: 0 0% 100%;
 
-    /* Status Colors */
-    --success: 142 76% 36%;
+    /* Status */
+    --success: 142 71% 30%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 36 90% 45%;
     --warning-foreground: 0 0% 100%;
     --destructive: 4 76% 49%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders & Inputs */
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    /* Structure */
+    --border: 210 20% 88%;
+    --input: 210 20% 92%;
     --ring: 210 100% 20%;
+    --radius: 0.625rem;
 
-    --radius: 0.75rem;
-
-    /* Sidebar - Light/White */
-    --sidebar-background: 210 20% 98%;
-    --sidebar-foreground: 0 0% 20%;
+    /* Sidebar */
+    --sidebar-background: 210 30% 97%;
+    --sidebar-foreground: 215 25% 20%;
     --sidebar-primary: 210 100% 20%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 93%;
-    --sidebar-accent-foreground: 0 0% 20%;
-    --sidebar-border: 0 0% 90%;
+    --sidebar-accent: 210 20% 91%;
+    --sidebar-accent-foreground: 215 25% 20%;
+    --sidebar-border: 210 20% 87%;
     --sidebar-ring: 210 100% 20%;
 
-    /* Shadows & Effects */
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 20% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 20% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 20% / 0.1);
-    --shadow-xl: 0 20px 25px -5px hsl(0 0% 20% / 0.1);
+    /* Shadows — más dramáticas */
+    --shadow-sm: 0 1px 3px 0 hsl(210 30% 20% / 0.06), 0 1px 2px -1px hsl(210 30% 20% / 0.04);
+    --shadow-md: 0 4px 8px -2px hsl(210 30% 20% / 0.08), 0 2px 4px -2px hsl(210 30% 20% / 0.05);
+    --shadow-lg: 0 12px 24px -4px hsl(210 30% 20% / 0.10), 0 4px 8px -2px hsl(210 30% 20% / 0.06);
+    --shadow-xl: 0 24px 48px -8px hsl(210 30% 20% / 0.14), 0 8px 16px -4px hsl(210 30% 20% / 0.08);
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(210 100% 20%) 0%, hsl(210 100% 25%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 18%) 0%, hsl(215 90% 26%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 20% 99%) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(210 60% 97%) 0%, hsl(210 20% 99%) 100%);
   }
 
   .dark {
-    /* True dark/black backgrounds */
-    --background: 0 0% 7%;
-    --foreground: 0 0% 98%;
+    --background: 220 20% 8%;
+    --foreground: 210 15% 95%;
 
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 18% 11%;
+    --card-foreground: 210 15% 95%;
 
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 18% 11%;
+    --popover-foreground: 210 15% 95%;
 
-    /* Corporate Navy accent in dark mode */
-    --primary: 210 100% 45%;
+    --primary: 210 90% 52%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 210 100% 50%;
-    --primary-light: 0 0% 14%;
+    --primary-hover: 210 90% 58%;
+    --primary-light: 220 25% 16%;
 
-    --secondary: 0 0% 14%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 15% 16%;
+    --secondary-foreground: 210 15% 90%;
 
-    --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 215 10% 55%;
 
-    --accent: 4 76% 55%;
+    --accent: 4 76% 58%;
     --accent-foreground: 0 0% 100%;
 
-    --success: 142 76% 42%;
+    --success: 142 60% 40%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 55%;
+    --warning: 36 85% 52%;
     --warning-foreground: 0 0% 100%;
-    --destructive: 4 76% 55%;
+    --destructive: 4 72% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 210 100% 45%;
+    --border: 220 15% 20%;
+    --input: 220 15% 18%;
+    --ring: 210 90% 52%;
 
-    /* Sidebar - True black */
-    --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 4 76% 55%;
+    --sidebar-background: 220 22% 6%;
+    --sidebar-foreground: 210 15% 90%;
+    --sidebar-primary: 4 76% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 4 76% 55%;
+    --sidebar-accent: 220 18% 13%;
+    --sidebar-accent-foreground: 210 15% 90%;
+    --sidebar-border: 220 15% 16%;
+    --sidebar-ring: 4 76% 58%;
 
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.25);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.35);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4);
-    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.5);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.20);
+    --shadow-md: 0 4px 8px -2px hsl(0 0% 0% / 0.28);
+    --shadow-lg: 0 12px 24px -4px hsl(0 0% 0% / 0.36);
+    --shadow-xl: 0 24px 48px -8px hsl(0 0% 0% / 0.45);
 
-    --gradient-primary: linear-gradient(135deg, hsl(210 100% 35%) 0%, hsl(210 100% 45%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 10%) 0%, hsl(0 0% 12%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(210 80% 40%) 0%, hsl(215 70% 52%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(220 18% 11%) 0%, hsl(220 18% 13%) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(220 20% 12%) 0%, hsl(220 15% 14%) 100%);
   }
 }
 
+/* ── Base styles ───────────────────────────────────────────── */
 @layer base {
   * {
     @apply border-border;
   }
 
+  html {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
-    @apply bg-background text-foreground font-body;
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading;
+    font-family: 'Fraunces', Georgia, serif;
+    font-optical-sizing: auto;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  h1 { font-size: 2rem;    font-weight: 700; }
+  h2 { font-size: 1.5rem;  font-weight: 600; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  h4 { font-size: 1.1rem;  font-weight: 600; }
+
+  /* Inputs más refinados */
+  input, textarea, select {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 14px;
+  }
+
+  /* Scrollbar sutil */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
   }
 }
 
+/* ── Background texture ─────────────────────────────────────── */
+/* Dot grid sutil en el background del app */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(
+    hsl(var(--primary) / 0.04) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+}
+
+.dark body::before,
+.dark::before {
+  background-image: radial-gradient(
+    hsl(var(--primary) / 0.07) 1px,
+    transparent 1px
+  );
+}
+
+/* ── Utility classes ────────────────────────────────────────── */
 @layer utilities {
-  .shadow-elegant {
-    box-shadow: var(--shadow-md);
+
+  /* Shadows */
+  .shadow-elegant { box-shadow: var(--shadow-md); }
+  .shadow-card    { box-shadow: var(--shadow-lg); }
+  .shadow-float   { box-shadow: var(--shadow-xl); }
+
+  /* Gradients */
+  .gradient-primary { background: var(--gradient-primary); }
+  .gradient-card    { background: var(--gradient-card);    }
+  .gradient-subtle  { background: var(--gradient-subtle);  }
+
+  /* Typography */
+  .font-heading { font-family: 'Fraunces', Georgia, serif; }
+  .font-body    { font-family: 'DM Sans', system-ui, sans-serif; }
+
+  /* Transitions */
+  .transition-smooth     { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+  .transition-all-smooth { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
+  /* Hover scale */
+  .hover-scale { @apply transition-transform duration-200 hover:scale-[1.015]; }
+
+  /* Cards con borde izquierdo de color (para jerarquía) */
+  .card-accent-left {
+    border-left: 3px solid hsl(var(--primary));
+  }
+  .card-accent-danger {
+    border-left: 3px solid hsl(var(--destructive));
+  }
+  .card-accent-success {
+    border-left: 3px solid hsl(var(--success));
+  }
+  .card-accent-warning {
+    border-left: 3px solid hsl(var(--warning));
   }
 
-  .shadow-card {
-    box-shadow: var(--shadow-lg);
+  /* Glow */
+  .glow-primary {
+    box-shadow: 0 0 24px hsl(var(--primary) / 0.25);
   }
 
-  .gradient-primary {
-    background: var(--gradient-primary);
+  /* Status pill — más visual que un badge plano */
+  .status-vencida {
+    @apply bg-destructive/10 text-destructive border border-destructive/20 font-semibold;
+  }
+  .status-pendiente {
+    @apply bg-warning/10 text-warning border border-warning/20 font-semibold;
+  }
+  .status-cumplida {
+    @apply bg-success/10 text-success border border-success/20 font-semibold;
+  }
+  .status-progreso {
+    @apply bg-primary/10 text-primary border border-primary/20 font-semibold;
   }
 
-  .gradient-card {
-    background: var(--gradient-card);
+  /* Staggered animation helpers */
+  .animate-fade-up {
+    animation: fadeUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
 
-  .transition-smooth {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
+  .delay-75  { animation-delay: 75ms;  }
+  .delay-150 { animation-delay: 150ms; }
+  .delay-225 { animation-delay: 225ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-375 { animation-delay: 375ms; }
 
-  /* Hover Effects */
-  .hover-scale {
-    @apply transition-transform duration-200 hover:scale-[1.02];
-  }
-
-  /* Text Underline Animation */
+  /* Story link underline */
   .story-link {
     @apply relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left;
   }
+}
 
-  /* Glow Effect */
-  .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
-  }
+/* ── Keyframes ──────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-  /* Smooth Transitions */
-  .transition-all-smooth {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* ── FullCalendar overrides ─────────────────────────────────── */
+.fc {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-size: 13px;
+}
+.fc .fc-toolbar-title {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em;
+}
+.fc .fc-button {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  padding: 0.3rem 0.7rem !important;
+  border-radius: 0.5rem !important;
+  background: hsl(var(--primary)) !important;
+  border-color: hsl(var(--primary)) !important;
+}
+.fc .fc-button:hover {
+  background: hsl(var(--primary-hover)) !important;
+}
+.fc .fc-button-active {
+  background: hsl(var(--primary)) !important;
+  opacity: 0.85;
+}
+.fc .fc-col-header-cell-cushion {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: hsl(var(--muted-foreground)) !important;
+  padding: 6px 4px !important;
+}
+.fc .fc-daygrid-day-number {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: hsl(var(--muted-foreground)) !important;
+  padding: 4px 6px !important;
+}
+.fc .fc-daygrid-day.fc-day-today {
+  background: hsl(var(--primary) / 0.05) !important;
+}
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  background: hsl(var(--primary)) !important;
+  color: white !important;
+  border-radius: 50% !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.fc .fc-event {
+  border-radius: 4px !important;
+  border: none !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  padding: 1px 5px !important;
+}
+.fc .fc-list-event-title {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-size: 13px !important;
+}
+.fc-theme-standard td, .fc-theme-standard th {
+  border-color: hsl(var(--border)) !important;
+}
+.fc-theme-standard .fc-scrollgrid {
+  border-color: hsl(var(--border)) !important;
 }
