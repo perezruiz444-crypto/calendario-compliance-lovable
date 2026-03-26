@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEmpresaCreated: () => void;
+  onEmpresaCreated: (empresaId?: string) => void;
 }
 
 export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaCreated }: Props) {
@@ -36,20 +36,20 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
     if (!validate()) return;
     setLoading(true);
     try {
-      const { error } = await supabase.from('empresas').insert({
+      const { data, error } = await supabase.from('empresas').insert({
         razon_social: formData.razon_social.trim(),
         rfc: formData.rfc.trim().toUpperCase(),
         domicilio_fiscal: formData.domicilio_fiscal.trim(),
         telefono: formData.telefono.trim() || null,
         actividad_economica: formData.actividad_economica.trim() || null,
         created_by: user?.id,
-      });
+      }).select('id').single();
       if (error) throw error;
       toast.success('Empresa creada correctamente');
       setFormData({ razon_social: '', rfc: '', domicilio_fiscal: '', telefono: '', actividad_economica: '' });
       setErrors({});
       onOpenChange(false);
-      onEmpresaCreated();
+      onEmpresaCreated(data.id);
     } catch (e: any) {
       toast.error(e.message || 'Error al crear empresa');
     } finally {
