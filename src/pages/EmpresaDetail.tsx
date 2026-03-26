@@ -18,6 +18,7 @@ import { EmpresaPROSECCard } from '@/components/empresas/EmpresaPROSECCard';
 import { EmpresaCertificacionCard } from '@/components/empresas/EmpresaCertificacionCard';
 import { EmpresaObligacionesCard } from '@/components/empresas/EmpresaObligacionesCard';
 import { ObligacionesManager } from '@/components/obligaciones/ObligacionesManager';
+import { CatalogoActivacionSection } from '@/components/obligaciones/CatalogoActivacionSection';
 import { AgentesAduanalesCard } from '@/components/empresas/AgentesAduanalesCard';
 import { EmpresaObligacionesActivasCard } from '@/components/empresas/EmpresaObligacionesActivasCard';
 import { ApoderadosCard } from '@/components/empresas/ApoderadosCard';
@@ -566,6 +567,7 @@ export default function EmpresaDetail() {
           <TabsContent value="obligaciones" className="space-y-5">
             <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} />
             <EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+            <CatalogoActivacionSection empresaId={id!} canEdit={canEdit} />
             <ObligacionesManager empresaId={id!} canEdit={canEdit} />
           </TabsContent>
 
