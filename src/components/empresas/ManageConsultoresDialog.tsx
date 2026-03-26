@@ -17,7 +17,6 @@ interface ManageConsultoresDialogProps {
 interface Consultor {
   id: string;
   nombre_completo: string;
-  email: string;
 }
 
 interface ConsultorAsignado extends Consultor {
@@ -45,14 +44,25 @@ export default function ManageConsultoresDialog({
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch all consultores
-      const { data: consultoresData, error: consultoresError } = await supabase.functions.invoke('list-users');
+      // Fetch consultor IDs from user_roles
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'consultor');
+      if (rolesError) throw rolesError;
 
-      if (consultoresError) throw consultoresError;
-      if (consultoresData?.error) throw new Error(consultoresData.error);
+      const ids = roles?.map(r => r.user_id) || [];
 
-      const consultoresList = consultoresData?.users?.filter((u: any) => u.role === 'consultor') || [];
-      
+      // Fetch their profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, nombre_completo')
+        .in('id', ids.length > 0 ? ids : [''])
+        .order('nombre_completo');
+      if (profilesError) throw profilesError;
+
+      const consultoresList = profilesData?.map(p => ({ id: p.id, nombre_completo: p.nombre_completo })) || [];
+
       // Fetch assigned consultores for this empresa
       const { data: asignacionesData, error: asignacionesError } = await supabase
         .from('consultor_empresa_asignacion')
@@ -66,7 +76,6 @@ export default function ManageConsultoresDialog({
         return {
           id: a.consultor_id,
           nombre_completo: consultor?.nombre_completo || 'Desconocido',
-          email: consultor?.email || '',
           asignado_por: a.asignado_por,
           created_at: a.created_at,
         };
@@ -178,7 +187,7 @@ export default function ManageConsultoresDialog({
                     ) : (
                       consultores.map((consultor) => (
                         <SelectItem key={consultor.id} value={consultor.id}>
-                          {consultor.nombre_completo} ({consultor.email})
+                          {consultor.nombre_completo}
                         </SelectItem>
                       ))
                     )}
@@ -220,7 +229,6 @@ export default function ManageConsultoresDialog({
                     >
                       <div className="flex-1">
                         <p className="font-heading font-medium">{consultor.nombre_completo}</p>
-                        <p className="text-sm text-muted-foreground font-body">{consultor.email}</p>
                         <Badge variant="outline" className="mt-1">
                           Asignado: {new Date(consultor.created_at).toLocaleDateString('es-MX')}
                         </Badge>
