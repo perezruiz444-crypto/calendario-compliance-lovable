@@ -9,14 +9,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { differenceInDays, isPast, format } from 'date-fns';
-import { 
-  Plus, Upload, Trash2, Pencil, Search, 
-  Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, BookOpen, FileDown,
+import {
+  Plus, Trash2, Pencil, Search,
+  Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, FileDown,
   Zap, User, Users, ToggleLeft, ToggleRight, RefreshCw
 } from 'lucide-react';
 import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormDialog';
-import { BulkImportDialog, type ParsedRow } from './BulkImportDialog';
-import { CatalogoObligacionesDialog } from './CatalogoObligacionesDialog';
 import { generateObligacionesPDF } from '@/lib/pdfGenerator';
 import * as XLSX from 'xlsx';
 import {
@@ -54,8 +52,6 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const [search, setSearch] = useState('');
   const [filterCategoria, setFilterCategoria] = useState('all');
   const [formOpen, setFormOpen] = useState(false);
-  const [bulkOpen, setBulkOpen] = useState(false);
-  const [catalogOpen, setCatalogOpen] = useState(false);
   const [editData, setEditData] = useState<ObligacionFormData | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filterResponsable, setFilterResponsable] = useState('all');
@@ -266,61 +262,6 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
     fetchObligaciones();
   };
 
-  const handleBulkImport = async (rows: ParsedRow[], saveToCatalog: boolean) => {
-    setSaving(true);
-
-    const inserts = rows.map(r => ({
-      empresa_id: empresaId,
-      categoria: programaToCategoria(r.programa),
-      nombre: r.nombre,
-      descripcion: r.descripcion || null,
-      articulos: r.articulos || null,
-      presentacion: r.presentacion || null,
-      estado: 'vigente',
-    }));
-
-    const { error } = await supabase.from('obligaciones').insert(inserts);
-    if (error) { toast.error('Error en importación masiva'); console.error(error); setSaving(false); return; }
-
-    if (saveToCatalog) {
-      const catalogInserts = rows.map(r => ({
-        programa: r.programa,
-        nombre: r.nombre,
-        articulos: r.articulos || null,
-        descripcion: r.descripcion || null,
-        presentacion: r.presentacion || null,
-      }));
-      await supabase.from('obligaciones_catalogo').insert(catalogInserts);
-    }
-
-    setSaving(false);
-    toast.success(`${rows.length} obligaciones importadas`);
-    setBulkOpen(false);
-    fetchObligaciones();
-  };
-
-  const handleAssignFromCatalog = async (catalogItems: any[]) => {
-    if (catalogItems.length === 0) return;
-    setSaving(true);
-
-    const inserts = catalogItems.map(item => ({
-      empresa_id: empresaId,
-      categoria: programaToCategoria(item.programa),
-      nombre: item.nombre,
-      descripcion: item.descripcion || null,
-      articulos: item.articulos || null,
-      presentacion: item.presentacion || null,
-      estado: 'vigente',
-      activa: true,
-    }));
-    const { error } = await supabase.from('obligaciones').insert(inserts);
-    setSaving(false);
-    if (error) { toast.error('Error al asignar obligaciones'); return; }
-    toast.success(`${catalogItems.length} obligaciones asignadas desde catálogo`);
-    setCatalogOpen(false);
-    fetchObligaciones();
-  };
-
   const openEdit = (ob: any) => {
     setEditData({
       id: ob.id, categoria: ob.categoria, nombre: ob.nombre,
@@ -465,17 +406,9 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
             </div>
           )}
           {canEdit && (
-            <>
-              <Button size="sm" variant="outline" onClick={() => setCatalogOpen(true)}>
-                <BookOpen className="w-4 h-4 mr-1" />Catálogo
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}>
-                <Upload className="w-4 h-4 mr-1" />Masivo
-              </Button>
-              <Button size="sm" onClick={() => { setEditData(null); setFormOpen(true); }}>
-                <Plus className="w-4 h-4 mr-1" />Nueva
-              </Button>
-            </>
+            <Button size="sm" onClick={() => { setEditData(null); setFormOpen(true); }}>
+              <Plus className="w-4 h-4 mr-1" />Nueva
+            </Button>
           )}
         </div>
       </CardHeader>
@@ -489,9 +422,7 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
             <p className="text-muted-foreground">{obligaciones.length === 0 ? 'Sin obligaciones registradas' : 'Sin resultados para el filtro'}</p>
             {canEdit && obligaciones.length === 0 && (
               <div className="flex justify-center gap-2 mt-4">
-                <Button size="sm" variant="outline" onClick={() => setCatalogOpen(true)}><BookOpen className="w-4 h-4 mr-1" />Desde Catálogo</Button>
-                <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}><Upload className="w-4 h-4 mr-1" />Importar</Button>
-                <Button size="sm" onClick={() => { setEditData(null); setFormOpen(true); }}><Plus className="w-4 h-4 mr-1" />Agregar</Button>
+                <Button size="sm" onClick={() => { setEditData(null); setFormOpen(true); }}><Plus className="w-4 h-4 mr-1" />Agregar manualmente</Button>
               </div>
             )}
           </div>
@@ -628,16 +559,6 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
         onOpenChange={(v) => { setFormOpen(v); if (!v) setEditData(null); }}
         onSubmit={editData?.id ? handleUpdate : handleCreate}
         initialData={editData}
-        loading={saving}
-        empresaId={empresaId}
-      />
-
-      <BulkImportDialog open={bulkOpen} onOpenChange={setBulkOpen} onImport={handleBulkImport} loading={saving} />
-
-     <CatalogoObligacionesDialog
-        open={catalogOpen}
-        onOpenChange={setCatalogOpen}
-        onAssign={handleAssignFromCatalog}
         loading={saving}
         empresaId={empresaId}
       />
