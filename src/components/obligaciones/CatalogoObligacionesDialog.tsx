@@ -7,7 +7,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { BookOpen, Search, Trash2, Plus } from 'lucide-react';
+import { BookOpen, Search } from 'lucide-react';
+import { PROGRAMA_LABELS } from '@/lib/obligaciones';
 
 interface Props {
   open: boolean;
@@ -30,7 +31,10 @@ export function CatalogoObligacionesDialog({ open, onOpenChange, onAssign, loadi
     const { data, error } = await supabase
       .from('obligaciones_catalogo')
       .select('*')
-      .order('programa', { ascending: true });
+      .eq('activo', true)
+      .order('programa', { ascending: true })
+      .order('orden', { ascending: true })
+      .order('nombre', { ascending: true });
     if (error) { toast.error('Error al cargar catálogo'); console.error(error); }
     else setCatalogo(data || []);
     setLoadingCatalog(false);
@@ -134,7 +138,7 @@ export function CatalogoObligacionesDialog({ open, onOpenChange, onAssign, loadi
                       <td className="p-2" onClick={e => e.stopPropagation()}>
                         <Checkbox checked={selected.has(item.id)} onCheckedChange={() => toggleSelect(item.id)} />
                       </td>
-                      <td className="p-2"><Badge variant="outline" className="text-xs">{item.programa}</Badge></td>
+                      <td className="p-2"><Badge variant="outline" className="text-xs">{PROGRAMA_LABELS[item.programa] ?? item.programa}</Badge></td>
                     <td className="p-2 font-medium">
                         <div className="flex items-center gap-2">
                           {item.nombre}
@@ -147,13 +151,7 @@ export function CatalogoObligacionesDialog({ open, onOpenChange, onAssign, loadi
                       </td>
                       <td className="p-2 hidden md:table-cell text-muted-foreground">{item.articulos || '-'}</td>
                       <td className="p-2 hidden md:table-cell text-muted-foreground">{item.presentacion || '-'}</td>
-                     <td className="p-2" onClick={e => e.stopPropagation()}>
-                        {role === 'administrador' && (
-                          <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => handleDelete(item.id)}>
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </td>
+                      <td className="p-2"></td>
                    </tr>
                     );
                   })}
