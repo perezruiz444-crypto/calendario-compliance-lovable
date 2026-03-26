@@ -63,19 +63,26 @@ Deno.serve(async (req) => {
       rolesMap.set(ur.user_id, ur.role)
     })
 
-    // Get auth users to fetch emails and combine with roles
-    const usersWithEmails = await Promise.all(
-      profiles.map(async (profile) => {
-        const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(profile.id)
-        return {
-          id: profile.id,
-          email: authUser?.email || 'N/A',
-          nombre_completo: profile.nombre_completo,
-          role: rolesMap.get(profile.id) || 'sin rol',
-          created_at: profile.created_at
-        }
+    // Get all auth users in one call instead of N individual getUserById calls
+    const { data: { users: authUsers }, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers({
+      perPage: 1000,
+    })
+    if (authUsersError) {
+      console.error('Error fetching auth users:', authUsersError)
+      return new Response(JSON.stringify({ error: 'Failed to retrieve user list.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
-    )
+    }
+    const emailMap = new Map(authUsers.map(u => [u.id, u.email]))
+
+    const usersWithEmails = profiles.map((profile) => ({
+      id: profile.id,
+      email: emailMap.get(profile.id) || 'N/A',
+      nombre_completo: profile.nombre_completo,
+      role: rolesMap.get(profile.id) || 'sin rol',
+      created_at: profile.created_at,
+    }))
 
     return new Response(JSON.stringify({ users: usersWithEmails }), {
       status: 200,
