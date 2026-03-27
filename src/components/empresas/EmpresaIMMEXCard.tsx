@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,16 @@ export function EmpresaIMMEXCard({ empresa, canEdit, onUpdate }: EmpresaIMMEXCar
     immex_modalidad: empresa.immex_modalidad || empresa.immex_tipo || '',
     immex_fecha_autorizacion: empresa.immex_fecha_autorizacion || empresa.immex_fecha_inicio || ''
   });
+
+  useEffect(() => {
+    if (!isEditing) {
+      setFormData({
+        immex_numero: empresa.immex_numero || '',
+        immex_modalidad: empresa.immex_modalidad || empresa.immex_tipo || '',
+        immex_fecha_autorizacion: empresa.immex_fecha_autorizacion || empresa.immex_fecha_inicio || ''
+      });
+    }
+  }, [empresa]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -123,7 +133,7 @@ export function EmpresaIMMEXCard({ empresa, canEdit, onUpdate }: EmpresaIMMEXCar
               />
             </div>
           </div>
-        ) : empresa.immex_numero ? (
+        ) : (empresa.immex_numero || empresa.immex_fecha_autorizacion || empresa.immex_fecha_inicio || empresa.immex_modalidad) ? (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,19 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
     prosec_sectores: Array.isArray(empresa.prosec_sectores) ? empresa.prosec_sectores : [],
   });
   const [newSector, setNewSector] = useState('');
+
+  useEffect(() => {
+    if (!isEditing) {
+      setFormData({
+        prosec_numero: empresa.prosec_numero || '',
+        prosec_modalidad: empresa.prosec_modalidad || '',
+        prosec_fecha_autorizacion: empresa.prosec_fecha_autorizacion || '',
+        prosec_fecha_ultima_renovacion: empresa.prosec_fecha_ultima_renovacion || '',
+        prosec_fecha_siguiente_renovacion: empresa.prosec_fecha_siguiente_renovacion || '',
+        prosec_sectores: Array.isArray(empresa.prosec_sectores) ? empresa.prosec_sectores : [],
+      });
+    }
+  }, [empresa]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -178,7 +191,7 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
               </div>
             </div>
           </div>
-        ) : empresa.prosec_numero ? (
+        ) : (empresa.prosec_numero || empresa.prosec_fecha_autorizacion || empresa.prosec_fecha_siguiente_renovacion) ? (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>

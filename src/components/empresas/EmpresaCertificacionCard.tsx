@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,19 @@ export function EmpresaCertificacionCard({ empresa, canEdit, onUpdate }: Empresa
     cert_iva_ieps_fecha_renovar: empresa.cert_iva_ieps_fecha_renovar || '',
     cert_iva_ieps_nota: empresa.cert_iva_ieps_nota || ''
   });
+
+  useEffect(() => {
+    if (!isEditing) {
+      setFormData({
+        cert_iva_ieps_oficio: empresa.cert_iva_ieps_oficio || '',
+        cert_iva_ieps_fecha_autorizacion: empresa.cert_iva_ieps_fecha_autorizacion || '',
+        cert_iva_ieps_fecha_ultima_renovacion: empresa.cert_iva_ieps_fecha_ultima_renovacion || '',
+        cert_iva_ieps_fecha_vencimiento: empresa.cert_iva_ieps_fecha_vencimiento || '',
+        cert_iva_ieps_fecha_renovar: empresa.cert_iva_ieps_fecha_renovar || '',
+        cert_iva_ieps_nota: empresa.cert_iva_ieps_nota || ''
+      });
+    }
+  }, [empresa]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -150,7 +163,7 @@ export function EmpresaCertificacionCard({ empresa, canEdit, onUpdate }: Empresa
               />
             </div>
           </div>
-        ) : empresa.cert_iva_ieps_oficio ? (
+        ) : (empresa.cert_iva_ieps_oficio || empresa.cert_iva_ieps_fecha_autorizacion || empresa.cert_iva_ieps_fecha_vencimiento || empresa.cert_iva_ieps_fecha_renovar) ? (
           <div className="space-y-4">
             <div>
               <label className="text-sm font-heading font-medium text-muted-foreground">Oficio de Autorización</label>
