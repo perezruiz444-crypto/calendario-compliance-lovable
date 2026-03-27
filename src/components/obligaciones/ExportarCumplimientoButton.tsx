@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import { getCurrentPeriodKey, getPeriodLabel, CATEGORIA_LABELS, formatDateShort } from '@/lib/obligaciones';
 
 interface Obligacion {
