@@ -99,7 +99,7 @@ export function useNotifications() {
   const permission = pushNotifications?.permission || 'default';
 
   const fetchNotifications = useCallback(async () => {
-    if (!user) return;
+    if (!user?.id) return;
     try {
       const { data, error } = await (supabase as any)
         .from('notificaciones')
@@ -116,7 +116,7 @@ export function useNotifications() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) {
@@ -162,7 +162,7 @@ export function useNotifications() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user?.id]);
 
   const markAsRead = async (notificationId: string) => {
     try {

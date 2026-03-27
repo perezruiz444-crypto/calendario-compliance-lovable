@@ -20,7 +20,14 @@ import Reportes from "./pages/Reportes";
 import NotFound from "./pages/NotFound";
 import Configuraciones from "./pages/Configuraciones";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

@@ -26,6 +26,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // TOKEN_REFRESHED: the Supabase client already updated the token internally.
+        // No need to update React state — prevents unnecessary re-renders and re-fetches
+        // triggered every time the WebSocket reconnects (e.g. switching apps/tabs).
+        if (event === 'TOKEN_REFRESHED') return;
+
         // Don't interfere with password recovery or invite flows
         if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
           setSession(session);
