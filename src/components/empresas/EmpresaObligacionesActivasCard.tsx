@@ -20,6 +20,7 @@ import {
 interface Props {
   empresaId: string;
   canEdit: boolean;
+  refreshTrigger?: number;
 }
 
 interface Obligacion {
@@ -42,7 +43,7 @@ interface Obligacion {
   responsable_tipo: string | null;
 }
 
-export function EmpresaObligacionesActivasCard({ empresaId, canEdit }: Props) {
+export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrigger }: Props) {
   const { user } = useAuth();
   const [obligaciones, setObligaciones] = useState<Obligacion[]>([]);
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
@@ -91,19 +92,7 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit }: Props) {
     }
   };
 
-  useEffect(() => { fetchData(); }, [empresaId]);
-
-  // Auto-refresh when obligations change (e.g. when ObligacionesManager creates/updates one)
-  useEffect(() => {
-    const channel = supabase
-      .channel(`obligaciones-activas-card-${empresaId}`)
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'obligaciones', filter: `empresa_id=eq.${empresaId}` },
-        () => fetchData()
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [empresaId]);
+  useEffect(() => { fetchData(); }, [empresaId, refreshTrigger]);
 
   const toggleCumplimiento = async (obl: Obligacion) => {
     if (!user) return;
