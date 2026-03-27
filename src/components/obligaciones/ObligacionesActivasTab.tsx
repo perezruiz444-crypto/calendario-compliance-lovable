@@ -22,18 +22,6 @@ export function ObligacionesActivasTab() {
     fetchObligaciones();
   }, []);
 
-  // Auto-refresh when any obligation changes
-  useEffect(() => {
-    const channel = supabase
-      .channel('obligaciones-activas-tab-global')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'obligaciones' },
-        () => fetchObligaciones()
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
   const fetchObligaciones = async () => {
     setLoading(true);
     const { data, error } = await supabase

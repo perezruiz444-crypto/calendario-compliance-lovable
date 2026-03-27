@@ -21,12 +21,13 @@ interface CatalogoItem {
 interface Props {
   empresaId: string;
   canEdit: boolean;
+  onActivated?: () => void;
 }
 
 const FALLBACK_COLOR = 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300';
 const ORDEN_PROGRAMAS = Object.keys(PROGRAMA_LABELS);
 
-export function CatalogoActivacionSection({ empresaId, canEdit }: Props) {
+export function CatalogoActivacionSection({ empresaId, canEdit, onActivated }: Props) {
   const [catalogo, setCatalogo]           = useState<CatalogoItem[]>([]);
   const [activadasIds, setActivadasIds]   = useState<Set<string>>(new Set());
   const [activadasNombres, setActivadasNombres] = useState<Set<string>>(new Set());
@@ -233,7 +234,7 @@ export function CatalogoActivacionSection({ empresaId, canEdit }: Props) {
         onOpenChange={setDialogOpen}
         item={activarItem}
         empresaId={empresaId}
-        onActivated={fetchData}
+        onActivated={() => { fetchData(); onActivated?.(); }}
       />
     </>
   );

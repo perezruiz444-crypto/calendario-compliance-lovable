@@ -142,6 +142,7 @@ export default function EmpresaDetail() {
   const [createTareaSheetOpen, setCreateTareaSheetOpen] = useState(false);
   const [detailTareaSheetOpen, setDetailTareaSheetOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
+  const [obligRefreshKey, setObligRefreshKey] = useState(0);
 
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -565,9 +566,9 @@ export default function EmpresaDetail() {
           </TabsList>
 
           <TabsContent value="obligaciones" className="space-y-5">
-            <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} />
+            <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} refreshTrigger={obligRefreshKey} />
             <EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
-            <CatalogoActivacionSection empresaId={id!} canEdit={canEdit} />
+            <CatalogoActivacionSection empresaId={id!} canEdit={canEdit} onActivated={() => setObligRefreshKey(k => k + 1)} />
             <ObligacionesManager empresaId={id!} canEdit={canEdit} />
           </TabsContent>
 
