@@ -73,18 +73,23 @@ export default function Auth() {
   // Render the hCaptcha widget once the script is ready
   useEffect(() => {
     if (!captchaReady || !captchaContainerRef.current || widgetIdRef.current !== null) return;
+    if (!window.hcaptcha) return; // guard: script may not have loaded
 
-    widgetIdRef.current = window.hcaptcha.render(captchaContainerRef.current, {
-      sitekey: HCAPTCHA_SITE_KEY,
-      size: 'invisible',
-      callback: (token: string) => setCaptchaToken(token),
-      'expired-callback': () => setCaptchaToken(null),
-      'error-callback': () => setCaptchaToken(null),
-    });
+    try {
+      widgetIdRef.current = window.hcaptcha.render(captchaContainerRef.current, {
+        sitekey: HCAPTCHA_SITE_KEY,
+        size: 'invisible',
+        callback: (token: string) => setCaptchaToken(token),
+        'expired-callback': () => setCaptchaToken(null),
+        'error-callback': () => setCaptchaToken(null),
+      });
+    } catch (e) {
+      console.warn('[hCaptcha] widget render failed:', e);
+    }
   }, [captchaReady]);
 
   const resetCaptcha = useCallback(() => {
-    if (widgetIdRef.current !== null) {
+    if (widgetIdRef.current !== null && window.hcaptcha) {
       window.hcaptcha.reset(widgetIdRef.current);
       setCaptchaToken(null);
     }
@@ -113,13 +118,13 @@ export default function Auth() {
 
       // Execute hCaptcha challenge (invisible — fires silently for real users)
       let token = captchaToken;
-      if (!token && widgetIdRef.current !== null) {
+      if (!token && widgetIdRef.current !== null && window.hcaptcha) {
         window.hcaptcha.execute(widgetIdRef.current);
         // Wait up to 5s for the token callback
         token = await new Promise<string | null>((resolve) => {
           let waited = 0;
           const check = setInterval(() => {
-            const t = widgetIdRef.current !== null
+            const t = widgetIdRef.current !== null && window.hcaptcha
               ? window.hcaptcha.getResponse(widgetIdRef.current)
               : '';
             waited += 200;
