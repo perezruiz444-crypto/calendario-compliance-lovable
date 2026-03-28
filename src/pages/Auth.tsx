@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { Building2, Lock, Mail, ArrowRight, Shield, Bell, BarChart3 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Building2, Lock, Mail, ArrowRight, Shield, Bell, BarChart3, AlertTriangle } from 'lucide-react';
 import { z } from 'zod';
+
+const HCAPTCHA_SITE_KEY = 'fa84f1de-88ac-4e62-af62-66ea2b848972';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido').max(255),
@@ -14,29 +17,129 @@ const loginSchema = z.object({
 });
 
 const FEATURES = [
-  { icon: Bell,     text: 'Alertas automáticas de vencimientos' },
-  { icon: Shield,   text: 'Control de obligaciones IMMEX, PROSEC, IVA/IEPS' },
+  { icon: Bell,      text: 'Alertas automáticas de vencimientos' },
+  { icon: Shield,    text: 'Control de obligaciones IMMEX, PROSEC, IVA/IEPS' },
   { icon: BarChart3, text: 'Reportes de cumplimiento exportables' },
 ];
 
+// hCaptcha widget ID stored globally so we can reset it between attempts
+declare global {
+  interface Window {
+    hcaptcha: {
+      render: (container: string | HTMLElement, params: object) => string;
+      execute: (widgetId: string) => void;
+      getResponse: (widgetId: string) => string;
+      reset: (widgetId: string) => void;
+    };
+    onHcaptchaLoad: () => void;
+  }
+}
+
 export default function Auth() {
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading]   = useState(false);
-  const { signIn, user }        = useAuth();
-  const navigate                = useNavigate();
+  const [email, setEmail]             = useState('');
+  const [password, setPassword]       = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [blocked, setBlocked]         = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaReady, setCaptchaReady] = useState(false);
+  const captchaContainerRef           = useRef<HTMLDivElement>(null);
+  const widgetIdRef                   = useRef<string | null>(null);
+  const { signIn, user }              = useAuth();
+  const navigate                      = useNavigate();
 
   useEffect(() => { if (user) navigate('/dashboard'); }, [user, navigate]);
 
+  // Load hCaptcha script once
+  useEffect(() => {
+    if (document.getElementById('hcaptcha-script')) {
+      setCaptchaReady(true);
+      return;
+    }
+
+    window.onHcaptchaLoad = () => setCaptchaReady(true);
+
+    const script = document.createElement('script');
+    script.id = 'hcaptcha-script';
+    script.src = 'https://js.hcaptcha.com/1/api.js?onload=onHcaptchaLoad&render=explicit';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    return () => {
+      // Don't remove the script on unmount — it may still be needed
+    };
+  }, []);
+
+  // Render the hCaptcha widget once the script is ready
+  useEffect(() => {
+    if (!captchaReady || !captchaContainerRef.current || widgetIdRef.current !== null) return;
+
+    widgetIdRef.current = window.hcaptcha.render(captchaContainerRef.current, {
+      sitekey: HCAPTCHA_SITE_KEY,
+      size: 'invisible',
+      callback: (token: string) => setCaptchaToken(token),
+      'expired-callback': () => setCaptchaToken(null),
+      'error-callback': () => setCaptchaToken(null),
+    });
+  }, [captchaReady]);
+
+  const resetCaptcha = useCallback(() => {
+    if (widgetIdRef.current !== null) {
+      window.hcaptcha.reset(widgetIdRef.current);
+      setCaptchaToken(null);
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (blocked) return;
+
     setLoading(true);
     try {
       const validated = loginSchema.parse({ email, password });
-      const { error } = await signIn(validated.email, validated.password);
+
+      // Check rate limiting before attempting sign-in
+      const { data: isBlocked } = await supabase.rpc('is_login_blocked', {
+        p_email: validated.email,
+        p_ip: null,
+      });
+
+      if (isBlocked) {
+        setBlocked(true);
+        toast.error('Demasiados intentos fallidos. Espera 15 minutos antes de intentar de nuevo.');
+        setLoading(false);
+        return;
+      }
+
+      // Execute hCaptcha challenge (invisible — fires silently for real users)
+      let token = captchaToken;
+      if (!token && widgetIdRef.current !== null) {
+        window.hcaptcha.execute(widgetIdRef.current);
+        // Wait up to 5s for the token callback
+        token = await new Promise<string | null>((resolve) => {
+          let waited = 0;
+          const check = setInterval(() => {
+            const t = widgetIdRef.current !== null
+              ? window.hcaptcha.getResponse(widgetIdRef.current)
+              : '';
+            waited += 200;
+            if (t) { clearInterval(check); resolve(t); }
+            else if (waited >= 5000) { clearInterval(check); resolve(null); }
+          }, 200);
+        });
+      }
+
+      const { error } = await signIn(validated.email, validated.password, token ?? undefined);
+
       if (error) {
-        toast.error(error.message.includes('Invalid login credentials')
-          ? 'Credenciales incorrectas' : error.message);
+        resetCaptcha();
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Credenciales incorrectas');
+        } else if (error.message.toLowerCase().includes('captcha')) {
+          toast.error('Verificación de seguridad fallida. Intenta de nuevo.');
+        } else {
+          toast.error(error.message);
+        }
       } else {
         toast.success('Bienvenido');
       }
@@ -55,7 +158,6 @@ export default function Auth() {
       <div className="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-12"
         style={{ background: 'hsl(var(--primary))' }}>
 
-        {/* Background decoration */}
         <div className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 80%, white 0%, transparent 50%), radial-gradient(circle at 80% 20%, white 0%, transparent 50%)' }} />
         <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full opacity-5"
@@ -63,7 +165,6 @@ export default function Auth() {
         <div className="absolute top-0 left-0 w-48 h-48 rounded-full opacity-5"
           style={{ background: 'white', transform: 'translate(-30%, -30%)' }} />
 
-        {/* Logo */}
         <div className="relative">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center border border-white/20">
@@ -75,7 +176,6 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Hero text */}
         <div className="relative space-y-6">
           <div>
             <h1 className="text-4xl font-bold text-white leading-tight font-heading">
@@ -99,7 +199,6 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Bottom */}
         <div className="relative">
           <p className="text-white/30 text-xs">© {new Date().getFullYear()} Calendario Compliance</p>
         </div>
@@ -122,6 +221,17 @@ export default function Auth() {
             <p className="text-sm text-muted-foreground">Ingresa tus credenciales para continuar</p>
           </div>
 
+          {/* Rate-limit block message */}
+          {blocked && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+              <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+              <p className="text-xs text-destructive leading-relaxed">
+                Cuenta bloqueada temporalmente por demasiados intentos fallidos.
+                Intenta de nuevo en 15 minutos.
+              </p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -138,6 +248,7 @@ export default function Auth() {
                   required
                   maxLength={255}
                   className="pl-9"
+                  disabled={blocked}
                 />
               </div>
             </div>
@@ -158,13 +269,17 @@ export default function Auth() {
                   minLength={8}
                   maxLength={100}
                   className="pl-9"
+                  disabled={blocked}
                 />
               </div>
             </div>
 
+            {/* Invisible hCaptcha widget */}
+            <div ref={captchaContainerRef} />
+
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || blocked}
               className="w-full gap-2 h-11 text-sm font-semibold"
               style={{ background: 'hsl(var(--primary))' }}
             >
