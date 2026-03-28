@@ -1,10 +1,15 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
 import { corsHeaders } from '../_shared/cors.ts'
+import { enforceRateLimit, getClientIp } from '../_shared/rateLimiter.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
+
+  // Rate limit: max 10 user-creation requests per IP per minute
+  const rateLimitRes = await enforceRateLimit(getClientIp(req), 'create_user', 10, 60)
+  if (rateLimitRes) return rateLimitRes
 
   try {
     const supabaseAdmin = createClient(

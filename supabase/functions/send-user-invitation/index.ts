@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
 import { corsHeaders } from '../_shared/cors.ts';
 import { sendEmail } from '../_shared/smtp.ts';
 import { userInvitationTemplate } from '../_shared/email-templates.ts';
+import { enforceRateLimit, getClientIp } from '../_shared/rateLimiter.ts';
 
 interface InvitationRequest {
   email: string;
@@ -16,6 +17,10 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Rate limit: max 5 invitations per IP per minute
+  const rateLimitRes = await enforceRateLimit(getClientIp(req), 'send_invitation', 5, 60)
+  if (rateLimitRes) return rateLimitRes
 
   try {
     const authHeader = req.headers.get('Authorization');

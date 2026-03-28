@@ -9,7 +9,7 @@ interface AuthContextType {
   session: Session | null;
   role: UserRole | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string, captchaToken?: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, nombreCompleto: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -122,11 +122,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, captchaToken?: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options: captchaToken ? { captchaToken } : undefined,
     });
+
+    // Log attempt for rate limiting (fire-and-forget, SECURITY DEFINER RPC)
+    supabase.rpc('record_login_attempt', {
+      p_email: email,
+      p_ip: null,
+      p_success: !error,
+    }).then(() => {});
+
     return { error };
   };
 
