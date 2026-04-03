@@ -41,7 +41,7 @@ const Index = () => {
         <h1 className="text-3xl font-heading font-bold text-foreground mb-1">
           Calendario Compliance
         </h1>
-        <p className="text-muted-foreground font-body mb-8">Russell Bedford</p>
+        <p className="text-muted-foreground font-body mb-8">Calendario Compliance</p>
         <Button
           size="lg"
           onClick={() => navigate('/auth')}
