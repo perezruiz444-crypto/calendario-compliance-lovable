@@ -1359,7 +1359,7 @@ export default function Tareas() {
         </div>
       </div>
 
-      <CreateTareaSheet 
+      <CreateTareaSheet
         open={dialogOpen} 
         onOpenChange={handleDialogClose}
         onTareaCreated={fetchTareas}
