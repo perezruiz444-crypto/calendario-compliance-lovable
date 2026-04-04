@@ -1,17 +1,22 @@
 project_id = "svozqrjhwaohfmbkhpig"
 
+# User management — require valid JWT pre-flight (Supabase rejects unauthenticated calls)
 [functions.create-user]
-verify_jwt = false
+verify_jwt = true
 
 [functions.delete-user]
-verify_jwt = false
+verify_jwt = true
 
 [functions.list-users]
-verify_jwt = false
+verify_jwt = true
 
 [functions.update-user]
-verify_jwt = false
+verify_jwt = true
 
+[functions.send-user-invitation]
+verify_jwt = true
+
+# Cron / notification functions — auth via x-cron-secret or internal service calls
 [functions.send-daily-summary]
 verify_jwt = false
 
@@ -22,9 +27,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-test-email]
-verify_jwt = false
-
-[functions.send-user-invitation]
 verify_jwt = false
 
 [functions.send-message-notification]

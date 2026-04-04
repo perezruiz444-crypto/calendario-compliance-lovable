@@ -26,7 +26,25 @@ export function FileAttachments({ tareaId, attachments, onAttachmentsChange, rea
     try {
       const uploadedFiles = [];
 
+      const ALLOWED_MIME = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'text/plain',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ];
+
       for (const file of Array.from(files)) {
+        // Validate MIME type
+        if (!ALLOWED_MIME.includes(file.type)) {
+          toast.error(`Tipo de archivo no permitido: ${file.name}`);
+          continue;
+        }
+
         // Validate file size (10MB max)
         if (file.size > 10 * 1024 * 1024) {
           toast.error(`El archivo ${file.name} excede el límite de 10MB`);

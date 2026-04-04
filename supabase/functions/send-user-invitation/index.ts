@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
 import { corsHeaders } from '../_shared/cors.ts';
 import { sendEmail } from '../_shared/smtp.ts';
 import { userInvitationTemplate } from '../_shared/email-templates.ts';
+import { enforceRateLimit, getClientIp } from '../_shared/rateLimiter.ts';
 
 interface InvitationRequest {
   email: string;
@@ -16,6 +17,10 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Rate limit: max 5 invitations per IP per minute
+  const rateLimitRes = await enforceRateLimit(getClientIp(req), 'send_invitation', 5, 60)
+  if (rateLimitRes) return rateLimitRes
 
   try {
     const authHeader = req.headers.get('Authorization');
@@ -34,15 +39,26 @@ serve(async (req: Request) => {
       throw new Error('Unauthorized');
     }
 
-    const { email, role, nombreCompleto, empresaId }: InvitationRequest = await req.json();
-
-    console.log('Creating invitation for:', email);
-
-    // Create admin client with service role key
+    // Only administrators can send invitations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+    const { data: callerRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (callerRole?.role !== 'administrador') {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { email, role, nombreCompleto, empresaId }: InvitationRequest = await req.json();
+
+    console.log('Creating invitation for:', email);
 
     // Check if user already exists
     const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
@@ -190,10 +206,15 @@ serve(async (req: Request) => {
     );
   } catch (error: any) {
     console.error('Error in send-user-invitation function:', error);
+    // Expose only known safe business errors to the client
+    const safeMessages = ['Unauthorized', 'Ya existe un usuario con este email'];
+    const clientMessage = safeMessages.includes(error.message)
+      ? error.message
+      : 'Error interno del servidor';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: clientMessage }),
       {
-        status: 500,
+        status: error.message === 'Unauthorized' ? 401 : 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );

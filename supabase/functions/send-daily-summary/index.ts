@@ -8,15 +8,11 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Proteger endpoint — solo cron autorizado o service role
-  const authHeader = req.headers.get('Authorization') ?? '';
+  // Proteger endpoint — solo cron con CRON_SECRET
   const cronSecret = Deno.env.get('CRON_SECRET') ?? '';
   const reqCronSecret = req.headers.get('x-cron-secret') ?? '';
 
-  const isServiceRole = authHeader.includes('service_role');
-  const isCron = cronSecret.length > 0 && reqCronSecret === cronSecret;
-
-  if (!isServiceRole && !isCron) {
+  if (!cronSecret || reqCronSecret !== cronSecret) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -99,38 +95,54 @@ Deno.serve(async (req) => {
         let renovacionesProximas: { empresa: string; programa: string; fecha: string; diasRestantes: number }[] = []
 
         if (role === 'administrador' || role === 'consultor') {
-          // Todas las obligaciones activas
-          const { data: obsVencidas } = await supabaseAdmin
+          // Para consultores: solo empresas asignadas. Para admins: todas.
+          let empresaIdFilter: string[] | null = null
+          if (role === 'consultor') {
+            const { data: asignaciones } = await supabaseAdmin
+              .from('consultor_empresa_asignacion')
+              .select('empresa_id')
+              .eq('consultor_id', profile.id)
+            empresaIdFilter = (asignaciones || []).map((a: any) => a.empresa_id)
+            if (empresaIdFilter.length === 0) {
+              // Consultor sin empresas asignadas — no hay nada que reportar
+              continue
+            }
+          }
+
+          const buildObligQuery = (query: any) =>
+            empresaIdFilter ? query.in('empresa_id', empresaIdFilter) : query
+
+          const { data: obsVencidas } = await buildObligQuery(supabaseAdmin
             .from('obligaciones')
             .select('nombre, fecha_vencimiento, categoria, empresas(razon_social)')
             .eq('activa', true)
             .lt('fecha_vencimiento', today)
             .order('fecha_vencimiento', { ascending: true })
-            .limit(10)
+            .limit(10))
           obligacionesVencidas = obsVencidas || []
 
-          const { data: obsSemana } = await supabaseAdmin
+          const { data: obsSemana } = await buildObligQuery(supabaseAdmin
             .from('obligaciones')
             .select('nombre, fecha_vencimiento, categoria, empresas(razon_social)')
             .eq('activa', true)
             .gte('fecha_vencimiento', today)
             .lte('fecha_vencimiento', next7Days)
             .order('fecha_vencimiento', { ascending: true })
-            .limit(10)
+            .limit(10))
           obligacionesSemana = obsSemana || []
 
-          const { data: obsMes } = await supabaseAdmin
+          const { data: obsMes } = await buildObligQuery(supabaseAdmin
             .from('obligaciones')
             .select('nombre, fecha_vencimiento, categoria, empresas(razon_social)')
             .eq('activa', true)
             .gt('fecha_vencimiento', next7Days)
             .lte('fecha_vencimiento', next30Days)
             .order('fecha_vencimiento', { ascending: true })
-            .limit(10)
+            .limit(10))
           obligacionesMes = obsMes || []
 
           // Renovaciones de programas (usa fecha_renovar + configurable dias_antes)
-          const { data: empresas } = await supabaseAdmin
+          let empresasQuery = supabaseAdmin
             .from('empresas')
             .select(`
               razon_social,
@@ -144,6 +156,10 @@ Deno.serve(async (req) => {
               matriz_seguridad_fecha_vencimiento,
               matriz_seguridad_fecha_renovar
             `)
+          if (empresaIdFilter) {
+            empresasQuery = empresasQuery.in('id', empresaIdFilter)
+          }
+          const { data: empresas } = await empresasQuery
 
           for (const e of (empresas || [])) {
             // CERTIVA: prefer fecha_renovar, fallback to fecha_vencimiento
@@ -321,7 +337,8 @@ Deno.serve(async (req) => {
     })
 
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error in send-daily-summary:', error)
+    return new Response(JSON.stringify({ error: 'Error interno del servidor' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
