@@ -89,31 +89,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Use limit(1) instead of maybeSingle() to avoid 406 error when user has multiple roles
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .limit(1)
-        .maybeSingle();
+      // Use SECURITY DEFINER RPC to bypass RLS on user_roles.
+      // Direct queries to user_roles return HTTP 500 due to RLS policy recursion:
+      // has_role() queries user_roles → triggers RLS → calls has_role() again → stack overflow.
+      const { data, error } = await supabase.rpc('get_my_role');
 
       if (error) {
         console.error('Error fetching user role:', error);
-        // Don't sign out on query error — could be a transient network issue
         setRole(null);
         setLoading(false);
         return;
       }
 
-      if (!data?.role) {
-        // No role assigned yet — show "pending activation" screen instead of signing out
+      if (!data) {
         console.warn('User has no role assigned:', userId);
         setRole(null);
         setLoading(false);
         return;
       }
 
-      setRole(data.role as UserRole);
+      setRole(data as UserRole);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching user role:', error);
