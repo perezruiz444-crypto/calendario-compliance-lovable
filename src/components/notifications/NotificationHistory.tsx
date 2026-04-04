@@ -55,7 +55,7 @@ export function NotificationHistory() {
   const loadLogs = async () => {
     setLoading(true);
     try {
-      let query = (supabase as any)
+      const query = (supabase as any)
         .from('notification_logs')
         .select('*')
         .order('created_at', { ascending: false })

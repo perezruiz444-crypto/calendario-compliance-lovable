@@ -29,9 +29,9 @@ export default function Reportes() {
   const [selectedEstado, setSelectedEstado] = useState<string>('todos');
   const [tipoReporte, setTipoReporte] = useState<string>('general');
   
-  const [empresas, setEmpresas] = useState<any[]>([]);
-  const [consultores, setConsultores] = useState<any[]>([]);
-  const [categorias, setCategorias] = useState<any[]>([]);
+  const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
+  const [consultores, setConsultores] = useState<{ id: string; nombre_completo: string }[]>([]);
+  const [categorias, setCategorias] = useState<{ id: string; nombre: string }[]>([]);
   
   const [reporteData, setReporteData] = useState({
     tareasPorEstado: [] as any[],
@@ -724,12 +724,12 @@ export default function Reportes() {
                         title: "PDF generado", 
                         description: "El reporte PDF se ha descargado correctamente" 
                       });
-                    } catch (err: any) {
+                    } catch (err: unknown) {
                       console.error('Error generating PDF:', err);
-                      toast({ 
-                        title: "Error", 
-                        description: err.message, 
-                        variant: "destructive" 
+                      toast({
+                        title: "Error",
+                        description: err instanceof Error ? err.message : 'Error al generar PDF',
+                        variant: "destructive"
                       });
                     }
                   }}
@@ -755,11 +755,11 @@ export default function Reportes() {
                         title: "Reporte enviado", 
                         description: "El reporte ha sido enviado por email a los clientes" 
                       });
-                    } catch (err: any) {
-                      toast({ 
-                        title: "Error", 
-                        description: err.message, 
-                        variant: "destructive" 
+                    } catch (err: unknown) {
+                      toast({
+                        title: "Error",
+                        description: err instanceof Error ? err.message : 'Error al enviar reporte',
+                        variant: "destructive"
                       });
                     }
                   }}

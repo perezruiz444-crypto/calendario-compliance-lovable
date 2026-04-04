@@ -67,7 +67,7 @@ export default function EmpresaComplianceSemaforo() {
 
     const obs = obsData || [];
     const obsIds = obs.map(o => o.id);
-    let cumplMap: Record<string, boolean> = {};
+    const cumplMap: Record<string, boolean> = {};
 
     if (obsIds.length > 0) {
       const { data: cumplData } = await supabase

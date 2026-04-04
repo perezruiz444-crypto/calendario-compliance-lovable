@@ -36,7 +36,7 @@ export function SolicitudesServicio({ empresaId }: SolicitudesServicioProps) {
 
   const fetchSolicitudes = async () => {
     try {
-      let query = supabase
+      const query = supabase
         .from('solicitudes_servicio')
         .select('*')
         .eq('empresa_id', empresaId)

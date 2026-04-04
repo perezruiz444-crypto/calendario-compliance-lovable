@@ -91,8 +91,8 @@ Deno.serve(async (req) => {
         let obligacionesVencidas: any[] = []
         let obligacionesSemana: any[] = []
         let obligacionesMes: any[] = []
-        let certificacionesVencer: any[] = []
-        let renovacionesProximas: { empresa: string; programa: string; fecha: string; diasRestantes: number }[] = []
+        const certificacionesVencer: { empresa: string; tipo: string; fecha: string }[] = []
+        const renovacionesProximas: { empresa: string; programa: string; fecha: string; diasRestantes: number }[] = []
 
         if (role === 'administrador' || role === 'consultor') {
           // Para consultores: solo empresas asignadas. Para admins: todas.
