@@ -6,6 +6,8 @@ import { useTareasShortcuts } from '@/hooks/useKeyboardShortcuts';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList, GanttChart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
@@ -71,7 +73,12 @@ function TareaCard({
   return (
     <div
       onClick={onClick}
-      className={`group relative p-5 border rounded-lg hover:shadow-md hover:scale-[1.01] cursor-pointer transition-all bg-card ${isDragging ? 'opacity-50' : ''} ${isSelected ? 'ring-2 ring-primary' : ''}`}
+      className={cn(
+        'group relative p-5 border rounded-lg hover:shadow-md hover:scale-[1.01] cursor-pointer transition-all bg-card',
+        'transition-all duration-150',
+        isDragging && 'scale-[0.98] shadow-lg rotate-1 opacity-75 cursor-grabbing',
+        isSelected && 'ring-2 ring-primary'
+      )}
       style={{
         borderLeft: `3px solid ${
           tarea.prioridad === 'urgente' ? 'hsl(var(--destructive))' :
@@ -695,10 +702,19 @@ export default function Tareas() {
     setActiveDragId(event.active.id as string);
   };
 
-  if (loading || loadingTareas) {
+  if (loadingTareas) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="rounded-[0.625rem] border bg-card p-4 space-y-3">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+            <div className="flex gap-2 pt-2">
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -1115,6 +1131,7 @@ export default function Tareas() {
         </div>
 
         {/* Tareas View - List, Kanban, Calendar, Timeline or Obligaciones */}
+        <div key={viewMode} className="animate-fade-up">
         {viewMode === 'timeline' ? (
           <TareasTimeline
             tareas={filteredTareas}
@@ -1339,9 +1356,10 @@ export default function Tareas() {
             </DragOverlay>
           </DndContext>
         )}
+        </div>
       </div>
 
-      <CreateTareaSheet 
+      <CreateTareaSheet
         open={dialogOpen} 
         onOpenChange={handleDialogClose}
         onTareaCreated={fetchTareas}

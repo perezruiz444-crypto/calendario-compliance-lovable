@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import listPlugin from '@fullcalendar/list';
@@ -8,7 +8,7 @@ import esLocale from '@fullcalendar/core/locales/es';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Calendar, AlertCircle, Building2 } from 'lucide-react';
+import { Calendar, AlertCircle, Building2, ClipboardList, FileText, Factory, Scale, CalendarDays } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { isPast, startOfDay, format } from 'date-fns';
@@ -52,15 +52,20 @@ function eventColor(type: string, prioridad?: string, isOverdue?: boolean): { bg
   return { bg: 'hsl(var(--muted))', border: 'hsl(var(--border))' };
 }
 
+const EVENT_ICONS: Record<string, React.ReactNode> = {
+  tarea: <ClipboardList className="h-3 w-3 flex-shrink-0 inline-block" />,
+  documento: <FileText className="h-3 w-3 flex-shrink-0 inline-block" />,
+  programa: <Factory className="h-3 w-3 flex-shrink-0 inline-block" />,
+  obligacion: <Scale className="h-3 w-3 flex-shrink-0 inline-block" />,
+};
+
 function EventContent({ eventInfo }: { eventInfo: EventContentArg }) {
   const { extendedProps, title } = eventInfo.event;
-  const typeIcon = extendedProps.type === 'tarea'    ? '📋' :
-                   extendedProps.type === 'documento' ? '📄' :
-                   extendedProps.type === 'programa'  ? '🏭' : '⚖️';
+  const type: string = extendedProps.type;
+  const icon = EVENT_ICONS[type] ?? <CalendarDays className="h-3 w-3 flex-shrink-0 inline-block" />;
   return (
     <div className="flex items-center gap-1 px-1.5 py-0.5 w-full overflow-hidden text-[11px] font-medium leading-tight">
-      <span className="shrink-0 text-[10px]">{typeIcon}</span>
-      <span className="truncate">{title}</span>
+      <span className="flex items-center gap-1 truncate">{icon}<span className="truncate">{title}</span></span>
     </div>
   );
 }
