@@ -58,28 +58,28 @@ export function GlobalSearch() {
       const searchTerm = `%${searchQuery}%`;
 
       // Search empresas
-      let empresasQuery = supabase
+      const empresasQuery = supabase
         .from('empresas')
         .select('id, razon_social, rfc')
         .or(`razon_social.ilike.${searchTerm},rfc.ilike.${searchTerm}`)
         .limit(5);
 
       // Search tareas
-      let tareasQuery = supabase
+      const tareasQuery = supabase
         .from('tareas')
         .select('id, titulo, descripcion, empresa_id')
         .or(`titulo.ilike.${searchTerm},descripcion.ilike.${searchTerm}`)
         .limit(5);
 
       // Search mensajes
-      let mensajesQuery = supabase
+      const mensajesQuery = supabase
         .from('mensajes')
         .select('id, asunto, contenido')
         .or(`asunto.ilike.${searchTerm},contenido.ilike.${searchTerm}`)
         .limit(5);
 
       // Search documentos
-      let documentosQuery = supabase
+      const documentosQuery = supabase
         .from('documentos')
         .select('id, nombre, descripcion, empresa_id')
         .or(`nombre.ilike.${searchTerm},descripcion.ilike.${searchTerm}`)

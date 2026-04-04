@@ -42,7 +42,7 @@ export default defineConfig({
             '@fullcalendar/interaction',
           ],
           'vendor-charts': ['recharts'],
-          'vendor-pdf': ['jspdf', 'jspdf-autotable'],
+          'vendor-pdf': ['jspdf', 'jspdf-autotable', 'html2canvas'],
           'vendor-xlsx': ['xlsx'],
           'vendor-sentry': ['@sentry/react'],
         },

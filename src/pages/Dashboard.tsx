@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Building2, CheckSquare, Users, AlertCircle, AlertTriangle, TrendingUp, Calendar, Clock, Target, FileText, Plus, CheckCircle2 } from 'lucide-react';
+import { Building2, CheckSquare, Users, AlertCircle, AlertTriangle, TrendingUp, Calendar, Clock, Target, FileText, Plus, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -70,6 +70,23 @@ export default function Dashboard() {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  // User is authenticated but has no role assigned
+  if (!loading && user && !role) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center p-6">
+        <ShieldAlert className="h-12 w-12 text-muted-foreground" />
+        <h2 className="font-heading text-xl font-semibold">Cuenta pendiente de activación</h2>
+        <p className="text-muted-foreground text-sm max-w-xs">
+          Tu cuenta fue creada pero aún no tiene un rol asignado.
+          Contacta al administrador del sistema.
+        </p>
+        <Button variant="outline" onClick={() => supabase.auth.signOut()}>
+          Cerrar sesión
+        </Button>
+      </div>
+    );
+  }
 
   if (loading || analyticsLoading) {
     return (

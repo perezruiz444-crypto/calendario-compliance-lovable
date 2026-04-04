@@ -55,8 +55,8 @@ export function CustomFieldInput({ field, value, onChange }: CustomFieldInputPro
           />
         );
 
-      case 'select':
-        const opciones = Array.isArray(field.opciones) 
+      case 'select': {
+        const opciones = Array.isArray(field.opciones)
           ? field.opciones 
           : typeof field.opciones === 'string'
           ? JSON.parse(field.opciones)
@@ -76,6 +76,7 @@ export function CustomFieldInput({ field, value, onChange }: CustomFieldInputPro
             </SelectContent>
           </Select>
         );
+      }
 
       case 'checkbox':
         return (

@@ -41,7 +41,7 @@ export const empresaSchema = z.object({
     .max(500, { message: "El domicilio fiscal debe tener máximo 500 caracteres" }),
   telefono: z.string()
     .trim()
-    .regex(/^[\d\s()+\-]{10,20}$/, { 
+    .regex(/^[\d\s()+-]{10,20}$/, {
       message: "Teléfono inválido. Solo números, espacios, (), +, -" 
     })
     .optional()
