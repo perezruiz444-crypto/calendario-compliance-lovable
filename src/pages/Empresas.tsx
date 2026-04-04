@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Building2, Copy, Trash2, MoreHorizontal, Search, Users, Eye, CheckSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import OnboardingEmpresaWizard from '@/components/empresas/OnboardingEmpresaWizard';
@@ -143,8 +144,16 @@ export default function Empresas() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="rounded-[0.625rem] border bg-card p-5 space-y-3">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -183,8 +192,14 @@ export default function Empresas() {
           </CardHeader>
           <CardContent>
             {loadingEmpresas ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="rounded-[0.625rem] border bg-card p-5 space-y-3">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                ))}
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-12">
@@ -202,67 +217,69 @@ export default function Empresas() {
                 )}
               </div>
             ) : (
-              <div className="grid gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filtered.map((empresa) => {
                   const badges = getStatusBadges(empresa);
                   return (
-                    <div
+                    <Card
                       key={empresa.id}
-                      className="border rounded-lg p-4 hover:border-primary/50 transition-all cursor-pointer group"
+                      className="border-l-4 border-l-primary hover:shadow-md transition-shadow cursor-pointer group"
                       onClick={() => navigate(`/empresas/${empresa.id}`)}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1.5 flex-1 min-w-0">
-                          <h3 className="font-heading font-semibold text-lg truncate">{empresa.razon_social}</h3>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline" className="font-mono text-xs">{empresa.rfc}</Badge>
-                            {badges.map((b, i) => (
-                              <Badge key={i} variant={b.variant} className="text-xs">{b.label}</Badge>
-                            ))}
-                            {taskCounts[empresa.id] > 0 && (
-                              <Badge variant="secondary" className="text-xs gap-1">
-                                <CheckSquare className="w-3 h-3" />
-                                {taskCounts[empresa.id]} pendiente{taskCounts[empresa.id] > 1 ? 's' : ''}
-                              </Badge>
-                            )}
-                          </div>
-                          {empresa.domicilio_fiscal && (
-                            <p className="text-sm text-muted-foreground font-body truncate">{empresa.domicilio_fiscal}</p>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between">
+                          <CardTitle className="font-heading font-semibold text-base truncate">{empresa.razon_social}</CardTitle>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem onClick={() => navigate(`/empresas/${empresa.id}`)}>
+                                <Eye className="w-4 h-4 mr-2" />Ver Detalles
+                              </DropdownMenuItem>
+                              {role === 'administrador' && (
+                                <DropdownMenuItem onClick={() => {
+                                  setSelectedEmpresa({ id: empresa.id, nombre: empresa.razon_social });
+                                  setConsultoresDialogOpen(true);
+                                }}>
+                                  <Users className="w-4 h-4 mr-2" />Consultores
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onClick={() => handleDuplicateEmpresa(empresa.id)}>
+                                <Copy className="w-4 h-4 mr-2" />Duplicar
+                              </DropdownMenuItem>
+                              {role === 'administrador' && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem className="text-destructive" onClick={() => setDeleteEmpresaId(empresa.id)}>
+                                    <Trash2 className="w-4 h-4 mr-2" />Eliminar
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="font-mono text-xs">{empresa.rfc}</Badge>
+                          {badges.map((b, i) => (
+                            <Badge key={i} variant={b.variant} className="text-xs">{b.label}</Badge>
+                          ))}
+                          {taskCounts[empresa.id] > 0 && (
+                            <Badge variant="secondary" className="text-xs gap-1">
+                              <CheckSquare className="w-3 h-3" />
+                              {taskCounts[empresa.id]} pendiente{taskCounts[empresa.id] > 1 ? 's' : ''}
+                            </Badge>
                           )}
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenuItem onClick={() => navigate(`/empresas/${empresa.id}`)}>
-                              <Eye className="w-4 h-4 mr-2" />Ver Detalles
-                            </DropdownMenuItem>
-                            {role === 'administrador' && (
-                              <DropdownMenuItem onClick={() => {
-                                setSelectedEmpresa({ id: empresa.id, nombre: empresa.razon_social });
-                                setConsultoresDialogOpen(true);
-                              }}>
-                                <Users className="w-4 h-4 mr-2" />Consultores
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onClick={() => handleDuplicateEmpresa(empresa.id)}>
-                              <Copy className="w-4 h-4 mr-2" />Duplicar
-                            </DropdownMenuItem>
-                            {role === 'administrador' && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-destructive" onClick={() => setDeleteEmpresaId(empresa.id)}>
-                                  <Trash2 className="w-4 h-4 mr-2" />Eliminar
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
+                        {empresa.domicilio_fiscal && (
+                          <p className="text-sm text-muted-foreground font-body truncate">{empresa.domicilio_fiscal}</p>
+                        )}
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>

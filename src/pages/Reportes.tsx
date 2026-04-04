@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -654,11 +655,18 @@ export default function Reportes() {
 
   if (loading || loadingData) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="p-6 space-y-6">
+        <div className="flex gap-2">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-9 w-28 rounded-[0.625rem]" />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-72 w-full rounded-[0.625rem]" />)}
+        </div>
       </div>
     );
   }
+
+  const CATEGORY_COLORS = ['#003366', '#D52B1E', '#2B8B4F', '#E8A800', '#004080', '#7B4F9E', '#C2660D', '#0F7B8A'];
 
   const ESTADO_COLORS = {
     'Pendiente': 'hsl(var(--warning))',
@@ -1195,10 +1203,9 @@ export default function Reportes() {
                         stroke="hsl(var(--background))"
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
-                        {reporteData.tareasPorCategoria.map((entry, index) => {
-                          const colors = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))'];
-                          return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-                        })}
+                        {reporteData.tareasPorCategoria.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
+                        ))}
                       </Pie>
                       <Tooltip />
                     </PieChart>
