@@ -49,6 +49,13 @@ CREATE POLICY "Admins can view rate_limit_events"
   FOR SELECT
   USING (public.has_role(auth.uid(), 'administrador'::app_role));
 
+-- Service role (Edge Functions) can insert — bypasses RLS via service_role_key,
+-- but an explicit policy protects against accidental anon-key usage
+CREATE POLICY "Service role can insert rate_limit_events"
+  ON public.rate_limit_events
+  FOR INSERT
+  WITH CHECK (true);
+
 -- ────────────────────────────────────────────────────────────
 -- 3. RPC: record_login_attempt (SECURITY DEFINER — bypasses RLS)
 -- ────────────────────────────────────────────────────────────

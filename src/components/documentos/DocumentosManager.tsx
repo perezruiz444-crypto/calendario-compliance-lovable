@@ -68,11 +68,30 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
     }
   };
 
+  const ALLOWED_MIME = [
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ];
+
   const handleUpload = async () => {
     if (!selectedFile) {
       toast({
         title: 'Error',
         description: 'Por favor selecciona un archivo',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!ALLOWED_MIME.includes(selectedFile.type)) {
+      toast({
+        title: 'Tipo de archivo no permitido',
+        description: 'Solo se aceptan PDF, Word, Excel e imágenes JPG/PNG',
         variant: 'destructive'
       });
       return;
