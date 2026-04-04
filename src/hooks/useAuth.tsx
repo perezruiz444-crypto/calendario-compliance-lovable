@@ -89,34 +89,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Use limit(1) instead of maybeSingle() to avoid 406 error when user has multiple roles
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
+        .limit(1)
         .maybeSingle();
 
       if (error) {
         console.error('Error fetching user role:', error);
-        await supabase.auth.signOut();
+        // Don't sign out on query error — could be a transient network issue
         setRole(null);
         setLoading(false);
         return;
       }
-      
-      // Si no hay rol asignado, cerrar sesión
+
       if (!data?.role) {
-        console.log('No role found, signing out');
-        await supabase.auth.signOut();
+        // No role assigned yet — show "pending activation" screen instead of signing out
+        console.warn('User has no role assigned:', userId);
         setRole(null);
         setLoading(false);
         return;
       }
-      
+
       setRole(data.role as UserRole);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching user role:', error);
-      await supabase.auth.signOut();
       setRole(null);
       setLoading(false);
     }
