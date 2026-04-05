@@ -720,17 +720,10 @@ export default function Reportes() {
                       
                       await generateReportPDF(empresa, reporteData, selectedPeriod, tipoReporte);
                       
-                      toast({ 
-                        title: "PDF generado", 
-                        description: "El reporte PDF se ha descargado correctamente" 
-                      });
+                      toast.success("PDF generado — el reporte se ha descargado correctamente");
                     } catch (err: unknown) {
                       console.error('Error generating PDF:', err);
-                      toast({
-                        title: "Error",
-                        description: err instanceof Error ? err.message : 'Error al generar PDF',
-                        variant: "destructive"
-                      });
+                      toast.error(err instanceof Error ? err.message : 'Error al generar PDF');
                     }
                   }}
                   className="font-heading"
@@ -751,16 +744,9 @@ export default function Reportes() {
                         }
                       });
                       if (error) throw error;
-                      toast({ 
-                        title: "Reporte enviado", 
-                        description: "El reporte ha sido enviado por email a los clientes" 
-                      });
+                      toast.success("Reporte enviado por email a los clientes");
                     } catch (err: unknown) {
-                      toast({
-                        title: "Error",
-                        description: err instanceof Error ? err.message : 'Error al enviar reporte',
-                        variant: "destructive"
-                      });
+                      toast.error(err instanceof Error ? err.message : 'Error al enviar reporte');
                     }
                   }}
                   className="font-heading"
