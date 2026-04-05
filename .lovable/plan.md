@@ -1,61 +1,40 @@
 
-Objetivo: restaurar la visibilidad de empresas y usuarios para admins sin abrir permisos de más.
 
-Problema confirmado:
-1. La falla principal no es “que no existan datos”, sino RLS roto en `profiles`.
-   - En consola aparece: `infinite recursion detected in policy for relation "profiles"`.
-   - `src/pages/Usuarios.tsx` hace `select` directo a `profiles`, por eso truena y muestra “Error al cargar usuarios”.
-2. `Usuarios.tsx` además está ignorando el patrón seguro que ya existe:
-   - ya hay una Edge Function `supabase/functions/list-users/index.ts`
-   - pero la página sigue consultando `profiles` + `user_roles` desde el cliente.
-3. `src/pages/Empresas.tsx` carga empresas demasiado pronto:
-   - hoy hace fetch cuando existe `user`, no cuando la sesión/auth ya quedó realmente lista.
-   - eso puede devolver listas vacías por carrera con `auth.uid()`, que encaja con “Sin empresas asignadas”.
-4. El dashboard admin también cuenta usuarios con query directa a `profiles`, así que cuando esa consulta falla cae a ceros aunque los datos sigan existiendo.
+# Fix: Asignación de tareas con recursión RLS en `user_roles`
 
-Plan de implementación:
-1. Blindar la inicialización de auth
-   - extender `useAuth` con un estado tipo `authReady` / `initialized`
-   - marcarlo listo solo después de `getSession()` y de resolver el rol
-   - usar ese estado para impedir queries tempranas
+## Problema
 
-2. Corregir los puntos que hoy disparan queries antes de tiempo
-   - `src/pages/Empresas.tsx`
-   - `src/pages/Usuarios.tsx`
-   - `src/hooks/useAnalytics.tsx`
-   - cualquier vista admin que dependa de empresas al montar
-   - criterio: no consultar Supabase hasta que `authReady === true` y el rol esté resuelto
+`MultipleAssignees.tsx` hace queries directas a `user_roles` y `profiles` desde el cliente para poblar la lista de personas asignables. Las RLS policies de `user_roles` usan `has_role()`, que a su vez consulta `user_roles` -- causando la misma recursión infinita que ya rompió la página de usuarios.
 
-3. Arreglar la recursión de RLS en `profiles`
-   - crear una migración
-   - reescribir las policies de `profiles` para que no consulten `profiles` dentro de una policy de `profiles`
-   - mover esa lógica a funciones `SECURITY DEFINER` seguras, por ejemplo para obtener `empresa_id` de un perfil o validar visibilidad
-   - también corregir la policy de update propia que hoy hace subquery a `profiles`
+Policies problemáticas en `user_roles`:
+- "Admins can manage roles": `USING has_role(auth.uid(), 'administrador')` → consulta `user_roles` → RLS → `has_role()` → loop
+- "Consultores can view roles": también usa `has_role()` + join a `profiles`
 
-4. Dejar de listar usuarios desde el navegador
-   - cambiar `src/pages/Usuarios.tsx` para usar la Edge Function `list-users`
-   - así los emails, roles y perfiles salen del lado servidor con validación de admin/consultor
-   - esto evita depender de RLS compleja para una pantalla administrativa
+Resultado: la lista de usuarios asignables probablemente aparece vacía o da error silencioso.
 
-5. Restaurar métricas admin sin falsos ceros
-   - ajustar `useAnalytics` para que no compute “0 usuarios” cuando en realidad hubo error de permisos
-   - después del fix de RLS, validar conteos de `profiles`, `user_roles` y empresas
-   - si conviene, mover también los conteos sensibles a RPC/Edge Function
+## Plan
 
-6. Hacer una pasada de endurecimiento
-   - revisar componentes que aún consultan `user_roles` directo desde cliente
-   - mantenerlos solo si la policy queda estable; si no, migrarlos a RPC/Edge Functions
-   - prioridad inmediata: vistas admin y flujos de asignación
+### 1. Corregir RLS de `user_roles` (migración)
+Reescribir las policies de `user_roles` para que no se auto-referencien vía `has_role()`. Usar una función `SECURITY DEFINER` que haga la verificación sin pasar por RLS.
 
-Detalles técnicos:
-- No voy a abrir `profiles` ni `user_roles` públicamente.
-- El fix debe mantener separación de roles en `user_roles`.
-- La migración debe tocar policies/funciones, no editar `src/integrations/supabase/types.ts` manualmente.
-- El patrón a seguir ya existe en el proyecto: `get_my_role` y `list-users` evitan depender de queries frágiles desde el cliente.
+```sql
+-- Función que verifica rol sin disparar RLS en user_roles
+CREATE OR REPLACE FUNCTION public.check_user_role(p_user_id uuid, p_role app_role)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$ SELECT EXISTS (SELECT 1 FROM user_roles WHERE user_id = p_user_id AND role = p_role) $$;
 
-Resultado esperado:
-- Admin vuelve a ver empresas en `/empresas`
-- el selector de empresa vuelve a poblarse
-- `/usuarios` vuelve a listar usuarios
-- el dashboard admin deja de mostrar vacíos/ceros falsos
-- consultores y clientes siguen viendo solo lo que les toca
+-- Reconstruir policies de user_roles usando check_user_role en vez de has_role
+```
+
+### 2. Actualizar `has_role()` para ser SECURITY DEFINER
+Alternativamente, si `has_role` ya es `SECURITY DEFINER` (lo cual debería evitar recursión), verificar que realmente lo sea. Si no, corregirlo. Esto arreglaría `user_roles` y todas las demás tablas que lo usan.
+
+### 3. Simplificar `MultipleAssignees.fetchUsuarios()`
+Actualmente hace N+1 queries (un query por cada perfil de cliente para verificar su rol). Cambiar a un patrón más eficiente: un solo RPC o un join que devuelva usuarios con su rol, evitando queries individuales a `user_roles`.
+
+## Resultado esperado
+- Al abrir el detalle de una tarea y hacer clic en "Agregar" asignado, aparecen los consultores y clientes disponibles
+- No hay errores silenciosos de recursión
+- El toggle de asignar/desasignar funciona correctamente
+
