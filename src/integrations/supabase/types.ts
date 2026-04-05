@@ -1798,6 +1798,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_empresa_id: { Args: never; Returns: string }
       get_my_role: { Args: never; Returns: string }
       get_subtareas_progress: { Args: { p_tarea_id: string }; Returns: Json }
       get_total_time_spent: { Args: { p_tarea_id: string }; Returns: number }
