@@ -40,25 +40,19 @@ export default function Usuarios() {
     try {
       setLoadingUsers(true);
 
-      const [{ data: profiles, error: profilesError }, { data: roles, error: rolesError }] = await Promise.all([
-        supabase.from('profiles').select('id, nombre_completo, email, created_at').order('created_at', { ascending: false }),
-        supabase.from('user_roles').select('user_id, role'),
-      ]);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('No estás autenticado');
+        return;
+      }
 
-      if (profilesError) throw profilesError;
-      if (rolesError) throw rolesError;
+      const { data, error } = await supabase.functions.invoke('list-users', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
 
-      const rolesMap = new Map(roles?.map(r => [r.user_id, r.role]) || []);
+      if (error) throw error;
 
-      setUsuarios(
-        (profiles || []).map(p => ({
-          id: p.id,
-          email: p.email || '',
-          nombre_completo: p.nombre_completo,
-          role: rolesMap.get(p.id) || 'sin rol',
-          created_at: p.created_at || '',
-        }))
-      );
+      setUsuarios(data?.users || []);
     } catch (error: any) {
       toast.error('Error al cargar usuarios');
       console.error(error);

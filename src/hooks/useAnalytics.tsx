@@ -72,16 +72,16 @@ const DEFAULT_DATA: AnalyticsData = {
 };
 
 export function useAnalytics(empresaId?: string | null) {
-  const { user, role } = useAuth();
+  const { user, role, authReady } = useAuth();
   const [data, setData] = useState<AnalyticsData>(DEFAULT_DATA);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user && role) {
+    if (authReady && user && role) {
       fetchAnalytics();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, role, empresaId]);
+  }, [user?.id, role, empresaId, authReady]);
 
   const fetchCommonData = async () => {
     // Profile name
