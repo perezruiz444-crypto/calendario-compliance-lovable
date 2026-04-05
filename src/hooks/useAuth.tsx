@@ -9,6 +9,7 @@ interface AuthContextType {
   session: Session | null;
   role: UserRole | null;
   loading: boolean;
+  authReady: boolean;
   signIn: (email: string, password: string, captchaToken?: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, nombreCompleto: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
