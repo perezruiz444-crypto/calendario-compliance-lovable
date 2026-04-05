@@ -1251,62 +1251,32 @@ export default function Tareas() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rbc-calendar-enhanced h-[600px]">
-                <BigCalendar
-                  localizer={localizer}
-                  events={calendarEvents}
-                  startAccessor="start"
-                  endAccessor="end"
-                  onSelectEvent={handleSelectEvent}
-                  views={['month', 'week', 'day', 'agenda']}
-                  defaultView="month"
-                  popup
-                  style={{ height: '100%' }}
-                  messages={{
-                    next: 'Siguiente',
-                    previous: 'Anterior',
-                    today: 'Hoy',
-                    month: 'Mes',
-                    week: 'Semana',
-                    day: 'Día',
-                    agenda: 'Agenda',
-                    date: 'Fecha',
-                    time: 'Hora',
-                    event: 'Tarea',
-                    noEventsInRange: 'No hay tareas en este rango',
-                    allDay: 'Todo el día',
-                    showMore: (total) => `+${total} más`,
+              <div className="h-[600px]">
+                <FullCalendar
+                  plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
+                  locale={esLocale}
+                  initialView="dayGridMonth"
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,listMonth'
                   }}
-                  eventPropGetter={(event) => {
-                    const tarea = event.resource;
-                    let color = 'hsl(var(--primary))';
-                    
-                    if (tarea.prioridad === 'urgente') {
-                      color = 'hsl(0, 84%, 60%)';
-                    } else if (tarea.prioridad === 'alta') {
-                      color = 'hsl(25, 95%, 53%)';
-                    } else if (tarea.prioridad === 'media') {
-                      color = 'hsl(45, 93%, 47%)';
-                    } else if (tarea.prioridad === 'baja') {
-                      color = 'hsl(142, 76%, 36%)';
-                    }
-                    
-                    return {
-                      style: {
-                        backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
-                        borderLeft: `3px solid ${color}`,
-                        borderRadius: '6px',
-                        color: 'inherit',
-                        border: 'none',
-                        borderLeftWidth: '3px',
-                        borderLeftStyle: 'solid',
-                        borderLeftColor: color,
-                        fontSize: '0.72rem',
-                        fontWeight: 500,
-                        display: 'block'
-                      }
-                    };
+                  buttonText={{ today: 'Hoy', month: 'Mes', listMonth: 'Agenda' }}
+                  events={calendarEvents.map(e => ({
+                    title: e.title,
+                    start: e.start,
+                    end: e.end,
+                    extendedProps: { resource: e.resource },
+                  }))}
+                  eventClick={(info) => {
+                    const tarea = info.event.extendedProps?.resource;
+                    if (tarea) handleSelectEvent({ resource: tarea });
                   }}
+                  height="100%"
+                  dayMaxEvents={3}
+                  moreLinkText={n => `+${n} más`}
+                  nowIndicator
+                  eventDisplay="block"
                 />
               </div>
             </CardContent>

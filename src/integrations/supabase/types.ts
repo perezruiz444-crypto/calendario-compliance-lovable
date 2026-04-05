@@ -530,6 +530,7 @@ export type Database = {
           immex_fecha_inicio: string | null
           immex_modalidad: string | null
           immex_numero: string | null
+          immex_periodo_renovacion_meses: number | null
           immex_tipo: string | null
           matriz_seguridad_fecha_renovar: string | null
           matriz_seguridad_fecha_vencimiento: string | null
@@ -576,6 +577,7 @@ export type Database = {
           immex_fecha_inicio?: string | null
           immex_modalidad?: string | null
           immex_numero?: string | null
+          immex_periodo_renovacion_meses?: number | null
           immex_tipo?: string | null
           matriz_seguridad_fecha_renovar?: string | null
           matriz_seguridad_fecha_vencimiento?: string | null
@@ -622,6 +624,7 @@ export type Database = {
           immex_fecha_inicio?: string | null
           immex_modalidad?: string | null
           immex_numero?: string | null
+          immex_periodo_renovacion_meses?: number | null
           immex_tipo?: string | null
           matriz_seguridad_fecha_renovar?: string | null
           matriz_seguridad_fecha_vencimiento?: string | null

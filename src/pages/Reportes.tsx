@@ -14,7 +14,7 @@ import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, Us
 import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import { getCurrentPeriodKey, CATEGORIA_LABELS } from '@/lib/obligaciones';
 import { es } from 'date-fns/locale';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { generateReportPDF } from '@/lib/pdfGenerator';
 import * as XLSX from 'xlsx';
 

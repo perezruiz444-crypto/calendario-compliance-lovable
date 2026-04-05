@@ -104,7 +104,7 @@ export default function Auth() {
       const validated = loginSchema.parse({ email, password });
 
       // Check rate limiting before attempting sign-in
-      const { data: isBlocked } = await supabase.rpc('is_login_blocked', {
+      const { data: isBlocked } = await (supabase as any).rpc('is_login_blocked', {
         p_email: validated.email,
         p_ip: null,
       });

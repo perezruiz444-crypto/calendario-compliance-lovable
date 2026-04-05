@@ -76,7 +76,7 @@ export function CatalogoAdmin() {
       .select('*')
       .order('orden')
       .order('nombre');
-    setItems((data as CatalogoItem[]) || []);
+    setItems((data as unknown as CatalogoItem[]) || []);
     setLoading(false);
   };
 
@@ -98,11 +98,11 @@ export function CatalogoAdmin() {
       notas_internas: form.notas_internas.trim() || null,
     };
     if (editId) {
-      const { error } = await supabase.from('obligaciones_catalogo').update(payload).eq('id', editId);
+      const { error } = await supabase.from('obligaciones_catalogo').update(payload as any).eq('id', editId);
       if (error) { toast.error('Error al actualizar: ' + error.message); setSaving(false); return; }
       toast.success('Obligación actualizada');
     } else {
-      const { error } = await supabase.from('obligaciones_catalogo').insert(payload);
+      const { error } = await supabase.from('obligaciones_catalogo').insert(payload as any);
       if (error) { toast.error('Error al crear: ' + error.message); setSaving(false); return; }
       toast.success('Obligación agregada al catálogo');
     }
@@ -133,7 +133,7 @@ export function CatalogoAdmin() {
     const nuevoEstado = !item.activo;
     const { error } = await supabase
       .from('obligaciones_catalogo')
-      .update({ activo: nuevoEstado })
+      .update({ activo: nuevoEstado } as any)
       .eq('id', item.id);
     if (error) { toast.error('Error al actualizar estado'); return; }
     toast.success(nuevoEstado ? 'Obligación reactivada' : 'Obligación desactivada');

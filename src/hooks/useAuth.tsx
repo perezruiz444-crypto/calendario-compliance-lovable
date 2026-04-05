@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Use SECURITY DEFINER RPC to bypass RLS on user_roles.
       // Direct queries to user_roles return HTTP 500 due to RLS policy recursion:
       // has_role() queries user_roles → triggers RLS → calls has_role() again → stack overflow.
-      const { data, error } = await supabase.rpc('get_my_role');
+      const { data, error } = await (supabase as any).rpc('get_my_role');
 
       if (error) {
         console.error('Error fetching user role:', error);
@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // Log attempt for rate limiting (fire-and-forget, SECURITY DEFINER RPC)
-    supabase.rpc('record_login_attempt', {
+    (supabase as any).rpc('record_login_attempt', {
       p_email: email,
       p_ip: null,
       p_success: !error,

@@ -272,7 +272,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
               moreLinkText={n => `+${n} más`}
               nowIndicator
               eventDisplay="block"
-              eventBorderWidth={0}
+              
             />
           </div>
         </CardContent>

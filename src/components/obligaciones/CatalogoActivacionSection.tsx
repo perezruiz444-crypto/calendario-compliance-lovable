@@ -40,24 +40,24 @@ export function CatalogoActivacionSection({ empresaId, canEdit, onActivated }: P
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [{ data: cat }, { data: oblig }] = await Promise.all([
-      supabase
+      (supabase as any)
         .from('obligaciones_catalogo')
         .select('id, programa, categoria, nombre, articulos, descripcion, presentacion, obligatorio')
         .eq('activo', true)
         .order('orden')
         .order('nombre'),
-      supabase
+      (supabase as any)
         .from('obligaciones')
         .select('catalogo_id, nombre')
         .eq('empresa_id', empresaId)
         .eq('activa', true),
     ]);
 
-    setCatalogo((cat as CatalogoItem[]) || []);
+    setCatalogo((cat as unknown as CatalogoItem[]) || []);
 
     const ids     = new Set<string>();
     const nombres = new Set<string>();
-    for (const o of oblig || []) {
+    for (const o of (oblig || []) as any[]) {
       if (o.catalogo_id) ids.add(o.catalogo_id);
       if (o.nombre)      nombres.add(o.nombre);
     }
