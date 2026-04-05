@@ -127,7 +127,7 @@ export default function Empresas() {
     }
   };
 
-  useEffect(() => { if (user) fetchEmpresas(); }, [user]);
+  useEffect(() => { if (user && role) fetchEmpresas(); }, [user, role]);
 
   const filtered = empresas.filter(e =>
     !search || e.razon_social?.toLowerCase().includes(search.toLowerCase()) || e.rfc?.toLowerCase().includes(search.toLowerCase())
