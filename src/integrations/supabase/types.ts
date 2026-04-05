@@ -1798,6 +1798,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_consultor_visible_user_ids: {
+        Args: { p_consultor_id: string }
+        Returns: string[]
+      }
       get_my_empresa_id: { Args: never; Returns: string }
       get_my_role: { Args: never; Returns: string }
       get_subtareas_progress: { Args: { p_tarea_id: string }; Returns: Json }
