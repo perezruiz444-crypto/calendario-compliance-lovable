@@ -1,46 +1,61 @@
 
+Objetivo: restaurar la visibilidad de empresas y usuarios para admins sin abrir permisos de más.
 
-# Plan: Fix Build Errors Blocking the Application
+Problema confirmado:
+1. La falla principal no es “que no existan datos”, sino RLS roto en `profiles`.
+   - En consola aparece: `infinite recursion detected in policy for relation "profiles"`.
+   - `src/pages/Usuarios.tsx` hace `select` directo a `profiles`, por eso truena y muestra “Error al cargar usuarios”.
+2. `Usuarios.tsx` además está ignorando el patrón seguro que ya existe:
+   - ya hay una Edge Function `supabase/functions/list-users/index.ts`
+   - pero la página sigue consultando `profiles` + `user_roles` desde el cliente.
+3. `src/pages/Empresas.tsx` carga empresas demasiado pronto:
+   - hoy hace fetch cuando existe `user`, no cuando la sesión/auth ya quedó realmente lista.
+   - eso puede devolver listas vacías por carrera con `auth.uid()`, que encaja con “Sin empresas asignadas”.
+4. El dashboard admin también cuenta usuarios con query directa a `profiles`, así que cuando esa consulta falla cae a ceros aunque los datos sigan existiendo.
 
-The app isn't loading because there are **17+ TypeScript build errors** preventing compilation. The root cause is that the generated types file (`src/integrations/supabase/types.ts`) is out of sync with the actual database, plus a few code issues.
+Plan de implementación:
+1. Blindar la inicialización de auth
+   - extender `useAuth` con un estado tipo `authReady` / `initialized`
+   - marcarlo listo solo después de `getSession()` y de resolver el rol
+   - usar ese estado para impedir queries tempranas
 
-## What's Wrong
+2. Corregir los puntos que hoy disparan queries antes de tiempo
+   - `src/pages/Empresas.tsx`
+   - `src/pages/Usuarios.tsx`
+   - `src/hooks/useAnalytics.tsx`
+   - cualquier vista admin que dependa de empresas al montar
+   - criterio: no consultar Supabase hasta que `authReady === true` y el rol esté resuelto
 
-1. **Outdated Supabase types** -- The types file doesn't reflect recent DB migrations (new columns, new RPC functions), causing type errors everywhere.
-2. **Missing RPC definitions in types** -- `get_my_role`, `record_login_attempt`, `is_login_blocked` exist in DB but not in the types file. This breaks auth (login, role fetching).
-3. **Missing DB column referenced in code** -- `immex_periodo_renovacion_meses` is used in RenovacionesWidget but doesn't exist in the `empresas` table.
-4. **Missing import in Tareas.tsx** -- `BigCalendar` and `localizer` are used but never imported (react-big-calendar).
-5. **Invalid toast methods in Reportes.tsx** -- `toast.error()` and `toast.success()` called on wrong toast API.
-6. **Invalid FullCalendar prop** -- `eventBorderWidth` doesn't exist on the FullCalendar component.
-7. **Edge function import error** -- nodemailer not configured for Deno in `_shared/smtp.ts`.
+3. Arreglar la recursión de RLS en `profiles`
+   - crear una migración
+   - reescribir las policies de `profiles` para que no consulten `profiles` dentro de una policy de `profiles`
+   - mover esa lógica a funciones `SECURITY DEFINER` seguras, por ejemplo para obtener `empresa_id` de un perfil o validar visibilidad
+   - también corregir la policy de update propia que hoy hace subquery a `profiles`
 
-## Fix Plan
+4. Dejar de listar usuarios desde el navegador
+   - cambiar `src/pages/Usuarios.tsx` para usar la Edge Function `list-users`
+   - así los emails, roles y perfiles salen del lado servidor con validación de admin/consultor
+   - esto evita depender de RLS compleja para una pantalla administrativa
 
-### Step 1: Regenerate Supabase types
-Trigger a types regeneration to sync `types.ts` with the actual database schema. This will fix the `obligaciones_catalogo` column mismatches and add the missing RPC function definitions.
+5. Restaurar métricas admin sin falsos ceros
+   - ajustar `useAnalytics` para que no compute “0 usuarios” cuando en realidad hubo error de permisos
+   - después del fix de RLS, validar conteos de `profiles`, `user_roles` y empresas
+   - si conviene, mover también los conteos sensibles a RPC/Edge Function
 
-### Step 2: Add missing DB column
-Create a migration to add `immex_periodo_renovacion_meses` (integer, nullable) to the `empresas` table so RenovacionesWidget works.
+6. Hacer una pasada de endurecimiento
+   - revisar componentes que aún consultan `user_roles` directo desde cliente
+   - mantenerlos solo si la policy queda estable; si no, migrarlos a RPC/Edge Functions
+   - prioridad inmediata: vistas admin y flujos de asignación
 
-### Step 3: Fix Tareas.tsx calendar view
-Replace `BigCalendar`/`localizer` usage with FullCalendar (which is already imported), or add the missing react-big-calendar import. Since FullCalendar is already used elsewhere in the project, the cleanest fix is to replace the BigCalendar block with a FullCalendar component.
+Detalles técnicos:
+- No voy a abrir `profiles` ni `user_roles` públicamente.
+- El fix debe mantener separación de roles en `user_roles`.
+- La migración debe tocar policies/funciones, no editar `src/integrations/supabase/types.ts` manualmente.
+- El patrón a seguir ya existe en el proyecto: `get_my_role` y `list-users` evitan depender de queries frágiles desde el cliente.
 
-### Step 4: Fix Reportes.tsx toast calls
-Replace `toast.error()`/`toast.success()` with the correct sonner toast API that's used elsewhere in the project.
-
-### Step 5: Fix DashboardCalendar.tsx
-Remove the invalid `eventBorderWidth` prop from the FullCalendar component.
-
-### Step 6: Fix edge function smtp.ts
-Update the nodemailer import to use a Deno-compatible approach or add a deno.json with the npm specifier.
-
-### Step 7: Fix CatalogoAdmin type cast
-After types regeneration, the `as CatalogoItem[]` cast should work. If not, add `as unknown as CatalogoItem[]` as a temporary bridge.
-
-## Technical Details
-
-- The types file (`src/integrations/supabase/types.ts`) cannot be edited manually -- it must be regenerated from the Supabase schema
-- The missing columns in types (`categoria`, `obligatorio`, `activo`, `orden`, `notas_internas` on `obligaciones_catalogo`) confirm the types are stale
-- Missing RPCs in types (`get_my_role`, `record_login_attempt`, `is_login_blocked`) mean the auth flow crashes at compile time
-- Once types are regenerated and code errors fixed, the app will compile and you'll see your data
-
+Resultado esperado:
+- Admin vuelve a ver empresas en `/empresas`
+- el selector de empresa vuelve a poblarse
+- `/usuarios` vuelve a listar usuarios
+- el dashboard admin deja de mostrar vacíos/ceros falsos
+- consultores y clientes siguen viendo solo lo que les toca
