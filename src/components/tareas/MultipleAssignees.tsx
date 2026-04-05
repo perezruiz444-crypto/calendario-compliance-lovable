@@ -38,7 +38,7 @@ export function MultipleAssignees({ tareaId, empresaId, canEdit = true }: Multip
   const fetchUsuarios = async () => {
     const results: { id: string; nombre: string; tipo: string }[] = [];
 
-    // Consultores — todos los del sistema
+    // Fetch all consultors in one query via user_roles + profiles join
     const { data: consultorRoles } = await supabase
       .from('user_roles')
       .select('user_id')
@@ -52,37 +52,24 @@ export function MultipleAssignees({ tareaId, empresaId, canEdit = true }: Multip
       (profiles || []).forEach(p => results.push({ id: p.id, nombre: p.nombre_completo, tipo: 'consultor' }));
     }
 
-    // Clientes — los de la empresa si hay empresaId, si no todos
-    if (empresaId) {
-      const { data: clientProfiles } = await supabase
+    // Fetch all clients efficiently — get client role user_ids first, then filter by empresa
+    const { data: clientRoles } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'cliente');
+
+    if (clientRoles && clientRoles.length > 0) {
+      let query = supabase
         .from('profiles')
         .select('id, nombre_completo')
-        .eq('empresa_id', empresaId);
+        .in('id', clientRoles.map(r => r.user_id));
 
-      if (clientProfiles) {
-        for (const p of clientProfiles) {
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', p.id)
-            .eq('role', 'cliente')
-            .maybeSingle();
-          if (roleData) results.push({ id: p.id, nombre: p.nombre_completo, tipo: 'cliente' });
-        }
+      if (empresaId) {
+        query = query.eq('empresa_id', empresaId);
       }
-    } else {
-      const { data: clientRoles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'cliente');
 
-      if (clientRoles && clientRoles.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, nombre_completo')
-          .in('id', clientRoles.map(r => r.user_id));
-        (profiles || []).forEach(p => results.push({ id: p.id, nombre: p.nombre_completo, tipo: 'cliente' }));
-      }
+      const { data: clientProfiles } = await query;
+      (clientProfiles || []).forEach(p => results.push({ id: p.id, nombre: p.nombre_completo, tipo: 'cliente' }));
     }
 
     setUsuarios(results);
