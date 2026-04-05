@@ -1,0 +1,1 @@
+ALTER TABLE public.empresas ADD COLUMN IF NOT EXISTS immex_periodo_renovacion_meses INTEGER;

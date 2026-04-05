@@ -530,6 +530,7 @@ export type Database = {
           immex_fecha_inicio: string | null
           immex_modalidad: string | null
           immex_numero: string | null
+          immex_periodo_renovacion_meses: number | null
           immex_tipo: string | null
           matriz_seguridad_fecha_renovar: string | null
           matriz_seguridad_fecha_vencimiento: string | null
@@ -576,6 +577,7 @@ export type Database = {
           immex_fecha_inicio?: string | null
           immex_modalidad?: string | null
           immex_numero?: string | null
+          immex_periodo_renovacion_meses?: number | null
           immex_tipo?: string | null
           matriz_seguridad_fecha_renovar?: string | null
           matriz_seguridad_fecha_vencimiento?: string | null
@@ -622,6 +624,7 @@ export type Database = {
           immex_fecha_inicio?: string | null
           immex_modalidad?: string | null
           immex_numero?: string | null
+          immex_periodo_renovacion_meses?: number | null
           immex_tipo?: string | null
           matriz_seguridad_fecha_renovar?: string | null
           matriz_seguridad_fecha_vencimiento?: string | null
@@ -646,6 +649,30 @@ export type Database = {
           rfc?: string
           telefono?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      login_attempts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          ip_address: unknown
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: unknown
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: unknown
+          success?: boolean
         }
         Relationships: []
       }
@@ -916,6 +943,7 @@ export type Database = {
         Row: {
           activa: boolean
           articulos: string | null
+          catalogo_id: string | null
           categoria: string
           created_at: string
           created_by: string | null
@@ -939,6 +967,7 @@ export type Database = {
         Insert: {
           activa?: boolean
           articulos?: string | null
+          catalogo_id?: string | null
           categoria: string
           created_at?: string
           created_by?: string | null
@@ -962,6 +991,7 @@ export type Database = {
         Update: {
           activa?: boolean
           articulos?: string | null
+          catalogo_id?: string | null
           categoria?: string
           created_at?: string
           created_by?: string | null
@@ -984,6 +1014,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "obligaciones_catalogo_id_fkey"
+            columns: ["catalogo_id"]
+            isOneToOne: false
+            referencedRelation: "obligaciones_catalogo"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "obligaciones_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
@@ -994,34 +1031,49 @@ export type Database = {
       }
       obligaciones_catalogo: {
         Row: {
+          activo: boolean
           articulos: string | null
+          categoria: string | null
           created_at: string
           created_by: string | null
           descripcion: string | null
           id: string
           nombre: string
+          notas_internas: string | null
+          obligatorio: boolean
+          orden: number
           presentacion: string | null
           programa: string
           updated_at: string
         }
         Insert: {
+          activo?: boolean
           articulos?: string | null
+          categoria?: string | null
           created_at?: string
           created_by?: string | null
           descripcion?: string | null
           id?: string
           nombre: string
+          notas_internas?: string | null
+          obligatorio?: boolean
+          orden?: number
           presentacion?: string | null
           programa: string
           updated_at?: string
         }
         Update: {
+          activo?: boolean
           articulos?: string | null
+          categoria?: string | null
           created_at?: string
           created_by?: string | null
           descripcion?: string | null
           id?: string
           nombre?: string
+          notas_internas?: string | null
+          obligatorio?: boolean
+          orden?: number
           presentacion?: string | null
           programa?: string
           updated_at?: string
@@ -1077,6 +1129,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rate_limit_events: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: string
+        }
+        Relationships: []
       }
       reminder_rules: {
         Row: {
@@ -1725,6 +1798,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_role: { Args: never; Returns: string }
       get_subtareas_progress: { Args: { p_tarea_id: string }; Returns: Json }
       get_total_time_spent: { Args: { p_tarea_id: string }; Returns: number }
       get_user_empresa_id: { Args: { _user_id: string }; Returns: string }
@@ -1739,7 +1813,15 @@ export type Database = {
         Args: { template_id: string }
         Returns: undefined
       }
+      is_login_blocked: {
+        Args: { p_email: string; p_ip?: unknown }
+        Returns: boolean
+      }
       is_tarea_blocked: { Args: { p_tarea_id: string }; Returns: boolean }
+      record_login_attempt: {
+        Args: { p_email: string; p_ip?: unknown; p_success?: boolean }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "administrador" | "consultor" | "cliente"

@@ -51,7 +51,7 @@ export default function RenovacionesWidget() {
       const getDias = (tipo: string) => diasAntesByTipo[tipo] ?? DEFAULT_DIAS_ANTES;
 
       // Fetch all empresas with program date fields
-      const { data: empresas } = await supabase
+      const { data: empresas } = await (supabase as any)
         .from('empresas')
         .select(`
           id,
