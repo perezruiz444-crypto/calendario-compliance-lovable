@@ -1,40 +1,53 @@
 
 
-# Fix: Asignación de tareas con recursión RLS en `user_roles`
+# Plan: Encuesta Customer Discovery — Obligatoria para Clientes
 
-## Problema
+## Resumen
+Modal de encuesta atractivo que aparece al login para clientes, obligatorio (no se puede cerrar sin contestar), respuestas visibles solo para admin en el Dashboard.
 
-`MultipleAssignees.tsx` hace queries directas a `user_roles` y `profiles` desde el cliente para poblar la lista de personas asignables. Las RLS policies de `user_roles` usan `has_role()`, que a su vez consulta `user_roles` -- causando la misma recursión infinita que ya rompió la página de usuarios.
-
-Policies problemáticas en `user_roles`:
-- "Admins can manage roles": `USING has_role(auth.uid(), 'administrador')` → consulta `user_roles` → RLS → `has_role()` → loop
-- "Consultores can view roles": también usa `has_role()` + join a `profiles`
-
-Resultado: la lista de usuarios asignables probablemente aparece vacía o da error silencioso.
-
-## Plan
-
-### 1. Corregir RLS de `user_roles` (migración)
-Reescribir las policies de `user_roles` para que no se auto-referencien vía `has_role()`. Usar una función `SECURITY DEFINER` que haga la verificación sin pasar por RLS.
+## Paso 1: Migración SQL
+Crear tabla `feedback_clientes` con RLS:
+- INSERT: usuarios autenticados donde `auth.uid() = user_id`
+- SELECT: solo administradores vía `has_role()`
 
 ```sql
--- Función que verifica rol sin disparar RLS en user_roles
-CREATE OR REPLACE FUNCTION public.check_user_role(p_user_id uuid, p_role app_role)
-RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
-AS $$ SELECT EXISTS (SELECT 1 FROM user_roles WHERE user_id = p_user_id AND role = p_role) $$;
-
--- Reconstruir policies de user_roles usando check_user_role en vez de has_role
+CREATE TABLE public.feedback_clientes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  q1_razon_login text NOT NULL,
+  q2_semaforo_rating integer NOT NULL CHECK (q2_semaforo_rating BETWEEN 1 AND 5),
+  q3_friccion text,
+  q4_varita_magica text,
+  q5_retencion text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 ```
 
-### 2. Actualizar `has_role()` para ser SECURITY DEFINER
-Alternativamente, si `has_role` ya es `SECURITY DEFINER` (lo cual debería evitar recursión), verificar que realmente lo sea. Si no, corregirlo. Esto arreglaría `user_roles` y todas las demás tablas que lo usan.
+## Paso 2: Componente `FeedbackModal.tsx`
+- Dialog de shadcn/ui **sin botón de cerrar** (modal obligatorio, no dismissible)
+- Copy del header: "Ayúdanos a mejorar tu experiencia" + "Solo te tomará 1-2 minutos"
+- Diseño premium con gradiente navy, iconos y stepper de progreso (5 pasos)
+- Usa las fuentes ya existentes del proyecto (Fraunces para títulos, DM Sans body)
+- Las 5 preguntas del brief con RadioGroup (Q1, Q5), Slider (Q2), Textarea (Q3, Q4)
+- Botón "Enviar Mis Respuestas" con loading state
+- Al enviar: INSERT en Supabase, toast de agradecimiento, guardar `has_submitted_feedback_v1` en localStorage
+- **No se puede cerrar sin enviar** — `onInteractOutside` y escape deshabilitados
 
-### 3. Simplificar `MultipleAssignees.fetchUsuarios()`
-Actualmente hace N+1 queries (un query por cada perfil de cliente para verificar su rol). Cambiar a un patrón más eficiente: un solo RPC o un join que devuelva usuarios con su rol, evitando queries individuales a `user_roles`.
+## Paso 3: Integración en `Dashboard.tsx`
+- Renderizar `<FeedbackModal />` solo si `role === 'cliente'`
+- El modal checa localStorage; si ya respondió, no se muestra
+- También checa en Supabase (por si cambió de navegador)
 
-## Resultado esperado
-- Al abrir el detalle de una tarea y hacer clic en "Agregar" asignado, aparecen los consultores y clientes disponibles
-- No hay errores silenciosos de recursión
-- El toggle de asignar/desasignar funciona correctamente
+## Paso 4: Panel de respuestas para Admin
+- Nuevo componente `FeedbackResultsCard.tsx` en el Dashboard admin
+- Card con tabla resumen de respuestas: fecha, usuario, razón login, rating, retención
+- Click en fila expande detalle completo (Q3, Q4)
+- Se renderiza en `Dashboard.tsx` solo cuando `role === 'administrador'`
+
+## Archivos a crear/modificar
+1. **Crear** migración SQL (tabla + RLS)
+2. **Crear** `src/components/dashboard/FeedbackModal.tsx`
+3. **Crear** `src/components/dashboard/FeedbackResultsCard.tsx`
+4. **Editar** `src/pages/Dashboard.tsx` — importar ambos componentes condicionalmente
+5. **Editar** `src/integrations/supabase/types.ts` — agregar tipo de la nueva tabla
 
