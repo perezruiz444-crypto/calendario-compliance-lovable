@@ -207,6 +207,9 @@ export default function Dashboard() {
           </>
         )}
 
+        {/* Customer Discovery Results - Admin only */}
+        {role === 'administrador' && <FeedbackResultsCard />}
+
         {/* Tareas + Mensajes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="gradient-card shadow-card">
