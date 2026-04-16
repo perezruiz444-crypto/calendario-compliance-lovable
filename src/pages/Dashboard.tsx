@@ -23,6 +23,8 @@ import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
 import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
 import AgendaHoy from '@/components/dashboard/AgendaHoy';
 import RenovacionesWidget from '@/components/dashboard/RenovacionesWidget';
+import FeedbackModal from '@/components/dashboard/FeedbackModal';
+import FeedbackResultsCard from '@/components/dashboard/FeedbackResultsCard';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -205,6 +207,9 @@ export default function Dashboard() {
           </>
         )}
 
+        {/* Customer Discovery Results - Admin only */}
+        {role === 'administrador' && <FeedbackResultsCard />}
+
         {/* Tareas + Mensajes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="gradient-card shadow-card">
@@ -310,6 +315,9 @@ export default function Dashboard() {
           onUpdate={() => refetch()}
         />
       )}
+
+      {/* Feedback modal - obligatorio para clientes */}
+      {role === 'cliente' && user && <FeedbackModal userId={user.id} />}
     </DashboardLayout>
   );
 }

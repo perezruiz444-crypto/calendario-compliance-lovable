@@ -652,6 +652,39 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_clientes: {
+        Row: {
+          created_at: string
+          id: string
+          q1_razon_login: string
+          q2_semaforo_rating: number
+          q3_friccion: string | null
+          q4_varita_magica: string | null
+          q5_retencion: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          q1_razon_login: string
+          q2_semaforo_rating: number
+          q3_friccion?: string | null
+          q4_varita_magica?: string | null
+          q5_retencion: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          q1_razon_login?: string
+          q2_semaforo_rating?: number
+          q3_friccion?: string | null
+          q4_varita_magica?: string | null
+          q5_retencion?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       login_attempts: {
         Row: {
           created_at: string
