@@ -315,6 +315,9 @@ export default function Dashboard() {
           onUpdate={() => refetch()}
         />
       )}
+
+      {/* Feedback modal - obligatorio para clientes */}
+      {role === 'cliente' && user && <FeedbackModal userId={user.id} />}
     </DashboardLayout>
   );
 }
