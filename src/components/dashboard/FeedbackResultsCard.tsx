@@ -36,12 +36,24 @@ export default function FeedbackResultsCard() {
     const fetchFeedback = async () => {
       const { data: rows, error } = await supabase
         .from('feedback_clientes')
-        .select('*, profiles!feedback_clientes_user_id_fkey(nombre_completo, email)')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (!error && rows) {
-        setData(rows as unknown as FeedbackRow[]);
+        // Fetch profiles for each user_id
+        const userIds = [...new Set(rows.map(r => r.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, nombre_completo, email')
+          .in('id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const enriched = rows.map(r => ({
+          ...r,
+          profiles: profileMap.get(r.user_id) || null,
+        }));
+        setData(enriched as unknown as FeedbackRow[]);
       }
       setLoading(false);
     };
