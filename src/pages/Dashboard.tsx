@@ -23,6 +23,8 @@ import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
 import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
 import AgendaHoy from '@/components/dashboard/AgendaHoy';
 import RenovacionesWidget from '@/components/dashboard/RenovacionesWidget';
+import FeedbackModal from '@/components/dashboard/FeedbackModal';
+import FeedbackResultsCard from '@/components/dashboard/FeedbackResultsCard';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
