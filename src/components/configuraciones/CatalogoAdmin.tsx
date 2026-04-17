@@ -17,6 +17,22 @@ const PERIODICIDADES_COMUNES = [
   'En todo momento', 'Al destruir desperdicios', 'Cuando aplique',
 ];
 
+type FrecuenciaTipo = 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | 'EVENTUAL';
+
+const FRECUENCIA_OPTIONS: { value: FrecuenciaTipo; label: string; ocurrencias: number }[] = [
+  { value: 'MENSUAL', label: 'Mensual', ocurrencias: 12 },
+  { value: 'BIMESTRAL', label: 'Bimestral', ocurrencias: 6 },
+  { value: 'TRIMESTRAL', label: 'Trimestral', ocurrencias: 4 },
+  { value: 'SEMESTRAL', label: 'Semestral', ocurrencias: 2 },
+  { value: 'ANUAL', label: 'Anual', ocurrencias: 1 },
+  { value: 'EVENTUAL', label: 'Eventual / sin recurrencia', ocurrencias: 0 },
+];
+
+const MESES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
 interface CatalogoItem {
   id: string;
   programa: string;
@@ -29,6 +45,9 @@ interface CatalogoItem {
   activo: boolean;
   orden: number;
   notas_internas: string | null;
+  frecuencia_tipo: FrecuenciaTipo | null;
+  dia_vencimiento: number | null;
+  mes_vencimiento: number | null;
 }
 
 interface FormData {
@@ -40,6 +59,9 @@ interface FormData {
   obligatorio: boolean;
   activo: boolean;
   notas_internas: string;
+  frecuencia_tipo: FrecuenciaTipo | '';
+  dia_vencimiento: string;
+  mes_vencimiento: string;
 }
 
 const EMPTY: FormData = {
@@ -51,6 +73,9 @@ const EMPTY: FormData = {
   obligatorio: false,
   activo: true,
   notas_internas: '',
+  frecuencia_tipo: '',
+  dia_vencimiento: '',
+  mes_vencimiento: '',
 };
 
 const ORDEN_PROGRAMAS = Object.keys(PROGRAMA_LABELS);
@@ -86,16 +111,26 @@ export function CatalogoAdmin() {
       return;
     }
     setSaving(true);
+    const dia = form.dia_vencimiento ? parseInt(form.dia_vencimiento, 10) : null;
+    const mes = form.mes_vencimiento ? parseInt(form.mes_vencimiento, 10) : null;
+    if (dia !== null && (isNaN(dia) || dia < 1 || dia > 31)) {
+      toast.error('Día de vencimiento debe estar entre 1 y 31');
+      setSaving(false);
+      return;
+    }
     const payload = {
-      programa:       form.programa,
-      categoria:      form.programa,
-      nombre:         form.nombre.trim(),
-      articulos:      form.articulos.trim() || null,
-      descripcion:    form.descripcion.trim() || null,
-      presentacion:   form.presentacion.trim() || null,
-      obligatorio:    form.obligatorio,
-      activo:         form.activo,
-      notas_internas: form.notas_internas.trim() || null,
+      programa:        form.programa,
+      categoria:       form.programa,
+      nombre:          form.nombre.trim(),
+      articulos:       form.articulos.trim() || null,
+      descripcion:     form.descripcion.trim() || null,
+      presentacion:    form.presentacion.trim() || null,
+      obligatorio:     form.obligatorio,
+      activo:          form.activo,
+      notas_internas:  form.notas_internas.trim() || null,
+      frecuencia_tipo: form.frecuencia_tipo || null,
+      dia_vencimiento: form.frecuencia_tipo && form.frecuencia_tipo !== 'EVENTUAL' ? dia : null,
+      mes_vencimiento: form.frecuencia_tipo === 'ANUAL' ? mes : null,
     };
     if (editId) {
       const { error } = await supabase.from('obligaciones_catalogo').update(payload as any).eq('id', editId);
@@ -115,14 +150,17 @@ export function CatalogoAdmin() {
 
   const handleEdit = (item: CatalogoItem) => {
     setForm({
-      programa:       item.programa,
-      nombre:         item.nombre,
-      articulos:      item.articulos || '',
-      descripcion:    item.descripcion || '',
-      presentacion:   item.presentacion || '',
-      obligatorio:    item.obligatorio,
-      activo:         item.activo,
-      notas_internas: item.notas_internas || '',
+      programa:        item.programa,
+      nombre:          item.nombre,
+      articulos:       item.articulos || '',
+      descripcion:     item.descripcion || '',
+      presentacion:    item.presentacion || '',
+      obligatorio:     item.obligatorio,
+      activo:          item.activo,
+      notas_internas:  item.notas_internas || '',
+      frecuencia_tipo: item.frecuencia_tipo || '',
+      dia_vencimiento: item.dia_vencimiento?.toString() || '',
+      mes_vencimiento: item.mes_vencimiento?.toString() || '',
     });
     setEditId(item.id);
     setShowForm(true);
@@ -274,6 +312,70 @@ export function CatalogoAdmin() {
                 onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))}
                 placeholder="Descripción breve de la obligación"
               />
+            </div>
+
+            {/* Motor de recurrencia matemático */}
+            <div className="rounded-lg border border-primary/20 bg-background/50 p-3 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Motor de recurrencia automática</p>
+              <p className="text-[11px] text-muted-foreground -mt-2">
+                Al activar esta obligación en una empresa, el sistema generará automáticamente las ocurrencias del año actual.
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Frecuencia</Label>
+                  <Select
+                    value={form.frecuencia_tipo || 'none'}
+                    onValueChange={v => setForm(p => ({
+                      ...p,
+                      frecuencia_tipo: v === 'none' ? '' : v as FrecuenciaTipo,
+                      ...(v === 'EVENTUAL' || v === 'none' ? { dia_vencimiento: '', mes_vencimiento: '' } : {}),
+                      ...(v !== 'ANUAL' ? { mes_vencimiento: '' } : {}),
+                    }))}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Sin definir" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin definir</SelectItem>
+                      {FRECUENCIA_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {form.frecuencia_tipo && form.frecuencia_tipo !== 'EVENTUAL' && (
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Día (1-31)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={31}
+                      className="mt-1"
+                      value={form.dia_vencimiento}
+                      onChange={e => setForm(p => ({ ...p, dia_vencimiento: e.target.value }))}
+                      placeholder="ej. 17"
+                    />
+                  </div>
+                )}
+                {form.frecuencia_tipo === 'ANUAL' && (
+                  <div>
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mes</Label>
+                    <Select
+                      value={form.mes_vencimiento}
+                      onValueChange={v => setForm(p => ({ ...p, mes_vencimiento: v }))}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Selecciona" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MESES.map((mes, i) => (
+                          <SelectItem key={i + 1} value={(i + 1).toString()}>{mes}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
