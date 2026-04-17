@@ -1070,7 +1070,10 @@ export type Database = {
           created_at: string
           created_by: string | null
           descripcion: string | null
+          dia_vencimiento: number | null
+          frecuencia_tipo: string | null
           id: string
+          mes_vencimiento: number | null
           nombre: string
           notas_internas: string | null
           obligatorio: boolean
@@ -1086,7 +1089,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descripcion?: string | null
+          dia_vencimiento?: number | null
+          frecuencia_tipo?: string | null
           id?: string
+          mes_vencimiento?: number | null
           nombre: string
           notas_internas?: string | null
           obligatorio?: boolean
@@ -1102,7 +1108,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descripcion?: string | null
+          dia_vencimiento?: number | null
+          frecuencia_tipo?: string | null
           id?: string
+          mes_vencimiento?: number | null
           nombre?: string
           notas_internas?: string | null
           obligatorio?: boolean
@@ -1831,6 +1840,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generar_ocurrencias_obligacion: {
+        Args: { p_obligacion_id: string }
+        Returns: undefined
+      }
       get_consultor_visible_user_ids: {
         Args: { p_consultor_id: string }
         Returns: string[]
