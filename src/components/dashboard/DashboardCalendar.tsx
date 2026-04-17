@@ -194,8 +194,6 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       : allEvents.filter(e => e.extendedProps.empresaId === filterEmpresaId);
 
     setEvents(filtered);
-
-    setEvents(filtered);
     setLoading(false);
   }, [user, filterEmpresaId]);
 

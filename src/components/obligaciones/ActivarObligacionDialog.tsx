@@ -14,6 +14,12 @@ import { es } from 'date-fns/locale';
 import { CalendarIcon, BookOpen } from 'lucide-react';
 import { CATEGORIA_COLORS, PROGRAMA_LABELS } from '@/lib/obligaciones';
 
+type FrecuenciaTipo = 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | 'EVENTUAL';
+
+const OCURRENCIAS_POR_FRECUENCIA: Record<FrecuenciaTipo, number> = {
+  MENSUAL: 12, BIMESTRAL: 6, TRIMESTRAL: 4, SEMESTRAL: 2, ANUAL: 1, EVENTUAL: 0,
+};
+
 interface CatalogoItem {
   id: string;
   programa: string;
@@ -23,6 +29,7 @@ interface CatalogoItem {
   descripcion: string | null;
   presentacion: string | null;
   obligatorio: boolean;
+  frecuencia_tipo?: FrecuenciaTipo | null;
 }
 
 interface Usuario {
@@ -136,6 +143,15 @@ export function ActivarObligacionDialog({ open, onOpenChange, item, empresaId, o
       }
 
       toast.success(`"${item.nombre}" activada correctamente`);
+
+      const freq = item.frecuencia_tipo;
+      if (freq && freq !== 'EVENTUAL') {
+        const n = OCURRENCIAS_POR_FRECUENCIA[freq];
+        if (n > 0) {
+          toast.success(`Se generaron ${n} ocurrencia${n > 1 ? 's' : ''} automáticamente para el año en curso`);
+        }
+      }
+
       onOpenChange(false);
       onActivated();
     } catch (e: any) {
