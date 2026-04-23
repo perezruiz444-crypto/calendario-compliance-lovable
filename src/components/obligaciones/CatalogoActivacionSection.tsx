@@ -42,7 +42,7 @@ export function CatalogoActivacionSection({ empresaId, canEdit, onActivated }: P
     const [{ data: cat }, { data: oblig }] = await Promise.all([
       (supabase as any)
         .from('obligaciones_catalogo')
-        .select('id, programa, categoria, nombre, articulos, descripcion, presentacion, obligatorio')
+        .select('id, programa, categoria, nombre, articulos, descripcion, presentacion, obligatorio, frecuencia_tipo, dia_vencimiento, mes_vencimiento')
         .eq('activo', true)
         .order('orden')
         .order('nombre'),
