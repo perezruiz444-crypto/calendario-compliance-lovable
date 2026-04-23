@@ -283,20 +283,29 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
           </div>
          
 
-          <div className="flex flex-wrap gap-2 mt-2">
-            
-            {[
-              { label: 'Vencido',    color: 'hsl(0 84% 60%)' },
-              { label: 'Obligación', color: 'hsl(262 83% 58%)' },
-              { label: 'Tarea alta', color: 'hsl(25 95% 53%)' },
-              { label: 'Documento',  color: 'hsl(221 83% 53%)' },
-              { label: 'Programa',   color: 'hsl(340 82% 52%)' },
-            ].map(({ label, color }) => (
-              <span key={label} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
-                {label}
-              </span>
-            ))}
+          {/* Chips de filtro por tipo */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {(Object.keys(TYPE_LABELS) as EventType[]).map(t => {
+              const active = activeTypes.has(t);
+              const count = events.filter(e => e.extendedProps.type === t).length;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => toggleType(t)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                    active
+                      ? 'bg-background border-border shadow-sm'
+                      : 'bg-muted/40 border-transparent text-muted-foreground opacity-60 hover:opacity-100'
+                  }`}
+                  aria-pressed={active}
+                >
+                  <span className="w-2 h-2 rounded-full" style={{ background: TYPE_COLORS[t] }} />
+                  {TYPE_LABELS[t]}
+                  <span className="text-muted-foreground/70">({count})</span>
+                </button>
+              );
+            })}
           </div>
         </CardHeader>
         <CardContent>
@@ -306,9 +315,12 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
               plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
               locale={esLocale}
               initialView="dayGridMonth"
-              headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' }}
-              buttonText={{ today: 'Hoy', month: 'Mes', listMonth: 'Agenda' }}
-              events={events}
+              headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth,listYear' }}
+              buttonText={{ today: 'Hoy', month: 'Mes', listMonth: 'Agenda', listYear: 'Próximos' }}
+              views={{
+                listYear: { type: 'list', duration: { days: 30 }, buttonText: 'Próximos 30 días' }
+              }}
+              events={visibleEvents}
               eventContent={(info) => <EventContent eventInfo={info} />}
               eventClick={handleEventClick}
               datesSet={handleDatesSet}
@@ -317,7 +329,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
               moreLinkText={n => `+${n} más`}
               nowIndicator
               eventDisplay="block"
-              
+              noEventsContent="No hay vencimientos en este periodo"
             />
           </div>
         </CardContent>
