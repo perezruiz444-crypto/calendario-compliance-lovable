@@ -23,6 +23,7 @@ import { getCurrentPeriodKey, getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS
 import { CumplimientoHistorial } from '@/components/obligaciones/CumplimientoHistorial';
 import { EvidenciaCumplimiento } from '@/components/obligaciones/EvidenciaCumplimiento';
 import { ExportarCumplimientoButton } from '@/components/obligaciones/ExportarCumplimientoButton';
+import MisVencimientos from '@/components/empresas/MisVencimientos';
 
 export default function MiEmpresa() {
   const { user, role, loading } = useAuth();
@@ -229,6 +230,12 @@ export default function MiEmpresa() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Mis próximos vencimientos — vista limpia para clientes */}
+        <MisVencimientos
+          empresaId={empresa.id}
+          onSubirEvidencia={(ob) => setEvidenciaObl(ob)}
+        />
 
         {/* Alertas */}
         <Card className="gradient-card shadow-card">
