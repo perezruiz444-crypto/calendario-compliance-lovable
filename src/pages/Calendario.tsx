@@ -4,19 +4,28 @@ import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import { useEmpresaContext } from '@/hooks/useEmpresaContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { Building2 } from 'lucide-react';
 
 export default function Calendario() {
-  const { user, loading } = useAuth();
-  const { selectedEmpresaId } = useEmpresaContext();
+  const { user, role, loading } = useAuth();
+  const { selectedEmpresaId, setSelectedEmpresaId } = useEmpresaContext();
   const navigate = useNavigate();
+  const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
-    }
+    if (!loading && !user) navigate('/auth');
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (role === 'cliente') return; // clientes no eligen empresa
+    supabase
+      .from('empresas')
+      .select('id, razon_social')
+      .order('razon_social')
+      .then(({ data }) => setEmpresas(data || []));
+  }, [role]);
 
   if (loading) {
     return (
@@ -26,21 +35,44 @@ export default function Calendario() {
     );
   }
 
+  const showEmpresaSelector = role !== 'cliente';
+
   return (
     <DashboardLayout currentPage="/calendario">
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-            Calendario de Eventos
-          </h1>
-          <p className="text-muted-foreground font-body">
-            Vista completa de tareas, vencimientos y eventos importantes
-          </p>
+        {/* Header con selector de empresa */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
+              Calendario de Vencimientos
+            </h1>
+            <p className="text-muted-foreground font-body">
+              Filtra por empresa o por tipo de evento para ver solo lo que importa.
+            </p>
+          </div>
+
+          {showEmpresaSelector && (
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-muted-foreground" />
+              <Select
+                value={selectedEmpresaId ?? 'all'}
+                onValueChange={(v) => setSelectedEmpresaId(v === 'all' ? null : v)}
+              >
+                <SelectTrigger className="w-[260px]">
+                  <SelectValue placeholder="Todas las empresas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las empresas</SelectItem>
+                  {empresas.map(e => (
+                    <SelectItem key={e.id} value={e.id}>{e.razon_social}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
-        {/* Dashboard Calendar */}
-       <DashboardCalendar
+        <DashboardCalendar
           height="700px"
           filterEmpresaId={selectedEmpresaId}
           onEventClick={(event) => {
@@ -53,37 +85,6 @@ export default function Calendario() {
             }
           }}
         />
-
-        {/* Legend as inline chips */}
-        <div className="flex flex-wrap items-center gap-3 px-1">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Leyenda:</span>
-          <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-destructive/10 text-destructive border border-destructive/20">
-              <span className="w-2 h-2 rounded-full bg-destructive" />
-              Urgente / Vencida
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: 'hsl(25, 95%, 53%, 0.1)', color: 'hsl(25, 95%, 40%)', border: '1px solid hsl(25, 95%, 53%, 0.2)' }}>
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(25, 95%, 53%)' }} />
-              Alta Prioridad
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning border border-warning/20">
-              <span className="w-2 h-2 rounded-full bg-warning" />
-              Media Prioridad
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success border border-success/20">
-              <span className="w-2 h-2 rounded-full bg-success" />
-              Baja Prioridad
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: 'hsl(221, 83%, 53%, 0.1)', color: 'hsl(221, 83%, 40%)', border: '1px solid hsl(221, 83%, 53%, 0.2)' }}>
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(221, 83%, 53%)' }} />
-              Documentos
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: 'hsl(340, 82%, 52%, 0.1)', color: 'hsl(340, 82%, 40%)', border: '1px solid hsl(340, 82%, 52%, 0.2)' }}>
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(340, 82%, 52%)' }} />
-              Programas / Certificaciones
-            </span>
-          </div>
-        </div>
       </div>
     </DashboardLayout>
   );
