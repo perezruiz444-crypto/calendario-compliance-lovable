@@ -132,7 +132,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
 
     const { data: obs } = await supabase
       .from('obligaciones')
-      .select('id, nombre, empresa_id, categoria, fecha_vencimiento, empresas(razon_social)')
+      .select('id, nombre, empresa_id, categoria, fecha_vencimiento, catalogo_id, empresas(razon_social)')
       .eq('activa', true)
       .gte('fecha_vencimiento', startStr)
       .lte('fecha_vencimiento', endStr);
@@ -148,7 +148,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         backgroundColor: bg,
         borderColor: border,
         textColor: 'hsl(var(--foreground))',
-        extendedProps: { type: 'obligacion', rawId: ob.id, empresaId: ob.empresa_id, data: ob },
+        extendedProps: { type: 'obligacion', rawId: ob.id, empresaId: ob.empresa_id, isRecurrente: !!ob.catalogo_id, data: ob },
       });
     });
 
@@ -221,13 +221,28 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       });
     });
 
-    const filtered = (!filterEmpresaId || filterEmpresaId === 'all')
+    const byEmpresa = (!filterEmpresaId || filterEmpresaId === 'all')
       ? allEvents
       : allEvents.filter(e => e.extendedProps.empresaId === filterEmpresaId);
 
-    setEvents(filtered);
+    setEvents(byEmpresa);
     setLoading(false);
   }, [user, filterEmpresaId]);
+
+  // Eventos visibles según chips de tipo
+  const visibleEvents = events.filter(e => activeTypes.has(e.extendedProps.type as EventType));
+
+  // Lista "Próximos 30 días" — derivada de los eventos cargados
+  const next30 = (() => {
+    const today = startOfDay(new Date());
+    const limit = addDays(today, 30);
+    return visibleEvents
+      .filter(e => {
+        const d = new Date(e.start + 'T12:00:00');
+        return d >= today && d <= limit;
+      })
+      .sort((a, b) => a.start.localeCompare(b.start));
+  })();
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
     setDateRange({ start: arg.start, end: arg.end });
