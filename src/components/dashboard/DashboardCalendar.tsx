@@ -8,10 +8,12 @@ import esLocale from '@fullcalendar/core/locales/es';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Calendar, AlertCircle, Building2, ClipboardList, FileText, Factory, Scale, CalendarDays } from 'lucide-react';
+import { Calendar, AlertCircle, Building2, ClipboardList, FileText, Factory, Scale, CalendarDays, Repeat } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { isPast, startOfDay, format } from 'date-fns';
+import { isPast, startOfDay, format, addDays } from 'date-fns';
+import { es as esLocaleDate } from 'date-fns/locale';
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
 
 interface FcEvent {
@@ -28,9 +30,24 @@ interface FcEvent {
     estado?: string;
     rawId?: string;
     empresaId?: string;
+    isRecurrente?: boolean;
     data: any;
   };
 }
+
+type EventType = 'tarea' | 'documento' | 'programa' | 'obligacion';
+const TYPE_LABELS: Record<EventType, string> = {
+  obligacion: 'Obligaciones',
+  tarea: 'Tareas',
+  documento: 'Documentos',
+  programa: 'Programas',
+};
+const TYPE_COLORS: Record<EventType, string> = {
+  obligacion: 'hsl(262 83% 58%)',
+  tarea: 'hsl(25 95% 53%)',
+  documento: 'hsl(221 83% 53%)',
+  programa: 'hsl(340 82% 52%)',
+};
 
 interface DashboardCalendarProps {
   onEventClick?: (event: any) => void;
@@ -62,10 +79,15 @@ const EVENT_ICONS: Record<string, React.ReactNode> = {
 function EventContent({ eventInfo }: { eventInfo: EventContentArg }) {
   const { extendedProps, title } = eventInfo.event;
   const type: string = extendedProps.type;
+  const isRec = extendedProps.isRecurrente;
   const icon = EVENT_ICONS[type] ?? <CalendarDays className="h-3 w-3 flex-shrink-0 inline-block" />;
   return (
     <div className="flex items-center gap-1 px-1.5 py-0.5 w-full overflow-hidden text-[11px] font-medium leading-tight">
-      <span className="flex items-center gap-1 truncate">{icon}<span className="truncate">{title}</span></span>
+      <span className="flex items-center gap-1 truncate">
+        {icon}
+        <span className="truncate">{title}</span>
+        {isRec && <Repeat className="h-2.5 w-2.5 flex-shrink-0 opacity-60" aria-label="Recurrente" />}
+      </span>
     </div>
   );
 }
@@ -76,10 +98,20 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
   const [events, setEvents] = useState<FcEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null);
- const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedObId, setSelectedObId] = useState<string | null>(null);
   const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
-  
+  const [activeTypes, setActiveTypes] = useState<Set<EventType>>(
+    new Set(['obligacion', 'tarea', 'documento', 'programa'])
+  );
+
+  const toggleType = (t: EventType) => {
+    setActiveTypes(prev => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t); else next.add(t);
+      return next;
+    });
+  };
 
   useEffect(() => {
     supabase
@@ -100,7 +132,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
 
     const { data: obs } = await supabase
       .from('obligaciones')
-      .select('id, nombre, empresa_id, categoria, fecha_vencimiento, empresas(razon_social)')
+      .select('id, nombre, empresa_id, categoria, fecha_vencimiento, catalogo_id, empresas(razon_social)')
       .eq('activa', true)
       .gte('fecha_vencimiento', startStr)
       .lte('fecha_vencimiento', endStr);
@@ -116,7 +148,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         backgroundColor: bg,
         borderColor: border,
         textColor: 'hsl(var(--foreground))',
-        extendedProps: { type: 'obligacion', rawId: ob.id, empresaId: ob.empresa_id, data: ob },
+        extendedProps: { type: 'obligacion', rawId: ob.id, empresaId: ob.empresa_id, isRecurrente: !!ob.catalogo_id, data: ob },
       });
     });
 
@@ -189,13 +221,28 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       });
     });
 
-    const filtered = (!filterEmpresaId || filterEmpresaId === 'all')
+    const byEmpresa = (!filterEmpresaId || filterEmpresaId === 'all')
       ? allEvents
       : allEvents.filter(e => e.extendedProps.empresaId === filterEmpresaId);
 
-    setEvents(filtered);
+    setEvents(byEmpresa);
     setLoading(false);
   }, [user, filterEmpresaId]);
+
+  // Eventos visibles según chips de tipo
+  const visibleEvents = events.filter(e => activeTypes.has(e.extendedProps.type as EventType));
+
+  // Lista "Próximos 30 días" — derivada de los eventos cargados
+  const next30 = (() => {
+    const today = startOfDay(new Date());
+    const limit = addDays(today, 30);
+    return visibleEvents
+      .filter(e => {
+        const d = new Date(e.start + 'T12:00:00');
+        return d >= today && d <= limit;
+      })
+      .sort((a, b) => a.start.localeCompare(b.start));
+  })();
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
     setDateRange({ start: arg.start, end: arg.end });
@@ -236,20 +283,29 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
           </div>
          
 
-          <div className="flex flex-wrap gap-2 mt-2">
-            
-            {[
-              { label: 'Vencido',    color: 'hsl(0 84% 60%)' },
-              { label: 'Obligación', color: 'hsl(262 83% 58%)' },
-              { label: 'Tarea alta', color: 'hsl(25 95% 53%)' },
-              { label: 'Documento',  color: 'hsl(221 83% 53%)' },
-              { label: 'Programa',   color: 'hsl(340 82% 52%)' },
-            ].map(({ label, color }) => (
-              <span key={label} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
-                {label}
-              </span>
-            ))}
+          {/* Chips de filtro por tipo */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {(Object.keys(TYPE_LABELS) as EventType[]).map(t => {
+              const active = activeTypes.has(t);
+              const count = events.filter(e => e.extendedProps.type === t).length;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => toggleType(t)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                    active
+                      ? 'bg-background border-border shadow-sm'
+                      : 'bg-muted/40 border-transparent text-muted-foreground opacity-60 hover:opacity-100'
+                  }`}
+                  aria-pressed={active}
+                >
+                  <span className="w-2 h-2 rounded-full" style={{ background: TYPE_COLORS[t] }} />
+                  {TYPE_LABELS[t]}
+                  <span className="text-muted-foreground/70">({count})</span>
+                </button>
+              );
+            })}
           </div>
         </CardHeader>
         <CardContent>
@@ -259,9 +315,12 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
               plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
               locale={esLocale}
               initialView="dayGridMonth"
-              headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' }}
-              buttonText={{ today: 'Hoy', month: 'Mes', listMonth: 'Agenda' }}
-              events={events}
+              headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth,listYear' }}
+              buttonText={{ today: 'Hoy', month: 'Mes', listMonth: 'Agenda', listYear: 'Próximos' }}
+              views={{
+                listYear: { type: 'list', duration: { days: 30 }, buttonText: 'Próximos 30 días' }
+              }}
+              events={visibleEvents}
               eventContent={(info) => <EventContent eventInfo={info} />}
               eventClick={handleEventClick}
               datesSet={handleDatesSet}
@@ -270,7 +329,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
               moreLinkText={n => `+${n} más`}
               nowIndicator
               eventDisplay="block"
-              
+              noEventsContent="No hay vencimientos en este periodo"
             />
           </div>
         </CardContent>
