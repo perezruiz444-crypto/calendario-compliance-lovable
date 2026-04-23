@@ -1840,6 +1840,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      expand_existing_obligaciones: { Args: never; Returns: number }
       generar_ocurrencias_obligacion: {
         Args: { p_obligacion_id: string }
         Returns: undefined
