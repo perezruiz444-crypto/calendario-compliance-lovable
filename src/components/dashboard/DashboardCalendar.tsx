@@ -108,8 +108,11 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedObId, setSelectedObId] = useState<string | null>(null);
   const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
+  // Por defecto, los clientes no ven Tareas (son operativas internas del despacho)
   const [activeTypes, setActiveTypes] = useState<Set<EventType>>(
-    new Set(['obligacion', 'tarea', 'documento', 'programa'])
+    role === 'cliente'
+      ? new Set(['obligacion', 'documento', 'programa'])
+      : new Set(['obligacion', 'tarea', 'documento', 'programa'])
   );
 
   const toggleType = (t: EventType) => {
@@ -139,23 +142,24 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
 
     const { data: obs } = await supabase
       .from('obligaciones')
-      .select('id, nombre, empresa_id, categoria, fecha_vencimiento, catalogo_id, empresas(razon_social)')
+      .select('id, nombre, empresa_id, categoria, fecha_vencimiento, catalogo_id, estado, empresas(razon_social)')
       .eq('activa', true)
       .gte('fecha_vencimiento', startStr)
       .lte('fecha_vencimiento', endStr);
 
     (obs || []).forEach(ob => {
       const d = new Date(ob.fecha_vencimiento + 'T12:00:00');
-      const overdue = d < today;
-      const { bg, border } = eventColor('obligacion', undefined, overdue);
+      const isDone = ob.estado === 'completada';
+      const overdue = !isDone && d < today;
+      const { bg, border } = eventColor('obligacion', undefined, overdue, isDone);
       allEvents.push({
         id: `ob-${ob.id}`,
-        title: `${ob.nombre}${ob.empresas?.razon_social ? ` · ${ob.empresas.razon_social}` : ''}`,
+        title: `${isDone ? '✓ ' : ''}${ob.nombre}${ob.empresas?.razon_social ? ` · ${ob.empresas.razon_social}` : ''}`,
         start: ob.fecha_vencimiento,
         backgroundColor: bg,
         borderColor: border,
         textColor: 'hsl(var(--foreground))',
-        extendedProps: { type: 'obligacion', rawId: ob.id, empresaId: ob.empresa_id, isRecurrente: !!ob.catalogo_id, data: ob },
+        extendedProps: { type: 'obligacion', rawId: ob.id, empresaId: ob.empresa_id, isRecurrente: !!ob.catalogo_id, estado: ob.estado, data: ob },
       });
     });
 
@@ -292,27 +296,31 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
 
           {/* Chips de filtro por tipo */}
           <div className="flex flex-wrap gap-2 mt-3">
-            {(Object.keys(TYPE_LABELS) as EventType[]).map(t => {
-              const active = activeTypes.has(t);
-              const count = events.filter(e => e.extendedProps.type === t).length;
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => toggleType(t)}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                    active
-                      ? 'bg-background border-border shadow-sm'
-                      : 'bg-muted/40 border-transparent text-muted-foreground opacity-60 hover:opacity-100'
-                  }`}
-                  aria-pressed={active}
-                >
-                  <span className="w-2 h-2 rounded-full" style={{ background: TYPE_COLORS[t] }} />
-                  {TYPE_LABELS[t]}
-                  <span className="text-muted-foreground/70">({count})</span>
-                </button>
-              );
-            })}
+            {(Object.keys(TYPE_LABELS) as EventType[])
+              .filter(t => !(role === 'cliente' && t === 'tarea'))
+              .map(t => {
+                const active = activeTypes.has(t);
+                const count = events.filter(e => e.extendedProps.type === t).length;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => toggleType(t)}
+                    title={TYPE_HELP[t]}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                      active
+                        ? 'bg-background border-border shadow-sm'
+                        : 'bg-muted/40 border-transparent text-muted-foreground opacity-60 hover:opacity-100'
+                    }`}
+                    aria-pressed={active}
+                    aria-label={`${TYPE_LABELS[t]}: ${TYPE_HELP[t]}`}
+                  >
+                    <span className="w-2 h-2 rounded-full" style={{ background: TYPE_COLORS[t] }} />
+                    {TYPE_LABELS[t]}
+                    <span className="text-muted-foreground/70">({count})</span>
+                  </button>
+                );
+              })}
           </div>
         </CardHeader>
         <CardContent>
