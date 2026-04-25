@@ -42,6 +42,12 @@ const TYPE_LABELS: Record<EventType, string> = {
   documento: 'Documentos',
   programa: 'Programas',
 };
+const TYPE_HELP: Record<EventType, string> = {
+  obligacion: 'Trámites legales recurrentes (SAT, INEGI, IMMEX)',
+  programa: 'Vencimiento de tu IMMEX/PROSEC/IVA-IEPS/Matriz',
+  documento: 'Pasaportes, certificados y contratos',
+  tarea: 'Pendientes operativos del despacho',
+};
 const TYPE_COLORS: Record<EventType, string> = {
   obligacion: 'hsl(262 83% 58%)',
   tarea: 'hsl(25 95% 53%)',
@@ -55,7 +61,8 @@ interface DashboardCalendarProps {
   filterEmpresaId?: string | null;
 }
 
-function eventColor(type: string, prioridad?: string, isOverdue?: boolean): { bg: string; border: string } {
+function eventColor(type: string, prioridad?: string, isOverdue?: boolean, isDone?: boolean): { bg: string; border: string } {
+  if (isDone) return { bg: 'hsl(142 71% 45% / 0.15)', border: 'hsl(142 71% 45%)' };
   if (isOverdue) return { bg: 'hsl(0 84% 60% / 0.15)', border: 'hsl(0 84% 60%)' };
   if (type === 'tarea') {
     if (prioridad === 'alta')  return { bg: 'hsl(25 95% 53% / 0.15)', border: 'hsl(25 95% 53%)' };
