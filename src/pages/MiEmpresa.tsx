@@ -24,6 +24,7 @@ import { CumplimientoHistorial } from '@/components/obligaciones/CumplimientoHis
 import { EvidenciaCumplimiento } from '@/components/obligaciones/EvidenciaCumplimiento';
 import { ExportarCumplimientoButton } from '@/components/obligaciones/ExportarCumplimientoButton';
 import MisVencimientos from '@/components/empresas/MisVencimientos';
+import MisDocumentos from '@/components/empresas/MisDocumentos';
 
 export default function MiEmpresa() {
   const { user, role, loading } = useAuth();
@@ -235,6 +236,12 @@ export default function MiEmpresa() {
         <MisVencimientos
           empresaId={empresa.id}
           onSubirEvidencia={(ob) => setEvidenciaObl(ob)}
+        />
+
+        {/* Documentos por vencer */}
+        <MisDocumentos
+          empresaId={empresa.id}
+          onVerTodos={() => document.querySelector('[data-section="documentos"]')?.scrollIntoView({ behavior: 'smooth' })}
         />
 
         {/* Alertas */}
@@ -651,12 +658,19 @@ export default function MiEmpresa() {
           </TabsContent>
         </Tabs>
 
-        {/* Calendario */}
-        <DashboardCalendar height="500px" onEventClick={(event) => {
-          if (event.resource.type === 'documento') {
-            document.querySelector('[data-section="documentos"]')?.scrollIntoView({ behavior: 'smooth' });
-          }
-        }} />
+        {/* Calendario completo (vista expandida opcional) */}
+        <details className="rounded-lg border bg-card">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium hover:bg-muted/30 select-none">
+            Ver calendario completo del año
+          </summary>
+          <div className="p-4 pt-0">
+            <DashboardCalendar height="500px" onEventClick={(event) => {
+              if (event.resource.type === 'documento') {
+                document.querySelector('[data-section="documentos"]')?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }} />
+          </div>
+        </details>
 
         {/* Documentos y Solicitudes */}
         <div className="mt-6 space-y-6" data-section="documentos">
