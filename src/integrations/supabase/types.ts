@@ -1840,6 +1840,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      crear_organizacion_inicial: {
+        Args: {
+          p_nombre_cuenta: string
+          p_programas: Json
+          p_razon_social: string
+          p_rfc: string
+        }
+        Returns: Json
+      }
       expand_existing_obligaciones: { Args: never; Returns: number }
       generar_ocurrencias_obligacion: {
         Args: { p_obligacion_id: string }

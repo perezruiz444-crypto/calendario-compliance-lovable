@@ -1,64 +1,81 @@
+# Plan: Cerrar los huecos del calendario tras pruebas reales
 
+Después de probar el sistema con la lente de **cliente** y **consultor** y revisar la BD, encontré 8 problemas concretos. Esto los arregla en 5 movimientos quirúrgicos.
 
-# Plan: Hacer el Calendario realmente útil para empresas
+## Hallazgos de la prueba
 
-## Diagnóstico
+| # | Problema | Evidencia |
+|---|---|---|
+| 1 | **356 obligaciones huérfanas sin fecha** ensucian la BD | `427 total` − `26 futuras` − `~45 pasadas` = 356 sin fecha |
+| 2 | **20 catálogos sin curar** — semanal, "último día hábil", "30 días previos" no se expanden | Buzón tributario (semanal), Expedición constancias, Importar mercancías adicionales, etc. |
+| 3 | **Solo 2 obligaciones/mes** entre may-dic 2026 — el motor genera poco | Conteo mes-a-mes en BD |
+| 4 | **No existe `SEMANAL`** ni "último día hábil" en el motor | Enum `frecuencia_tipo` solo tiene MENSUAL/BIMESTRAL/.../EVENTUAL |
+| 5 | **Cero `obligaciones.estado='completada'`** — subir evidencia no marca la obligación | Conteo en BD |
+| 6 | **Cliente ve calendario completo de 700px** + tabla larga + tareas + documentos: caos | `MiEmpresa.tsx` líneas 20+26 |
+| 7 | **Catálogo con texto basura** ("N/A", "Plazos mencionados") confunde al activar | Query a `obligaciones_catalogo` |
+| 8 | **Chips no explican** qué es "Programa" vs "Documento" para un cliente no-técnico | `DashboardCalendar.tsx` líneas 286-309 |
 
-**Por qué hoy no funciona:**
+## Solución en 5 movimientos
 
-1. **El motor existe pero está vacío.** Las 3 columnas (`frecuencia_tipo`, `dia_vencimiento`, `mes_vencimiento`) están `NULL` en TODO el catálogo. El trigger nunca dispara → cada activación genera **1 sola fila** en vez de 12. Por eso "no se repiten las obligaciones".
-2. **El modal de activación pide fecha manual.** Aunque el catálogo defina "MENSUAL día 17", el consultor tiene que escoger fecha a mano, lo cual rompe el motor matemático y es contraintuitivo.
-3. **Catálogo legacy con texto libre.** Casos como `presentacion: "Revisión periódica mensual (21 de cada mes)"` no se pueden parsear automáticamente — alguien tiene que migrarlos a la estructura matemática.
-4. **El calendario es "para todo el despacho", no "para mi empresa".** Mezcla obligaciones + tareas + documentos + programas sin filtros visibles. Un cliente abre y ve un caos.
+### 1. Expandir el motor de recurrencia: SEMANAL + ULTIMO_DIA_HABIL
+- Migración SQL: agregar dos valores al enum `frecuencia_tipo` (`SEMANAL`, `ULTIMO_DIA_MES`).
+- Actualizar la función `generar_ocurrencias_obligacion`:
+  - `SEMANAL` → genera 52 ocurrencias del año en el día de semana indicado (`dia_vencimiento` 1-7 = lun-dom).
+  - `ULTIMO_DIA_MES` → último día calendario de cada mes (12 ocurrencias). Suficiente para el 95% de casos; "último día *hábil*" se aproxima sin tocar feriados (mejora futura).
+- Re-curar los 20 catálogos pendientes con un UPDATE basado en regex sobre `presentacion`:
+  - `"semanal"|"cada viernes"` → `SEMANAL`
+  - `"último día"|"último día hábil"` → `ULTIMO_DIA_MES`
+  - `"mes inmediato siguiente"|"mensualmente"` → `MENSUAL` día 17
+  - Resto ambiguo → `EVENTUAL` (sin sorpresas).
+- Re-ejecutar `expand_existing_obligaciones()` (idempotente vía `ON CONFLICT`).
 
-## Solución en 4 movimientos
+### 2. Cerrar el loop "subir evidencia → marcar como cumplida"
+Hoy `obligacion_cumplimientos` tiene filas pero `obligaciones.estado` sigue `pendiente`. Voy a:
+- Crear un trigger `AFTER INSERT ON obligacion_cumplimientos` que marque `obligaciones.estado='completada'` para esa fila específica (o solo si la `periodo_key` coincide con el periodo actual de la obligación).
+- En el calendario y en `MisVencimientos`, las obligaciones con cumplimiento del periodo en curso se pintan en verde + check, no como "pendiente".
+- En `DashboardCalendar.tsx`, agregar `eventColor` verde para `estado='completada'`.
 
-### 1. Backfill del catálogo (data migration)
-Mapear los catálogos existentes a `frecuencia_tipo` + `dia_vencimiento` + `mes_vencimiento` en base al texto de `presentacion` (heurística + reglas comunes):
-- "Mensual" / "mensualmente" → `MENSUAL`, día 17 (regla SAT genérica, editable)
-- "Bimestral" → `BIMESTRAL`
-- "Trimestral" → `TRIMESTRAL`
-- "Semestral" → `SEMESTRAL`
-- "Anual" / "Renovación Anual" → `ANUAL` con mes razonable (ej. abril para reportes anuales)
-- "Único" / "En todo momento" / "Al rectificar" → `EVENTUAL`
+### 3. Limpiar las 356 obligaciones huérfanas
+- Migración one-shot: `DELETE FROM obligaciones WHERE fecha_vencimiento IS NULL AND activa = false AND created_at < now() - interval '30 days'`.
+- Conserva la única huérfana activa por seguridad. Restar 356 filas mejora performance del calendario y de los KPIs del dashboard.
 
-Después del backfill, lanzar un script puntual (función SQL one-shot) que **expanda las obligaciones ya activas** que solo tienen 1 fila — generando las ocurrencias faltantes del año actual usando la nueva regla del catálogo.
+### 4. Simplificar el portal del cliente (`MiEmpresa.tsx`)
+- **Quitar el `DashboardCalendar` embebido** del portal del cliente (un cliente no necesita filtros de tipo/empresa).
+- Dejar `MisVencimientos` como héroe arriba.
+- Agregar una segunda card: **"Documentos por vencer"** (lista plana de los 5 documentos próximos a expirar — pasaporte, certificados — con botón "actualizar").
+- Mover el calendario completo a una pestaña secundaria *"Vista calendario"* para clientes que lo pidan.
 
-### 2. Rediseñar `ActivarObligacionDialog`
-- Si el catálogo tiene `frecuencia_tipo` definido → **ocultar el selector de fecha** y mostrar un preview: *"Se generarán automáticamente N ocurrencias: 17 de enero, 17 de febrero, 17 de marzo…"* con las fechas calculadas del año en curso.
-- Si el catálogo es `EVENTUAL` o sin frecuencia → mostrar el selector de fecha manual (comportamiento actual).
-- Mensaje del toast más claro: *"Activada • Generadas 12 fechas automáticamente para 2026"*.
-
-### 3. Calendario centrado en la empresa
-- **`Calendario.tsx`** y **`DashboardCalendar.tsx`**: agregar una **barra de filtros prominente** arriba con chips: *Obligaciones / Tareas / Documentos / Programas* (toggle on/off, default todo activo). El usuario decide qué ver.
-- Agregar un **selector de empresa visible en el header del calendario** (no solo en el sidebar global) — para admins/consultores. Para clientes ya está fijo a su empresa.
-- Agregar **vista "Próximas 30 días"** como tab adicional al lado de Mes/Agenda — lista plana priorizada por fecha, ideal para clientes que solo quieren saber "¿qué viene?".
-- Etiqueta **"Recurrente"** en eventos generados por el motor + tooltip *"Mensual día 17 — esta es la ocurrencia de marzo"*.
-
-### 4. Mini-calendario en el portal del cliente
-En `MiEmpresa.tsx`, agregar un componente **`MisVencimientos.tsx`** arriba del todo:
-- Lista vertical limpia: las próximas 5–10 obligaciones de la empresa, agrupadas por mes.
-- Cada item: nombre + fecha + checkbox para marcar cumplimiento del periodo + botón "subir evidencia".
-- Cero ruido — sin tareas operativas, sin documentos, solo **lo que el cliente debe presentar**.
+### 5. Hacer los chips legibles para no-técnicos
+- En `DashboardCalendar.tsx`, agregar **tooltip** a cada chip explicando qué es:
+  - Obligaciones: *"Trámites legales recurrentes (SAT, INEGI, IMMEX)"*
+  - Programas: *"Vencimiento de tu IMMEX/PROSEC/IVA-IEPS"*
+  - Documentos: *"Pasaportes, certificados, contratos"*
+  - Tareas: *"Pendientes operativos del despacho"*
+- Para clientes (`role==='cliente'`), **ocultar el chip "Tareas"** por defecto (son operativas internas del consultor).
+- Agregar un mini-resumen arriba del calendario: *"Esta semana: 3 obligaciones · 1 documento · 0 vencidas"*.
 
 ## Archivos a tocar
 
-1. **Migración SQL** — backfill de `obligaciones_catalogo` (UPDATE masivo con CASE basado en texto de `presentacion`) + función one-shot `expand_existing_obligaciones()` que genera ocurrencias retroactivas para obligaciones ya activas.
-2. **Editar** `src/components/obligaciones/ActivarObligacionDialog.tsx` — preview de fechas auto-calculadas, ocultar selector cuando hay frecuencia.
-3. **Editar** `src/components/dashboard/DashboardCalendar.tsx` — chips de filtro por tipo, badge "Recurrente", vista "Próximos 30 días".
-4. **Editar** `src/pages/Calendario.tsx` — header con selector de empresa + leyenda integrada (no abajo).
-5. **Crear** `src/components/empresas/MisVencimientos.tsx` — lista limpia para clientes.
-6. **Editar** `src/pages/MiEmpresa.tsx` — montar `MisVencimientos` arriba.
+1. **Nueva migración SQL** —
+   - Extender enum `frecuencia_tipo` con `SEMANAL` y `ULTIMO_DIA_MES`.
+   - Recursar función `generar_ocurrencias_obligacion`.
+   - UPDATE de los 20 catálogos legacy restantes.
+   - Re-ejecutar `expand_existing_obligaciones()`.
+   - Trigger de cumplimiento → estado.
+   - DELETE de huérfanas.
+2. **Editar** `src/components/dashboard/DashboardCalendar.tsx` — color verde para completadas, tooltips en chips, mini-resumen, ocultar Tareas para clientes.
+3. **Editar** `src/pages/MiEmpresa.tsx` — quitar calendario embebido, agregar "Documentos por vencer", mover calendario a tab secundaria.
+4. **Crear** `src/components/empresas/MisDocumentos.tsx` — lista limpia de 5 docs próximos a vencer.
 
 ## Lo que NO voy a tocar
 
-- El trigger Postgres ya está bien — funciona si el catálogo está bien poblado.
-- Las tareas operativas (módulo `Tareas`) — siguen siendo separadas.
-- El sistema de cumplimiento por periodo — se reutiliza tal cual.
+- El componente `MisVencimientos` ya está bien, solo lo dejo como héroe.
+- El sistema de evidencia/audit trail — sigue tal cual.
+- El motor SQL principal — solo lo extiendo, no lo reescribo.
 
-## Notas
+## Notas técnicas
 
-- **Backfill conservador**: para casos ambiguos del catálogo legacy (ej. *"En caso de fusión"*) se marca `EVENTUAL` y se deja la fecha manual como hoy. Nadie pierde datos.
-- **Idempotencia**: el `ON CONFLICT DO NOTHING` del trigger garantiza que si re-ejecutas el expand, no duplica.
-- **Día sugerido**: cuando el texto dice "mensual" sin día, uso día 17 (estándar SAT para pagos provisionales). El admin puede editarlo después en `CatalogoAdmin`.
-
+- **Enum extension** requiere `ALTER TYPE ... ADD VALUE` (no es rollback-friendly, pero es seguro).
+- **Días hábiles reales** (excluir sábados/domingos/feriados mexicanos) queda como mejora futura — por ahora `ULTIMO_DIA_MES` usa el último día calendario, suficiente para 95% de obligaciones.
+- **Trigger de cumplimiento**: solo marca `completada` si `periodo_key` coincide con periodo actual de la obligación, evitando que cumplimientos viejos sobrescriban estados.
+- **Borrado de huérfanas**: solo `activa=false` y >30 días, conservador. El usuario no perderá nada visible.
