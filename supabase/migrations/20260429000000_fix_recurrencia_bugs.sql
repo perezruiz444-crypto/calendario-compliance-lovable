@@ -24,5 +24,5 @@ WHERE id IN (
 
 -- 1b. Unique index: mismo empresa+catalogo no puede tener dos fechas en el mismo año-mes
 CREATE UNIQUE INDEX IF NOT EXISTS idx_obligaciones_unique_mes
-  ON public.obligaciones (empresa_id, catalogo_id, date_trunc('month', fecha_vencimiento))
+  ON public.obligaciones (empresa_id, catalogo_id, to_char(fecha_vencimiento, 'YYYY-MM'))
   WHERE catalogo_id IS NOT NULL AND fecha_vencimiento IS NOT NULL;
