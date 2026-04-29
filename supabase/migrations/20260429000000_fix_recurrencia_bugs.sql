@@ -25,7 +25,7 @@ WHERE id IN (
 -- 1b. Unique index: mismo empresa+catalogo no puede tener dos fechas en el mismo año-mes
 -- Usamos EXTRACT en lugar de to_char/date_trunc para evitar el error IMMUTABLE
 CREATE UNIQUE INDEX IF NOT EXISTS idx_obligaciones_unique_mes
-  ON public.obligaciones (empresa_id, catalogo_id, EXTRACT(YEAR FROM fecha_vencimiento)::int, EXTRACT(MONTH FROM fecha_vencimiento)::int)
+  ON public.obligaciones (empresa_id, catalogo_id, EXTRACT(YEAR FROM fecha_vencimiento), EXTRACT(MONTH FROM fecha_vencimiento))
   WHERE catalogo_id IS NOT NULL AND fecha_vencimiento IS NOT NULL;
 
 -- ============================================================
