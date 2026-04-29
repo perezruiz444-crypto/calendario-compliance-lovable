@@ -94,9 +94,9 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
           .upsert({
             obligacion_id: ob.id,
             periodo_key: periodKey,
-            cumplido_por: user.id,
+            completada: true,
+            completada_por: user.id,
             notas: evidencia || null,
-            fecha_cumplimiento: new Date().toISOString(),
           });
         if (error) throw error;
         setIsCumplida(true);
