@@ -26,8 +26,3 @@ dist-ssr
 # Supabase CLI temp files
 supabase/.temp/
 
-# Playwright
-tests/.auth/
-test-results/
-playwright-report/
-.env.test
