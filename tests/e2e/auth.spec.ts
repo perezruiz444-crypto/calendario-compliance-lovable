@@ -27,7 +27,12 @@ test('auth: logout redirige a /auth', async ({ page }) => {
   await page.click('button[type="submit"]');
   await page.waitForURL('**/dashboard', { timeout: 15000 });
 
-  await page.getByText('Cerrar sesión').click();
+  // Disparar logout via JS para evitar que el iframe de hCaptcha intercepte el click
+  await page.evaluate(() => {
+    const btns = Array.from(document.querySelectorAll('button'));
+    const logoutBtn = btns.find(b => b.textContent?.includes('Cerrar sesión'));
+    logoutBtn?.click();
+  });
 
   await page.waitForURL('**/auth', { timeout: 10000 });
   expect(page.url()).toContain('/auth');
