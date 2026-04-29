@@ -9,7 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Trash2, BookOpen, Pencil, X, Check, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Pencil, X, Check, Eye, EyeOff, AlertTriangle, Activity } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CATEGORIA_COLORS, PROGRAMA_LABELS } from '@/lib/obligaciones';
 
 const PERIODICIDADES_COMUNES = [
@@ -17,16 +18,28 @@ const PERIODICIDADES_COMUNES = [
   'En todo momento', 'Al destruir desperdicios', 'Cuando aplique',
 ];
 
-type FrecuenciaTipo = 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | 'EVENTUAL';
+type FrecuenciaTipo = 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | 'EVENTUAL' | 'SEMANAL' | 'ULTIMO_DIA_MES';
 
 const FRECUENCIA_OPTIONS: { value: FrecuenciaTipo; label: string; ocurrencias: number }[] = [
-  { value: 'MENSUAL', label: 'Mensual', ocurrencias: 12 },
-  { value: 'BIMESTRAL', label: 'Bimestral', ocurrencias: 6 },
-  { value: 'TRIMESTRAL', label: 'Trimestral', ocurrencias: 4 },
-  { value: 'SEMESTRAL', label: 'Semestral', ocurrencias: 2 },
-  { value: 'ANUAL', label: 'Anual', ocurrencias: 1 },
-  { value: 'EVENTUAL', label: 'Eventual / sin recurrencia', ocurrencias: 0 },
+  { value: 'MENSUAL',        label: 'Mensual',                    ocurrencias: 12 },
+  { value: 'BIMESTRAL',      label: 'Bimestral',                  ocurrencias: 6  },
+  { value: 'TRIMESTRAL',     label: 'Trimestral',                 ocurrencias: 4  },
+  { value: 'SEMESTRAL',      label: 'Semestral',                  ocurrencias: 2  },
+  { value: 'ANUAL',          label: 'Anual',                      ocurrencias: 1  },
+  { value: 'SEMANAL',        label: 'Semanal',                    ocurrencias: 52 },
+  { value: 'ULTIMO_DIA_MES', label: 'Último día de cada mes',     ocurrencias: 12 },
+  { value: 'EVENTUAL',       label: 'Eventual / sin recurrencia', ocurrencias: 0  },
 ];
+
+const MESES_NOMBRES = [
+  'enero','febrero','marzo','abril','mayo','junio',
+  'julio','agosto','septiembre','octubre','noviembre','diciembre',
+];
+
+function presentacionMencionaMes(presentacion: string): boolean {
+  const lower = presentacion.toLowerCase();
+  return MESES_NOMBRES.some(m => lower.includes(`de ${m}`));
+}
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -48,6 +61,23 @@ interface CatalogoItem {
   frecuencia_tipo: FrecuenciaTipo | null;
   dia_vencimiento: number | null;
   mes_vencimiento: number | null;
+}
+
+interface CatalogoCoverage {
+  id: string;
+  nombre: string;
+  programa: string;
+  frecuencia_tipo: FrecuenciaTipo | null;
+  presentacion: string | null;
+  empresas_activas: number;
+  ocurrencias_anio: number;
+}
+
+interface BanderaRoja {
+  id: string;
+  nombre: string;
+  tipo: 'frecuencia_inconsistente' | 'sin_empresas' | 'sin_frecuencia';
+  mensaje: string;
 }
 
 interface FormData {
@@ -92,7 +122,71 @@ export function CatalogoAdmin() {
   const [editId, setEditId]         = useState<string | null>(null);
   const [form, setForm]             = useState<FormData>(EMPTY);
 
+  const [coverage, setCoverage]           = useState<CatalogoCoverage[]>([]);
+  const [loadingHealth, setLoadingHealth] = useState(false);
+
   useEffect(() => { fetchItems(); }, []);
+
+  const fetchHealth = async () => {
+    setLoadingHealth(true);
+    const anio = new Date().getFullYear();
+    const { data: cats } = await supabase
+      .from('obligaciones_catalogo')
+      .select('id, nombre, programa, frecuencia_tipo, presentacion, activo')
+      .eq('activo', true);
+    if (!cats) { setLoadingHealth(false); return; }
+    const { data: obligs } = await supabase
+      .from('obligaciones')
+      .select('catalogo_id, empresa_id, fecha_vencimiento')
+      .not('catalogo_id', 'is', null)
+      .eq('activa', true)
+      .gte('fecha_vencimiento', `${anio}-01-01`)
+      .lte('fecha_vencimiento', `${anio}-12-31`);
+    const coverageData: CatalogoCoverage[] = cats.map((cat: any) => {
+      const filas = (obligs || []).filter((o: any) => o.catalogo_id === cat.id);
+      const empresasSet = new Set(filas.map((o: any) => o.empresa_id));
+      return {
+        id: cat.id,
+        nombre: cat.nombre,
+        programa: cat.programa,
+        frecuencia_tipo: cat.frecuencia_tipo,
+        presentacion: cat.presentacion,
+        empresas_activas: empresasSet.size,
+        ocurrencias_anio: filas.length,
+      };
+    });
+    setCoverage(coverageData);
+    setLoadingHealth(false);
+  };
+
+  const calcBanderas = (cov: CatalogoCoverage[]): BanderaRoja[] => {
+    const banderas: BanderaRoja[] = [];
+    for (const cat of cov) {
+      if (
+        cat.frecuencia_tipo === 'ULTIMO_DIA_MES' &&
+        cat.presentacion &&
+        presentacionMencionaMes(cat.presentacion)
+      ) {
+        banderas.push({
+          id: cat.id, nombre: cat.nombre, tipo: 'frecuencia_inconsistente',
+          mensaje: `"${cat.nombre}" genera fechas todo el año pero su descripción menciona un mes específico. Considera cambiar la frecuencia a Anual.`,
+        });
+      }
+      if (cat.empresas_activas === 0) {
+        banderas.push({
+          id: cat.id, nombre: cat.nombre, tipo: 'sin_empresas',
+          mensaje: `"${cat.nombre}" está activa en el catálogo pero ninguna empresa la tiene asignada.`,
+        });
+      }
+      if ((!cat.frecuencia_tipo || cat.frecuencia_tipo === 'EVENTUAL') && cat.ocurrencias_anio > 0) {
+        banderas.push({
+          id: cat.id, nombre: cat.nombre, tipo: 'sin_frecuencia',
+          mensaje: `"${cat.nombre}" no tiene recurrencia configurada — sus obligaciones solo aparecen una vez en el calendario.`,
+        });
+      }
+    }
+    return banderas;
+  };
 
   const fetchItems = async () => {
     setLoading(true);
@@ -117,6 +211,15 @@ export function CatalogoAdmin() {
       toast.error('Día de vencimiento debe estar entre 1 y 31');
       setSaving(false);
       return;
+    }
+    if (
+      form.frecuencia_tipo === 'ULTIMO_DIA_MES' &&
+      form.presentacion &&
+      presentacionMencionaMes(form.presentacion)
+    ) {
+      toast.warning(
+        'El texto de presentación menciona un mes específico. Considera cambiar la frecuencia a "Anual" para que solo genere una fecha al año.'
+      );
     }
     const payload = {
       programa:        form.programa,
@@ -248,7 +351,17 @@ export function CatalogoAdmin() {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        <Tabs defaultValue="catalogo" onValueChange={(v) => { if (v === 'salud') fetchHealth(); }}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="catalogo" className="gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" /> Catálogo
+            </TabsTrigger>
+            <TabsTrigger value="salud" className="gap-1.5">
+              <Activity className="w-3.5 h-3.5" /> Salud
+            </TabsTrigger>
+          </TabsList>
 
+          <TabsContent value="catalogo" className="space-y-4">
         {/* Formulario */}
         {showForm && (
           <div className="border border-primary/20 rounded-xl p-4 bg-primary/5 space-y-4">
@@ -553,6 +666,74 @@ export function CatalogoAdmin() {
             ))}
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="salud" className="space-y-6">
+            {loadingHealth ? (
+              <p className="text-sm text-muted-foreground">Cargando diagnóstico...</p>
+            ) : (
+              <>
+                {calcBanderas(coverage).length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-500" />
+                      Puntos a revisar
+                    </p>
+                    {calcBanderas(coverage).map((b) => (
+                      <div key={`${b.id}-${b.tipo}`} className="flex items-start justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-3">
+                        <p className="text-sm text-amber-800 dark:text-amber-300">{b.mensaje}</p>
+                        <Button
+                          size="sm" variant="outline" className="shrink-0 text-xs"
+                          onClick={() => { const item = items.find(i => i.id === b.id); if (item) handleEdit(item); }}
+                        >
+                          Revisar
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {calcBanderas(coverage).length === 0 && coverage.length > 0 && (
+                  <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                    <Check className="w-4 h-4" /> Todo en orden — no se detectaron inconsistencias.
+                  </p>
+                )}
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold">Cobertura {new Date().getFullYear()}</p>
+                  <div className="rounded-lg border overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-medium text-muted-foreground">Obligación</th>
+                          <th className="text-center px-3 py-2 font-medium text-muted-foreground">Empresas</th>
+                          <th className="text-center px-3 py-2 font-medium text-muted-foreground">Fechas {new Date().getFullYear()}</th>
+                          <th className="text-center px-3 py-2 font-medium text-muted-foreground">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {coverage.map((cat) => (
+                          <tr key={cat.id} className="hover:bg-muted/30">
+                            <td className="px-3 py-2">
+                              <p className="font-medium">{cat.nombre}</p>
+                              <p className="text-xs text-muted-foreground">{cat.frecuencia_tipo ?? 'Sin frecuencia'}</p>
+                            </td>
+                            <td className="px-3 py-2 text-center">{cat.empresas_activas}</td>
+                            <td className="px-3 py-2 text-center">{cat.ocurrencias_anio}</td>
+                            <td className="px-3 py-2 text-center">
+                              {cat.empresas_activas === 0
+                                ? <Badge variant="outline" className="text-amber-600 border-amber-300">Sin uso</Badge>
+                                : <Badge variant="outline" className="text-green-600 border-green-300">Activa</Badge>
+                              }
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
