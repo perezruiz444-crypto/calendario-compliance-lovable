@@ -75,7 +75,6 @@ function eventColor(type: string, prioridad?: string, isOverdue?: boolean, isDon
 const EVENT_ICONS: Record<string, React.ReactNode> = {
   tarea: <ClipboardList className="h-3 w-3 flex-shrink-0 inline-block" />,
   documento: <FileText className="h-3 w-3 flex-shrink-0 inline-block" />,
-  programa: <Factory className="h-3 w-3 flex-shrink-0 inline-block" />,
   obligacion: <Scale className="h-3 w-3 flex-shrink-0 inline-block" />,
 };
 
@@ -107,8 +106,8 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
   // Por defecto, los clientes no ven Tareas (son operativas internas del despacho)
   const [activeTypes, setActiveTypes] = useState<Set<EventType>>(
     role === 'cliente'
-      ? new Set(['obligacion', 'documento', 'programa'])
-      : new Set(['obligacion', 'tarea', 'documento', 'programa'])
+      ? new Set<EventType>(['obligacion', 'documento'])
+      : new Set<EventType>(['obligacion', 'tarea', 'documento'])
   );
 
   const toggleType = (t: EventType) => {
@@ -136,12 +135,16 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     const allEvents: FcEvent[] = [];
     const today = startOfDay(new Date());
 
-    const { data: obs } = await supabase
+    let obsQuery = supabase
       .from('obligaciones')
       .select('id, nombre, empresa_id, categoria, fecha_vencimiento, catalogo_id, estado, empresas(razon_social)')
       .eq('activa', true)
       .gte('fecha_vencimiento', startStr)
       .lte('fecha_vencimiento', endStr);
+    if (filterEmpresaId && filterEmpresaId !== 'all') {
+      obsQuery = obsQuery.eq('empresa_id', filterEmpresaId);
+    }
+    const { data: obs } = await obsQuery;
 
     (obs || []).forEach(ob => {
       const d = new Date(ob.fecha_vencimiento + 'T12:00:00');
@@ -159,12 +162,16 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       });
     });
 
-    const { data: tareas } = await supabase
+    let tareasQuery = supabase
       .from('tareas')
       .select('id, titulo, prioridad, estado, fecha_vencimiento, empresa_id, empresas(razon_social)')
       .not('estado', 'in', '(completada,cancelada)')
       .gte('fecha_vencimiento', startStr)
       .lte('fecha_vencimiento', endStr);
+    if (filterEmpresaId && filterEmpresaId !== 'all') {
+      tareasQuery = tareasQuery.eq('empresa_id', filterEmpresaId);
+    }
+    const { data: tareas } = await tareasQuery;
 
     (tareas || []).forEach(t => {
       const d = new Date(t.fecha_vencimiento + 'T12:00:00');
@@ -181,12 +188,16 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       });
     });
 
-    const { data: docs } = await supabase
+    let docsQuery = supabase
       .from('documentos')
       .select('id, nombre, empresa_id, fecha_vencimiento, empresas(razon_social)')
       .not('fecha_vencimiento', 'is', null)
       .gte('fecha_vencimiento', startStr)
       .lte('fecha_vencimiento', endStr);
+    if (filterEmpresaId && filterEmpresaId !== 'all') {
+      docsQuery = docsQuery.eq('empresa_id', filterEmpresaId);
+    }
+    const { data: docs } = await docsQuery;
 
     (docs || []).forEach(doc => {
       const { bg, border } = eventColor('documento');
@@ -201,38 +212,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       });
     });
 
-    const { data: empresas } = await supabase
-      .from('empresas')
-      .select('id, razon_social, immex_fecha_fin, prosec_fecha_fin, cert_iva_ieps_fecha_vencimiento, matriz_seguridad_fecha_vencimiento');
-
-    (empresas || []).forEach(e => {
-      const progs = [
-        { label: 'IMMEX',          date: e.immex_fecha_fin },
-        { label: 'PROSEC',         date: e.prosec_fecha_fin },
-        { label: 'Cert. IVA/IEPS', date: e.cert_iva_ieps_fecha_vencimiento },
-        { label: 'Matriz Seg.',    date: e.matriz_seguridad_fecha_vencimiento },
-      ];
-      progs.forEach(({ label, date }) => {
-        if (!date || date < startStr || date > endStr) return;
-        const overdue = new Date(date + 'T12:00:00') < today;
-        const { bg, border } = eventColor('programa', undefined, overdue);
-        allEvents.push({
-          id: `prog-${label}-${e.id}`,
-          title: `${label} · ${e.razon_social}`,
-          start: date,
-          backgroundColor: bg,
-          borderColor: border,
-          textColor: 'hsl(var(--foreground))',
-          extendedProps: { type: 'programa', empresaId: e.id, data: { tipo: label, empresa: e } },
-        });
-      });
-    });
-
-    const byEmpresa = (!filterEmpresaId || filterEmpresaId === 'all')
-      ? allEvents
-      : allEvents.filter(e => e.extendedProps.empresaId === filterEmpresaId);
-
-    setEvents(byEmpresa);
+    setEvents(allEvents);
     setLoading(false);
   }, [user, filterEmpresaId]);
 
@@ -283,7 +263,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
                 Calendario de Vencimientos
               </CardTitle>
               <CardDescription className="font-body">
-                Obligaciones, tareas y programas · click para ver detalle
+                Obligaciones, tareas y documentos · click para ver detalle
               </CardDescription>
             </div>
             {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />}
