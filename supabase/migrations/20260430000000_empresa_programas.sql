@@ -90,7 +90,7 @@ CREATE POLICY "Admins y consultores gestionan empresa_programas"
 CREATE OR REPLACE FUNCTION public.ultimo_dia_habil(p_year int, p_mes int)
 RETURNS date
 LANGUAGE plpgsql
-IMMUTABLE
+STABLE
 AS $$
 DECLARE
   v_fecha date;
@@ -166,6 +166,7 @@ BEGIN
           v_cat.articulos, v_cat.presentacion, v_fecha, 'vigente', true
         )
         ON CONFLICT (empresa_id, catalogo_id, EXTRACT(YEAR FROM fecha_vencimiento), EXTRACT(MONTH FROM fecha_vencimiento))
+        WHERE catalogo_id IS NOT NULL AND fecha_vencimiento IS NOT NULL
         DO NOTHING
         RETURNING id INTO v_new_id;
         IF v_new_id IS NOT NULL THEN v_total := v_total + 1; END IF;
@@ -183,6 +184,7 @@ BEGIN
           v_cat.articulos, v_cat.presentacion, v_fecha, 'vigente', true
         )
         ON CONFLICT (empresa_id, catalogo_id, EXTRACT(YEAR FROM fecha_vencimiento), EXTRACT(MONTH FROM fecha_vencimiento))
+        WHERE catalogo_id IS NOT NULL AND fecha_vencimiento IS NOT NULL
         DO NOTHING
         RETURNING id INTO v_new_id;
         IF v_new_id IS NOT NULL THEN v_total := v_total + 1; END IF;
@@ -212,6 +214,7 @@ BEGIN
           v_cat.articulos, v_cat.presentacion, v_fecha, 'vigente', true
         )
         ON CONFLICT (empresa_id, catalogo_id, EXTRACT(YEAR FROM fecha_vencimiento), EXTRACT(MONTH FROM fecha_vencimiento))
+        WHERE catalogo_id IS NOT NULL AND fecha_vencimiento IS NOT NULL
         DO NOTHING
         RETURNING id INTO v_new_id;
         IF v_new_id IS NOT NULL THEN v_total := v_total + 1; END IF;
