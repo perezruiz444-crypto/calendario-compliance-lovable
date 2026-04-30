@@ -8,7 +8,7 @@ import esLocale from '@fullcalendar/core/locales/es';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Calendar, AlertCircle, Building2, ClipboardList, FileText, Factory, Scale, CalendarDays, Repeat } from 'lucide-react';
+import { Calendar, AlertCircle, Building2, ClipboardList, FileText, Scale, CalendarDays, Repeat } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -25,7 +25,7 @@ interface FcEvent {
   borderColor: string;
   textColor: string;
   extendedProps: {
-    type: 'tarea' | 'documento' | 'programa' | 'obligacion';
+    type: 'tarea' | 'documento' | 'obligacion';
     prioridad?: string;
     estado?: string;
     rawId?: string;
@@ -35,16 +35,14 @@ interface FcEvent {
   };
 }
 
-type EventType = 'tarea' | 'documento' | 'programa' | 'obligacion';
+type EventType = 'tarea' | 'documento' | 'obligacion';
 const TYPE_LABELS: Record<EventType, string> = {
   obligacion: 'Obligaciones',
   tarea: 'Tareas',
   documento: 'Documentos',
-  programa: 'Programas',
 };
 const TYPE_HELP: Record<EventType, string> = {
   obligacion: 'Trámites legales recurrentes (SAT, INEGI, IMMEX)',
-  programa: 'Vencimiento de tu IMMEX/PROSEC/IVA-IEPS/Matriz',
   documento: 'Pasaportes, certificados y contratos',
   tarea: 'Pendientes operativos del despacho',
 };
@@ -52,7 +50,6 @@ const TYPE_COLORS: Record<EventType, string> = {
   obligacion: 'hsl(262 83% 58%)',
   tarea: 'hsl(25 95% 53%)',
   documento: 'hsl(221 83% 53%)',
-  programa: 'hsl(340 82% 52%)',
 };
 
 interface DashboardCalendarProps {
@@ -71,7 +68,6 @@ function eventColor(type: string, prioridad?: string, isOverdue?: boolean, isDon
     return { bg: 'hsl(var(--primary) / 0.12)', border: 'hsl(var(--primary))' };
   }
   if (type === 'documento')  return { bg: 'hsl(221 83% 53% / 0.12)', border: 'hsl(221 83% 53%)' };
-  if (type === 'programa')   return { bg: 'hsl(340 82% 52% / 0.12)', border: 'hsl(340 82% 52%)' };
   if (type === 'obligacion') return { bg: 'hsl(262 83% 58% / 0.12)', border: 'hsl(262 83% 58%)' };
   return { bg: 'hsl(var(--muted))', border: 'hsl(var(--border))' };
 }

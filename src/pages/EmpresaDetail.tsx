@@ -257,7 +257,6 @@ export default function EmpresaDetail() {
     { label: 'PROSEC',        numero: empresa.prosec_numero,                  fecha_fin: empresa.prosec_fecha_fin,                    color: 'purple' },
     { label: 'Padrón',        numero: empresa.padron_general_numero,          fecha_fin: null,                                        color: 'green'  },
     { label: 'Cert. IVA/IEPS',numero: empresa.cert_iva_ieps_numero,           fecha_fin: empresa.cert_iva_ieps_fecha_vencimiento,     color: 'orange' },
-    { label: 'OEA',           numero: empresa.matriz_seguridad_numero || null, fecha_fin: empresa.matriz_seguridad_fecha_vencimiento,  color: 'gold'   },
   ].filter(p => p.numero);
 
   const renderEditable = (field: string, value: string | null, className: string) => {

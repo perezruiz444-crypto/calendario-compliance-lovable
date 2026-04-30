@@ -17,7 +17,6 @@ export const CATEGORIA_COLORS: Record<string, string> = {
   immex: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
   prosec: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
   padron: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
-  oea: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
   otro: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300',
 };
 
@@ -26,7 +25,6 @@ export const PROGRAMA_LABELS: Record<string, string> = {
   prosec:        'PROSEC',
   padron:        'Padrón',
   cert_iva_ieps: 'Cert. IVA/IEPS',
-  oea:           'OEA',
   general:       'General',
   otro:          'Otro',
 };
@@ -102,7 +100,7 @@ export function programaToCategoria(programa: string): string {
   if (p.includes('prosec'))                         return 'prosec';
   if (p.includes('padrón') || p.includes('padron')) return 'padron';
   if (p.includes('iva') || p.includes('ieps') ||
-      p.includes('cert') || p.includes('oea'))      return 'cert_iva_ieps';
+      p.includes('cert'))                           return 'cert_iva_ieps';
   return 'general';
 }
 
