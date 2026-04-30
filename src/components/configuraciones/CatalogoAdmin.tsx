@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -111,6 +111,35 @@ const EMPTY: FormData = {
 const ORDEN_PROGRAMAS = Object.keys(PROGRAMA_LABELS);
 const FALLBACK_COLOR = 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300';
 
+function calcBanderas(cov: CatalogoCoverage[]): BanderaRoja[] {
+  const banderas: BanderaRoja[] = [];
+  for (const cat of cov) {
+    if (
+      cat.frecuencia_tipo === 'ULTIMO_DIA_MES' &&
+      cat.presentacion &&
+      presentacionMencionaMes(cat.presentacion)
+    ) {
+      banderas.push({
+        id: cat.id, nombre: cat.nombre, tipo: 'frecuencia_inconsistente',
+        mensaje: `"${cat.nombre}" genera fechas todo el año pero su descripción menciona un mes específico. Considera cambiar la frecuencia a Anual.`,
+      });
+    }
+    if (cat.empresas_activas === 0) {
+      banderas.push({
+        id: cat.id, nombre: cat.nombre, tipo: 'sin_empresas',
+        mensaje: `"${cat.nombre}" está activa en el catálogo pero ninguna empresa la tiene asignada.`,
+      });
+    }
+    if ((!cat.frecuencia_tipo || cat.frecuencia_tipo === 'EVENTUAL') && cat.ocurrencias_anio > 0) {
+      banderas.push({
+        id: cat.id, nombre: cat.nombre, tipo: 'sin_frecuencia',
+        mensaje: `"${cat.nombre}" no tiene recurrencia configurada — sus obligaciones solo aparecen una vez en el calendario.`,
+      });
+    }
+  }
+  return banderas;
+}
+
 export function CatalogoAdmin() {
   const [items, setItems]           = useState<CatalogoItem[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -124,6 +153,7 @@ export function CatalogoAdmin() {
 
   const [coverage, setCoverage]           = useState<CatalogoCoverage[]>([]);
   const [loadingHealth, setLoadingHealth] = useState(false);
+  const banderas = useMemo(() => banderas, [coverage]);
 
   useEffect(() => { fetchItems(); }, []);
 
@@ -157,35 +187,6 @@ export function CatalogoAdmin() {
     });
     setCoverage(coverageData);
     setLoadingHealth(false);
-  };
-
-  const calcBanderas = (cov: CatalogoCoverage[]): BanderaRoja[] => {
-    const banderas: BanderaRoja[] = [];
-    for (const cat of cov) {
-      if (
-        cat.frecuencia_tipo === 'ULTIMO_DIA_MES' &&
-        cat.presentacion &&
-        presentacionMencionaMes(cat.presentacion)
-      ) {
-        banderas.push({
-          id: cat.id, nombre: cat.nombre, tipo: 'frecuencia_inconsistente',
-          mensaje: `"${cat.nombre}" genera fechas todo el año pero su descripción menciona un mes específico. Considera cambiar la frecuencia a Anual.`,
-        });
-      }
-      if (cat.empresas_activas === 0) {
-        banderas.push({
-          id: cat.id, nombre: cat.nombre, tipo: 'sin_empresas',
-          mensaje: `"${cat.nombre}" está activa en el catálogo pero ninguna empresa la tiene asignada.`,
-        });
-      }
-      if ((!cat.frecuencia_tipo || cat.frecuencia_tipo === 'EVENTUAL') && cat.ocurrencias_anio > 0) {
-        banderas.push({
-          id: cat.id, nombre: cat.nombre, tipo: 'sin_frecuencia',
-          mensaje: `"${cat.nombre}" no tiene recurrencia configurada — sus obligaciones solo aparecen una vez en el calendario.`,
-        });
-      }
-    }
-    return banderas;
   };
 
   const fetchItems = async () => {
@@ -673,13 +674,13 @@ export function CatalogoAdmin() {
               <p className="text-sm text-muted-foreground">Cargando diagnóstico...</p>
             ) : (
               <>
-                {calcBanderas(coverage).length > 0 && (
+                {banderas.length > 0 && (
                   <div className="space-y-3">
                     <p className="text-sm font-semibold flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-amber-500" />
                       Puntos a revisar
                     </p>
-                    {calcBanderas(coverage).map((b) => (
+                    {banderas.map((b) => (
                       <div key={`${b.id}-${b.tipo}`} className="flex items-start justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-3">
                         <p className="text-sm text-amber-800 dark:text-amber-300">{b.mensaje}</p>
                         <Button
@@ -692,7 +693,7 @@ export function CatalogoAdmin() {
                     ))}
                   </div>
                 )}
-                {calcBanderas(coverage).length === 0 && coverage.length > 0 && (
+                {banderas.length === 0 && coverage.length > 0 && (
                   <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
                     <Check className="w-4 h-4" /> Todo en orden — no se detectaron inconsistencias.
                   </p>
