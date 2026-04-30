@@ -20,6 +20,7 @@ import { EmpresaObligacionesCard } from '@/components/empresas/EmpresaObligacion
 import { ObligacionesManager } from '@/components/obligaciones/ObligacionesManager';
 import { CatalogoActivacionSection } from '@/components/obligaciones/CatalogoActivacionSection';
 import { AgentesAduanalesCard } from '@/components/empresas/AgentesAduanalesCard';
+import { EmpresaProgramasTab } from '@/components/empresas/EmpresaProgramasTab';
 import { EmpresaObligacionesActivasCard } from '@/components/empresas/EmpresaObligacionesActivasCard';
 import { ApoderadosCard } from '@/components/empresas/ApoderadosCard';
 import { DomiciliosCard } from '@/components/empresas/DomiciliosCard';
@@ -31,7 +32,7 @@ import {
   Phone, UserCog, CheckSquare, Plus, Pencil, Clock, AlertTriangle,
   Building2, FileText, Users, TrendingUp, X, CheckCircle2,
   ShieldCheck, AlertCircle, CalendarDays, ChevronRight, MapPin,
-  Target, BarChart3
+  Target, BarChart3, Layers
 } from 'lucide-react';
 import { differenceInDays, format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -563,6 +564,9 @@ export default function EmpresaDetail() {
             <TabsTrigger value="contactos" className="gap-1.5">
               <Users className="w-4 h-4 hidden sm:block" /> Contactos
             </TabsTrigger>
+            <TabsTrigger value="programas" className="gap-1.5">
+              <Layers className="w-4 h-4 hidden sm:block" /> Programas
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="obligaciones" className="space-y-5">
@@ -601,6 +605,10 @@ export default function EmpresaDetail() {
               <ApoderadosCard empresaId={id!} apoderados={apoderados} canEdit={canEdit} onUpdate={fetchEmpresaData} />
             </div>
             <DomiciliosCard empresaId={id!} domicilios={domicilios} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+          </TabsContent>
+
+          <TabsContent value="programas" className="space-y-5">
+            <EmpresaProgramasTab empresaId={id!} canEdit={canEdit} />
           </TabsContent>
         </Tabs>
       </div>
