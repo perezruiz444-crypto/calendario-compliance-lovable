@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,13 +14,28 @@ interface Props {
   onEmpresaCreated: (empresaId?: string) => void;
 }
 
+const PROGRAMAS_OPCIONES = [
+  { value: 'immex',       label: 'IMMEX' },
+  { value: 'prosec',      label: 'PROSEC' },
+  { value: 'padron',      label: 'Padrón de Importadores' },
+  { value: 'cert_iva_ieps', label: 'Certificación IVA/IEPS' },
+  { value: 'general',     label: 'General' },
+] as const;
+
 export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaCreated }: Props) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     razon_social: '', rfc: '', domicilio_fiscal: '', telefono: '', actividad_economica: '',
   });
+  const [programasSeleccionados, setProgramasSeleccionados] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const togglePrograma = (value: string) => {
+    setProgramasSeleccionados(prev =>
+      prev.includes(value) ? prev.filter(p => p !== value) : [...prev, value]
+    );
+  };
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -45,8 +61,26 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
         created_by: user?.id,
       }).select('id').single();
       if (error) throw error;
+
+      // Insertar programas seleccionados en empresa_programas
+      // (el trigger en DB genera las obligaciones automáticamente)
+      if (programasSeleccionados.length > 0) {
+        const { error: progError } = await supabase
+          .from('empresa_programas')
+          .insert(
+            programasSeleccionados.map(programa => ({
+              empresa_id: data.id,
+              programa,
+              activo: true,
+              fecha_inicio: null,
+            }))
+          );
+        if (progError) throw progError;
+      }
+
       toast.success('Empresa creada correctamente');
       setFormData({ razon_social: '', rfc: '', domicilio_fiscal: '', telefono: '', actividad_economica: '' });
+      setProgramasSeleccionados([]);
       setErrors({});
       onOpenChange(false);
       onEmpresaCreated(data.id);
@@ -91,6 +125,21 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
             <div>
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actividad Económica</Label>
               <Input className="mt-1" placeholder="Ej. Manufactura" value={formData.actividad_economica} onChange={e => setFormData(p => ({ ...p, actividad_economica: e.target.value }))} />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Programas de Comercio Exterior</Label>
+            <div className="mt-2 space-y-2">
+              {PROGRAMAS_OPCIONES.map(({ value, label }) => (
+                <div key={value} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`prog-${value}`}
+                    checked={programasSeleccionados.includes(value)}
+                    onCheckedChange={() => togglePrograma(value)}
+                  />
+                  <label htmlFor={`prog-${value}`} className="text-sm cursor-pointer">{label}</label>
+                </div>
+              ))}
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
