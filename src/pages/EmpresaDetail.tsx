@@ -571,7 +571,9 @@ export default function EmpresaDetail() {
           <TabsContent value="obligaciones" className="space-y-5">
             <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} refreshTrigger={obligRefreshKey} />
             <EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
-            <CatalogoActivacionSection empresaId={id!} canEdit={canEdit} onActivated={() => setObligRefreshKey(k => k + 1)} />
+            <div id="catalogo-activacion-section">
+              <CatalogoActivacionSection empresaId={id!} canEdit={canEdit} onActivated={() => setObligRefreshKey(k => k + 1)} />
+            </div>
             <ObligacionesManager empresaId={id!} canEdit={canEdit} />
           </TabsContent>
 

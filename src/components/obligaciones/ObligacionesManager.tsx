@@ -15,6 +15,7 @@ import {
   Zap, User, Users, ToggleLeft, ToggleRight, RefreshCw
 } from 'lucide-react';
 import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormDialog';
+import { CrearObligacionChooser } from './CrearObligacionChooser';
 import { generateObligacionesPDF } from '@/lib/pdfGenerator';
 import * as XLSX from 'xlsx';
 import {
@@ -58,6 +59,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
 const [profiles, setProfiles] = useState<Record<string, string>>({});
 const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 const [selectedObId, setSelectedObId] = useState<string | null>(null);
+  const [chooserOpen, setChooserOpen] = useState(false);
 
   const fetchObligaciones = async () => {
     setLoading(true);
@@ -348,6 +350,11 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
     return days >= 0 && days <= 90;
   }).length;
 
+  const handleDesdeCatalogo = () => {
+    const el = document.getElementById('catalogo-activacion-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <Card className="gradient-card shadow-card col-span-1 lg:col-span-2">
       <CardHeader className="pb-4">
@@ -406,7 +413,7 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
             </div>
           )}
           {canEdit && (
-            <Button size="sm" onClick={() => { setEditData(null); setFormOpen(true); }}>
+            <Button size="sm" onClick={() => setChooserOpen(true)}>
               <Plus className="w-4 h-4 mr-1" />Nueva
             </Button>
           )}
@@ -581,6 +588,13 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CrearObligacionChooser
+        open={chooserOpen}
+        onOpenChange={setChooserOpen}
+        onDesdeCatalogo={handleDesdeCatalogo}
+        onPersonalizada={() => { setEditData(null); setFormOpen(true); }}
+      />
     </Card>
   );
 }
