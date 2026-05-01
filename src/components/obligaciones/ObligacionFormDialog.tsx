@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ChevronDown, Calendar, User, Users, RefreshCw } from 'lucide-react';
+import { ChevronDown, Calendar, User, Users, RefreshCw, Lightbulb } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+
+interface CatalogoMinItem {
+  id: string;
+  nombre: string;
+  programa: string;
+  presentacion: string | null;
+}
 
 const CATEGORIAS = [
   { value: 'general', label: 'Obligación General' },
@@ -57,12 +64,15 @@ interface Props {
   initialData?: ObligacionFormData | null;
   loading?: boolean;
   empresaId?: string;
+  onSugerirCatalogo?: (item: CatalogoMinItem) => void;
 }
 
-export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData, loading, empresaId }: Props) {
+export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData, loading, empresaId, onSugerirCatalogo }: Props) {
   const [form, setForm] = useState<ObligacionFormData>(EMPTY_FORM);
   const [usuarios, setUsuarios] = useState<{ id: string; nombre: string; tipo: string }[]>([]);
   const [datesOpen, setDatesOpen] = useState(false);
+  const [catalogo, setCatalogo] = useState<CatalogoMinItem[]>([]);
+  const [sugerenciaDescartada, setSugerenciaDescartada] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -85,6 +95,25 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
       loadExistingResponsables(initialData.id);
     }
   }, [open, initialData?.id]);
+
+  useEffect(() => {
+    if (open && !initialData?.id) {
+      supabase
+        .from('obligaciones_catalogo')
+        .select('id, nombre, programa, presentacion')
+        .eq('activo', true)
+        .then(({ data }) => setCatalogo((data as CatalogoMinItem[]) || []));
+    }
+    if (!open) {
+      setSugerenciaDescartada(false);
+    }
+  }, [open, initialData?.id]);
+
+  const sugerencia = useMemo<CatalogoMinItem | null>(() => {
+    if (form.nombre.length < 3 || catalogo.length === 0) return null;
+    const q = form.nombre.toLowerCase();
+    return catalogo.find(item => item.nombre.toLowerCase().includes(q)) ?? null;
+  }, [form.nombre, catalogo]);
 
   const loadExistingResponsables = async (obligacionId: string) => {
     const { data } = await supabase
@@ -153,6 +182,7 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
   };
 
   const update = (field: keyof ObligacionFormData, value: string | boolean | string[]) => {
+    if (field === 'nombre') setSugerenciaDescartada(false);
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
@@ -183,6 +213,34 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
             <Label>Nombre *</Label>
             <Input value={form.nombre} onChange={e => update('nombre', e.target.value)} placeholder="Ej: Renovación Certificación IVA" required />
           </div>
+          {sugerencia && !sugerenciaDescartada && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-2.5 mt-1.5">
+              <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  <span className="font-semibold">"{sugerencia.nombre}"</span> existe en el catálogo
+                  ({sugerencia.programa}{sugerencia.presentacion ? ` · ${sugerencia.presentacion}` : ''})
+                </p>
+                <div className="flex gap-2 mt-1.5">
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-amber-700 dark:text-amber-300 underline underline-offset-2 hover:text-amber-900"
+                    onClick={() => onSugerirCatalogo?.(sugerencia)}
+                  >
+                    Activar desde catálogo
+                  </button>
+                  <span className="text-amber-400">·</span>
+                  <button
+                    type="button"
+                    className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800"
+                    onClick={() => setSugerenciaDescartada(true)}
+                  >
+                    Continuar personalizada
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
