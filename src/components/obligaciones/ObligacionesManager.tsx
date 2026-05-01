@@ -12,7 +12,7 @@ import { differenceInDays, isPast, format } from 'date-fns';
 import {
   Plus, Trash2, Pencil, Search,
   Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, FileDown,
-  Zap, User, Users, ToggleLeft, ToggleRight, RefreshCw
+  Zap, User, Users, ToggleLeft, ToggleRight, RefreshCw, BookOpen
 } from 'lucide-react';
 import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormDialog';
 import { CrearObligacionChooser } from './CrearObligacionChooser';
@@ -64,6 +64,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const [editData, setEditData] = useState<ObligacionFormData | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filterResponsable, setFilterResponsable] = useState('all');
+  const [filterOrigen, setFilterOrigen] = useState<'all' | 'manual' | 'catalogo'>('all');
 const [profiles, setProfiles] = useState<Record<string, string>>({});
 const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 const [selectedObId, setSelectedObId] = useState<string | null>(null);
@@ -350,6 +351,8 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
     if (filterResponsable === 'sin_asignar' && ob.responsable_tipo) return false;
     if (filterResponsable === 'activas' && !ob.activa) return false;
     if (search && !ob.nombre.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterOrigen === 'manual' && ob.catalogo_id) return false;
+    if (filterOrigen === 'catalogo' && !ob.catalogo_id) return false;
     return true;
   });
 
@@ -359,6 +362,7 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
     const days = differenceInDays(new Date(ob.fecha_vencimiento), new Date());
     return days >= 0 && days <= 90;
   }).length;
+  const huerfanasCount = obligaciones.filter(ob => !ob.catalogo_id).length;
 
   const handleDesdeCatalogo = () => {
     const el = document.getElementById('catalogo-activacion-section');
@@ -387,6 +391,15 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
             )}
             {porVencerCount > 0 && (
               <Badge className="bg-warning/20 text-warning border-warning/30 gap-1"><Calendar className="w-3 h-3" />{porVencerCount} próximo(s)</Badge>
+            )}
+            {huerfanasCount >= 3 && (
+              <Badge
+                className="bg-muted text-muted-foreground cursor-pointer hover:bg-muted/80 gap-1"
+                title="Obligaciones sin vínculo al catálogo maestro"
+                onClick={() => setFilterOrigen('manual')}
+              >
+                {huerfanasCount} manuales · revisar
+              </Badge>
             )}
           </div>
         </div>
@@ -417,6 +430,16 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
               <SelectItem value="cliente">Cliente</SelectItem>
               <SelectItem value="consultor">Consultor</SelectItem>
               <SelectItem value="sin_asignar">Sin asignar</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterOrigen} onValueChange={(v) => setFilterOrigen(v as 'all' | 'manual' | 'catalogo')}>
+            <SelectTrigger className="w-[160px]">
+              <BookOpen className="w-4 h-4 mr-1" /><SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="manual">Solo manuales</SelectItem>
+              <SelectItem value="catalogo">Solo catálogo</SelectItem>
             </SelectContent>
           </Select>
           {filtered.length > 0 && (
@@ -502,6 +525,11 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
 >
   {ob.nombre}
 </button>
+{!ob.catalogo_id && (
+  <Badge variant="outline" className="text-[10px] text-muted-foreground ml-1 align-middle">
+    Manual
+  </Badge>
+)}
 {ob.descripcion && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{ob.descripcion}</p>}
                           </div>
                         </div>
