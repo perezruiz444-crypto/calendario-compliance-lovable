@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormDialog';
 import { CrearObligacionChooser } from './CrearObligacionChooser';
+import { ActivarObligacionDialog } from './ActivarObligacionDialog';
 import { generateObligacionesPDF } from '@/lib/pdfGenerator';
 import * as XLSX from 'xlsx';
 import {
@@ -32,6 +33,13 @@ import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailShe
 interface Props {
   empresaId: string;
   canEdit: boolean;
+}
+
+interface CatalogoMinItem {
+  id: string;
+  nombre: string;
+  programa: string;
+  presentacion: string | null;
 }
 
 function getVencimientoBadge(fecha: string | null) {
@@ -60,6 +68,8 @@ const [profiles, setProfiles] = useState<Record<string, string>>({});
 const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 const [selectedObId, setSelectedObId] = useState<string | null>(null);
   const [chooserOpen, setChooserOpen] = useState(false);
+  const [sugerenciaCatalogoItem, setSugerenciaCatalogoItem] = useState<CatalogoMinItem | null>(null);
+  const [sugerenciaDialogOpen, setSugerenciaDialogOpen] = useState(false);
 
   const fetchObligaciones = async () => {
     setLoading(true);
@@ -355,6 +365,13 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const handleSugerirCatalogo = (item: CatalogoMinItem) => {
+    setFormOpen(false);
+    setEditData(null);
+    setSugerenciaCatalogoItem(item as any);
+    setSugerenciaDialogOpen(true);
+  };
+
   return (
     <Card className="gradient-card shadow-card col-span-1 lg:col-span-2">
       <CardHeader className="pb-4">
@@ -568,6 +585,7 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
         initialData={editData}
         loading={saving}
         empresaId={empresaId}
+        onSugerirCatalogo={handleSugerirCatalogo}
       />
 
       <ObligacionDetailSheet
@@ -594,6 +612,13 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
         onOpenChange={setChooserOpen}
         onDesdeCatalogo={handleDesdeCatalogo}
         onPersonalizada={() => { setEditData(null); setFormOpen(true); }}
+      />
+      <ActivarObligacionDialog
+        open={sugerenciaDialogOpen}
+        onOpenChange={setSugerenciaDialogOpen}
+        item={sugerenciaCatalogoItem as any}
+        empresaId={empresaId}
+        onActivated={() => { setSugerenciaCatalogoItem(null); fetchObligaciones(); }}
       />
     </Card>
   );
