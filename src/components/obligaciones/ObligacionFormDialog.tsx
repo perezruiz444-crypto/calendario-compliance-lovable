@@ -105,6 +105,7 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
         .then(({ data }) => setCatalogo((data as CatalogoMinItem[]) || []));
     }
     if (!open) {
+      setCatalogo([]);
       setSugerenciaDescartada(false);
     }
   }, [open, initialData?.id]);
