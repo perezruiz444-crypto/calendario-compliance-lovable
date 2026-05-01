@@ -368,7 +368,7 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
   const handleSugerirCatalogo = (item: CatalogoMinItem) => {
     setFormOpen(false);
     setEditData(null);
-    setSugerenciaCatalogoItem(item as any);
+    setSugerenciaCatalogoItem(item);
     setSugerenciaDialogOpen(true);
   };
 
@@ -616,7 +616,7 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
       <ActivarObligacionDialog
         open={sugerenciaDialogOpen}
         onOpenChange={setSugerenciaDialogOpen}
-        item={sugerenciaCatalogoItem as any}
+        item={sugerenciaCatalogoItem as Parameters<typeof ActivarObligacionDialog>[0]['item']}
         empresaId={empresaId}
         onActivated={() => { setSugerenciaCatalogoItem(null); fetchObligaciones(); }}
       />
