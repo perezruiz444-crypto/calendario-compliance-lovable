@@ -211,5 +211,156 @@ export default function DashboardObligacionesMensuales() {
     return () => { supabase.removeChannel(channel); };
   }, [obligaciones]);
 
-  return <div />;
+  // ── Derivados ──────────────────────────────────────────────────────
+  const now       = new Date();
+  const mesLabel  = format(now, 'MMMM yyyy', { locale: es });
+  const mesTitulo = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
+
+  const completadas = Object.values(cumplimientos).filter(Boolean).length;
+  const pendientes  = obligaciones.length - completadas;
+
+  // ── Loading ────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <Card className="gradient-card shadow-card">
+        <CardHeader className="pb-3">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-4 w-36 mt-1" />
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full rounded-lg" />
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // ── Sin empresa resuelta ───────────────────────────────────────────
+  if (!empresaId) {
+    const msg = role === 'cliente'
+      ? 'Sin empresa asignada. Contacta al administrador.'
+      : 'Selecciona una empresa en la barra lateral para ver sus obligaciones.';
+    return (
+      <Card className="gradient-card shadow-card">
+        <CardHeader>
+          <CardTitle className="font-heading flex items-center gap-2">
+            <ClipboardList className="w-5 h-5" /> Obligaciones del Mes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+            <Building2 className="w-8 h-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground max-w-xs">{msg}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // ── Sin obligaciones en el mes ─────────────────────────────────────
+  if (obligaciones.length === 0) {
+    const ctaPath  = role === 'cliente' ? '/mi-empresa' : `/empresas/${empresaId}`;
+    const ctaLabel = role === 'cliente' ? 'Ver mi empresa' : 'Gestionar obligaciones';
+    return (
+      <Card className="gradient-card shadow-card">
+        <CardHeader>
+          <CardTitle className="font-heading flex items-center gap-2">
+            <ClipboardList className="w-5 h-5" /> Obligaciones de {mesTitulo}
+          </CardTitle>
+          {empresaNombre && (
+            <CardDescription>{empresaNombre}</CardDescription>
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+            <CheckCircle2 className="w-8 h-8 text-success/50" />
+            <p className="text-sm text-muted-foreground">Sin obligaciones activas este mes</p>
+            <Button variant="outline" size="sm" onClick={() => navigate(ctaPath)}>
+              {ctaLabel}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // ── Lista normal ───────────────────────────────────────────────────
+  return (
+    <Card className="gradient-card shadow-card">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle className="font-heading flex items-center gap-2">
+              <ClipboardList className="w-5 h-5" />
+              Obligaciones de {mesTitulo}
+            </CardTitle>
+            {empresaNombre && (
+              <CardDescription className="mt-0.5">
+                {empresaNombre} · {obligaciones.length} activa{obligaciones.length !== 1 ? 's' : ''}
+              </CardDescription>
+            )}
+          </div>
+          <div className="flex gap-1.5 shrink-0">
+            <Badge variant="outline" className="bg-success/10 text-success border-success/30 gap-1">
+              <CheckCircle2 className="w-3 h-3" /> {completadas}
+            </Badge>
+            <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 gap-1">
+              <Clock className="w-3 h-3" /> {pendientes}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
+          {obligaciones.map((obl) => {
+            const isCompleted = !!cumplimientos[obl.id];
+            const info        = getVencimientoInfo(obl.fecha_vencimiento);
+            const accentColor =
+              isCompleted                   ? 'hsl(var(--success))'     :
+              info?.status === 'vencido'    ? 'hsl(var(--destructive))' :
+              info?.status === 'urgente'    ? 'hsl(25, 95%, 53%)'       :
+              info?.status === 'proximo'    ? 'hsl(var(--warning))'     :
+              'hsl(var(--border))';
+
+            return (
+              <div
+                key={obl.id}
+                className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${
+                  isCompleted ? 'bg-success/5 border-success/20' : 'hover:bg-accent/10'
+                }`}
+                style={{ borderLeft: `3px solid ${accentColor}` }}
+              >
+                <Checkbox
+                  checked={isCompleted}
+                  disabled={toggling === obl.id}
+                  onCheckedChange={() => toggleCumplimiento(obl)}
+                  className="shrink-0"
+                />
+
+                <div className="flex-1 min-w-0">
+                  <p className={`font-medium text-sm truncate font-heading ${
+                    isCompleted ? 'line-through text-muted-foreground' : ''
+                  }`}>
+                    {obl.nombre}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground flex-wrap">
+                    <Badge className={`text-xs ${CATEGORIA_COLORS[obl.categoria] || CATEGORIA_COLORS.otro}`}>
+                      {CATEGORIA_LABELS[obl.categoria] || obl.categoria}
+                    </Badge>
+                    {obl.fecha_vencimiento && (
+                      <span>{formatDateShort(obl.fecha_vencimiento)}</span>
+                    )}
+                  </div>
+                </div>
+
+                <SemaforoBadge fecha={obl.fecha_vencimiento} cumplida={isCompleted} />
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
