@@ -114,18 +114,18 @@ function SidebarContent({
             <button
               key={item.path}
               onClick={() => onNavigate(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group relative ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 group relative ${
                 isActive
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
               }`}
             >
               {isActive && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary-foreground/60 rounded-r-full" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary/60 rounded-r-full" />
               )}
-              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-sidebar-foreground/50 group-hover:text-sidebar-foreground'}`} />
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-primary' : 'text-sidebar-foreground/50 group-hover:text-sidebar-foreground'}`} />
               <span className="flex-1 text-left">{item.label}</span>
-              {isActive && <ChevronRight className="w-3 h-3 text-primary-foreground/60" />}
+              {isActive && <ChevronRight className="w-3 h-3 text-primary/60" />}
             </button>
           );
         })}
