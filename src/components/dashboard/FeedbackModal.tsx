@@ -16,7 +16,7 @@ const SNOOZE_KEY = 'feedback_snooze_until';
 const MIN_SESSIONS = 3;
 
 interface FeedbackModalProps {
-  userId: string;
+  userId: string | null;
 }
 
 const STEPS = [
