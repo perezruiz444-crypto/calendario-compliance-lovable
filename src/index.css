@@ -4,7 +4,7 @@
 
 /* ═══════════════════════════════════════════════════════════════
    CALENDARIO COMPLIANCE — Design System
-   Institucional Premium · Navy + Rojo · DM Sans + Fraunces
+   Institucional Premium · Navy + Rojo · Inter + Plus Jakarta Sans
 ═══════════════════════════════════════════════════════════════ */
 
 @layer base {
@@ -297,7 +297,7 @@ body::before {
 
 /* ── FullCalendar overrides ─────────────────────────────────── */
 .fc {
-  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
   font-size: 13px;
 }
 .fc .fc-toolbar-title {
@@ -307,7 +307,7 @@ body::before {
   letter-spacing: -0.02em;
 }
 .fc .fc-button {
-  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   text-transform: none !important;
@@ -325,7 +325,7 @@ body::before {
   opacity: 0.85;
 }
 .fc .fc-col-header-cell-cushion {
-  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
@@ -360,7 +360,7 @@ body::before {
   padding: 1px 5px !important;
 }
 .fc .fc-list-event-title {
-  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
   font-size: 13px !important;
 }
 .fc-theme-standard td, .fc-theme-standard th {
