@@ -15,7 +15,8 @@ import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from 'd
 import { getCurrentPeriodKey, CATEGORIA_LABELS } from '@/lib/obligaciones';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { generateReportPDF } from '@/lib/pdfGenerator';
+import { generateReportPDF, generateCategoriaReportPDF, generateCumplimientoMensualPDF } from '@/lib/pdfGenerator';
+import { buildCategoriaReportData, buildCumplimientoMensualData } from '@/lib/reportDataBuilders';
 import * as XLSX from 'xlsx';
 
 export default function Reportes() {
@@ -27,8 +28,9 @@ export default function Reportes() {
   const [selectedConsultor, setSelectedConsultor] = useState<string>('todos');
   const [selectedCategoria, setSelectedCategoria] = useState<string>('todas');
   const [selectedEstado, setSelectedEstado] = useState<string>('todos');
-  const [tipoReporte, setTipoReporte] = useState<string>('general');
-  
+  const [loadingCategoria, setLoadingCategoria] = useState<string | null>(null);
+  const [conteosPorCategoria, setConteosPorCategoria] = useState<Record<string, number>>({});
+
   const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
   const [consultores, setConsultores] = useState<{ id: string; nombre_completo: string }[]>([]);
   const [categorias, setCategorias] = useState<{ id: string; nombre: string }[]>([]);
@@ -81,7 +83,27 @@ export default function Reportes() {
     if (empresas.length > 0 || selectedEmpresa === 'todas') {
       fetchReportData();
     }
-  }, [selectedPeriod, selectedEmpresa, selectedConsultor, selectedCategoria, selectedEstado, tipoReporte, empresas]);
+  }, [selectedPeriod, selectedEmpresa, selectedConsultor, selectedCategoria, selectedEstado, empresas]);
+
+  useEffect(() => {
+    if (!selectedEmpresa || selectedEmpresa === 'todas') {
+      setConteosPorCategoria({});
+      return;
+    }
+    supabase
+      .from('obligaciones')
+      .select('categoria')
+      .eq('empresa_id', selectedEmpresa)
+      .eq('activa', true)
+      .then(({ data }) => {
+        if (!data) return;
+        const conteos: Record<string, number> = {};
+        data.forEach(ob => {
+          conteos[ob.categoria] = (conteos[ob.categoria] || 0) + 1;
+        });
+        setConteosPorCategoria(conteos);
+      });
+  }, [selectedEmpresa]);
 
   const fetchEmpresas = async () => {
     try {
@@ -561,7 +583,7 @@ export default function Reportes() {
 
   const exportToCSV = () => {
     const rows = [
-      ['Reporte de Tareas - ' + tipoReporte.toUpperCase()],
+      ['Reporte de Gestión - Cumplimiento Regulatorio'],
       ['Período: ' + selectedPeriod],
       [''],
       ['Resumen'],
@@ -593,22 +615,6 @@ export default function Reportes() {
       );
     }
 
-    if (tipoReporte === 'consultores' && reporteData.tareasPorConsultor.length > 0) {
-      rows.push(
-        [''],
-        ['Tareas por Consultor'],
-        ...reporteData.tareasPorConsultor.map(d => [d.name, d.value])
-      );
-    }
-
-    if (tipoReporte === 'empresas' && reporteData.tareasPorEmpresa.length > 0) {
-      rows.push(
-        [''],
-        ['Tareas por Empresa'],
-        ...reporteData.tareasPorEmpresa.map(d => [d.name, d.value])
-      );
-    }
-
     if (reporteData.certificacionesVencimiento.length > 0) {
       rows.push(
         [''],
@@ -627,7 +633,7 @@ export default function Reportes() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reporte_${tipoReporte}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.download = `reporte_cumplimiento_${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
   };
 
@@ -694,18 +700,22 @@ export default function Reportes() {
               Análisis y estadísticas del sistema
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={exportObligacionesExcel} variant="outline" className="font-heading gap-1.5">
-              <FileDown className="w-4 h-4" />
-              Obligaciones Excel
-            </Button>
-            <Button onClick={exportToCSV} className="font-heading" variant="outline">
-              <Download className="w-4 h-4 mr-2" />
-              Exportar CSV
-            </Button>
+          <div className="flex flex-col gap-2 items-end">
+            {/* Grupo datos */}
+            <div className="flex gap-2">
+              <Button onClick={exportObligacionesExcel} variant="outline" size="sm" className="font-heading gap-1.5">
+                <FileDown className="w-4 h-4" />
+                Excel
+              </Button>
+              <Button onClick={exportToCSV} variant="outline" size="sm" className="font-heading gap-1.5">
+                <Download className="w-4 h-4" />
+                CSV
+              </Button>
+            </div>
+            {/* Grupo PDF — solo si hay empresa seleccionada */}
             {selectedEmpresa && selectedEmpresa !== 'todas' && (
-              <>
-                <Button 
+              <div className="flex gap-2">
+                <Button
                   onClick={async () => {
                     try {
                       // Get empresa data first
@@ -714,33 +724,32 @@ export default function Reportes() {
                         .select('razon_social, rfc')
                         .eq('id', selectedEmpresa)
                         .maybeSingle();
-                      
+
                       if (empresaError) throw empresaError;
                       if (!empresa) throw new Error('Empresa no encontrada');
-                      
-                      await generateReportPDF(empresa, reporteData, selectedPeriod, tipoReporte);
-                      
+
+                      await generateReportPDF(empresa, reporteData, selectedPeriod, 'general');
+
                       toast.success("PDF generado — el reporte se ha descargado correctamente");
                     } catch (err: unknown) {
                       console.error('Error generating PDF:', err);
                       toast.error(err instanceof Error ? err.message : 'Error al generar PDF');
                     }
                   }}
-                  className="font-heading"
-                  variant="outline"
+                  variant="outline" size="sm" className="font-heading gap-1.5"
                 >
-                  <FileDown className="w-4 h-4 mr-2" />
-                  Descargar PDF
+                  <FileDown className="w-4 h-4" />
+                  PDF General
                 </Button>
-                <Button 
+                <Button
                   onClick={async () => {
                     try {
                       const { error } = await supabase.functions.invoke('send-report-email', {
-                        body: { 
-                          empresaId: selectedEmpresa, 
-                          reportData: reporteData, 
-                          period: selectedPeriod, 
-                          reportType: tipoReporte 
+                        body: {
+                          empresaId: selectedEmpresa,
+                          reportData: reporteData,
+                          period: selectedPeriod,
+                          reportType: 'general'
                         }
                       });
                       if (error) throw error;
@@ -749,12 +758,12 @@ export default function Reportes() {
                       toast.error(err instanceof Error ? err.message : 'Error al enviar reporte');
                     }
                   }}
-                  className="font-heading"
+                  size="sm" className="font-heading gap-1.5"
                 >
-                  <Mail className="w-4 h-4 mr-2" />
-                  Enviar por Email
+                  <Mail className="w-4 h-4" />
+                  Enviar Email
                 </Button>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -769,24 +778,6 @@ export default function Reportes() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-heading font-medium mb-2 block">
-                  Tipo de Reporte
-                </label>
-                <Select value={tipoReporte} onValueChange={setTipoReporte}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="general">General</SelectItem>
-                    <SelectItem value="consultores">Por Consultor</SelectItem>
-                    <SelectItem value="empresas">Por Empresa</SelectItem>
-                    <SelectItem value="categorias">Por Categoría</SelectItem>
-                    <SelectItem value="rendimiento">Rendimiento</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
               <div>
                 <label className="text-sm font-heading font-medium mb-2 block">
                   Período
@@ -976,9 +967,8 @@ export default function Reportes() {
 
         {/* Gráficas según tipo de reporte */}
         <Tabs defaultValue="estado" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
             <TabsTrigger value="estado">Estado</TabsTrigger>
-            <TabsTrigger value="consultor">Consultores</TabsTrigger>
             <TabsTrigger value="empresa">Empresas</TabsTrigger>
             <TabsTrigger value="categoria">Categorías</TabsTrigger>
             <TabsTrigger value="rendimiento">Rendimiento</TabsTrigger>
@@ -1125,27 +1115,6 @@ export default function Reportes() {
             )}
           </TabsContent>
 
-          <TabsContent value="consultor" className="space-y-6">
-            <Card className="gradient-card shadow-card">
-              <CardHeader>
-                <CardTitle className="font-heading">Tareas por Consultor</CardTitle>
-                <CardDescription className="font-body">Distribución de tareas entre consultores</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={reporteData.tareasPorConsultor}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                    <XAxis dataKey="name" style={{ fontSize: '11px' }} angle={-45} textAnchor="end" height={100} />
-                    <YAxis style={{ fontSize: '12px' }} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="value" name="Tareas" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="empresa" className="space-y-6">
             <Card className="gradient-card shadow-card">
               <CardHeader>
@@ -1275,6 +1244,181 @@ export default function Reportes() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Reportes Especializados por Categoría */}
+        <Card className="gradient-card shadow-card">
+          <CardHeader>
+            <CardTitle className="font-heading flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Reportes Especializados por Categoría
+            </CardTitle>
+            <CardDescription className="font-body">
+              {selectedEmpresa && selectedEmpresa !== 'todas'
+                ? 'Genera reportes PDF detallados por programa regulatorio para la empresa seleccionada.'
+                : 'Selecciona una empresa específica en los filtros para habilitar los reportes especializados.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Reporte Cumplimiento Mensual */}
+            <div className="mb-5 p-4 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-between">
+              <div>
+                <p className="font-heading font-semibold text-sm">Reporte de Cumplimiento Mensual</p>
+                <p className="text-xs text-muted-foreground font-body mt-0.5">
+                  Reporte firmable con todas las categorías · Ideal para auditorías SAT
+                </p>
+              </div>
+              <Button
+                size="sm"
+                disabled={!selectedEmpresa || selectedEmpresa === 'todas' || loadingCategoria === '__mensual__'}
+                className="font-heading"
+                onClick={async () => {
+                  setLoadingCategoria('__mensual__');
+                  try {
+                    const { data: empresaData } = await supabase
+                      .from('empresas')
+                      .select('id, razon_social, rfc')
+                      .eq('id', selectedEmpresa)
+                      .maybeSingle();
+                    if (!empresaData) throw new Error('Empresa no encontrada');
+
+                    let periodoKey: string;
+                    let periodLabel: string;
+                    if (selectedPeriod === 'mes_actual') {
+                      periodoKey = format(new Date(), 'yyyy-MM');
+                      periodLabel = format(new Date(), 'MMMM yyyy', { locale: es });
+                    } else if (selectedPeriod === 'mes_anterior') {
+                      periodoKey = format(subMonths(new Date(), 1), 'yyyy-MM');
+                      periodLabel = format(subMonths(new Date(), 1), 'MMMM yyyy', { locale: es });
+                    } else if (selectedPeriod === 'trimestre') {
+                      periodoKey = format(new Date(), 'yyyy-MM');
+                      periodLabel = 'Trimestre Actual';
+                    } else {
+                      periodoKey = format(new Date(), 'yyyy');
+                      periodLabel = 'Año ' + format(new Date(), 'yyyy');
+                    }
+
+                    const reportData = await buildCumplimientoMensualData(supabase, empresaData, periodoKey, periodLabel);
+                    await generateCumplimientoMensualPDF(reportData);
+                    toast.success('Reporte de Cumplimiento Mensual generado');
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : 'Error al generar reporte');
+                  } finally {
+                    setLoadingCategoria(null);
+                  }
+                }}
+              >
+                {loadingCategoria === '__mensual__' ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                    Generando…
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <FileDown className="w-3 h-3" />
+                    Generar PDF
+                  </span>
+                )}
+              </Button>
+            </div>
+
+            {(() => {
+              const TILE_DESCRIPTIONS: Record<string, string> = {
+                immex:         'Inventarios, retornos y operaciones de maquila',
+                prosec:        'Sectores beneficiados y aranceles preferenciales',
+                cert_iva_ieps: 'Estado de certificación, renovaciones y beneficios',
+                padron:        'Sectores activos, suspensiones y renovaciones',
+                general:       'Obligaciones generales de comercio exterior',
+                otro:          'Obligaciones diversas no clasificadas',
+              };
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {([
+                    { key: 'immex',         label: 'IMMEX',               color: '#00529a', bg: '#e0edff' },
+                    { key: 'prosec',        label: 'PROSEC',              color: '#2e7d32', bg: '#dcf2dc' },
+                    { key: 'cert_iva_ieps', label: 'Cert. IVA/IEPS',     color: '#7b1fa2', bg: '#f3e5f5' },
+                    { key: 'padron',        label: 'Padrón Importadores', color: '#e65100', bg: '#fff3e0' },
+                    { key: 'general',       label: 'OEA / General',       color: '#003366', bg: '#e6eef8' },
+                    { key: 'otro',          label: 'Otras Obligaciones',  color: '#37474f', bg: '#eceff1' },
+                  ] as const).map(cat => (
+                    <div
+                      key={cat.key}
+                      className="border rounded-xl p-4 flex flex-col gap-3"
+                      style={{ borderColor: cat.color + '44', background: cat.bg }}
+                    >
+                      <div>
+                        <span
+                          className="inline-block text-xs font-heading font-bold px-2 py-0.5 rounded-full mb-1"
+                          style={{ background: cat.color, color: '#fff' }}
+                        >
+                          {cat.label}
+                        </span>
+                        <p className="text-xs text-muted-foreground font-body">{TILE_DESCRIPTIONS[cat.key]}</p>
+                        <p className="text-xs font-heading font-semibold mt-1" style={{ color: cat.color }}>
+                          {conteosPorCategoria[cat.key] !== undefined
+                            ? `${conteosPorCategoria[cat.key]} obligación${conteosPorCategoria[cat.key] !== 1 ? 'es' : ''}`
+                            : selectedEmpresa && selectedEmpresa !== 'todas' ? '—' : ''}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        disabled={
+                          !selectedEmpresa || selectedEmpresa === 'todas' ||
+                          loadingCategoria === cat.key ||
+                          conteosPorCategoria[cat.key] === 0
+                        }
+                        variant="outline"
+                        className="font-heading w-full"
+                        style={{ borderColor: cat.color, color: cat.color }}
+                        onClick={async () => {
+                          setLoadingCategoria(cat.key);
+                          try {
+                            const { data: empresaData, error: empError } = await supabase
+                              .from('empresas')
+                              .select('id, razon_social, rfc')
+                              .eq('id', selectedEmpresa)
+                              .maybeSingle();
+                            if (empError) throw empError;
+                            if (!empresaData) throw new Error('Empresa no encontrada');
+
+                            const reportData = await buildCategoriaReportData(
+                              supabase,
+                              empresaData,
+                              cat.key,
+                              selectedPeriod
+                            );
+                            await generateCategoriaReportPDF(reportData);
+                            toast.success(`Reporte ${cat.label} generado correctamente`);
+                          } catch (err: unknown) {
+                            toast.error(err instanceof Error ? err.message : 'Error al generar reporte');
+                          } finally {
+                            setLoadingCategoria(null);
+                          }
+                        }}
+                      >
+                        {conteosPorCategoria[cat.key] === 0
+                          ? 'Sin datos'
+                          : loadingCategoria === cat.key
+                            ? (
+                              <span className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                                Generando…
+                              </span>
+                            )
+                            : (
+                              <span className="flex items-center gap-2">
+                                <Download className="w-3 h-3" />
+                                Generar PDF
+                              </span>
+                            )
+                        }
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
 
         {/* Certificaciones por Vencer */}
         {reporteData.certificacionesVencimiento.length > 0 && (
