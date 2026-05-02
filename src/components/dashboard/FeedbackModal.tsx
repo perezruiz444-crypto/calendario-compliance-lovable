@@ -11,6 +11,9 @@ import { MessageSquareHeart, Sparkles, Clock, CheckCircle2, ChevronRight, Chevro
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'has_submitted_feedback_v1';
+const SESSION_COUNT_KEY = 'session_count_v1';
+const SNOOZE_KEY = 'feedback_snooze_until';
+const MIN_SESSIONS = 3;
 
 interface FeedbackModalProps {
   userId: string;
@@ -38,22 +41,36 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
   const [q5, setQ5] = useState('');
 
   useEffect(() => {
-    const checkIfSubmitted = async () => {
-      // Check localStorage first
+    const checkIfShouldShow = () => {
+      // Ya respondió — nunca mostrar
       if (localStorage.getItem(STORAGE_KEY)) {
         setChecking(false);
         return;
       }
 
-      // Check Supabase (in case user switched browsers)
-      // Use count query - admin-only SELECT won't work for clients,
-      // so we attempt an insert-check approach via a simple RPC or just show the modal
-      // Since clients can't SELECT, we rely on localStorage + show modal if not found
+      // Incrementar contador de sesiones
+      const currentCount = parseInt(localStorage.getItem(SESSION_COUNT_KEY) || '0', 10);
+      const newCount = currentCount + 1;
+      localStorage.setItem(SESSION_COUNT_KEY, String(newCount));
+
+      // Aún no tiene suficientes sesiones
+      if (newCount < MIN_SESSIONS) {
+        setChecking(false);
+        return;
+      }
+
+      // Verificar si está en modo snooze
+      const snoozeUntil = localStorage.getItem(SNOOZE_KEY);
+      if (snoozeUntil && Date.now() < parseInt(snoozeUntil, 10)) {
+        setChecking(false);
+        return;
+      }
+
       setChecking(false);
       setOpen(true);
     };
 
-    checkIfSubmitted();
+    checkIfShouldShow();
   }, [userId]);
 
   const canProceed = () => {
