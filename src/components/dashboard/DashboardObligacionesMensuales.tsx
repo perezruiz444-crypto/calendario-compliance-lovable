@@ -76,25 +76,28 @@ export default function DashboardObligacionesMensuales() {
   // --- resolve empresaId + nombre empresa ---
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
+
     if (role === 'cliente') {
-      resolveClienteEmpresa();
+      (async () => {
+        const { data } = await supabase
+          .from('profiles')
+          .select('empresa_id')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        setEmpresaId(data?.empresa_id ?? null);
+        if (!data?.empresa_id) setLoading(false);
+      })();
     } else {
       const id = selectedEmpresaId && selectedEmpresaId !== 'all'
         ? selectedEmpresaId : null;
       setEmpresaId(id);
       if (!id) { setEmpresaNombre(''); setObligaciones([]); setCumplimientos({}); setLoading(false); }
     }
-  }, [user, role, selectedEmpresaId]);
 
-  const resolveClienteEmpresa = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('empresa_id')
-      .eq('id', user!.id)
-      .maybeSingle();
-    setEmpresaId(data?.empresa_id ?? null);
-    if (!data?.empresa_id) setLoading(false);
-  };
+    return () => { cancelled = true; };
+  }, [user, role, selectedEmpresaId]);
 
   // --- fetch cuando empresaId cambia ---
   useEffect(() => {
