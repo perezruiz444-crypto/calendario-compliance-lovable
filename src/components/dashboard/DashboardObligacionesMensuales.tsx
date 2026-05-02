@@ -334,7 +334,7 @@ export default function DashboardObligacionesMensuales() {
               >
                 <Checkbox
                   checked={isCompleted}
-                  disabled={toggling === obl.id}
+                  disabled={toggling !== null}
                   onCheckedChange={() => toggleCumplimiento(obl)}
                   className="shrink-0"
                 />
