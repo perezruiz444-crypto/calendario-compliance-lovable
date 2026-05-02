@@ -142,8 +142,11 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
             <div>
               <DialogHeader className="space-y-0 text-left">
                 <DialogTitle className="font-heading text-xl font-bold text-white">
-                  Ayúdanos a mejorar tu experiencia
+                  Tu opinión vale mucho
                 </DialogTitle>
+                <p className="text-white/75 font-body text-sm mt-0.5">
+                  5 preguntas rápidas de tu experiencia real
+                </p>
               </DialogHeader>
             </div>
           </div>
