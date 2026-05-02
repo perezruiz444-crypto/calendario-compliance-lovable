@@ -40,16 +40,16 @@ export default function DashboardObligacionesMensuales() {
   const [loading, setLoading]             = useState(true);
   const [toggling, setToggling]           = useState<string | null>(null);
 
-  // --- resolve empresaId ---
+  // --- resolve empresaId + nombre empresa ---
   useEffect(() => {
     if (!user) return;
     if (role === 'cliente') {
       resolveClienteEmpresa();
     } else {
-      // admin / consultor
       const id = selectedEmpresaId && selectedEmpresaId !== 'all'
         ? selectedEmpresaId : null;
       setEmpresaId(id);
+      if (!id) { setEmpresaNombre(''); setObligaciones([]); setCumplimientos({}); setLoading(false); }
     }
   }, [user, role, selectedEmpresaId]);
 
@@ -60,8 +60,66 @@ export default function DashboardObligacionesMensuales() {
       .eq('id', user!.id)
       .maybeSingle();
     setEmpresaId(data?.empresa_id ?? null);
+    if (!data?.empresa_id) setLoading(false);
   };
 
-  // placeholder render — se completa en tasks siguientes
+  // --- fetch cuando empresaId cambia ---
+  useEffect(() => {
+    if (!empresaId) return;
+    fetchObligaciones();
+  }, [empresaId]);
+
+  const fetchObligaciones = async () => {
+    if (!empresaId) return;
+    setLoading(true);
+
+    const now = new Date();
+    const year  = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const days  = getDaysInMonth(now);
+    const firstDay = `${year}-${month}-01T12:00:00`;
+    const lastDay  = `${year}-${month}-${String(days).padStart(2, '0')}T12:00:00`;
+
+    const [{ data: oblData }, { data: empData }] = await Promise.all([
+      supabase
+        .from('obligaciones')
+        .select('id, nombre, categoria, presentacion, fecha_vencimiento')
+        .eq('empresa_id', empresaId)
+        .eq('activa', true)
+        .gte('fecha_vencimiento', firstDay)
+        .lte('fecha_vencimiento', lastDay)
+        .order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
+      supabase
+        .from('empresas')
+        .select('razon_social')
+        .eq('id', empresaId)
+        .maybeSingle(),
+    ]);
+
+    const obls = (oblData || []) as Obligacion[];
+    setObligaciones(obls);
+    setEmpresaNombre(empData?.razon_social || '');
+    await fetchCumplimientos(obls);
+    setLoading(false);
+  };
+
+  const fetchCumplimientos = async (obls: Obligacion[]) => {
+    if (obls.length === 0) { setCumplimientos({}); return; }
+    const oblIds = obls.map(o => o.id);
+    const { data: cumpData } = await supabase
+      .from('obligacion_cumplimientos')
+      .select('obligacion_id, periodo_key, completada')
+      .in('obligacion_id', oblIds);
+
+    const map: Record<string, boolean> = {};
+    (cumpData || []).forEach((c: any) => {
+      const obl = obls.find(o => o.id === c.obligacion_id);
+      if (obl && c.periodo_key === getCurrentPeriodKey(obl.presentacion)) {
+        map[c.obligacion_id] = c.completada;
+      }
+    });
+    setCumplimientos(map);
+  };
+
   return <div />;
 }
