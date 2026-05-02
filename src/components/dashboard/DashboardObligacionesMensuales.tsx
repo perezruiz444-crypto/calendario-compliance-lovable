@@ -160,5 +160,23 @@ export default function DashboardObligacionesMensuales() {
     }
   };
 
+  // Realtime: re-fetch cumplimientos al detectar cambios en las obligaciones del mes
+  useEffect(() => {
+    if (obligaciones.length === 0) return;
+    const oblIds = obligaciones.map(o => o.id);
+    const filter = `obligacion_id=in.(${oblIds.join(',')})`;
+
+    const channel = supabase
+      .channel(`obligaciones-mes-${empresaId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'obligacion_cumplimientos', filter },
+        () => fetchCumplimientos(obligaciones),
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [obligaciones]);
+
   return <div />;
 }
