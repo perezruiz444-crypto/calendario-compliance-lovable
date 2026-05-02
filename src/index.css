@@ -20,16 +20,16 @@
     --popover-foreground: 215 25% 15%;
 
     /* Navy #003366 */
-    --primary: 210 100% 20%;
+    --primary: 214 72% 30%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 210 100% 25%;
-    --primary-light: 210 60% 96%;
+    --primary-hover: 214 72% 36%;
+    --primary-light: 214 60% 96%;
 
-    --secondary: 210 15% 95%;
+    --secondary: 215 20% 94%;
     --secondary-foreground: 215 25% 20%;
 
     --muted: 210 15% 95%;
-    --muted-foreground: 215 15% 45%;
+    --muted-foreground: 215 20% 50%;
 
     /* Red accent #D52B1E */
     --accent: 4 76% 49%;
@@ -44,19 +44,19 @@
     --destructive-foreground: 0 0% 100%;
 
     /* Structure */
-    --border: 210 20% 88%;
+    --border: 214 25% 90%;
     --input: 210 20% 92%;
     --ring: 210 100% 20%;
-    --radius: 0.625rem;
+    --radius: 0.75rem;
 
     /* Sidebar */
-    --sidebar-background: 210 30% 97%;
+    --sidebar-background: 214 25% 96%;
     --sidebar-foreground: 215 25% 20%;
     --sidebar-primary: 210 100% 20%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 20% 91%;
     --sidebar-accent-foreground: 215 25% 20%;
-    --sidebar-border: 210 20% 87%;
+    --sidebar-border: 214 20% 88%;
     --sidebar-ring: 210 100% 20%;
 
     /* Shadows — más dramáticas */
@@ -81,9 +81,9 @@
     --popover: 220 18% 11%;
     --popover-foreground: 210 15% 95%;
 
-    --primary: 210 90% 52%;
+    --primary: 214 68% 52%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 210 90% 58%;
+    --primary-hover: 214 68% 58%;
     --primary-light: 220 25% 16%;
 
     --secondary: 220 15% 16%;
