@@ -42,6 +42,11 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
 
   useEffect(() => {
     const checkIfShouldShow = () => {
+      if (!userId) {
+        setChecking(false);
+        return;
+      }
+
       // Ya respondió — nunca mostrar
       if (localStorage.getItem(STORAGE_KEY)) {
         setChecking(false);
@@ -49,7 +54,7 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
       }
 
       // Incrementar contador de sesiones
-      const currentCount = parseInt(localStorage.getItem(SESSION_COUNT_KEY) || '0', 10);
+      const currentCount = parseInt(localStorage.getItem(SESSION_COUNT_KEY) || '0', 10) || 0;
       const newCount = currentCount + 1;
       localStorage.setItem(SESSION_COUNT_KEY, String(newCount));
 
