@@ -28,6 +28,39 @@ interface Obligacion {
   fecha_vencimiento: string | null;
 }
 
+function SemaforoBadge({ fecha, cumplida }: { fecha: string | null; cumplida: boolean }) {
+  if (cumplida) return null;
+  const info = getVencimientoInfo(fecha);
+  if (!info) return null;
+
+  if (info.status === 'vencido') {
+    return (
+      <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30 gap-1 shrink-0">
+        <ShieldAlert className="w-3 h-3" /> Vencida
+      </Badge>
+    );
+  }
+  if (info.status === 'urgente') {
+    return (
+      <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30 gap-1 shrink-0">
+        <AlertTriangle className="w-3 h-3" /> {info.days}d
+      </Badge>
+    );
+  }
+  if (info.status === 'proximo') {
+    return (
+      <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/30 gap-1 shrink-0">
+        <Clock className="w-3 h-3" /> {info.days}d
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30 gap-1 shrink-0">
+      <CheckCircle2 className="w-3 h-3" /> {info.days}d
+    </Badge>
+  );
+}
+
 export default function DashboardObligacionesMensuales() {
   const { user, role } = useAuth();
   const navigate = useNavigate();
