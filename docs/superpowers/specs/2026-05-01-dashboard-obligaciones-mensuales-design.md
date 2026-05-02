@@ -135,20 +135,25 @@ Optimistic update: actualizar el mapa local inmediatamente, revertir si la query
 
 ### Realtime
 
-Suscribirse a `postgres_changes` en `obligacion_cumplimientos` filtrando por `empresa_id` no es directo (la tabla no tiene `empresa_id`). En su lugar: re-fetch solo los cumplimientos al recibir cualquier cambio, lo cual es idéntico al patrón de otros componentes del proyecto.
+La tabla `obligacion_cumplimientos` no tiene `empresa_id`, por lo que no se puede filtrar el canal directamente por empresa. La solución óptima es filtrar por los IDs de las obligaciones del mes usando el operador `in` de Supabase Realtime v2, que limita el ruido a eventos relevantes:
 
 ```typescript
+// Solo ejecutar si hay obligaciones cargadas (ids.length > 0)
+const filter = `obligacion_id=in.(${oblIds.join(',')})`;
 const channel = supabase
   .channel(`obligaciones-mes-${empresaId}`)
   .on('postgres_changes', {
     event: '*',
     schema: 'public',
     table: 'obligacion_cumplimientos',
+    filter,
   }, () => fetchCumplimientos())
   .subscribe();
 
 return () => { supabase.removeChannel(channel); };
 ```
+
+Si `oblIds` está vacío, no se suscribe (no hay nada que escuchar). El canal se recrea cuando cambia `empresaId` o cuando la lista de obligaciones se carga por primera vez.
 
 ---
 
