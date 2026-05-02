@@ -1,0 +1,154 @@
+<h2>Diseño del modal de encuesta</h2>
+<p class="subtitle">¿Qué versión se siente más atractiva y respetuosa con el usuario?</p>
+
+<div class="split" style="gap:32px;align-items:flex-start;">
+
+  <!-- OPCIÓN A: Actual -->
+  <div class="mockup" data-choice="a" onclick="toggleSelect(this)" style="cursor:pointer;flex:1;">
+    <div class="mockup-header">A — Actual (aparece siempre, sin escape)</div>
+    <div class="mockup-body" style="padding:0;overflow:hidden;border-radius:8px;">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#0a2a5e,#1a4a9e);padding:20px 22px 16px;color:white;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <div style="background:rgba(255,255,255,0.15);padding:8px;border-radius:10px;font-size:18px;">💬</div>
+          <div style="font-weight:700;font-size:16px;">Ayúdanos a mejorar tu experiencia</div>
+        </div>
+        <div style="font-size:11px;opacity:0.8;display:flex;align-items:center;gap:5px;">
+          🕐 Solo te tomará 1-2 minutos · Tu opinión es 100% confidencial
+        </div>
+        <!-- Stepper -->
+        <div style="display:flex;gap:6px;margin-top:12px;">
+          <div style="flex:1;text-align:center;">
+            <div style="height:5px;background:white;border-radius:3px;"></div>
+            <div style="font-size:9px;margin-top:3px;opacity:1;">🎯 Razón</div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div style="height:5px;background:rgba(255,255,255,0.3);border-radius:3px;"></div>
+            <div style="font-size:9px;margin-top:3px;opacity:0.5;">🚦 Semáforo</div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div style="height:5px;background:rgba(255,255,255,0.3);border-radius:3px;"></div>
+            <div style="font-size:9px;margin-top:3px;opacity:0.5;">🔍 Fricción</div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div style="height:5px;background:rgba(255,255,255,0.3);border-radius:3px;"></div>
+            <div style="font-size:9px;margin-top:3px;opacity:0.5;">✨ Varita</div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div style="height:5px;background:rgba(255,255,255,0.3);border-radius:3px;"></div>
+            <div style="font-size:9px;margin-top:3px;opacity:0.5;">💬 Retención</div>
+          </div>
+        </div>
+      </div>
+      <!-- Body -->
+      <div style="padding:18px 22px;background:#fff;">
+        <p style="font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:12px;">🎯 ¿Cuál es la razón principal por la que inicias sesión hoy?</p>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="border:1.5px solid #0a2a5e;background:#f0f4ff;border-radius:8px;padding:8px 12px;font-size:12px;color:#0a2a5e;font-weight:500;">● Revisar vencimientos</div>
+          <div style="border:1px solid #ddd;border-radius:8px;padding:8px 12px;font-size:12px;color:#555;">○ Subir evidencias</div>
+          <div style="border:1px solid #ddd;border-radius:8px;padding:8px 12px;font-size:12px;color:#555;">○ Ver tareas de mi equipo</div>
+          <div style="border:1px solid #ddd;border-radius:8px;padding:8px 12px;font-size:12px;color:#555;">○ Descargar reporte</div>
+          <div style="border:1px solid #ddd;border-radius:8px;padding:8px 12px;font-size:12px;color:#555;">○ Otra</div>
+        </div>
+      </div>
+      <!-- Footer -->
+      <div style="padding:10px 22px 16px;background:#fff;display:flex;justify-content:flex-end;border-top:1px solid #f0f0f0;">
+        <div style="background:#0a2a5e;color:white;padding:7px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;">Siguiente →</div>
+      </div>
+      <!-- Warning -->
+      <div style="background:#fff3cd;padding:8px 22px;font-size:10px;color:#856404;text-align:center;">
+        ⚠️ Sin botón para cerrar — el usuario no puede escapar
+      </div>
+    </div>
+  </div>
+
+  <!-- OPCIÓN B: Rediseñado -->
+  <div class="mockup" data-choice="b" onclick="toggleSelect(this)" style="cursor:pointer;flex:1;">
+    <div class="mockup-header">B — Rediseñado (3+ sesiones + opción de posponer)</div>
+    <div class="mockup-body" style="padding:0;overflow:hidden;border-radius:8px;">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#0a2a5e,#1a4a9e);padding:20px 22px 16px;color:white;position:relative;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;margin-top:4px;">
+          <div style="background:rgba(255,255,255,0.15);padding:8px;border-radius:10px;font-size:18px;">💬</div>
+          <div>
+            <div style="font-weight:700;font-size:15px;">Tu opinión vale mucho</div>
+            <div style="font-size:11px;opacity:0.75;margin-top:1px;">5 preguntas rápidas de tu experiencia real</div>
+          </div>
+        </div>
+        <div style="font-size:11px;opacity:0.8;display:flex;align-items:center;gap:5px;margin-bottom:12px;">
+          🕐 1-2 minutos · 100% confidencial
+        </div>
+        <!-- Stepper -->
+        <div style="display:flex;gap:6px;">
+          <div style="flex:1;text-align:center;">
+            <div style="height:5px;background:white;border-radius:3px;"></div>
+            <div style="font-size:9px;margin-top:3px;opacity:1;">🎯 Razón</div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div style="height:5px;background:rgba(255,255,255,0.3);border-radius:3px;"></div>
+            <div style="font-size:9px;margin-top:3px;opacity:0.5;">🚦 Semáforo</div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div style="height:5px;background:rgba(255,255,255,0.3);border-radius:3px;"></div>
+            <div style="font-size:9px;margin-top:3px;opacity:0.5;">🔍 Fricción</div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div style="height:5px;background:rgba(255,255,255,0.3);border-radius:3px;"></div>
+            <div style="font-size:9px;margin-top:3px;opacity:0.5;">✨ Varita</div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div style="height:5px;background:rgba(255,255,255,0.3);border-radius:3px;"></div>
+            <div style="font-size:9px;margin-top:3px;opacity:0.5;">💬 Retención</div>
+          </div>
+        </div>
+      </div>
+      <!-- Body -->
+      <div style="padding:18px 22px;background:#fff;">
+        <p style="font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:12px;">🎯 ¿Cuál es la razón principal por la que inicias sesión hoy?</p>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="border:1.5px solid #0a2a5e;background:#f0f4ff;border-radius:8px;padding:8px 12px;font-size:12px;color:#0a2a5e;font-weight:500;">● Revisar vencimientos</div>
+          <div style="border:1px solid #ddd;border-radius:8px;padding:8px 12px;font-size:12px;color:#555;">○ Subir evidencias</div>
+          <div style="border:1px solid #ddd;border-radius:8px;padding:8px 12px;font-size:12px;color:#555;">○ Ver tareas de mi equipo</div>
+          <div style="border:1px solid #ddd;border-radius:8px;padding:8px 12px;font-size:12px;color:#555;">○ Descargar reporte</div>
+          <div style="border:1px solid #ddd;border-radius:8px;padding:8px 12px;font-size:12px;color:#555;">○ Otra</div>
+        </div>
+      </div>
+      <!-- Footer con escape -->
+      <div style="padding:10px 22px 14px;background:#fff;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #f0f0f0;">
+        <div style="color:#999;font-size:11px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">Ahora no, pregúntame en 7 días</div>
+        <div style="background:#0a2a5e;color:white;padding:7px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;">Siguiente →</div>
+      </div>
+      <!-- Success indicator -->
+      <div style="background:#d4edda;padding:8px 22px;font-size:10px;color:#155724;text-align:center;">
+        ✅ Solo aparece tras 3+ sesiones — el usuario ya conoce el producto
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:24px;background:#f8f9ff;border-radius:12px;padding:16px 20px;">
+  <p style="font-weight:600;font-size:13px;color:#1a1a2e;margin-bottom:8px;">Diferencias clave:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;">
+    <div>
+      <p style="color:#856404;font-weight:600;margin-bottom:4px;">❌ Versión actual</p>
+      <ul style="color:#555;padding-left:16px;line-height:1.8;margin:0;">
+        <li>Aparece desde el 1er login</li>
+        <li>Sin opción de cerrar o posponer</li>
+        <li>Sin contexto de por qué se pide</li>
+        <li>Usuarios nuevos no entienden las preguntas</li>
+      </ul>
+    </div>
+    <div>
+      <p style="color:#155724;font-weight:600;margin-bottom:4px;">✅ Versión propuesta</p>
+      <ul style="color:#555;padding-left:16px;line-height:1.8;margin:0;">
+        <li>Solo aparece tras 3+ sesiones</li>
+        <li>Botón "Ahora no, en 7 días"</li>
+        <li>Badge: "Ya llevas tiempo con nosotros"</li>
+        <li>Respuestas más informadas = datos útiles</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;text-align:center;">Haz clic en la opción que prefieras o cuéntame en el terminal qué te parece</p>
