@@ -10,7 +10,7 @@
 @layer base {
   :root {
     /* ── Core palette ── */
-    --background: 210 20% 98%;
+    --background: 214 20% 98%;
     --foreground: 215 25% 15%;
 
     --card: 0 0% 100%;
