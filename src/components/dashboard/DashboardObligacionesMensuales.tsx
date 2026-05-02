@@ -121,5 +121,44 @@ export default function DashboardObligacionesMensuales() {
     setCumplimientos(map);
   };
 
+  const toggleCumplimiento = async (obl: Obligacion) => {
+    if (!user) return;
+    const periodKey   = getCurrentPeriodKey(obl.presentacion);
+    const wasComplete = !!cumplimientos[obl.id];
+
+    // Optimistic update
+    setCumplimientos(prev => ({ ...prev, [obl.id]: !wasComplete }));
+    setToggling(obl.id);
+
+    try {
+      if (wasComplete) {
+        const { error } = await supabase
+          .from('obligacion_cumplimientos')
+          .delete()
+          .eq('obligacion_id', obl.id)
+          .eq('periodo_key', periodKey);
+        if (error) throw error;
+        toast.success('Cumplimiento desmarcado');
+      } else {
+        const { error } = await supabase
+          .from('obligacion_cumplimientos')
+          .insert({
+            obligacion_id: obl.id,
+            periodo_key:   periodKey,
+            completada:    true,
+            completada_por: user.id,
+          });
+        if (error) throw error;
+        toast.success('Cumplimiento marcado');
+      }
+    } catch {
+      // Revert on failure
+      setCumplimientos(prev => ({ ...prev, [obl.id]: wasComplete }));
+      toast.error('Error al actualizar cumplimiento');
+    } finally {
+      setToggling(null);
+    }
+  };
+
   return <div />;
 }
