@@ -141,27 +141,26 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'DM Sans', system-ui, sans-serif;
-    font-size: 15px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
     line-height: 1.6;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Fraunces', Georgia, serif;
-    font-optical-sizing: auto;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     line-height: 1.2;
     letter-spacing: -0.02em;
   }
 
-  h1 { font-size: 2rem;    font-weight: 700; }
-  h2 { font-size: 1.5rem;  font-weight: 600; }
-  h3 { font-size: 1.25rem; font-weight: 600; }
-  h4 { font-size: 1.1rem;  font-weight: 600; }
+  h1 { font-size: 1.875rem; font-weight: 700; }
+  h2 { font-size: 1.5rem;   font-weight: 600; }
+  h3 { font-size: 1.125rem; font-weight: 600; }
+  h4 { font-size: 1rem;     font-weight: 600; }
 
   /* Inputs más refinados */
   input, textarea, select {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 14px;
   }
 
@@ -214,8 +213,8 @@ body::before {
   .gradient-subtle  { background: var(--gradient-subtle);  }
 
   /* Typography */
-  .font-heading { font-family: 'Fraunces', Georgia, serif; }
-  .font-body    { font-family: 'DM Sans', system-ui, sans-serif; }
+  .font-heading { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+  .font-body    { font-family: 'Inter', system-ui, sans-serif; }
 
   /* Transitions */
   .transition-smooth     { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -299,7 +298,7 @@ body::before {
   font-size: 13px;
 }
 .fc .fc-toolbar-title {
-  font-family: 'Fraunces', Georgia, serif !important;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif !important;
   font-size: 1.1rem !important;
   font-weight: 600 !important;
   letter-spacing: -0.02em;
