@@ -21,7 +21,7 @@ import ConsultorAnalytics from '@/components/dashboard/ConsultorAnalytics';
 import ClienteAnalytics from '@/components/dashboard/ClienteAnalytics';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
 import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
-import AgendaHoy from '@/components/dashboard/AgendaHoy';
+import DashboardObligacionesMensuales from '@/components/dashboard/DashboardObligacionesMensuales';
 import RenovacionesWidget from '@/components/dashboard/RenovacionesWidget';
 import FeedbackModal from '@/components/dashboard/FeedbackModal';
 import FeedbackResultsCard from '@/components/dashboard/FeedbackResultsCard';
@@ -169,8 +169,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Agenda del día */}
-        {(role === 'administrador' || role === 'consultor') && <AgendaHoy />}
+        {/* Obligaciones del mes */}
+        <DashboardObligacionesMensuales />
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
