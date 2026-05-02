@@ -116,6 +116,12 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
     }
   };
 
+  const handleSnooze = () => {
+    const sevenDaysFromNow = Date.now() + 7 * 24 * 60 * 60 * 1000;
+    localStorage.setItem(SNOOZE_KEY, String(sevenDaysFromNow));
+    setOpen(false);
+  };
+
   if (checking || !open) return null;
 
   const ratingLabels = ['Muy difícil', 'Difícil', 'Neutral', 'Fácil', 'Muy fácil'];
@@ -292,47 +298,56 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
         </div>
 
         {/* Navigation buttons */}
-        <div className="px-6 pb-5 flex items-center justify-between gap-3">
-          {step > 0 ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setStep(step - 1)}
-              className="gap-1.5 font-heading"
-            >
-              <ChevronLeft className="w-4 h-4" /> Anterior
-            </Button>
-          ) : (
-            <div />
-          )}
+        <div className="px-6 pb-5 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-3">
+            {step > 0 ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setStep(step - 1)}
+                className="gap-1.5 font-heading"
+              >
+                <ChevronLeft className="w-4 h-4" /> Anterior
+              </Button>
+            ) : (
+              <div />
+            )}
 
-          {step < 4 ? (
-            <Button
-              size="sm"
-              onClick={() => setStep(step + 1)}
-              disabled={!canProceed()}
-              className="gap-1.5 font-heading"
-            >
-              Siguiente <ChevronRight className="w-4 h-4" />
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              onClick={handleSubmit}
-              disabled={!canProceed() || loading}
-              className="gap-1.5 font-heading bg-gradient-to-r from-primary to-[hsl(210,100%,30%)]"
-            >
-              {loading ? (
-                <>
-                  <Sparkles className="w-4 h-4 animate-spin" /> Enviando...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" /> Enviar Mis Respuestas
-                </>
-              )}
-            </Button>
-          )}
+            {step < 4 ? (
+              <Button
+                size="sm"
+                onClick={() => setStep(step + 1)}
+                disabled={!canProceed()}
+                className="gap-1.5 font-heading"
+              >
+                Siguiente <ChevronRight className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                onClick={handleSubmit}
+                disabled={!canProceed() || loading}
+                className="gap-1.5 font-heading bg-gradient-to-r from-primary to-[hsl(210,100%,30%)]"
+              >
+                {loading ? (
+                  <>
+                    <Sparkles className="w-4 h-4 animate-spin" /> Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" /> Enviar Mis Respuestas
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          <button
+            onClick={handleSnooze}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 text-center font-body py-1"
+          >
+            Ahora no, pregúntame en 7 días
+          </button>
         </div>
       </DialogContent>
     </Dialog>
