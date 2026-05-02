@@ -203,9 +203,12 @@ body::before {
 @layer utilities {
 
   /* Shadows */
-  .shadow-elegant { box-shadow: var(--shadow-md); }
-  .shadow-card    { box-shadow: var(--shadow-lg); }
-  .shadow-float   { box-shadow: var(--shadow-xl); }
+  .shadow-elegant { box-shadow: var(--shadow-sm); }
+  .shadow-card    { box-shadow: var(--shadow-md); }
+  .shadow-float   { box-shadow: var(--shadow-lg); }
+
+  .hover\:shadow-card:hover { box-shadow: var(--shadow-md); }
+  .hover\:shadow-float:hover { box-shadow: var(--shadow-lg); }
 
   /* Gradients */
   .gradient-primary { background: var(--gradient-primary); }
