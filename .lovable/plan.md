@@ -1,63 +1,96 @@
+# Plan: Mejoras Dashboard Obligaciones Mensuales (Fases A → B → C)
 
-# Fix: Error al guardar cumplimiento desde el Sheet de detalle
+## Fase A — Estabilidad y UX crítica
 
-## Causa raíz
+### A1. Migración SQL: desnormalizar `empresa_id` en `obligacion_cumplimientos`
+- Agregar columna `empresa_id uuid` (nullable inicialmente).
+- Backfill: `UPDATE obligacion_cumplimientos oc SET empresa_id = o.empresa_id FROM obligaciones o WHERE oc.obligacion_id = o.id`.
+- `ALTER COLUMN empresa_id SET NOT NULL`.
+- Índice: `CREATE INDEX idx_oc_empresa_periodo ON obligacion_cumplimientos(empresa_id, periodo_key)`.
+- Trigger `BEFORE INSERT`: autocompletar `empresa_id` desde `obligaciones` si viene NULL (para no romper inserts actuales).
+- RLS: añadir política simplificada usando `empresa_id` directamente (sin JOIN a `obligaciones`).
 
-`src/components/obligaciones/ObligacionDetailSheet.tsx` (línea ~95) hace un `upsert` a `obligacion_cumplimientos` con columnas que **no existen**:
+### A2. Realtime con filtro por empresa
+En `DashboardObligacionesMensuales.tsx` y `EmpresaObligacionesActivasCard.tsx`:
+- Suscripción: `filter: 'empresa_id=eq.' + empresaId` (en lugar de listar IDs).
+- Cleanup explícito: `return () => supabase.removeChannel(channel)` dentro del `useEffect`.
+- Agregar `empresaId` al array de dependencias para recrear el canal al cambiar empresa.
 
-```ts
-.upsert({
-  cumplido_por: user.id,           // ❌ no existe
-  fecha_cumplimiento: new Date()…  // ❌ no existe
-})
-```
+### A3. Filtro temporal preciso del mes
+- Helper `getObligacionesDelMes(obls, year, month)` que combine `fecha_vencimiento` + `presentacion` (semanal/mensual/bimestral pueden caer dentro del mes aunque su `fecha_vencimiento` original no).
+- Mostrar `periodLabel` (de `getPeriodLabel`) debajo del nombre.
 
-Schema real de la tabla:
-- `completada_por` (uuid) ← el correcto
-- `completada_en` (timestamptz, NOT NULL, default now()) ← el correcto
-- `completada` (boolean, NOT NULL)
-- `notas`, `evidencia_url`, `periodo_key`, `obligacion_id`
+### A4. Orden por urgencia
+Sort: `vencido (días asc) → urgente → proximo → vigente → cumplidas al final`.
 
-El componente hermano `EvidenciaCumplimiento.tsx` ya usa el nombre correcto (`completada_por`), por eso ese flujo sí funciona.
+### A5. Mobile + A11y + tokens
+- `flex-wrap` en filas, ocultar fecha completa con `hidden sm:inline` (mostrar solo badge de días).
+- `aria-label="Marcar {nombre} como cumplida"` en checkboxes.
+- Definir token `--urgent` en `index.css` y reemplazar colores hardcodeados.
 
-## Cambio
+---
 
-Un único archivo, dos líneas:
+## Fase B — Refactor y limpieza
 
-**`src/components/obligaciones/ObligacionDetailSheet.tsx`** — en `handleMarcarCumplida`:
-- `cumplido_por` → `completada_por`
-- Quitar `fecha_cumplimiento` (la columna `completada_en` tiene default `now()`, no hace falta enviarla)
-- Agregar `completada: true` explícitamente para dejar el registro consistente
+### B1. Hook `useObligacionCumplimientos`
+`src/hooks/useObligacionCumplimientos.ts`:
+- Inputs: `empresaId`, `obligaciones[]`.
+- Devuelve: `{ cumplimientos, toggle, loading }`.
+- Maneja fetch, optimistic update, realtime, y rollback en error.
+- Aplicarlo en `DashboardObligacionesMensuales` y `EmpresaObligacionesActivasCard` (elimina ~80 líneas duplicadas).
 
-Antes:
-```ts
-.upsert({
-  obligacion_id: ob.id,
-  periodo_key: periodKey,
-  cumplido_por: user.id,
-  notas: evidencia || null,
-  fecha_cumplimiento: new Date().toISOString(),
-})
-```
+### B2. Performance
+- `select('id, nombre, categoria, presentacion, fecha_vencimiento, activa, estado, responsable_id')` (no `select *`) en `EmpresaObligacionesActivasCard`.
+- Mantener `select *` solo cuando el usuario abra el editor.
 
-Después:
-```ts
-.upsert({
-  obligacion_id: ob.id,
-  periodo_key: periodKey,
-  completada: true,
-  completada_por: user.id,
-  notas: evidencia || null,
-})
-```
+### B3. UX consultor: empty state con selector
+Si `!empresaId` y rol = admin/consultor → mostrar botón "Elegir empresa" que abre el `EmpresaSelectorDropdown` existente.
 
-## Validación
+### B4. Toggle "Ocultar cumplidas"
+Switch en el header del widget; estado local; persistir en `localStorage` (`dashboard.obls.hideCompleted`).
 
-- Marcar como cumplida desde el Sheet → debe mostrar toast verde y refrescar.
-- El trigger `marcar_obligacion_cumplida` se dispara con el INSERT y pone `obligaciones.estado = 'completada'` (lo cual repinta el evento del calendario en verde).
-- Desmarcar (DELETE) sigue funcionando igual, no se toca.
+---
 
-## No incluido
+## Fase C — Producto y layout
 
-- No se toca el schema (las columnas ya están bien).
-- No se toca `EvidenciaCumplimiento.tsx` ni `MisVencimientos.tsx` (ya usan los nombres correctos).
+### C1. Click en fila → `ObligacionDetailSheet`
+- Importar `ObligacionDetailSheet`.
+- Click en la fila (excluyendo el checkbox y botones) abre el sheet en modo lectura/edición.
+
+### C2. Rediseño Dashboard
+- Colapsar KPIs en una sola fila compacta (cards 90px alto).
+- Reordenar secciones: **Obligaciones del mes → Tareas pendientes → Calendario → Mensajes/feedback**.
+- `AgendaHoy` ya fue reemplazado; no se restaura.
+
+### C3. Retirar `DashboardObligaciones` viejo
+- Eliminar `src/components/dashboard/DashboardObligaciones.tsx` y sus imports.
+- Verificar que no se referencie en otras pantallas.
+
+---
+
+## Detalle técnico
+
+**Archivos a modificar:**
+- `src/components/dashboard/DashboardObligacionesMensuales.tsx`
+- `src/components/empresas/EmpresaObligacionesActivasCard.tsx`
+- `src/pages/Dashboard.tsx`
+- `src/lib/obligaciones.ts` (helper `getObligacionesDelMes`, sort por urgencia)
+- `src/index.css` (token `--urgent`)
+
+**Archivos a crear:**
+- `src/hooks/useObligacionCumplimientos.ts`
+
+**Archivos a eliminar:**
+- `src/components/dashboard/DashboardObligaciones.tsx`
+
+**Migración SQL** (Fase A1) — vía migration tool al inicio de la implementación.
+
+**Validación post-implementación:**
+- Cambiar empresa en sidebar → lista refresca sin canales colgados.
+- Marcar/desmarcar cumplimiento → optimistic update, sin refetch completo.
+- Cliente ve sus obligaciones del mes y puede marcar (RLS permite).
+- Sin warnings de a11y en checkboxes; layout no se rompe a 360px.
+
+---
+
+¿Apruebas este plan para ejecutarlo en este orden (A → B → C en commits separados)?

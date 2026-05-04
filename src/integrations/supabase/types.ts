@@ -508,6 +508,44 @@ export type Database = {
           },
         ]
       }
+      empresa_programas: {
+        Row: {
+          activo: boolean
+          created_at: string
+          empresa_id: string
+          fecha_inicio: string | null
+          id: string
+          programa: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          empresa_id: string
+          fecha_inicio?: string | null
+          id?: string
+          programa: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          empresa_id?: string
+          fecha_inicio?: string | null
+          id?: string
+          programa?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empresa_programas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresas: {
         Row: {
           actividad_economica: string | null
@@ -902,6 +940,7 @@ export type Database = {
           completada_en: string
           completada_por: string | null
           created_at: string
+          empresa_id: string | null
           evidencia_url: string | null
           id: string
           notas: string | null
@@ -913,6 +952,7 @@ export type Database = {
           completada_en?: string
           completada_por?: string | null
           created_at?: string
+          empresa_id?: string | null
           evidencia_url?: string | null
           id?: string
           notas?: string | null
@@ -924,6 +964,7 @@ export type Database = {
           completada_en?: string
           completada_por?: string | null
           created_at?: string
+          empresa_id?: string | null
           evidencia_url?: string | null
           id?: string
           notas?: string | null
