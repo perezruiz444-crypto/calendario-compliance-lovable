@@ -118,5 +118,5 @@ export function useObligacionCumplimientos(obligaciones: Obligacion[], empresaId
     }
   };
 
-  return { cumplimientos, toggleCumplimiento, toggling };
+  return { cumplimientos, toggleCumplimiento, toggling, refetch: fetchCumplimientos };
 }

@@ -76,7 +76,7 @@ export default function DashboardObligacionesMensuales() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedObId, setSelectedObId] = useState<string | null>(null);
 
-  const { cumplimientos, toggleCumplimiento, toggling } = useObligacionCumplimientos(obligaciones, empresaId);
+  const { cumplimientos, toggleCumplimiento, toggling, refetch: refetchCumplimientos } = useObligacionCumplimientos(obligaciones, empresaId);
 
   // --- resolve empresaId + nombre empresa ---
   useEffect(() => {
@@ -367,7 +367,7 @@ export default function DashboardObligacionesMensuales() {
       open={sheetOpen}
       onOpenChange={setSheetOpen}
       obligacionId={selectedObId}
-      onCumplimientoChange={fetchObligaciones}
+      onCumplimientoChange={refetchCumplimientos}
     />
     </>
   );
