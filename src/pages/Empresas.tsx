@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -42,7 +42,7 @@ export default function Empresas() {
     try {
       const { data, error } = await supabase
         .from('empresas')
-        .select('*')
+        .select('id, razon_social, rfc, immex_numero, prosec_numero, cert_iva_ieps_oficio, padron_general_numero, domicilio_fiscal, created_at')
         .order('created_at', { ascending: false });
       if (error) throw error;
       setEmpresas(data || []);
@@ -129,9 +129,13 @@ export default function Empresas() {
 
   useEffect(() => { if (user && role) fetchEmpresas(); }, [user, role]);
 
-  const filtered = empresas.filter(e =>
-    !search || e.razon_social?.toLowerCase().includes(search.toLowerCase()) || e.rfc?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    if (!search) return empresas;
+    const s = search.toLowerCase();
+    return empresas.filter(e =>
+      e.razon_social?.toLowerCase().includes(s) || e.rfc?.toLowerCase().includes(s)
+    );
+  }, [empresas, search]);
 
   const getStatusBadges = (empresa: any) => {
     const badges: { label: string; variant: 'default' | 'secondary' | 'outline' }[] = [];
@@ -223,7 +227,7 @@ export default function Empresas() {
                   return (
                     <Card
                       key={empresa.id}
-                      className="border-l-4 border-l-primary hover:shadow-md transition-shadow cursor-pointer group"
+                      className="border-l-4 border-l-primary shadow-elegant hover:shadow-card transition-smooth hover-scale cursor-pointer group"
                       onClick={() => navigate(`/empresas/${empresa.id}`)}
                     >
                       <CardHeader className="pb-2">

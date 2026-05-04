@@ -341,9 +341,9 @@ export default function DashboardObligacionesMensuales() {
                       <Badge className={`text-xs ${CATEGORIA_COLORS[obl.categoria] || CATEGORIA_COLORS.otro}`}>
                         {CATEGORIA_LABELS[obl.categoria] || obl.categoria}
                       </Badge>
-                      {obl.presentacion && typeof getPeriodLabel === 'function' && (
+                      {obl.presentacion && (
                         <span className="text-[10px] uppercase font-semibold text-muted-foreground/70">
-                          {getPeriodLabel(obl.presentacion)}
+                          {getPeriodLabel(obl.presentacion, getCurrentPeriodKey(obl.presentacion))}
                         </span>
                       )}
                       {obl.fecha_vencimiento && (

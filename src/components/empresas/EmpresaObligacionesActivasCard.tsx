@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useObligacionCumplimientos } from '@/hooks/useObligacionCumplimientos';
 import { toast } from 'sonner';
 import { ObligacionFormDialog } from '@/components/obligaciones/ObligacionFormDialog';
 import {
@@ -46,17 +47,18 @@ interface Obligacion {
 export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrigger }: Props) {
   const { user } = useAuth();
   const [obligaciones, setObligaciones] = useState<Obligacion[]>([]);
-  const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
-  const [toggling, setToggling] = useState<string | null>(null);
+  const [deactivating, setDeactivating] = useState<string | null>(null);
   const [editObl, setEditObl] = useState<Obligacion | null>(null);
+
+  const { cumplimientos, toggleCumplimiento, toggling } = useObligacionCumplimientos(obligaciones, empresaId);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const { data: oblData } = await supabase
         .from('obligaciones')
-        .select('*')
+        .select('id, nombre, categoria, presentacion, articulos, fecha_vencimiento, activa, estado, descripcion, notas, numero_oficio, fecha_autorizacion, fecha_inicio, fecha_fin, fecha_renovacion, responsable_id, responsable_tipo')
         .eq('empresa_id', empresaId)
         .eq('activa', true)
         .order('categoria')
@@ -64,27 +66,6 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
 
       const obls = (oblData || []) as Obligacion[];
       setObligaciones(obls);
-
-      // Fetch cumplimientos for current period of each obligation
-      if (obls.length > 0) {
-        const oblIds = obls.map(o => o.id);
-        const periodKeys = obls.map(o => getCurrentPeriodKey(o.presentacion));
-        const uniquePairs = obls.map((o, i) => ({ oblId: oblIds[i], pk: periodKeys[i] }));
-
-        const { data: cumpData } = await supabase
-          .from('obligacion_cumplimientos')
-          .select('obligacion_id, periodo_key, completada')
-          .in('obligacion_id', oblIds);
-
-        const map: Record<string, boolean> = {};
-        (cumpData || []).forEach((c: any) => {
-          const match = uniquePairs.find(p => p.oblId === c.obligacion_id);
-          if (match && c.periodo_key === match.pk) {
-            map[c.obligacion_id] = c.completada;
-          }
-        });
-        setCumplimientos(map);
-      }
     } catch {
       toast.error('Error al cargar obligaciones');
     } finally {
@@ -94,37 +75,8 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
 
   useEffect(() => { fetchData(); }, [empresaId, refreshTrigger]);
 
-  const toggleCumplimiento = async (obl: Obligacion) => {
-    if (!user) return;
-    const periodKey = getCurrentPeriodKey(obl.presentacion);
-    const isCompleted = cumplimientos[obl.id];
-
-    try {
-      if (isCompleted) {
-        await supabase
-          .from('obligacion_cumplimientos')
-          .delete()
-          .eq('obligacion_id', obl.id)
-          .eq('periodo_key', periodKey);
-      } else {
-        await supabase
-          .from('obligacion_cumplimientos')
-          .insert({
-            obligacion_id: obl.id,
-            periodo_key: periodKey,
-            completada: true,
-            completada_por: user.id,
-          });
-      }
-      setCumplimientos(prev => ({ ...prev, [obl.id]: !isCompleted }));
-      toast.success(isCompleted ? 'Cumplimiento desmarcado' : 'Cumplimiento marcado');
-    } catch {
-      toast.error('Error al actualizar cumplimiento');
-    }
-  };
-
   const toggleActiva = async (obl: Obligacion) => {
-    setToggling(obl.id);
+    setDeactivating(obl.id);
     try {
       await supabase
         .from('obligaciones')
@@ -135,7 +87,7 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
     } catch {
       toast.error('Error al desactivar');
     } finally {
-      setToggling(null);
+      setDeactivating(null);
     }
   };
 
@@ -252,10 +204,10 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
                           size="icon"
                           className="h-7 w-7 text-muted-foreground hover:text-destructive"
                           onClick={() => toggleActiva(obl)}
-                          disabled={toggling === obl.id}
+                      disabled={deactivating === obl.id}
                           title="Desactivar"
                         >
-                          {toggling === obl.id ? (
+                      {deactivating === obl.id ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
                             <ToggleRight className="w-3.5 h-3.5" />

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, KeyboardEvent } from 'react';
+import { useEffect, useState, useRef, KeyboardEvent, Suspense, lazy } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -7,24 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
 import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
-import { EmpresaGeneralCard } from '@/components/empresas/EmpresaGeneralCard';
-import { EmpresaIMMEXCard } from '@/components/empresas/EmpresaIMMEXCard';
-import { EmpresaPROSECCard } from '@/components/empresas/EmpresaPROSECCard';
-import { EmpresaCertificacionCard } from '@/components/empresas/EmpresaCertificacionCard';
-import { EmpresaObligacionesCard } from '@/components/empresas/EmpresaObligacionesCard';
-import { ObligacionesManager } from '@/components/obligaciones/ObligacionesManager';
-import { CatalogoActivacionSection } from '@/components/obligaciones/CatalogoActivacionSection';
-import { AgentesAduanalesCard } from '@/components/empresas/AgentesAduanalesCard';
-import { EmpresaProgramasTab } from '@/components/empresas/EmpresaProgramasTab';
-import { EmpresaObligacionesActivasCard } from '@/components/empresas/EmpresaObligacionesActivasCard';
-import { ApoderadosCard } from '@/components/empresas/ApoderadosCard';
-import { DomiciliosCard } from '@/components/empresas/DomiciliosCard';
-import { CumplimientoResumenEmpresa } from '@/components/obligaciones/CumplimientoResumenEmpresa';
 import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
@@ -36,6 +24,21 @@ import {
 } from 'lucide-react';
 import { differenceInDays, format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+// ── Lazy Imports para Code-Splitting ──────────────────────────────────
+const EmpresaGeneralCard = lazy(() => import('@/components/empresas/EmpresaGeneralCard').then(m => ({ default: m.EmpresaGeneralCard })));
+const EmpresaIMMEXCard = lazy(() => import('@/components/empresas/EmpresaIMMEXCard').then(m => ({ default: m.EmpresaIMMEXCard })));
+const EmpresaPROSECCard = lazy(() => import('@/components/empresas/EmpresaPROSECCard').then(m => ({ default: m.EmpresaPROSECCard })));
+const EmpresaCertificacionCard = lazy(() => import('@/components/empresas/EmpresaCertificacionCard').then(m => ({ default: m.EmpresaCertificacionCard })));
+const EmpresaObligacionesCard = lazy(() => import('@/components/empresas/EmpresaObligacionesCard').then(m => ({ default: m.EmpresaObligacionesCard })));
+const ObligacionesManager = lazy(() => import('@components/obligaciones/ObligacionesManager').then(m => ({ default: m.ObligacionesManager })));
+const CatalogoActivacionSection = lazy(() => import('@/components/obligaciones/CatalogoActivacionSection').then(m => ({ default: m.CatalogoActivacionSection })));
+const AgentesAduanalesCard = lazy(() => import('@/components/empresas/AgentesAduanalesCard').then(m => ({ default: m.AgentesAduanalesCard })));
+const EmpresaProgramasTab = lazy(() => import('@/components/empresas/EmpresaProgramasTab').then(m => ({ default: m.EmpresaProgramasTab })));
+const EmpresaObligacionesActivasCard = lazy(() => import('@/components/empresas/EmpresaObligacionesActivasCard').then(m => ({ default: m.EmpresaObligacionesActivasCard })));
+const ApoderadosCard = lazy(() => import('@/components/empresas/ApoderadosCard').then(m => ({ default: m.ApoderadosCard })));
+const DomiciliosCard = lazy(() => import('@/components/empresas/DomiciliosCard').then(m => ({ default: m.DomiciliosCard })));
+const CumplimientoResumenEmpresa = lazy(() => import('@/components/obligaciones/CumplimientoResumenEmpresa').then(m => ({ default: m.CumplimientoResumenEmpresa })));
 
 // ── Program badge helper ──────────────────────────────────────────────
 
@@ -139,6 +142,9 @@ export default function EmpresaDetail() {
   const [obligaciones, setObligaciones] = useState<any[]>([]);
   const [cumplimientoKeys, setCumplimientoKeys] = useState<Set<string>>(new Set());
   const [loadingData, setLoadingData] = useState(true);
+  const [activeTab, setActiveTab] = useState("obligaciones");
+  const [loadingContactos, setLoadingContactos] = useState(false);
+  const [hasFetchedContactos, setHasFetchedContactos] = useState(false);
   const [consultoresDialogOpen, setConsultoresDialogOpen] = useState(false);
   const [createTareaSheetOpen, setCreateTareaSheetOpen] = useState(false);
   const [detailTareaSheetOpen, setDetailTareaSheetOpen] = useState(false);
@@ -159,6 +165,32 @@ export default function EmpresaDetail() {
   useEffect(() => { if (id && user) fetchEmpresaData(); }, [id, user]);
   useEffect(() => { if (editingField && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); } }, [editingField]);
 
+  // Lazy fetching: Solo descargar contactos si visitamos la pestaña correspondiente
+  useEffect(() => {
+    if (activeTab === 'contactos' && !hasFetchedContactos && id) {
+      fetchContactosData();
+    }
+  }, [activeTab, hasFetchedContactos, id]);
+
+  const fetchContactosData = async () => {
+    setLoadingContactos(true);
+    try {
+      const [domRes, agRes, apRes] = await Promise.all([
+        supabase.from('domicilios_operacion').select('*').eq('empresa_id', id),
+        supabase.from('agentes_aduanales').select('*').eq('empresa_id', id),
+        supabase.from('apoderados_legales').select('*').eq('empresa_id', id),
+      ]);
+      setDomicilios(domRes.data || []);
+      setAgentes(agRes.data || []);
+      setApoderados(apRes.data || []);
+      setHasFetchedContactos(true);
+    } catch (e: any) {
+      toast.error('Error al cargar contactos');
+    } finally {
+      setLoadingContactos(false);
+    }
+  };
+
   const fetchEmpresaData = async () => {
     setLoadingData(true);
     try {
@@ -167,18 +199,12 @@ export default function EmpresaDetail() {
       if (!empresaData) { toast.error('Empresa no encontrada'); navigate('/empresas'); return; }
       setEmpresa(empresaData);
 
-      const [domRes, agRes, apRes, tarRes, obsRes] = await Promise.all([
-        supabase.from('domicilios_operacion').select('*').eq('empresa_id', id),
-        supabase.from('agentes_aduanales').select('*').eq('empresa_id', id),
-        supabase.from('apoderados_legales').select('*').eq('empresa_id', id),
+      const [tarRes, obsRes] = await Promise.all([
         supabase.from('tareas').select('*, profiles:consultor_asignado_id(nombre_completo), categorias_tareas(nombre, color)')
           .eq('empresa_id', id).order('fecha_vencimiento', { ascending: true }).limit(10),
         supabase.from('obligaciones').select('*').eq('empresa_id', id).eq('activa', true).order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
       ]);
 
-      setDomicilios(domRes.data || []);
-      setAgentes(agRes.data || []);
-      setApoderados(apRes.data || []);
       setTareas(tarRes.data || []);
       setObligaciones(obsRes.data || []);
 
@@ -549,7 +575,7 @@ export default function EmpresaDetail() {
         </div>
 
         {/* ── TABS para detalle ── */}
-        <Tabs defaultValue="obligaciones" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="w-full lg:w-auto lg:inline-flex">
             <TabsTrigger value="obligaciones" className="gap-1.5">
               <FileText className="w-4 h-4 hidden sm:block" /> Obligaciones
@@ -569,12 +595,14 @@ export default function EmpresaDetail() {
           </TabsList>
 
           <TabsContent value="obligaciones" className="space-y-5">
-            <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} refreshTrigger={obligRefreshKey} />
-            <EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
-            <div id="catalogo-activacion-section">
-              <CatalogoActivacionSection empresaId={id!} canEdit={canEdit} onActivated={() => setObligRefreshKey(k => k + 1)} />
-            </div>
-            <ObligacionesManager empresaId={id!} canEdit={canEdit} />
+            <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+              <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} refreshTrigger={obligRefreshKey} />
+              <EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+              <div id="catalogo-activacion-section">
+                <CatalogoActivacionSection empresaId={id!} canEdit={canEdit} onActivated={() => setObligRefreshKey(k => k + 1)} />
+              </div>
+              <ObligacionesManager empresaId={id!} canEdit={canEdit} />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="historial" className="space-y-5">
@@ -586,30 +614,45 @@ export default function EmpresaDetail() {
                 <CardDescription>Últimos 6 periodos por obligación</CardDescription>
               </CardHeader>
               <CardContent>
-                <CumplimientoResumenEmpresa empresaId={id!} />
+                <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+                  <CumplimientoResumenEmpresa empresaId={id!} />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="informacion" className="space-y-5">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <EmpresaGeneralCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
-              <EmpresaIMMEXCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
-              <EmpresaPROSECCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
-              <EmpresaCertificacionCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
-            </div>
+            <Suspense fallback={<div className="grid grid-cols-1 lg:grid-cols-2 gap-5"><Skeleton className="h-64 w-full rounded-xl" /><Skeleton className="h-64 w-full rounded-xl" /></div>}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <EmpresaGeneralCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+                <EmpresaIMMEXCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+                <EmpresaPROSECCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+                <EmpresaCertificacionCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+              </div>
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="contactos" className="space-y-5">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <AgentesAduanalesCard empresaId={id!} agentes={agentes} canEdit={canEdit} onUpdate={fetchEmpresaData} />
-              <ApoderadosCard empresaId={id!} apoderados={apoderados} canEdit={canEdit} onUpdate={fetchEmpresaData} />
-            </div>
-            <DomiciliosCard empresaId={id!} domicilios={domicilios} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+            {loadingContactos ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <Skeleton className="h-64 w-full rounded-xl" />
+                <Skeleton className="h-64 w-full rounded-xl" />
+              </div>
+            ) : (
+              <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  <AgentesAduanalesCard empresaId={id!} agentes={agentes} canEdit={canEdit} onUpdate={fetchContactosData} />
+                  <ApoderadosCard empresaId={id!} apoderados={apoderados} canEdit={canEdit} onUpdate={fetchContactosData} />
+                </div>
+                <DomiciliosCard empresaId={id!} domicilios={domicilios} canEdit={canEdit} onUpdate={fetchContactosData} />
+              </Suspense>
+            )}
           </TabsContent>
 
           <TabsContent value="programas" className="space-y-5">
-            <EmpresaProgramasTab empresaId={id!} canEdit={canEdit} />
+            <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+              <EmpresaProgramasTab empresaId={id!} canEdit={canEdit} />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </div>
