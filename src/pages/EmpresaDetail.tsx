@@ -31,7 +31,7 @@ const EmpresaIMMEXCard = lazy(() => import('@/components/empresas/EmpresaIMMEXCa
 const EmpresaPROSECCard = lazy(() => import('@/components/empresas/EmpresaPROSECCard').then(m => ({ default: m.EmpresaPROSECCard })));
 const EmpresaCertificacionCard = lazy(() => import('@/components/empresas/EmpresaCertificacionCard').then(m => ({ default: m.EmpresaCertificacionCard })));
 const EmpresaObligacionesCard = lazy(() => import('@/components/empresas/EmpresaObligacionesCard').then(m => ({ default: m.EmpresaObligacionesCard })));
-const ObligacionesManager = lazy(() => import('@components/obligaciones/ObligacionesManager').then(m => ({ default: m.ObligacionesManager })));
+const ObligacionesManager = lazy(() => import('@/components/obligaciones/ObligacionesManager').then(m => ({ default: m.ObligacionesManager })));
 const CatalogoActivacionSection = lazy(() => import('@/components/obligaciones/CatalogoActivacionSection').then(m => ({ default: m.CatalogoActivacionSection })));
 const AgentesAduanalesCard = lazy(() => import('@/components/empresas/AgentesAduanalesCard').then(m => ({ default: m.AgentesAduanalesCard })));
 const EmpresaProgramasTab = lazy(() => import('@/components/empresas/EmpresaProgramasTab').then(m => ({ default: m.EmpresaProgramasTab })));
