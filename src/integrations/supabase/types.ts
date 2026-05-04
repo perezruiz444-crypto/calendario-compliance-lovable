@@ -940,7 +940,7 @@ export type Database = {
           completada_en: string
           completada_por: string | null
           created_at: string
-          empresa_id: string
+          empresa_id: string | null
           evidencia_url: string | null
           id: string
           notas: string | null
@@ -952,7 +952,7 @@ export type Database = {
           completada_en?: string
           completada_por?: string | null
           created_at?: string
-          empresa_id: string
+          empresa_id?: string | null
           evidencia_url?: string | null
           id?: string
           notas?: string | null
@@ -964,7 +964,7 @@ export type Database = {
           completada_en?: string
           completada_por?: string | null
           created_at?: string
-          empresa_id?: string
+          empresa_id?: string | null
           evidencia_url?: string | null
           id?: string
           notas?: string | null
