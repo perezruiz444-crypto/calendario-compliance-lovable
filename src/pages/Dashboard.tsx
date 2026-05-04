@@ -13,7 +13,6 @@ import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
-import DashboardObligaciones from '@/components/dashboard/DashboardObligaciones';
 import EmpresaComplianceSemaforo from '@/components/dashboard/EmpresaComplianceSemaforo';
 import DashboardMensajes from '@/components/dashboard/DashboardMensajes';
 import AdminAnalytics from '@/components/dashboard/AdminAnalytics';
@@ -169,9 +168,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Obligaciones del mes */}
-        <DashboardObligacionesMensuales />
-
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {kpiCards.map((kpi) => {
@@ -193,22 +189,8 @@ export default function Dashboard() {
           })}
         </div>
 
-        {/* Charts */}
-        {role === 'administrador' && <AdminAnalytics data={data} />}
-        {role === 'consultor' && <ConsultorAnalytics data={data} />}
-        {role === 'cliente' && <ClienteAnalytics data={data} />}
-
-        {/* Obligaciones + Semáforo + Renovaciones */}
-        {(role === 'administrador' || role === 'consultor') && (
-          <>
-            <DashboardObligaciones />
-            <RenovacionesWidget />
-            <EmpresaComplianceSemaforo />
-          </>
-        )}
-
-        {/* Customer Discovery Results - Admin only */}
-        {role === 'administrador' && <FeedbackResultsCard />}
+        {/* Flujo Operativo: Obligaciones del mes */}
+        <DashboardObligacionesMensuales />
 
         {/* Tareas + Mensajes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -299,6 +281,21 @@ export default function Dashboard() {
             }
           }}
         />
+
+        {/* Panel de Supervisión y Análisis (Reportes y Semáforos) */}
+        {(role === 'administrador' || role === 'consultor') && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <RenovacionesWidget />
+            <EmpresaComplianceSemaforo />
+          </div>
+        )}
+
+        {role === 'administrador' && <AdminAnalytics data={data} />}
+        {role === 'consultor' && <ConsultorAnalytics data={data} />}
+        {role === 'cliente' && <ClienteAnalytics data={data} />}
+
+        {/* Customer Discovery Results - Admin only */}
+        {role === 'administrador' && <FeedbackResultsCard />}
       </div>
 
       <CreateTareaSheet

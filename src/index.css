@@ -42,6 +42,8 @@
     --warning-foreground: 0 0% 100%;
     --destructive: 4 76% 49%;
     --destructive-foreground: 0 0% 100%;
+    --urgent: 25 95% 53%;
+    --urgent-foreground: 0 0% 100%;
 
     /* Structure */
     --border: 214 25% 90%;
@@ -101,6 +103,8 @@
     --warning-foreground: 0 0% 100%;
     --destructive: 4 72% 58%;
     --destructive-foreground: 0 0% 100%;
+    --urgent: 25 95% 53%;
+    --urgent-foreground: 0 0% 100%;
 
     --border: 220 15% 20%;
     --input: 220 15% 18%;
