@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import { MessageSquarePlus, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -47,7 +48,7 @@ export function SolicitudesServicio({ empresaId }: SolicitudesServicioProps) {
       if (error) throw error;
       setSolicitudes(data || []);
     } catch (error) {
-      console.error('Error fetching solicitudes:', error);
+      logger.error('Error fetching solicitudes', error);
     } finally {
       setLoading(false);
     }
@@ -55,11 +56,7 @@ export function SolicitudesServicio({ empresaId }: SolicitudesServicioProps) {
 
   const handleSubmit = async () => {
     if (!formData.asunto || !formData.descripcion) {
-      toast({
-        title: 'Error',
-        description: 'Por favor completa todos los campos requeridos',
-        variant: 'destructive'
-      });
+      toast.error('Por favor completa todos los campos requeridos');
       return;
     }
 
@@ -78,10 +75,7 @@ export function SolicitudesServicio({ empresaId }: SolicitudesServicioProps) {
 
       if (error) throw error;
 
-      toast({
-        title: 'Éxito',
-        description: 'Solicitud creada correctamente'
-      });
+      toast.success('Solicitud creada correctamente');
 
       setDialogOpen(false);
       setFormData({
@@ -91,12 +85,8 @@ export function SolicitudesServicio({ empresaId }: SolicitudesServicioProps) {
       });
       fetchSolicitudes();
     } catch (error: any) {
-      console.error('Error creating solicitud:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo crear la solicitud',
-        variant: 'destructive'
-      });
+      logger.error('Error creating solicitud', error);
+      toast.error(error.message || 'No se pudo crear la solicitud');
     } finally {
       setSubmitting(false);
     }

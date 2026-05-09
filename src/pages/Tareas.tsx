@@ -30,7 +30,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { DndContext, DragEndEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -401,7 +402,7 @@ export default function Tareas() {
         setConsultores(profiles || []);
       }
     } catch (error) {
-      console.error('Error fetching consultores:', error);
+      logger.error('Error fetching consultores', error);
     }
   };
 
@@ -415,7 +416,7 @@ export default function Tareas() {
       if (error) throw error;
       setEmpresas(data || []);
     } catch (error) {
-      console.error('Error fetching empresas:', error);
+      logger.error('Error fetching empresas', error);
     }
   };
 
@@ -466,7 +467,7 @@ export default function Tareas() {
         setTareas([]);
       }
     } catch (error) {
-      console.error('Error fetching tareas:', error);
+      logger.error('Error fetching tareas', error);
     } finally {
       setLoadingTareas(false);
     }
@@ -500,11 +501,7 @@ export default function Tareas() {
 
   const handleSendBulkNotification = async () => {
     if (!selectedConsultor) {
-      toast({
-        title: "Selecciona un consultor",
-        description: "Primero debes seleccionar un consultor de la lista para enviarle recordatorios de sus tareas pendientes",
-        variant: "destructive"
-      });
+      toast.error("Primero debes seleccionar un consultor de la lista para enviarle recordatorios de sus tareas pendientes");
       return;
     }
 
@@ -518,16 +515,9 @@ export default function Tareas() {
 
       if (error) throw error;
 
-      toast({
-        title: "Notificaciones enviadas",
-        description: data?.message || "Las notificaciones han sido enviadas exitosamente"
-      });
+      toast.success(data?.message || "Las notificaciones han sido enviadas exitosamente");
     } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive"
-      });
+      toast.error(err.message);
     }
   };
 
@@ -682,19 +672,12 @@ export default function Tareas() {
 
       if (error) throw error;
 
-      toast({
-        title: "Tarea actualizada",
-        description: `Estado cambiado a ${estadoLabels[newEstado]}`,
-      });
+      toast.success(`Estado cambiado a ${estadoLabels[newEstado]}`);
     } catch (error) {
-      console.error('Error updating task:', error);
+      logger.error('Error updating task', error);
       // Revert optimistic update
       fetchTareas();
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar la tarea",
-        variant: "destructive"
-      });
+      toast.error("No se pudo actualizar la tarea");
     }
   };
 
@@ -759,20 +742,13 @@ export default function Tareas() {
       
       await Promise.all(updates);
       
-      toast({
-        title: "Tareas actualizadas",
-        description: `${selectedTareas.size} tareas actualizadas a ${newEstado}`,
-      });
+      toast.success(`${selectedTareas.size} tareas actualizadas a ${newEstado}`);
       
       setSelectedTareas(new Set());
       fetchTareas();
     } catch (error) {
-      console.error('Error bulk updating:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron actualizar las tareas",
-        variant: "destructive"
-      });
+      logger.error('Error bulk updating', error);
+      toast.error("No se pudieron actualizar las tareas");
     }
   };
 
@@ -786,20 +762,13 @@ export default function Tareas() {
       
       await Promise.all(deletes);
       
-      toast({
-        title: "Tareas eliminadas",
-        description: `${selectedTareas.size} tareas eliminadas`,
-      });
+      toast.success(`${selectedTareas.size} tareas eliminadas`);
       
       setSelectedTareas(new Set());
       fetchTareas();
     } catch (error) {
-      console.error('Error bulk deleting:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron eliminar las tareas",
-        variant: "destructive"
-      });
+      logger.error('Error bulk deleting', error);
+      toast.error("No se pudieron eliminar las tareas");
     }
   };
 
