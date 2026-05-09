@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import { Bell, Send } from 'lucide-react';
 
 interface SendNotificationDialogProps {
@@ -38,19 +39,12 @@ export default function SendNotificationDialog({ tareaId, consultorId }: SendNot
 
       if (error) throw error;
 
-      toast({
-        title: "Notificación enviada",
-        description: data?.message || "La notificación ha sido enviada exitosamente"
-      });
+      toast.success(data?.message || "La notificación ha sido enviada exitosamente");
 
       setOpen(false);
     } catch (err: any) {
-      console.error('Error sending notification:', err);
-      toast({
-        title: "Error",
-        description: err.message || "No se pudo enviar la notificación",
-        variant: "destructive"
-      });
+      logger.error('Error sending notification', err);
+      toast.error(err.message || "No se pudo enviar la notificación");
     } finally {
       setSending(false);
     }

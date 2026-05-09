@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import { FileText, Upload, Download, Trash2, Calendar, User, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -51,12 +52,8 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
       if (error) throw error;
       setDocumentos(data || []);
     } catch (error) {
-      console.error('Error fetching documentos:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los documentos',
-        variant: 'destructive'
-      });
+      logger.error('Error fetching documentos', error);
+      toast.error('No se pudieron cargar los documentos');
     } finally {
       setLoading(false);
     }
@@ -80,29 +77,17 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      toast({
-        title: 'Error',
-        description: 'Por favor selecciona un archivo',
-        variant: 'destructive'
-      });
+      toast.error('Por favor selecciona un archivo');
       return;
     }
 
     if (!ALLOWED_MIME.includes(selectedFile.type)) {
-      toast({
-        title: 'Tipo de archivo no permitido',
-        description: 'Solo se aceptan PDF, Word, Excel e imágenes JPG/PNG',
-        variant: 'destructive'
-      });
+      toast.error('Solo se aceptan PDF, Word, Excel e imágenes JPG/PNG');
       return;
     }
 
     if (!formData.nombre) {
-      toast({
-        title: 'Error',
-        description: 'El nombre del documento es requerido',
-        variant: 'destructive'
-      });
+      toast.error('El nombre del documento es requerido');
       return;
     }
 
@@ -142,10 +127,7 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
 
       if (dbError) throw dbError;
 
-      toast({
-        title: 'Éxito',
-        description: 'Documento subido correctamente'
-      });
+      toast.success('Documento subido correctamente');
 
       setUploadDialogOpen(false);
       setFormData({
@@ -159,12 +141,8 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
       setSelectedFile(null);
       fetchDocumentos();
     } catch (error: any) {
-      console.error('Error uploading document:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo subir el documento',
-        variant: 'destructive'
-      });
+      logger.error('Error uploading document', error);
+      toast.error(error.message || 'No se pudo subir el documento');
     } finally {
       setUploading(false);
     }
@@ -183,7 +161,7 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
         .from('documentos')
         .remove([filePath]);
 
-      if (storageError) console.error('Error deleting file:', storageError);
+      if (storageError) logger.error('Error deleting file', storageError);
 
       // Delete from database
       const { error: dbError } = await supabase
@@ -193,19 +171,12 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
 
       if (dbError) throw dbError;
 
-      toast({
-        title: 'Éxito',
-        description: 'Documento eliminado correctamente'
-      });
+      toast.success('Documento eliminado correctamente');
 
       fetchDocumentos();
     } catch (error: any) {
-      console.error('Error deleting document:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo eliminar el documento',
-        variant: 'destructive'
-      });
+      logger.error('Error deleting document', error);
+      toast.error('No se pudo eliminar el documento');
     }
   };
 
@@ -222,12 +193,8 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Error downloading file:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo descargar el archivo',
-        variant: 'destructive'
-      });
+      logger.error('Error downloading file', error);
+      toast.error('No se pudo descargar el archivo');
     }
   };
 
