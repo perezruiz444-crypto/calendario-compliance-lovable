@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Building2, CheckSquare, Users, AlertCircle, AlertTriangle, TrendingUp, Calendar, Clock, Target, FileText, Plus, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Building2, CheckSquare, Users, AlertCircle, AlertTriangle, TrendingUp, Calendar, Clock, Target, FileText, Plus, CheckCircle2, ShieldAlert, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
+import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
@@ -24,6 +25,7 @@ import DashboardObligacionesMensuales from '@/components/dashboard/DashboardObli
 import RenovacionesWidget from '@/components/dashboard/RenovacionesWidget';
 import FeedbackModal from '@/components/dashboard/FeedbackModal';
 import FeedbackResultsCard from '@/components/dashboard/FeedbackResultsCard';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
