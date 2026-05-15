@@ -126,73 +126,112 @@ export default function Dashboard() {
   };
 
   const kpiCards = role === 'administrador' ? [
-    { title: 'Empresas Activas', value: data.totalEmpresas || 0, icon: Building2, color: 'text-primary', bgColor: 'bg-primary/10', sub: 'Total registradas' },
-    { title: 'Total Usuarios', value: data.totalUsuarios || 0, icon: Users, color: 'text-primary', bgColor: 'bg-primary/10', sub: `${data.totalConsultores || 0} consultores` },
-    { title: 'Tareas Vencidas', value: data.tareasVencidas, icon: AlertTriangle, color: 'text-destructive', bgColor: 'bg-destructive/10', sub: 'Requieren atención', valueColor: 'text-destructive' },
-    { title: 'Tasa Cumplimiento', value: `${data.totalTareas > 0 ? Math.round((data.tareasCompletadas / data.totalTareas) * 100) : 0}%`, icon: TrendingUp, color: 'text-success', bgColor: 'bg-success/10', sub: `${data.tareasCompletadas} completadas`, valueColor: 'text-success' },
+    { title: 'Empresas Activas', value: data.totalEmpresas || 0, icon: Building2, tone: 'primary', sub: 'Total registradas' },
+    { title: 'Total Usuarios', value: data.totalUsuarios || 0, icon: Users, tone: 'primary', sub: `${data.totalConsultores || 0} consultores` },
+    { title: 'Tareas Vencidas', value: data.tareasVencidas, icon: AlertTriangle, tone: 'destructive', sub: 'Requieren atención' },
+    { title: 'Tasa Cumplimiento', value: data.totalTareas > 0 ? Math.round((data.tareasCompletadas / data.totalTareas) * 100) : 0, suffix: '%', icon: TrendingUp, tone: 'success', sub: `${data.tareasCompletadas} completadas` },
   ] : role === 'consultor' ? [
-    { title: 'Mis Empresas', value: data.misEmpresas || 0, icon: Building2, color: 'text-primary', bgColor: 'bg-primary/10', sub: 'Empresas asignadas' },
-    { title: 'Tareas Asignadas', value: data.tareasAsignadas || 0, icon: Target, color: 'text-primary', bgColor: 'bg-primary/10', sub: 'Directamente a mí' },
-    { title: 'Tareas Vencidas', value: data.tareasVencidas, icon: AlertTriangle, color: 'text-destructive', bgColor: 'bg-destructive/10', sub: 'Requieren atención', valueColor: 'text-destructive' },
-    { title: 'Completadas', value: data.tareasCompletadas, icon: CheckSquare, color: 'text-success', bgColor: 'bg-success/10', sub: `De ${data.totalTareas} totales`, valueColor: 'text-success' },
+    { title: 'Mis Empresas', value: data.misEmpresas || 0, icon: Building2, tone: 'primary', sub: 'Empresas asignadas' },
+    { title: 'Tareas Asignadas', value: data.tareasAsignadas || 0, icon: Target, tone: 'primary', sub: 'Directamente a mí' },
+    { title: 'Tareas Vencidas', value: data.tareasVencidas, icon: AlertTriangle, tone: 'destructive', sub: 'Requieren atención' },
+    { title: 'Completadas', value: data.tareasCompletadas, icon: CheckSquare, tone: 'success', sub: `De ${data.totalTareas} totales` },
   ] : [
-    { title: 'Tareas Pendientes', value: data.tareasPendientes, icon: Clock, color: 'text-warning', bgColor: 'bg-warning/10', sub: 'En progreso o pendientes' },
-    { title: 'Completadas', value: data.tareasCompletadas, icon: CheckSquare, color: 'text-success', bgColor: 'bg-success/10', sub: `De ${data.totalTareas} totales`, valueColor: 'text-success' },
-    { title: 'Docs. por Vencer', value: data.documentosPorVencer || 0, icon: FileText, color: 'text-warning', bgColor: 'bg-warning/10', sub: 'Próximos 30 días' },
-    { title: 'Solicitudes', value: data.solicitudesPendientes || 0, icon: AlertCircle, color: 'text-primary', bgColor: 'bg-primary/10', sub: 'Pendientes de respuesta' },
+    { title: 'Tareas Pendientes', value: data.tareasPendientes, icon: Clock, tone: 'warning', sub: 'En progreso o pendientes' },
+    { title: 'Completadas', value: data.tareasCompletadas, icon: CheckSquare, tone: 'success', sub: `De ${data.totalTareas} totales` },
+    { title: 'Docs. por Vencer', value: data.documentosPorVencer || 0, icon: FileText, tone: 'warning', sub: 'Próximos 30 días' },
+    { title: 'Solicitudes', value: data.solicitudesPendientes || 0, icon: AlertCircle, tone: 'primary', sub: 'Pendientes de respuesta' },
   ];
+
+  const toneClass: Record<string, { num: string; chip: string; accent: string }> = {
+    primary:     { num: 'text-foreground',   chip: 'bg-primary/10 text-primary',         accent: 'card-accent-left' },
+    destructive: { num: 'text-destructive',  chip: 'bg-destructive/10 text-destructive', accent: 'card-accent-danger' },
+    success:     { num: 'text-success',      chip: 'bg-success/10 text-success',         accent: 'card-accent-success' },
+    warning:     { num: 'text-warning',      chip: 'bg-warning/10 text-warning',         accent: 'card-accent-warning' },
+  };
 
   return (
     <DashboardLayout currentPage="/dashboard">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-heading font-bold text-foreground">
-              {getGreeting()}, {firstName}
-            </h1>
-            <p className="text-muted-foreground font-body mt-1">
-              Aquí tienes un resumen de tu actividad
-            </p>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button onClick={() => setCreateSheetOpen(true)} size="sm" className="gap-1.5">
-              <Plus className="w-4 h-4" /> Nueva Tarea
-            </Button>
-            {role !== 'cliente' && (
-              <Button onClick={() => navigate('/empresas')} variant="outline" size="sm" className="gap-1.5">
-                <Building2 className="w-4 h-4" /> Empresas
+      <div className="space-y-10">
+
+        {/* ── Hero header editorial ── */}
+        <motion.header
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          className="relative overflow-hidden rounded-[var(--radius)] border border-border-subtle surface-mesh px-6 md:px-10 py-8 md:py-10"
+        >
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 relative">
+            <div className="space-y-3 max-w-2xl">
+              <div className="flex items-center gap-2">
+                <span className="live-dot" />
+                <p className="eyebrow-primary">{getGreeting()} · {format(new Date(), 'EEEE d \'de\' MMMM')}</p>
+              </div>
+              <h1 className="display-1 text-foreground">
+                Hola, <span className="text-primary">{firstName}</span>.
+              </h1>
+              <p className="text-[15px] text-muted-foreground leading-relaxed">
+                Tu panorama de cumplimiento en un vistazo — obligaciones, tareas y empresas al día.
+              </p>
+            </div>
+            <div className="flex gap-2 flex-wrap shrink-0">
+              <Button onClick={() => setCreateSheetOpen(true)} size="sm" className="gap-1.5 shadow-editorial">
+                <Plus className="w-4 h-4" /> Nueva Tarea
               </Button>
-            )}
-            <Button onClick={() => navigate('/calendario')} variant="outline" size="sm" className="gap-1.5">
-              <Calendar className="w-4 h-4" /> Calendario
-            </Button>
+              {role !== 'cliente' && (
+                <Button onClick={() => navigate('/empresas')} variant="outline" size="sm" className="gap-1.5">
+                  <Building2 className="w-4 h-4" /> Empresas
+                </Button>
+              )}
+              <Button onClick={() => navigate('/calendario')} variant="outline" size="sm" className="gap-1.5">
+                <Calendar className="w-4 h-4" /> Calendario
+              </Button>
+            </div>
           </div>
-        </div>
+        </motion.header>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {kpiCards.map((kpi) => {
-            const Icon = kpi.icon;
-            return (
-              <Card key={kpi.title} className="gradient-card shadow-elegant hover:shadow-card transition-smooth hover-scale">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-heading font-medium">{kpi.title}</CardTitle>
-                  <div className={`${kpi.bgColor} p-2 rounded-lg`}>
-                    <Icon className={`w-4 h-4 ${kpi.color}`} />
+        {/* ── Banda hero de KPIs ── */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <p className="eyebrow flex items-center gap-2">
+              <Sparkles className="w-3 h-3 text-primary" /> Indicadores clave
+            </p>
+            <span className="text-[11px] text-muted-foreground font-mono">
+              Actualizado {format(new Date(), 'HH:mm')}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {kpiCards.map((kpi, idx) => {
+              const Icon = kpi.icon;
+              const t = toneClass[kpi.tone];
+              const numericValue = typeof kpi.value === 'number' ? kpi.value : parseInt(String(kpi.value)) || 0;
+              const suffix = (kpi as any).suffix || '';
+              return (
+                <motion.div
+                  key={kpi.title}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: 0.05 + idx * 0.06, ease: [0.4, 0, 0.2, 1] }}
+                  className={`card-editorial ${t.accent} p-5 group`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <p className="eyebrow text-[10px]">{kpi.title}</p>
+                    <div className={`${t.chip} p-2 rounded-lg transition-transform group-hover:scale-110`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className={`text-2xl font-heading font-bold ${(kpi as any).valueColor || ''}`}>{kpi.value}</div>
-                  <p className="text-xs text-muted-foreground font-body mt-1">{kpi.sub}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Flujo Operativo: Obligaciones del mes */}
-        <DashboardObligacionesMensuales />
+                  <div className="flex items-baseline gap-1">
+                    <AnimatedNumber
+                      value={numericValue}
+                      className={`font-heading text-4xl font-bold tracking-tight ${t.num}`}
+                    />
+                    {suffix && <span className={`font-heading text-2xl font-bold ${t.num}`}>{suffix}</span>}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">{kpi.sub}</p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </section>
 
         {/* Tareas + Mensajes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
