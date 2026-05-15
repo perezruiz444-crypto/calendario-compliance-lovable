@@ -279,9 +279,3 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
     </div>
   );
 }
-      </main>
-
-      <PushNotificationPrompt />
-    </div>
-  );
-}
