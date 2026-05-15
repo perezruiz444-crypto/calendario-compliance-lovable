@@ -233,6 +233,9 @@ export default function Dashboard() {
           </div>
         </section>
 
+        {/* Flujo Operativo: Obligaciones del mes */}
+        <DashboardObligacionesMensuales />
+
         {/* Tareas + Mensajes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="gradient-card shadow-card">
