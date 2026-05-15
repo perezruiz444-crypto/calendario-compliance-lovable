@@ -197,6 +197,11 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
 
   const handleSignOut = async () => { await signOut(); navigate('/auth'); };
 
+  const location = useLocation();
+  const todayLabel = new Date().toLocaleDateString('es-MX', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  });
+
   const sidebarProps: SidebarProps = {
     role,
     userName,
