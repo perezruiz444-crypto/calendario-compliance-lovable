@@ -107,26 +107,34 @@ function SidebarContent({
 
       {/* Nav items */}
       <nav className="flex-1 px-3 py-1 space-y-0.5 overflow-y-auto">
-        {filteredNav.map(item => {
+        {filteredNav.map((item, idx) => {
           const Icon = item.icon;
           const isActive = currentPage === item.path;
           return (
-            <button
+            <motion.button
               key={item.path}
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.28, delay: 0.04 + idx * 0.035, ease: [0.4, 0, 0.2, 1] }}
               onClick={() => onNavigate(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 group relative ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group relative ${
                 isActive
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                  ? 'bg-primary/10 text-primary font-semibold shadow-[0_0_0_1px_hsl(var(--primary)/0.08)]'
+                  : 'font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground hover:translate-x-0.5'
               }`}
             >
               {isActive && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary/60 rounded-r-full" />
+                <motion.span
+                  layoutId="sidebar-active-indicator"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full"
+                  style={{ background: 'var(--gradient-hero)' }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                />
               )}
-              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-primary' : 'text-sidebar-foreground/50 group-hover:text-sidebar-foreground'}`} />
+              <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-primary' : 'text-sidebar-foreground/50 group-hover:text-sidebar-foreground'}`} />
               <span className="flex-1 text-left">{item.label}</span>
               {isActive && <ChevronRight className="w-3 h-3 text-primary/60" />}
-            </button>
+            </motion.button>
           );
         })}
       </nav>
