@@ -249,10 +249,16 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
 
       {/* Desktop topbar */}
       <div
-        className="hidden lg:flex fixed top-0 right-0 z-40 h-14 items-center gap-3 px-6 border-b border-border/60 bg-background/95 backdrop-blur"
+        className="hidden lg:flex fixed top-0 right-0 z-40 h-14 items-center gap-4 px-6 border-b border-border-subtle bg-background/80 backdrop-blur-xl"
         style={{ left: '16rem' }}
       >
-        <GlobalSearch />
+        <div className="hidden xl:flex items-center gap-2 text-[11px]">
+          <span className="live-dot" />
+          <span className="eyebrow text-[10px] capitalize">{todayLabel}</span>
+        </div>
+        <div className="flex-1 max-w-[480px] mx-auto">
+          <GlobalSearch />
+        </div>
         <div className="ml-auto flex items-center gap-2">
           <NotificationDropdown />
         </div>
@@ -261,8 +267,18 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
       {/* Main content */}
       <main className="flex-1 overflow-auto pt-14">
         <div className="container mx-auto p-6 max-w-7xl">
-          {children}
+          <AnimatePresence mode="wait">
+            <PageTransition key={location.pathname}>
+              {children}
+            </PageTransition>
+          </AnimatePresence>
         </div>
+      </main>
+
+      <PushNotificationPrompt />
+    </div>
+  );
+}
       </main>
 
       <PushNotificationPrompt />
