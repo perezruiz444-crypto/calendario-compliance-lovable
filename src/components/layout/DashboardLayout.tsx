@@ -73,15 +73,13 @@ function SidebarContent({
         <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
 
         <div className="flex items-center gap-3 mb-5 relative">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shrink-0">
+          <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center shadow-md shrink-0">
             <Building2 className="w-5 h-5 text-primary-foreground" />
           </div>
-          <div>
-            <p className="font-heading font-bold text-sm text-sidebar-foreground leading-tight">
-              Calendario Compliance
-            </p>
-            <p className="text-[10px] text-sidebar-foreground/50 uppercase tracking-widest font-medium">
-              Comercio Exterior
+          <div className="min-w-0">
+            <p className="eyebrow text-[9px] mb-0.5">Compliance Suite</p>
+            <p className="font-heading font-bold text-[15px] text-sidebar-foreground leading-tight tracking-tight">
+              Calendario
             </p>
           </div>
         </div>
