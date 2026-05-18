@@ -7,6 +7,7 @@ import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2 } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function Calendario() {
   const { user, role, loading } = useAuth();
@@ -40,37 +41,32 @@ export default function Calendario() {
   return (
     <DashboardLayout currentPage="/calendario">
       <div className="space-y-6">
-        {/* Header con selector de empresa */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-              Calendario de Vencimientos
-            </h1>
-            <p className="text-muted-foreground font-body">
-              Filtra por empresa o por tipo de evento para ver solo lo que importa.
-            </p>
-          </div>
-
-          {showEmpresaSelector && (
-            <div className="flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-muted-foreground" />
-              <Select
-                value={selectedEmpresaId ?? 'all'}
-                onValueChange={(v) => setSelectedEmpresaId(v === 'all' ? null : v)}
-              >
-                <SelectTrigger className="w-[260px]">
-                  <SelectValue placeholder="Todas las empresas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las empresas</SelectItem>
-                  {empresas.map(e => (
-                    <SelectItem key={e.id} value={e.id}>{e.razon_social}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </div>
+        <PageHeader
+          eyebrow="Agenda · Vencimientos"
+          title="Calendario de Cumplimiento"
+          description="Obligaciones, tareas y documentos en una sola línea de tiempo. Filtra por empresa o tipo de evento para enfocar lo que importa."
+          actions={
+            showEmpresaSelector ? (
+              <div className="flex items-center gap-2 bg-card border border-border-subtle rounded-xl px-3 py-1.5 shadow-elegant">
+                <Building2 className="w-3.5 h-3.5 text-primary" />
+                <Select
+                  value={selectedEmpresaId ?? 'all'}
+                  onValueChange={(v) => setSelectedEmpresaId(v === 'all' ? null : v)}
+                >
+                  <SelectTrigger className="w-[240px] border-0 shadow-none p-0 h-auto font-mono text-xs uppercase tracking-wider focus:ring-0">
+                    <SelectValue placeholder="Todas las empresas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las empresas</SelectItem>
+                    {empresas.map(e => (
+                      <SelectItem key={e.id} value={e.id}>{e.razon_social}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : undefined
+          }
+        />
 
         <DashboardCalendar
           height="700px"

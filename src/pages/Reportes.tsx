@@ -690,14 +690,13 @@ export default function Reportes() {
   return (
     <DashboardLayout currentPage="/reportes">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-              Reportes
-            </h1>
-            <p className="text-muted-foreground font-body">
-              Análisis y estadísticas del sistema
+        {/* Header editorial */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pb-6 border-b border-border-subtle">
+          <div className="space-y-2">
+            <p className="eyebrow-primary">Inteligencia · Reportes ejecutivos</p>
+            <h1 className="display-2 text-foreground">Reportes</h1>
+            <p className="text-[15px] text-muted-foreground leading-relaxed max-w-xl">
+              Análisis y estadísticas del cumplimiento, tareas y consultores. Exporta a Excel, CSV o PDF.
             </p>
           </div>
           <div className="flex flex-col gap-2 items-end">

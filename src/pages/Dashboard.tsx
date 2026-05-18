@@ -238,77 +238,76 @@ export default function Dashboard() {
 
         {/* Tareas + Mensajes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="gradient-card shadow-card">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="font-heading flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    Próximas Tareas
-                  </CardTitle>
-                  <CardDescription className="font-body">
-                    Próximas 10 tareas por vencer
-                  </CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => navigate('/tareas')} className="font-heading">
-                  Ver Todas
-                </Button>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.1 }}
+            className="card-editorial p-6"
+          >
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <p className="eyebrow-primary mb-1.5 flex items-center gap-1.5">
+                  <Calendar className="w-3 h-3" /> Próximos vencimientos
+                </p>
+                <h3 className="font-heading text-xl font-bold tracking-tight">Próximas Tareas</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Próximas 10 tareas por vencer</p>
               </div>
-            </CardHeader>
-            <CardContent>
-              {data.proximasTareas.length === 0 ? (
-                <div className="text-center py-8">
-                  <CheckSquare className="w-10 h-10 text-success/40 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">¡Excelente! No hay tareas próximas a vencer</p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                  {data.proximasTareas.map((tarea) => (
-                    <div
-                      key={tarea.id}
-                      className="border rounded-lg p-3 hover:border-primary transition-colors cursor-pointer group"
-                      onClick={() => { setSelectedTareaId(tarea.id); setDetailSheetOpen(true); }}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="font-heading font-medium text-sm truncate">{tarea.titulo}</span>
-                            <Badge className={getPrioridadColor(tarea.prioridad)} variant="secondary">
-                              {tarea.prioridad}
-                            </Badge>
-                            <Badge className={getEstadoColor(tarea.estado)}>
-                              {estadoLabels[tarea.estado] || tarea.estado}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            {tarea.empresa_nombre && (
-                              <span className="flex items-center gap-1">
-                                <Building2 className="w-3 h-3" /> {tarea.empresa_nombre}
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" /> {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
-                            </span>
-                          </div>
+              <Button variant="outline" size="sm" onClick={() => navigate('/tareas')} className="font-heading">
+                Ver Todas
+              </Button>
+            </div>
+            {data.proximasTareas.length === 0 ? (
+              <div className="text-center py-10">
+                <CheckSquare className="w-10 h-10 text-success/40 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">¡Excelente! No hay tareas próximas a vencer</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                {data.proximasTareas.map((tarea) => (
+                  <div
+                    key={tarea.id}
+                    className="border border-border-subtle rounded-lg p-3 hover:border-primary/40 hover:bg-muted/30 transition-all cursor-pointer group"
+                    onClick={() => { setSelectedTareaId(tarea.id); setDetailSheetOpen(true); }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                          <span className="font-heading font-semibold text-sm truncate">{tarea.titulo}</span>
+                          <Badge className={getPrioridadColor(tarea.prioridad)} variant="secondary">
+                            {tarea.prioridad}
+                          </Badge>
+                          <Badge className={getEstadoColor(tarea.estado)}>
+                            {estadoLabels[tarea.estado] || tarea.estado}
+                          </Badge>
                         </div>
-                        {tarea.estado !== 'completada' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-success hover:text-success hover:bg-success/10"
-                            onClick={(e) => handleQuickComplete(e, tarea.id)}
-                            title="Marcar como completada"
-                          >
-                            <CheckCircle2 className="w-4 h-4" />
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                          {tarea.empresa_nombre && (
+                            <span className="flex items-center gap-1">
+                              <Building2 className="w-3 h-3" /> {tarea.empresa_nombre}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1 font-mono">
+                            <Clock className="w-3 h-3" /> {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
+                          </span>
+                        </div>
                       </div>
+                      {tarea.estado !== 'completada' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-success hover:text-success hover:bg-success/10"
+                          onClick={(e) => handleQuickComplete(e, tarea.id)}
+                          title="Marcar como completada"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
 
           <DashboardMensajes mensajes={data.mensajesRecientes} totalNoLeidos={data.mensajesNoLeidos} />
         </div>

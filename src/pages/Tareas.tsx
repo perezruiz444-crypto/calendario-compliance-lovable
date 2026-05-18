@@ -791,14 +791,13 @@ export default function Tareas() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-              Tareas
-            </h1>
-            <p className="text-muted-foreground font-body">
-              Gestiona y da seguimiento a las tareas del equipo
+        {/* Header editorial */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-6 border-b border-border-subtle">
+          <div className="space-y-2">
+            <p className="eyebrow-primary">Operación · Pendientes y entregables</p>
+            <h1 className="display-2 text-foreground">Tareas</h1>
+            <p className="text-[15px] text-muted-foreground leading-relaxed max-w-xl">
+              Gestiona y da seguimiento a las tareas del equipo, con vistas lista, kanban, calendario y línea de tiempo.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
