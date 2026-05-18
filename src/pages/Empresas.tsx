@@ -12,6 +12,9 @@ import OnboardingEmpresaWizard from '@/components/empresas/OnboardingEmpresaWiza
 import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -164,132 +167,118 @@ export default function Empresas() {
 
   return (
     <DashboardLayout currentPage="/empresas">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-heading font-bold text-foreground mb-2">Gestión de Empresas</h1>
-            <p className="text-muted-foreground font-body">Administra las empresas y sus datos fiscales</p>
+      <div className="space-y-8">
+        <PageHeader
+          eyebrow="Cartera · Empresas registradas"
+          title="Gestión de Empresas"
+          description="Administra empresas, sus datos fiscales y certificaciones de comercio exterior."
+          actions={
+            <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shadow-editorial">
+              <Plus className="w-4 h-4" /> Nueva Empresa
+            </Button>
+          }
+        />
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por razón social o RFC..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 bg-card border-border-subtle"
+            />
           </div>
-          <Button onClick={() => setDialogOpen(true)} className="gradient-primary shadow-elegant hover:shadow-lg transition-smooth font-heading">
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Empresa
-          </Button>
+          <p className="eyebrow text-[10px]">
+            {filtered.length} <span className="text-muted-foreground/60">de</span> {empresas.length} empresa{empresas.length === 1 ? '' : 's'}
+          </p>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por razón social o RFC..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+        {filtered.length === 0 ? (
+          <EmptyState
+            icon={Building2}
+            eyebrow={search ? 'Sin resultados' : 'Cartera vacía'}
+            title={search ? 'No se encontraron empresas' : 'Aún no hay empresas registradas'}
+            description={search ? 'Prueba con otro criterio de búsqueda.' : 'Comienza registrando la primera empresa de tu cartera.'}
+            action={!search ? (
+              <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shadow-editorial">
+                <Plus className="w-4 h-4" /> Registrar primera empresa
+              </Button>
+            ) : undefined}
           />
-        </div>
-
-        <Card className="gradient-card shadow-card">
-          <CardHeader>
-            <CardTitle className="font-heading">Empresas Registradas</CardTitle>
-            <CardDescription className="font-body">
-              {filtered.length} de {empresas.length} empresa(s)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loadingEmpresas ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="rounded-[0.625rem] border bg-card p-5 space-y-3">
-                    <Skeleton className="h-5 w-40" />
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-24" />
-                  </div>
-                ))}
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="mx-auto w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
-                  <Building2 className="w-10 h-10 text-primary" />
-                </div>
-                <p className="text-muted-foreground font-body mb-4">
-                  {search ? 'No se encontraron empresas' : 'No hay empresas registradas todavía'}
-                </p>
-                {!search && (
-                  <Button onClick={() => setDialogOpen(true)} className="gradient-primary shadow-elegant font-heading">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Registrar Primera Empresa
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filtered.map((empresa) => {
-                  const badges = getStatusBadges(empresa);
-                  return (
-                    <Card
-                      key={empresa.id}
-                      className="border-l-4 border-l-primary shadow-elegant hover:shadow-card transition-smooth hover-scale cursor-pointer group"
-                      onClick={() => navigate(`/empresas/${empresa.id}`)}
-                    >
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between">
-                          <CardTitle className="font-heading font-semibold text-base truncate">{empresa.razon_social}</CardTitle>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                              <DropdownMenuItem onClick={() => navigate(`/empresas/${empresa.id}`)}>
-                                <Eye className="w-4 h-4 mr-2" />Ver Detalles
-                              </DropdownMenuItem>
-                              {role === 'administrador' && (
-                                <DropdownMenuItem onClick={() => {
-                                  setSelectedEmpresa({ id: empresa.id, nombre: empresa.razon_social });
-                                  setConsultoresDialogOpen(true);
-                                }}>
-                                  <Users className="w-4 h-4 mr-2" />Consultores
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onClick={() => handleDuplicateEmpresa(empresa.id)}>
-                                <Copy className="w-4 h-4 mr-2" />Duplicar
-                              </DropdownMenuItem>
-                              {role === 'administrador' && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="text-destructive" onClick={() => setDeleteEmpresaId(empresa.id)}>
-                                    <Trash2 className="w-4 h-4 mr-2" />Eliminar
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="outline" className="font-mono text-xs">{empresa.rfc}</Badge>
-                          {badges.map((b, i) => (
-                            <Badge key={i} variant={b.variant} className="text-xs">{b.label}</Badge>
-                          ))}
-                          {taskCounts[empresa.id] > 0 && (
-                            <Badge variant="secondary" className="text-xs gap-1">
-                              <CheckSquare className="w-3 h-3" />
-                              {taskCounts[empresa.id]} pendiente{taskCounts[empresa.id] > 1 ? 's' : ''}
-                            </Badge>
-                          )}
-                        </div>
-                        {empresa.domicilio_fiscal && (
-                          <p className="text-sm text-muted-foreground font-body truncate">{empresa.domicilio_fiscal}</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((empresa, idx) => {
+              const badges = getStatusBadges(empresa);
+              return (
+                <motion.div
+                  key={empresa.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: Math.min(idx * 0.03, 0.3), ease: [0.4, 0, 0.2, 1] }}
+                  onClick={() => navigate(`/empresas/${empresa.id}`)}
+                  className="card-editorial card-accent-left p-5 cursor-pointer group hover-lift"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="eyebrow text-[10px] mb-1.5">RFC · <span className="font-mono normal-case tracking-normal text-foreground/70">{empresa.rfc}</span></p>
+                      <h3 className="font-heading font-bold text-base text-foreground leading-tight truncate">
+                        {empresa.razon_social}
+                      </h3>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuItem onClick={() => navigate(`/empresas/${empresa.id}`)}>
+                          <Eye className="w-4 h-4 mr-2" />Ver Detalles
+                        </DropdownMenuItem>
+                        {role === 'administrador' && (
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedEmpresa({ id: empresa.id, nombre: empresa.razon_social });
+                            setConsultoresDialogOpen(true);
+                          }}>
+                            <Users className="w-4 h-4 mr-2" />Consultores
+                          </DropdownMenuItem>
                         )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                        <DropdownMenuItem onClick={() => handleDuplicateEmpresa(empresa.id)}>
+                          <Copy className="w-4 h-4 mr-2" />Duplicar
+                        </DropdownMenuItem>
+                        {role === 'administrador' && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => setDeleteEmpresaId(empresa.id)}>
+                              <Trash2 className="w-4 h-4 mr-2" />Eliminar
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap mb-3">
+                    {badges.map((b, i) => (
+                      <Badge key={i} variant={b.variant} className="text-[10px] font-mono uppercase tracking-wider">{b.label}</Badge>
+                    ))}
+                    {taskCounts[empresa.id] > 0 && (
+                      <Badge variant="outline" className="text-[10px] gap-1 border-warning/40 text-warning">
+                        <CheckSquare className="w-3 h-3" />
+                        {taskCounts[empresa.id]} pendiente{taskCounts[empresa.id] > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {empresa.domicilio_fiscal && (
+                    <p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed">{empresa.domicilio_fiscal}</p>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <OnboardingEmpresaWizard
