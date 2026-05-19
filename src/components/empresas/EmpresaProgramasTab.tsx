@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Layers } from 'lucide-react';
 import { ProgramaRow } from './ProgramaRow';
 
-const PROGRAMAS_ORDEN = ['immex', 'prosec', 'padron', 'cert_iva_ieps', 'general'] as const;
+const PROGRAMAS_ORDEN = ['immex', 'prosec', 'padron_general', 'padron_sectorial', 'cert_iva_ieps', 'general'] as const;
 
 interface EmpresaPrograma {
   id: string;

@@ -15,11 +15,12 @@ interface Props {
 }
 
 const PROGRAMAS_OPCIONES = [
-  { value: 'immex',       label: 'IMMEX' },
-  { value: 'prosec',      label: 'PROSEC' },
-  { value: 'padron',      label: 'Padrón de Importadores' },
-  { value: 'cert_iva_ieps', label: 'Certificación IVA/IEPS' },
-  { value: 'general',     label: 'General' },
+  { value: 'immex',            label: 'IMMEX' },
+  { value: 'prosec',           label: 'PROSEC' },
+  { value: 'padron_general',   label: 'Padrón General' },
+  { value: 'padron_sectorial', label: 'Padrón Sectorial' },
+  { value: 'cert_iva_ieps',    label: 'Certificación IVA/IEPS' },
+  { value: 'general',          label: 'General' },
 ] as const;
 
 export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaCreated }: Props) {

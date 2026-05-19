@@ -24,7 +24,8 @@ const CATEGORIAS = [
   { value: 'cert_iva_ieps', label: 'Certificación IVA/IEPS' },
   { value: 'immex', label: 'Programa IMMEX' },
   { value: 'prosec', label: 'Programa PROSEC' },
-  { value: 'padron', label: 'Padrón de Importadores' },
+  { value: 'padron_general', label: 'Padrón General' },
+  { value: 'padron_sectorial', label: 'Padrón Sectorial' },
   { value: 'otro', label: 'Otro' },
 ];
 

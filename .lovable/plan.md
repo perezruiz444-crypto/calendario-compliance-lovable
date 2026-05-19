@@ -1,86 +1,115 @@
-# Fase 4 — Afinar todo (pulido editorial integral)
+# Plan — Activación rápida de obligaciones y split de Padrón
 
-Llevamos el lenguaje "Editorial Sofisticado · Navy Trust" a cada superficie que aún se siente de la versión anterior. Sin tocar lógica de negocio: solo presentación, jerarquía, motion y consistencia tipográfica.
+## Parte 1 — Estado actual del catálogo
 
-## Alcance por sección
+Categorías/programas existentes hoy en `obligaciones_catalogo`:
+- `immex`, `prosec`, `cert_iva_ieps`, `padron`, `general`, `oea`, `otro`
 
-### 1. Dashboard (cerrar Fase 3)
-- Reemplazar tarjetas restantes (Agenda Hoy, Próximas tareas, Mensajes, Renovaciones, Compliance Semáforo) con `card-editorial`, eyebrow + título display, separadores sutiles.
-- Stagger de entrada con `framer-motion` (delay incremental 0.04s).
-- `DashboardObligacionesMensuales` con la misma banda visual: chips de mes en `DM Mono`, barras con `--gradient-primary`.
-- Empty states con ilustración tipográfica (eyebrow + frase corta + acción).
+**No existe** distinción entre Padrón **General** y Padrón **Sectorial/Específico**: hay un único `programa = 'padron'` con 3 obligaciones mezcladas (Forma A1, Renovación Padrones Sectoriales, Verificación Datos Padrón Importadores).
 
-### 2. Calendario (`/calendario` + `DashboardCalendar`)
-- Header de página usando `PageHeader` (eyebrow "Agenda" + display "Calendario de Vencimientos").
-- Selector de empresa como chip editorial (borde sutil, `DM Mono` para el nombre).
-- Chips de tipo (obligación/tarea/documento) rediseñados: pill con punto de color, hover lift, estado activo con `shadow-editorial`.
-- Refinar CSS de FullCalendar: títulos en Space Grotesk, números en DM Mono, hoy con barra lateral primary, eventos con border-left 3px y micro-hover.
+También importante: la tabla `empresa_programas` tiene un CHECK que solo permite `('immex','prosec','padron','cert_iva_ieps','general')`. Y **no existen triggers** que generen ocurrencias automáticamente al insertar en `empresa_programas` (a pesar de lo que dice el spec). Hoy la generación se hace llamando manualmente a `generar_ocurrencias_obligacion(obligacion_id)`.
 
-### 3. Tareas (`/tareas`)
-- `PageHeader` + banda KPI compacta (total, en curso, vencidas, completadas semana) con `AnimatedNumber`.
-- Tabs/filtros como chips editoriales.
-- Tarjetas de tarea: prioridad como border-left de color + eyebrow con categoría, fecha en DM Mono.
-- Timeline/Gantt: paleta navy + accents, líneas de hoy en primary-glow.
+---
 
-### 4. Empresas (`/empresas` + `/empresas/:id`)
-- Lista: grid editorial con `card-editorial`, logo/inicial en chip, eyebrow "RFC" + razón social display.
-- Detalle: hero con nombre en display-1, eyebrow con sector, tabs estilo underline animado (`layoutId`).
-- Cards internas (General, IMMEX, PROSEC, Obligaciones Activas) homogéneas con eyebrow + título.
+## Parte 2 — Cómo agregar obligaciones rápido desde SQL Editor
 
-### 5. Obligaciones / Mi Empresa
-- `ObligacionDetailSheet`: header con eyebrow "Obligación · {categoría}", título display, badges de estado con paleta semántica.
-- Historial de cumplimiento como timeline vertical con puntos primary.
-- `/mi-empresa` (vista cliente): hero personalizado, banda KPI cliente, tabs editoriales.
+Dado que no hay trigger automático en `empresa_programas`, el flujo más rápido y confiable es **insertar directo en `obligaciones` desde el catálogo** y luego disparar la generación anual.
 
-### 6. Mensajes y Notificaciones
-- `/mensajes`: lista tipo bandeja editorial, avatar con inicial en chip navy, asunto en Space Grotesk, snippet en DM Sans, fecha en DM Mono.
-- Dropdown de notificaciones: animación fade+slide, items con border-left de color por tipo.
+### Snippet reutilizable (cambia solo el RFC y los programas)
 
-### 7. Reportes y Configuraciones
-- `/reportes`: PageHeader + tarjetas de tipo de reporte como bento (2-3 columnas), íconos en chip, CTA primary.
-- `/configuraciones`: layout 2 columnas ya existente, refinar typography y badges admin con chip eyebrow.
-
-### 8. Auth (`/auth`, `/`, `/set-password`, `/reset-password`)
-- Split-screen editorial: 60/40, panel izquierdo con `surface-mesh` + display title + eyebrow "Russell Bedford · Compliance", panel derecho con form minimalista.
-- Inputs con label flotante o eyebrow encima, focus ring primary-glow.
-- Botón principal con `--gradient-primary` y micro-hover.
-
-### 9. Componentes globales
-- `Button`: variante `editorial` (gradient primary + sombra editorial).
-- `Badge`: variantes semánticas alineadas a tokens (success, warning, destructive, info).
-- `Dialog` / `Sheet`: header con eyebrow + título display, padding consistente.
-- `Empty state` reutilizable (`EmptyState.tsx`) con ícono, eyebrow, título, descripción, CTA.
-- `Skeleton` con shimmer sutil en lugar de pulse plano.
-
-### 10. Motion y micro-interacciones
-- `AnimatePresence` en tabs activos (underline con `layoutId`).
-- Hover lift (-translate-y-0.5 + shadow-editorial) en todas las cards interactivas.
-- Página 404 rediseñada con tipografía display gigante.
-
-## Detalles técnicos
-
-- Nuevos archivos:
-  - `src/components/ui/EmptyState.tsx`
-  - `src/components/ui/EditorialTabs.tsx` (wrapper con `layoutId`)
-  - `src/components/ui/KpiCard.tsx` (extrae patrón Dashboard para reutilizar)
-- Sin migraciones, sin cambios de datos, sin tocar hooks de negocio.
-- Mantener todas las memorias del proyecto (FullCalendar, sonner, fechas T12:00:00, `.maybeSingle()`, etc.).
-
-## Orden de ejecución sugerido
-
-```text
-1. Globales: Button/Badge variants, EmptyState, KpiCard, EditorialTabs
-2. Dashboard restante (cards + obligaciones mensuales)
-3. Calendario (página + FullCalendar CSS)
-4. Tareas
-5. Empresas (lista + detalle)
-6. Obligaciones / Mi Empresa
-7. Mensajes + Notificaciones
-8. Reportes + Configuraciones
-9. Auth split-screen
-10. 404 + pulido final
+```sql
+WITH emp AS (
+  SELECT id FROM empresas WHERE rfc = 'XXXX010101XXX' LIMIT 1
+),
+nuevas AS (
+  INSERT INTO obligaciones (
+    empresa_id, catalogo_id, categoria, nombre, descripcion,
+    articulos, presentacion, fecha_vencimiento, estado, activa, created_by
+  )
+  SELECT
+    emp.id, c.id, c.categoria, c.nombre, c.descripcion,
+    c.articulos, c.presentacion,
+    -- fecha semilla: primer vencimiento del año actual
+    make_date(EXTRACT(YEAR FROM CURRENT_DATE)::int,
+              COALESCE(c.mes_vencimiento, 1),
+              LEAST(COALESCE(c.dia_vencimiento,1), 28)),
+    'vigente', true, auth.uid()
+  FROM obligaciones_catalogo c, emp
+  WHERE c.activo = true
+    AND c.programa IN ('immex','prosec','padron','cert_iva_ieps','general') -- ajusta aquí
+  ON CONFLICT (empresa_id, catalogo_id, fecha_vencimiento)
+    WHERE catalogo_id IS NOT NULL AND fecha_vencimiento IS NOT NULL
+    DO NOTHING
+  RETURNING id
+)
+SELECT generar_ocurrencias_obligacion(id) FROM nuevas;
 ```
 
-## Preguntas antes de arrancar
-- ¿Lo hacemos en una sola pasada (todo de corrido) o por bloques con checkpoint visual entre cada uno?
-- ¿Quieres que el Auth pase a split-screen completo o mantenemos el card centrado actual con solo refinamiento?
+Esto:
+1. Toma la empresa por RFC.
+2. Inserta una "semilla" por cada obligación de los programas indicados.
+3. La función `generar_ocurrencias_obligacion` expande el año completo (mensuales, trimestrales, anuales, etc.).
+
+Si solo quieres un programa, deja `programa IN ('immex')`.
+
+### Opcional: registrar también en `empresa_programas`
+
+```sql
+INSERT INTO empresa_programas (empresa_id, programa, activo, fecha_inicio)
+SELECT id, unnest(ARRAY['immex','prosec']), true, CURRENT_DATE
+FROM empresas WHERE rfc = 'XXXX010101XXX'
+ON CONFLICT (empresa_id, programa) DO UPDATE SET activo = true;
+```
+
+Esto deja consistente la UI del tab "Programas" en EmpresaDetail.
+
+---
+
+## Parte 3 — Split Padrón General vs Padrón Sectorial
+
+Propongo crear **dos programas separados** en el catálogo, al mismo nivel que `immex`/`prosec`:
+
+| Programa nuevo | Cubre | Obligaciones que migran del actual `padron` |
+|---|---|---|
+| `padron_general` | Padrón de Importadores (registro base SAT) | `Verificación de Datos Padrón de Importadores`, `Declaración de Valor (Forma A1) — Muestreo` |
+| `padron_sectorial` | Padrones Sectoriales específicos (Anexo 10 RGCE) | `Renovación Padrones Sectoriales` |
+
+### Migración SQL (estructura)
+
+```sql
+-- 1. Ampliar el CHECK de empresa_programas
+ALTER TABLE empresa_programas DROP CONSTRAINT empresa_programas_programa_check;
+ALTER TABLE empresa_programas ADD CONSTRAINT empresa_programas_programa_check
+  CHECK (programa IN ('immex','prosec','padron_general','padron_sectorial','cert_iva_ieps','general'));
+
+-- 2. Reclasificar catálogo
+UPDATE obligaciones_catalogo
+SET programa = 'padron_general', categoria = 'padron_general'
+WHERE programa = 'padron'
+  AND nombre IN (
+    'Verificación de Datos Padrón de Importadores',
+    'Declaración de Valor (Forma A1) — Muestreo'
+  );
+
+UPDATE obligaciones_catalogo
+SET programa = 'padron_sectorial', categoria = 'padron_sectorial'
+WHERE programa = 'padron'
+  AND nombre = 'Renovación Padrones Sectoriales';
+
+-- 3. Migrar empresas que ya tenían 'padron'
+UPDATE empresa_programas SET programa = 'padron_general' WHERE programa = 'padron';
+-- (las que también tengan sectoriales se agregan a mano según el caso)
+```
+
+### Cambios de UI implicados
+
+- `EmpresaProgramasTab`, `ProgramaRow`, `OnboardingEmpresaWizard`: agregar las 2 nuevas filas con sus íconos y labels ("Padrón General", "Padrón Sectorial").
+- `CatalogoAdmin`: actualizar selector de programa.
+- Filtros/colores en Calendario y Reportes que hoy usen `padron` → mapear a los 2 nuevos (mantener `padron` como alias retrocompatible si quedara algún registro huérfano).
+
+---
+
+## Preguntas para confirmar antes de ejecutar
+
+1. ¿Hago la migración del split de Padrón ahora (estructura + reclasificación + UI), o solo te dejo el snippet de la Parte 2 para que sigas activando empresas a mano por ahora?
+2. Para Padrón Sectorial, ¿quieres que en el catálogo agregue ya obligaciones específicas por sector (siderúrgico, textil, calzado, etc.) o por ahora dejamos la genérica "Renovación Padrones Sectoriales"?
