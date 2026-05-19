@@ -1322,22 +1322,24 @@ export default function Reportes() {
 
             {(() => {
               const TILE_DESCRIPTIONS: Record<string, string> = {
-                immex:         'Inventarios, retornos y operaciones de maquila',
-                prosec:        'Sectores beneficiados y aranceles preferenciales',
-                cert_iva_ieps: 'Estado de certificación, renovaciones y beneficios',
-                padron:        'Sectores activos, suspensiones y renovaciones',
-                general:       'Obligaciones generales de comercio exterior',
-                otro:          'Obligaciones diversas no clasificadas',
+                immex:             'Inventarios, retornos y operaciones de maquila',
+                prosec:            'Sectores beneficiados y aranceles preferenciales',
+                cert_iva_ieps:     'Estado de certificación, renovaciones y beneficios',
+                padron_general:    'Padrón base SAT: verificación de datos y Forma A1',
+                padron_sectorial:  'Padrones sectoriales (Anexo 10 RGCE)',
+                general:           'Obligaciones generales de comercio exterior',
+                otro:              'Obligaciones diversas no clasificadas',
               };
               return (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {([
-                    { key: 'immex',         label: 'IMMEX',               color: '#00529a', bg: '#e0edff' },
-                    { key: 'prosec',        label: 'PROSEC',              color: '#2e7d32', bg: '#dcf2dc' },
-                    { key: 'cert_iva_ieps', label: 'Cert. IVA/IEPS',     color: '#7b1fa2', bg: '#f3e5f5' },
-                    { key: 'padron',        label: 'Padrón Importadores', color: '#e65100', bg: '#fff3e0' },
-                    { key: 'general',       label: 'OEA / General',       color: '#003366', bg: '#e6eef8' },
-                    { key: 'otro',          label: 'Otras Obligaciones',  color: '#37474f', bg: '#eceff1' },
+                    { key: 'immex',            label: 'IMMEX',              color: '#00529a', bg: '#e0edff' },
+                    { key: 'prosec',           label: 'PROSEC',             color: '#2e7d32', bg: '#dcf2dc' },
+                    { key: 'cert_iva_ieps',    label: 'Cert. IVA/IEPS',     color: '#7b1fa2', bg: '#f3e5f5' },
+                    { key: 'padron_general',   label: 'Padrón General',     color: '#e65100', bg: '#fff3e0' },
+                    { key: 'padron_sectorial', label: 'Padrón Sectorial',   color: '#00838f', bg: '#e0f7fa' },
+                    { key: 'general',          label: 'OEA / General',      color: '#003366', bg: '#e6eef8' },
+                    { key: 'otro',             label: 'Otras Obligaciones', color: '#37474f', bg: '#eceff1' },
                   ] as const).map(cat => (
                     <div
                       key={cat.key}
