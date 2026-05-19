@@ -6,11 +6,12 @@ import { ProgramaRow } from './ProgramaRow';
 
 const PROGRAMAS_ORDEN = ['immex', 'prosec', 'padron_general', 'padron_sectorial', 'cert_iva_ieps', 'general'] as const;
 
-interface EmpresaPrograma {
+export interface EmpresaPrograma {
   id: string;
   programa: string;
   activo: boolean;
   fecha_inicio: string | null;
+  sectores: string[] | null;
 }
 
 interface EmpresaProgramasTabProps {
@@ -26,16 +27,16 @@ export function EmpresaProgramasTab({ empresaId, canEdit }: EmpresaProgramasTabP
     setLoading(true);
     const { data } = await supabase
       .from('empresa_programas')
-      .select('id, programa, activo, fecha_inicio')
+      .select('id, programa, activo, fecha_inicio, sectores')
       .eq('empresa_id', empresaId);
-    setRegistros(data || []);
+    setRegistros((data || []) as EmpresaPrograma[]);
     setLoading(false);
   }, [empresaId]);
 
   useEffect(() => { fetchRegistros(); }, [fetchRegistros]);
 
-  const getRegistro = (programa: string) =>
-    registros.find(r => r.programa === programa) ?? null;
+  const getRegistros = (programa: string) =>
+    registros.filter(r => r.programa === programa);
 
   return (
     <Card className="shadow-card">
@@ -56,7 +57,7 @@ export function EmpresaProgramasTab({ empresaId, canEdit }: EmpresaProgramasTabP
               <ProgramaRow
                 key={programa}
                 programa={programa}
-                registro={getRegistro(programa)}
+                registros={getRegistros(programa)}
                 empresaId={empresaId}
                 canEdit={canEdit}
                 onUpdate={fetchRegistros}
