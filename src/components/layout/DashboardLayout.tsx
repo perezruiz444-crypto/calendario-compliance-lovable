@@ -89,7 +89,11 @@ function SidebarContent({
         {(role === 'consultor' || role === 'administrador') && (
           <EmpresaSelectorDropdown
             selectedEmpresaId={selectedEmpresaId}
-            onEmpresaSelect={setSelectedEmpresaId}
+            onEmpresaSelect={(id) => {
+              setSelectedEmpresaId(id);
+              if (id && id !== 'all') navigate(`/empresas/${id}`);
+              else if (id === 'all') navigate('/empresas');
+            }}
           />
         )}
         {role === 'cliente' && empresaInfo && (
