@@ -91,8 +91,8 @@ function SidebarContent({
             selectedEmpresaId={selectedEmpresaId}
             onEmpresaSelect={(id) => {
               setSelectedEmpresaId(id);
-              if (id && id !== 'all') navigate(`/empresas/${id}`);
-              else if (id === 'all') navigate('/empresas');
+              if (id && id !== 'all') onNavigate(`/empresas/${id}`);
+              else if (id === 'all') onNavigate('/empresas');
             }}
           />
         )}
