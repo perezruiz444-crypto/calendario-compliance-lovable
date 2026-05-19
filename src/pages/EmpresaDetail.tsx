@@ -35,6 +35,8 @@ const ObligacionesManager = lazy(() => import('@/components/obligaciones/Obligac
 const CatalogoActivacionSection = lazy(() => import('@/components/obligaciones/CatalogoActivacionSection').then(m => ({ default: m.CatalogoActivacionSection })));
 const AgentesAduanalesCard = lazy(() => import('@/components/empresas/AgentesAduanalesCard').then(m => ({ default: m.AgentesAduanalesCard })));
 const EmpresaProgramasTab = lazy(() => import('@/components/empresas/EmpresaProgramasTab').then(m => ({ default: m.EmpresaProgramasTab })));
+const EmpresaPadronGeneralCard = lazy(() => import('@/components/empresas/EmpresaPadronGeneralCard').then(m => ({ default: m.EmpresaPadronGeneralCard })));
+const EmpresaPadronSectorialCard = lazy(() => import('@/components/empresas/EmpresaPadronSectorialCard').then(m => ({ default: m.EmpresaPadronSectorialCard })));
 const EmpresaObligacionesActivasCard = lazy(() => import('@/components/empresas/EmpresaObligacionesActivasCard').then(m => ({ default: m.EmpresaObligacionesActivasCard })));
 const ApoderadosCard = lazy(() => import('@/components/empresas/ApoderadosCard').then(m => ({ default: m.ApoderadosCard })));
 const DomiciliosCard = lazy(() => import('@/components/empresas/DomiciliosCard').then(m => ({ default: m.DomiciliosCard })));
@@ -628,8 +630,9 @@ export default function EmpresaDetail() {
                 <EmpresaIMMEXCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
                 <EmpresaPROSECCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
                 <EmpresaCertificacionCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+                <EmpresaPadronGeneralCard empresaId={id!} canEdit={canEdit} />
+                <EmpresaPadronSectorialCard empresaId={id!} canEdit={canEdit} />
               </div>
-              <EmpresaProgramasTab empresaId={id!} canEdit={canEdit} />
             </Suspense>
           </TabsContent>
 
