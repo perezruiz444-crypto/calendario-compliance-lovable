@@ -143,11 +143,13 @@ export async function buildCategoriaReportData(
 }
 
 // ── Category order for Cumplimiento Mensual ──────────────────────────
-const CUMPLIMIENTO_CAT_ORDER = ['immex', 'prosec', 'cert_iva_ieps', 'padron', 'general', 'otro'];
+const CUMPLIMIENTO_CAT_ORDER = ['immex', 'prosec', 'cert_iva_ieps', 'padron_general', 'padron_sectorial', 'padron', 'general', 'otro'];
 const CUMPLIMIENTO_CAT_LABELS: Record<string, string> = {
   immex: 'IMMEX',
   prosec: 'PROSEC',
   cert_iva_ieps: 'Cert. IVA/IEPS',
+  padron_general: 'Padrón General',
+  padron_sectorial: 'Padrón Sectorial',
   padron: 'Padrón Importadores',
   general: 'OEA / General',
   otro: 'Otras Obligaciones',
