@@ -629,6 +629,7 @@ export default function EmpresaDetail() {
                 <EmpresaPROSECCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
                 <EmpresaCertificacionCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
               </div>
+              <EmpresaProgramasTab empresaId={id!} canEdit={canEdit} />
             </Suspense>
           </TabsContent>
 
