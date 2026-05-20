@@ -30,10 +30,32 @@ export const PROGRAMA_LABELS: Record<string, string> = {
   padron_general:   'Padrón General',
   padron_sectorial: 'Padrón Sectorial',
   padron:           'Padrón',
-  cert_iva_ieps:    'Cert. IVA/IEPS',
+  cert_iva_ieps:    'Certificación IVA/IEPS',
   general:          'General',
   otro:             'Otro',
 };
+
+export const PROGRAMA_DESCRIPTIONS: Record<string, string> = {
+  immex:            'Industria Manufacturera, Maquiladora y de Servicios de Exportación',
+  prosec:           'Programa de Promoción Sectorial',
+  padron_general:   'Padrón de Importadores SAT (registro base)',
+  padron_sectorial: 'Padrones Sectoriales específicos (Anexo 10 RGCE)',
+  padron:           'Padrón de Importadores SAT',
+  cert_iva_ieps:    'Certificación de IVA e IEPS ante el SAT',
+  general:          'Obligaciones generales de comercio exterior',
+  otro:             'Otras obligaciones',
+};
+
+// Orden canónico de programas (UI, reportes, onboarding)
+export const PROGRAMAS_ORDEN = [
+  'immex',
+  'prosec',
+  'padron_general',
+  'padron_sectorial',
+  'cert_iva_ieps',
+  'general',
+] as const;
+export type ProgramaKey = typeof PROGRAMAS_ORDEN[number];
 
 // ─── Period key helpers ───────────────────────────────────────────────
 export function getCurrentPeriodKey(presentacion: string | null): string {

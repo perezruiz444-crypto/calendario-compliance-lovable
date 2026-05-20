@@ -1,4 +1,6 @@
-import { useEffect, useState, useRef, KeyboardEvent, Suspense, lazy } from 'react';
+import { useEffect, useState, useMemo, Suspense, lazy } from 'react';
+import { useEmpresaDetailData } from '@/hooks/useEmpresaDetailData';
+import { useInlineEdit } from '@/hooks/useInlineEdit';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -136,112 +138,42 @@ export default function EmpresaDetail() {
   const { id } = useParams();
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const [empresa, setEmpresa] = useState<any>(null);
-  const [domicilios, setDomicilios] = useState<any[]>([]);
-  const [agentes, setAgentes] = useState<any[]>([]);
-  const [apoderados, setApoderados] = useState<any[]>([]);
-  const [tareas, setTareas] = useState<any[]>([]);
-  const [obligaciones, setObligaciones] = useState<any[]>([]);
-  const [cumplimientoKeys, setCumplimientoKeys] = useState<Set<string>>(new Set());
-  const [loadingData, setLoadingData] = useState(true);
+
   const [activeTab, setActiveTab] = useState("obligaciones");
-  const [loadingContactos, setLoadingContactos] = useState(false);
-  const [hasFetchedContactos, setHasFetchedContactos] = useState(false);
   const [consultoresDialogOpen, setConsultoresDialogOpen] = useState(false);
   const [createTareaSheetOpen, setCreateTareaSheetOpen] = useState(false);
   const [detailTareaSheetOpen, setDetailTareaSheetOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
   const [obligRefreshKey, setObligRefreshKey] = useState(0);
 
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-
   const canEdit = role === 'administrador' || role === 'consultor';
+
+  const {
+    empresa, setEmpresa,
+    tareas, obligaciones, cumplimientoKeys,
+    loadingData,
+    domicilios, agentes, apoderados, loadingContactos,
+    fetchEmpresaData, fetchContactosData,
+  } = useEmpresaDetailData(id, () => navigate('/empresas'));
+
+  const {
+    editingField, editValue, setEditValue, inputRef,
+    startEditing, cancelEditing, saveField, handleKeyDown,
+  } = useInlineEdit(
+    empresa?.id,
+    (field, value) => setEmpresa((prev: any) => prev ? { ...prev, [field]: value } : prev),
+    canEdit
+  );
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth');
     if (!loading && role === 'cliente') { toast.info('Redirigido a tu empresa'); navigate('/mi-empresa'); }
   }, [user, role, loading, navigate]);
 
-  useEffect(() => { if (id && user) fetchEmpresaData(); }, [id, user]);
-  useEffect(() => { if (editingField && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); } }, [editingField]);
-
-  // Lazy fetching: Solo descargar contactos si visitamos la pestaña correspondiente
+  // Lazy fetching: descargar contactos cuando se visita la pestaña
   useEffect(() => {
-    if (activeTab === 'contactos' && !hasFetchedContactos && id) {
-      fetchContactosData();
-    }
-  }, [activeTab, hasFetchedContactos, id]);
-
-  const fetchContactosData = async () => {
-    setLoadingContactos(true);
-    try {
-      const [domRes, agRes, apRes] = await Promise.all([
-        supabase.from('domicilios_operacion').select('*').eq('empresa_id', id),
-        supabase.from('agentes_aduanales').select('*').eq('empresa_id', id),
-        supabase.from('apoderados_legales').select('*').eq('empresa_id', id),
-      ]);
-      setDomicilios(domRes.data || []);
-      setAgentes(agRes.data || []);
-      setApoderados(apRes.data || []);
-      setHasFetchedContactos(true);
-    } catch (e: any) {
-      toast.error('Error al cargar contactos');
-    } finally {
-      setLoadingContactos(false);
-    }
-  };
-
-  const fetchEmpresaData = async () => {
-    setLoadingData(true);
-    try {
-      const { data: empresaData, error } = await supabase.from('empresas').select('*').eq('id', id).maybeSingle();
-      if (error) throw error;
-      if (!empresaData) { toast.error('Empresa no encontrada'); navigate('/empresas'); return; }
-      setEmpresa(empresaData);
-
-      const [tarRes, obsRes] = await Promise.all([
-        supabase.from('tareas').select('*, profiles:consultor_asignado_id(nombre_completo), categorias_tareas(nombre, color)')
-          .eq('empresa_id', id).order('fecha_vencimiento', { ascending: true }).limit(10),
-        supabase.from('obligaciones').select('*').eq('empresa_id', id).eq('activa', true).order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
-      ]);
-
-      setTareas(tarRes.data || []);
-      setObligaciones(obsRes.data || []);
-
-      // Fetch cumplimientos
-      const obsIds = (obsRes.data || []).map((o: any) => o.id);
-      if (obsIds.length > 0) {
-        const { data: cumplData } = await supabase
-          .from('obligacion_cumplimientos')
-          .select('obligacion_id, periodo_key')
-          .in('obligacion_id', obsIds);
-        setCumplimientoKeys(new Set((cumplData || []).map((c: any) => `${c.obligacion_id}:${c.periodo_key}`)));
-      }
-    } catch (e: any) {
-      toast.error('Error al cargar la empresa');
-    } finally {
-      setLoadingData(false);
-    }
-  };
-
-  const startEditing = (field: string, value: string) => { if (!canEdit) return; setEditingField(field); setEditValue(value || ''); };
-  const cancelEditing = () => { setEditingField(null); setEditValue(''); };
-  const saveField = async () => {
-    if (!editingField || !empresa) return;
-    try {
-      const { error } = await supabase.from('empresas').update({ [editingField]: editValue }).eq('id', empresa.id);
-      if (error) throw error;
-      setEmpresa({ ...empresa, [editingField]: editValue });
-      toast.success('Actualizado');
-    } catch { toast.error('Error al guardar'); }
-    finally { cancelEditing(); }
-  };
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') saveField();
-    if (e.key === 'Escape') cancelEditing();
-  };
+    if (activeTab === 'contactos' && id) fetchContactosData();
+  }, [activeTab, id, fetchContactosData]);
 
   if (loading || loadingData) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -255,37 +187,48 @@ export default function EmpresaDetail() {
     </DashboardLayout>
   );
 
-  // ── Computed stats ─────────────────────────────────────────────────
-  const now = new Date();
+  // ── Computed stats (memoizadas) ────────────────────────────────────
+  const stats = useMemo(() => {
+    const now = new Date();
+    const obsVencidas = obligaciones.filter(o => o.fecha_vencimiento && new Date(o.fecha_vencimiento) < now);
+    const obsSemana = obligaciones.filter(o => {
+      if (!o.fecha_vencimiento) return false;
+      const d = differenceInDays(new Date(o.fecha_vencimiento), now);
+      return d >= 0 && d <= 7;
+    });
+    const obsMes = obligaciones.filter(o => {
+      if (!o.fecha_vencimiento) return false;
+      const d = differenceInDays(new Date(o.fecha_vencimiento), now);
+      return d > 7 && d <= 30;
+    });
+    const totalObs = obligaciones.length;
+    const pendientesObs = obsVencidas.length + obsSemana.length;
+    const cumplScore = totalObs === 0 ? 100 : Math.round(((totalObs - pendientesObs) / totalObs) * 100);
+    return { obsVencidas, obsSemana, obsMes, totalObs, pendientesObs, cumplScore };
+  }, [obligaciones]);
 
-  const obsVencidas   = obligaciones.filter(o => o.fecha_vencimiento && new Date(o.fecha_vencimiento) < now);
-  const obsSemana     = obligaciones.filter(o => {
-    if (!o.fecha_vencimiento) return false;
-    const d = differenceInDays(new Date(o.fecha_vencimiento), now);
-    return d >= 0 && d <= 7;
-  });
-  const obsMes        = obligaciones.filter(o => {
-    if (!o.fecha_vencimiento) return false;
-    const d = differenceInDays(new Date(o.fecha_vencimiento), now);
-    return d > 7 && d <= 30;
-  });
+  const { obsVencidas, obsSemana, obsMes, totalObs, pendientesObs, cumplScore } = stats;
 
-  const totalObs      = obligaciones.length;
-  const pendientesObs = obsVencidas.length + obsSemana.length;
-  const cumplScore    = totalObs === 0 ? 100 : Math.round(((totalObs - pendientesObs) / totalObs) * 100);
+  const tareasStats = useMemo(() => ({
+    pend: tareas.filter(t => t.estado === 'pendiente').length,
+    en: tareas.filter(t => t.estado === 'en_progreso').length,
+    comp: tareas.filter(t => t.estado === 'completada').length,
+  }), [tareas]);
+  const tareasPend = tareasStats.pend;
+  const tareasEn = tareasStats.en;
+  const tareasComp = tareasStats.comp;
 
-  const tareasPend    = tareas.filter(t => t.estado === 'pendiente').length;
-  const tareasEn      = tareas.filter(t => t.estado === 'en_progreso').length;
-  const tareasComp    = tareas.filter(t => t.estado === 'completada').length;
+  const initials = useMemo(
+    () => (empresa.razon_social || '').split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase(),
+    [empresa.razon_social]
+  );
 
-  const initials = (empresa.razon_social || '').split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
-
-  const programs: ProgramStatus[] = [
+  const programs: ProgramStatus[] = useMemo(() => [
     { label: 'IMMEX',         numero: empresa.immex_numero,                   fecha_fin: empresa.immex_fecha_fin,                     color: 'blue'   },
     { label: 'PROSEC',        numero: empresa.prosec_numero,                  fecha_fin: empresa.prosec_fecha_fin,                    color: 'purple' },
     { label: 'Padrón',        numero: empresa.padron_general_numero,          fecha_fin: null,                                        color: 'green'  },
     { label: 'Cert. IVA/IEPS',numero: empresa.cert_iva_ieps_numero,           fecha_fin: empresa.cert_iva_ieps_fecha_vencimiento,     color: 'orange' },
-  ].filter(p => p.numero);
+  ].filter(p => p.numero), [empresa.immex_numero, empresa.immex_fecha_fin, empresa.prosec_numero, empresa.prosec_fecha_fin, empresa.padron_general_numero, empresa.cert_iva_ieps_numero, empresa.cert_iva_ieps_fecha_vencimiento]);
 
   const renderEditable = (field: string, value: string | null, className: string) => {
     if (editingField === field) return (

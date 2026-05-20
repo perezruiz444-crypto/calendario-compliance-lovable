@@ -18,7 +18,7 @@ export interface Notification {
 
 async function insertVencimientoAlerts(userId: string) {
   try {
-    const { data: obs } = await (supabase as any)
+    const { data: obs } = await supabase
       .from('obligaciones')
       .select('id, nombre, empresa_id, fecha_vencimiento, empresas(razon_social)')
       .eq('activa', true)
@@ -37,7 +37,7 @@ async function insertVencimientoAlerts(userId: string) {
       for (const umbral of UMBRALES) {
         if (daysLeft !== umbral) continue;
 
-        const { data: existing } = await (supabase as any)
+        const { data: existing } = await supabase
           .from('notificaciones')
           .select('id')
           .eq('user_id', userId)
@@ -49,17 +49,17 @@ async function insertVencimientoAlerts(userId: string) {
 
         const label = daysLeft === 1 ? 'mañana' : `en ${daysLeft} días`;
         // Notificar al usuario actual + a los responsables asignados
-        const { data: responsables } = await (supabase as any)
+        const { data: responsables } = await supabase
           .from('obligacion_responsables')
           .select('user_id')
           .eq('obligacion_id', ob.id);
 
         const destinatarios = new Set<string>([userId]);
-        (responsables || []).forEach((r: any) => destinatarios.add(r.user_id));
+        (responsables || []).forEach(r => destinatarios.add(r.user_id));
 
         for (const destinatario of destinatarios) {
           // Verificar que no exista ya la notificación para este destinatario
-          const { data: existingForUser } = await (supabase as any)
+          const { data: existingForUser } = await supabase
             .from('notificaciones')
             .select('id')
             .eq('user_id', destinatario)
@@ -69,7 +69,7 @@ async function insertVencimientoAlerts(userId: string) {
 
           if (existingForUser) continue;
 
-          await (supabase as any).from('notificaciones').insert({
+          await supabase.from('notificaciones').insert({
             user_id: destinatario,
             tipo: `vencimiento_${umbral}d`,
             titulo: `Vence ${label}: ${ob.nombre}`,
@@ -101,7 +101,7 @@ export function useNotifications() {
   const fetchNotifications = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('notificaciones')
         .select('*')
         .eq('user_id', user.id)
@@ -109,8 +109,8 @@ export function useNotifications() {
         .limit(25);
 
       if (error) throw error;
-      setNotifications(data || []);
-      setUnreadCount(data?.filter((n: any) => !n.leida).length || 0);
+      setNotifications((data as Notification[]) || []);
+      setUnreadCount((data as Notification[] | null)?.filter(n => !n.leida).length || 0);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -129,7 +129,7 @@ export function useNotifications() {
     fetchNotifications();
     insertVencimientoAlerts(user.id);
 
-    const channel = (supabase as any)
+    const channel = supabase
       .channel('notificaciones-changes')
       .on(
         'postgres_changes',
@@ -166,7 +166,7 @@ export function useNotifications() {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      await (supabase as any)
+      await supabase
         .from('notificaciones')
         .update({ leida: true })
         .eq('id', notificationId);
@@ -178,7 +178,7 @@ export function useNotifications() {
   const markAllAsRead = async () => {
     if (!user) return;
     try {
-      await (supabase as any)
+      await supabase
         .from('notificaciones')
         .update({ leida: true })
         .eq('user_id', user.id)

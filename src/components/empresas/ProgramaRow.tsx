@@ -6,27 +6,7 @@ import { toast } from 'sonner';
 import { CheckCircle2, Circle, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-
-export const PROGRAMA_LABELS: Record<string, string> = {
-  immex:            'IMMEX',
-  prosec:           'PROSEC',
-  padron_general:   'Padrón General',
-  padron_sectorial: 'Padrón Sectorial',
-  padron:           'Padrón de Importadores', // legado
-  cert_iva_ieps:    'Certificación IVA/IEPS',
-  general:          'General',
-};
-
-export const PROGRAMA_DESCRIPTIONS: Record<string, string> = {
-  immex:            'Industria Manufacturera, Maquiladora y de Servicios de Exportación',
-  prosec:           'Programa de Promoción Sectorial',
-  padron_general:   'Padrón de Importadores SAT (registro base)',
-  padron_sectorial: 'Padrones Sectoriales específicos (Anexo 10 RGCE)',
-  padron:           'Padrón de Importadores SAT',
-  cert_iva_ieps:    'Certificación de IVA e IEPS ante el SAT',
-  general:          'Obligaciones generales de comercio exterior',
-};
-
+import { PROGRAMA_LABELS, PROGRAMA_DESCRIPTIONS } from '@/lib/obligaciones';
 import { EmpresaPrograma } from './EmpresaProgramasTab';
 
 interface ProgramaRowProps {
