@@ -102,9 +102,13 @@ export function getVencimientoInfo(fecha: string | null): { status: 'vencido' | 
 // ─── Programa to categoría mapping ────────────────────────────────────
 export function programaToCategoria(programa: string): string {
   const p = (programa || '').toLowerCase().trim();
+  if (p === 'padron_general')                       return 'padron_general';
+  if (p === 'padron_sectorial')                     return 'padron_sectorial';
   if (p.includes('immex'))                          return 'immex';
   if (p.includes('prosec'))                         return 'prosec';
-  if (p.includes('padrón') || p.includes('padron')) return 'padron';
+  if (p.includes('sectorial'))                      return 'padron_sectorial';
+  if (p.includes('general') && p.includes('padr'))  return 'padron_general';
+  if (p.includes('padrón') || p.includes('padron')) return 'padron_general';
   if (p.includes('iva') || p.includes('ieps') ||
       p.includes('cert'))                           return 'cert_iva_ieps';
   return 'general';

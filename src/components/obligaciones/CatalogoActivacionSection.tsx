@@ -39,7 +39,7 @@ export function CatalogoActivacionSection({ empresaId, canEdit, onActivated }: P
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [{ data: cat }, { data: oblig }] = await Promise.all([
+    const [{ data: cat }, { data: oblig }, { data: programasActivos }] = await Promise.all([
       (supabase as any)
         .from('obligaciones_catalogo')
         .select('id, programa, categoria, nombre, articulos, descripcion, presentacion, obligatorio, frecuencia_tipo, dia_vencimiento, mes_vencimiento')
@@ -51,9 +51,24 @@ export function CatalogoActivacionSection({ empresaId, canEdit, onActivated }: P
         .select('catalogo_id, nombre')
         .eq('empresa_id', empresaId)
         .eq('activa', true),
+      (supabase as any)
+        .from('empresa_programas')
+        .select('programa')
+        .eq('empresa_id', empresaId)
+        .eq('activo', true),
     ]);
 
-    setCatalogo((cat as unknown as CatalogoItem[]) || []);
+    // Filtra catálogo: solo programas activos de la empresa + 'general' (siempre aplica)
+    const programasSet = new Set<string>(
+      ((programasActivos as any[]) || []).map(p => p.programa)
+    );
+    programasSet.add('general'); // General siempre disponible
+
+    const catFiltrado = ((cat as unknown as CatalogoItem[]) || []).filter(
+      item => programasSet.has(item.programa)
+    );
+
+    setCatalogo(catFiltrado);
 
     const ids     = new Set<string>();
     const nombres = new Set<string>();
