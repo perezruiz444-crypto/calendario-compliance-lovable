@@ -5,16 +5,20 @@ import { Ship } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { EditableInfoCard } from './EditableInfoCard';
+import type { Empresa } from '@/types/domain';
 
 const MODALIDADES = ['Industrial', 'Maquila', 'Servicios', 'Albergue', 'Terciarización'];
 
 interface EmpresaIMMEXCardProps {
-  empresa: any;
+  empresa: Empresa;
   canEdit: boolean;
   onUpdate: () => void;
 }
 
-const emptyForm = (empresa: any) => ({
+// `immex_tipo` y `immex_fecha_inicio` son campos legacy mantenidos como fallback
+// para empresas creadas antes de la migración a `immex_modalidad`/`immex_fecha_autorizacion`.
+// Al editar, solo se escribe en los campos nuevos; los legacy se leen pero no se escriben.
+const emptyForm = (empresa: Empresa) => ({
   immex_numero: empresa.immex_numero || '',
   immex_modalidad: empresa.immex_modalidad || empresa.immex_tipo || '',
   immex_fecha_autorizacion: empresa.immex_fecha_autorizacion || empresa.immex_fecha_inicio || ''

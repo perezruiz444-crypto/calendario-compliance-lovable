@@ -5,14 +5,15 @@ import { Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { EditableInfoCard } from './EditableInfoCard';
+import type { Empresa } from '@/types/domain';
 
 interface EmpresaCertificacionCardProps {
-  empresa: any;
+  empresa: Empresa;
   canEdit: boolean;
   onUpdate: () => void;
 }
 
-const emptyForm = (empresa: any) => ({
+const emptyForm = (empresa: Empresa) => ({
   cert_iva_ieps_oficio: empresa.cert_iva_ieps_oficio || '',
   cert_iva_ieps_fecha_autorizacion: empresa.cert_iva_ieps_fecha_autorizacion || '',
   cert_iva_ieps_fecha_ultima_renovacion: empresa.cert_iva_ieps_fecha_ultima_renovacion || '',

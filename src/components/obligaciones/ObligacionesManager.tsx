@@ -26,7 +26,7 @@ import {
 import {
   CATEGORIA_LABELS, CATEGORIA_COLORS,
   getCurrentPeriodKey, getPeriodLabel, formatDateShort, getVencimientoInfo, programaToCategoria,
-  getNextVencimiento, isRecurring,
+  getNextVencimiento, isRecurring, fetchCumplimientoKeys,
 } from '@/lib/obligaciones';
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
 
@@ -91,28 +91,12 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
   };
 
   const fetchCumplimientos = async (obs: any[]) => {
-    const periodKeys = obs.map(ob => ({
-      id: ob.id,
-      key: getCurrentPeriodKey(ob.presentacion)
-    }));
-
     const obIds = obs.map(ob => ob.id);
-    const { data, error } = await supabase
-      .from('obligacion_cumplimientos')
-      .select('obligacion_id, periodo_key')
-      .in('obligacion_id', obIds);
-
-    if (!error && data) {
-      const map: Record<string, boolean> = {};
-      const keys = new Set<string>();
-      data.forEach(c => {
-        const k = `${c.obligacion_id}:${c.periodo_key}`;
-        map[k] = true;
-        keys.add(k);
-      });
-      setCumplimientos(map);
-      setCumplimientoKeys(keys);
-    }
+    const keys = await fetchCumplimientoKeys(supabase, obIds);
+    const map: Record<string, boolean> = {};
+    keys.forEach(k => { map[k] = true; });
+    setCumplimientos(map);
+    setCumplimientoKeys(keys);
   };
 
   useEffect(() => { fetchObligaciones(); }, [empresaId]);

@@ -57,35 +57,26 @@ export const PROGRAMAS_ORDEN = [
 ] as const;
 export type ProgramaKey = typeof PROGRAMAS_ORDEN[number];
 
-// ─── Period key helpers ───────────────────────────────────────────────
-export function getCurrentPeriodKey(presentacion: string | null): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const week = getISOWeek(now);
+/**
+ * Fetcha cumplimientos para un conjunto de obligaciones y devuelve un Set con keys "obligacion_id:periodo_key".
+ * Útil cuando solo necesitas saber qué cumplimientos existen (no el estado de `completada`).
+ */
+export async function fetchCumplimientoKeys(
+  supabaseClient: { from: (t: string) => any },
+  obligacionIds: string[]
+): Promise<Set<string>> {
+  if (obligacionIds.length === 0) return new Set();
+  const { data } = await supabaseClient
+    .from('obligacion_cumplimientos')
+    .select('obligacion_id, periodo_key')
+    .in('obligacion_id', obligacionIds);
+  return new Set((data || []).map((c: { obligacion_id: string; periodo_key: string }) => `${c.obligacion_id}:${c.periodo_key}`));
+}
 
-  switch (presentacion?.toLowerCase()) {
-    case 'semanal': return `${year}-W${String(week).padStart(2, '0')}`;
-    case 'quincenal': {
-      const half = now.getDate() <= 15 ? '1' : '2';
-      return `${year}-${month}-Q${half}`;
-    }
-    case 'mensual': return `${year}-${month}`;
-    case 'bimestral': {
-      const bim = Math.ceil((now.getMonth() + 1) / 2);
-      return `${year}-B${bim}`;
-    }
-    case 'trimestral': {
-      const q = Math.ceil((now.getMonth() + 1) / 3);
-      return `${year}-T${q}`;
-    }
-    case 'semestral': {
-      const s = now.getMonth() < 6 ? '1' : '2';
-      return `${year}-S${s}`;
-    }
-    case 'anual': return `${year}`;
-    default: return `${year}-${month}`;
-  }
+// ─── Period key helpers ───────────────────────────────────────────────
+/** Período actual (basado en hoy). Atajo de getPeriodKeyForDate(new Date(), presentacion). */
+export function getCurrentPeriodKey(presentacion: string | null): string {
+  return getPeriodKeyForDate(new Date(), presentacion);
 }
 
 export function getPeriodLabel(presentacion: string | null, periodKey: string): string {
@@ -190,13 +181,13 @@ export function getNextVencimiento(
   return { date: current, periodKey: getPeriodKeyForDate(current, presentacion) };
 }
 
-/** Get period key for a specific date (not necessarily "now") */
-function getPeriodKeyForDate(date: Date, presentacion: string): string {
+/** Genera la "period key" para una fecha y presentación dadas. */
+export function getPeriodKeyForDate(date: Date, presentacion: string | null): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const week = getISOWeek(date);
 
-  switch (presentacion.toLowerCase()) {
+  switch (presentacion?.toLowerCase()) {
     case 'semanal': return `${year}-W${String(week).padStart(2, '0')}`;
     case 'quincenal': {
       const half = date.getDate() <= 15 ? '1' : '2';

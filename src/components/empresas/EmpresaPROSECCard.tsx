@@ -6,14 +6,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { EditableInfoCard } from './EditableInfoCard';
+import type { Empresa } from '@/types/domain';
 
 interface EmpresaPROSECCardProps {
-  empresa: any;
+  empresa: Empresa;
   canEdit: boolean;
   onUpdate: () => void;
 }
 
-const emptyForm = (empresa: any) => ({
+const emptyForm = (empresa: Empresa) => ({
   prosec_numero: empresa.prosec_numero || '',
   prosec_modalidad: empresa.prosec_modalidad || '',
   prosec_fecha_autorizacion: empresa.prosec_fecha_autorizacion || '',

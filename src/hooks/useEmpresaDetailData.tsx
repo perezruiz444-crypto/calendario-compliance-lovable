@@ -1,6 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { fetchCumplimientoKeys } from '@/lib/obligaciones';
+import type {
+  Empresa, Obligacion, TareaConJoins,
+  DomicilioOperacion, AgenteAduanal, ApoderadoLegal,
+} from '@/types/domain';
 
 /**
  * Hook que centraliza el fetching de datos de la página EmpresaDetail.
@@ -8,16 +13,16 @@ import { toast } from 'sonner';
  * y métodos refetch para refrescar después de mutations.
  */
 export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?: () => void) {
-  const [empresa, setEmpresa] = useState<any>(null);
-  const [tareas, setTareas] = useState<any[]>([]);
-  const [obligaciones, setObligaciones] = useState<any[]>([]);
+  const [empresa, setEmpresa] = useState<Empresa | null>(null);
+  const [tareas, setTareas] = useState<TareaConJoins[]>([]);
+  const [obligaciones, setObligaciones] = useState<Obligacion[]>([]);
   const [cumplimientoKeys, setCumplimientoKeys] = useState<Set<string>>(new Set());
   const [loadingData, setLoadingData] = useState(true);
 
   // Datos de contactos (lazy)
-  const [domicilios, setDomicilios] = useState<any[]>([]);
-  const [agentes, setAgentes] = useState<any[]>([]);
-  const [apoderados, setApoderados] = useState<any[]>([]);
+  const [domicilios, setDomicilios] = useState<DomicilioOperacion[]>([]);
+  const [agentes, setAgentes] = useState<AgenteAduanal[]>([]);
+  const [apoderados, setApoderados] = useState<ApoderadoLegal[]>([]);
   const [loadingContactos, setLoadingContactos] = useState(false);
   const [hasFetchedContactos, setHasFetchedContactos] = useState(false);
 
@@ -53,19 +58,11 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
           .order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
       ]);
 
-      setTareas(tarRes.data || []);
+      setTareas((tarRes.data || []) as TareaConJoins[]);
       setObligaciones(obsRes.data || []);
 
-      const obsIds = (obsRes.data || []).map((o: any) => o.id);
-      if (obsIds.length > 0) {
-        const { data: cumplData } = await supabase
-          .from('obligacion_cumplimientos')
-          .select('obligacion_id, periodo_key')
-          .in('obligacion_id', obsIds);
-        setCumplimientoKeys(new Set((cumplData || []).map(c => `${c.obligacion_id}:${c.periodo_key}`)));
-      } else {
-        setCumplimientoKeys(new Set());
-      }
+      const obsIds = (obsRes.data || []).map(o => o.id);
+      setCumplimientoKeys(await fetchCumplimientoKeys(supabase, obsIds));
     } catch (e) {
       toast.error('Error al cargar la empresa');
     } finally {

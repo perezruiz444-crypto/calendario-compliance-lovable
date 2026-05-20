@@ -161,7 +161,7 @@ export default function EmpresaDetail() {
     startEditing, cancelEditing, saveField, handleKeyDown,
   } = useInlineEdit(
     empresa?.id,
-    (field, value) => setEmpresa((prev: any) => prev ? { ...prev, [field]: value } : prev),
+    (field, value) => setEmpresa(prev => prev ? { ...prev, [field]: value } : prev),
     canEdit
   );
 

@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { FileText, Pencil, X, Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { Empresa } from '@/types/domain';
 
 interface EmpresaGeneralCardProps {
-  empresa: any;
+  empresa: Empresa;
   canEdit: boolean;
   onUpdate: () => void;
 }
