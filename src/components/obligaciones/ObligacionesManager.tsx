@@ -18,7 +18,7 @@ import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormD
 import { CrearObligacionChooser } from './CrearObligacionChooser';
 import { ActivarObligacionDialog } from './ActivarObligacionDialog';
 import { generateObligacionesPDF } from '@/lib/pdfGenerator';
-import * as XLSX from 'xlsx';
+import { exportToExcel } from '@/lib/excelExport';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -292,7 +292,7 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
     toast.success('Reporte PDF generado');
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const rows = filtered.map(ob => {
       const periodKey = getCurrentPeriodKey(ob.presentacion);
       const mapKey = `${ob.id}:${periodKey}`;
@@ -314,17 +314,7 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
       };
     });
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Obligaciones');
-    
-    // Auto-size columns
-    const colWidths = Object.keys(rows[0] || {}).map(key => ({
-      wch: Math.max(key.length, ...rows.map(r => String((r as any)[key] || '').length)).toString().length + 2
-    }));
-    ws['!cols'] = colWidths;
-
-    XLSX.writeFile(wb, `obligaciones_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    await exportToExcel(rows, 'Obligaciones', `obligaciones_${new Date().toISOString().slice(0, 10)}.xlsx`);
     toast.success('Reporte Excel generado');
   };
 

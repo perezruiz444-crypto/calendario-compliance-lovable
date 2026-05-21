@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     if (deleteError) {
       console.error('Error deleting user:', deleteError);
       return new Response(
-        JSON.stringify({ error: 'Error al eliminar usuario: ' + deleteError.message }),
+        JSON.stringify({ error: 'Error al eliminar usuario' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
   } catch (error: any) {
     console.error('Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: 'Error del servidor: ' + (error?.message || 'Error desconocido') }),
+      JSON.stringify({ error: 'Error interno del servidor' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
