@@ -382,17 +382,19 @@ export function newMessageTemplate(recipientName: string, senderName: string, as
 // ── User Invitation ─────────────────────────────────────────────────────
 
 export function userInvitationTemplate(userName: string, setupLink: string | null): string {
-  const linkSection = setupLink
+  const safeLink = setupLink ? encodeURI(setupLink) : null;
+  const linkSection = safeLink
     ? `<p>Para comenzar, configura tu contraseña:</p>
-       <p style="margin:16px 0;"><a href="${setupLink}" style="background:${NAVY};color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;">Crear mi contraseña</a></p>
-       <p style="font-size:12px;color:${GRAY};">O copia: <a href="${setupLink}" style="color:${NAVY};word-break:break-all;">${setupLink}</a></p>`
+       <p style="margin:16px 0;"><a href="${esc(safeLink)}" style="background:${NAVY};color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;">Crear mi contraseña</a></p>
+       <p style="font-size:12px;color:${GRAY};">O copia: <a href="${esc(safeLink)}" style="color:${NAVY};word-break:break-all;">${esc(safeLink)}</a></p>`
     : `<p>Tu administrador te compartirá el enlace para configurar tu contraseña.</p>`;
 
   return baseLayout(`
     <h2 style="margin:0 0 12px;font-size:20px;color:${NAVY};">¡Bienvenido/a a la plataforma!</h2>
-    <p>Hola <strong>${userName}</strong>,</p>
+    <p>Hola <strong>${esc(userName)}</strong>,</p>
     <p>Has sido invitado/a al <strong>Calendario de Cumplimiento de Comercio Exterior</strong> de Russell Bedford.</p>
     ${linkSection}
     <p style="font-size:12px;color:${GRAY};margin-top:16px;"><strong>Importante:</strong> Este enlace expira en 7 días.</p>
   `);
+
 }
