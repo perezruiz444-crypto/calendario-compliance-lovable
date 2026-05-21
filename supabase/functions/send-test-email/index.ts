@@ -46,12 +46,13 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id)
       .single()
 
-    if (!roleData || !['administrador', 'consultor'].includes(roleData.role)) {
-      return new Response(JSON.stringify({ error: 'Forbidden - Admin or Consultor role required' }), {
+    if (!roleData || roleData.role !== 'administrador') {
+      return new Response(JSON.stringify({ error: 'Forbidden - Admin role required' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
 
     const { userId, subject, message }: TestEmailRequest = await req.json()
 

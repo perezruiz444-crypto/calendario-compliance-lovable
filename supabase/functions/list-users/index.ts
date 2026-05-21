@@ -38,11 +38,33 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch all profiles
-    const { data: profiles, error: profilesError } = await supabaseAdmin
+    // Scope profile visibility for consultores to their assigned empresas
+    let allowedEmpresaIds: string[] | null = null;
+    if (roleData.role === 'consultor') {
+      const { data: asignaciones } = await supabaseAdmin
+        .from('consultor_empresa_asignacion')
+        .select('empresa_id')
+        .eq('consultor_id', user.id);
+      allowedEmpresaIds = (asignaciones || []).map((a: any) => a.empresa_id);
+    }
+
+    // Fetch profiles (scoped for consultores)
+    let profilesQuery = supabaseAdmin
       .from('profiles')
-      .select('id, nombre_completo, created_at')
+      .select('id, nombre_completo, created_at, empresa_id')
       .order('created_at', { ascending: false })
+
+    if (allowedEmpresaIds !== null) {
+      if (allowedEmpresaIds.length === 0) {
+        return new Response(JSON.stringify({ users: [] }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      profilesQuery = profilesQuery.in('empresa_id', allowedEmpresaIds)
+    }
+
+    const { data: profiles, error: profilesError } = await profilesQuery
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)
@@ -52,10 +74,11 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch all user roles
-    const { data: userRoles } = await supabaseAdmin
-      .from('user_roles')
-      .select('user_id, role')
+    // Fetch only the roles for visible users
+    const visibleIds = profiles.map((p: any) => p.id)
+    const { data: userRoles } = visibleIds.length
+      ? await supabaseAdmin.from('user_roles').select('user_id, role').in('user_id', visibleIds)
+      : { data: [] as any[] }
 
     // Create a map of user roles for quick lookup
     const rolesMap = new Map()
