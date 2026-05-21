@@ -13,6 +13,16 @@ const GRAY   = '#6b7280';
 const LIGHT  = '#f8fafc';
 const BORDER = '#e2e8f0';
 
+// HTML escape — apply to ALL user/DB-sourced strings before interpolation
+function esc(s: unknown): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function baseLayout(content: string, preheader = ''): string {
   return `<!DOCTYPE html>
 <html lang="es">
