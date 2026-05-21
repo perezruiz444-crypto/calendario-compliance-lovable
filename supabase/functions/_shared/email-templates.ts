@@ -86,15 +86,16 @@ function obligacionRow(nombre: string, empresa: string, fecha: string, badgeColo
   const fmtFecha = fecha ? new Date(fecha).toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' }) : '—';
   return `<tr style="border-bottom:1px solid ${BORDER};">
     <td style="padding:9px 8px;">
-      <p style="margin:0;font-size:13px;font-weight:600;color:#1e293b;">${nombre}</p>
-      ${empresa ? `<p style="margin:2px 0 0;font-size:11px;color:${GRAY};">${empresa}</p>` : ''}
+      <p style="margin:0;font-size:13px;font-weight:600;color:#1e293b;">${esc(nombre)}</p>
+      ${empresa ? `<p style="margin:2px 0 0;font-size:11px;color:${GRAY};">${esc(empresa)}</p>` : ''}
     </td>
     <td style="padding:9px 8px;text-align:right;white-space:nowrap;">
-      <span style="display:inline-block;background:${badgeColor}18;color:${badgeColor};font-size:11px;font-weight:700;border-radius:4px;padding:2px 7px;">${badgeText}</span>
-      <p style="margin:2px 0 0;font-size:11px;color:${GRAY};text-align:right;">${fmtFecha}</p>
+      <span style="display:inline-block;background:${badgeColor}18;color:${badgeColor};font-size:11px;font-weight:700;border-radius:4px;padding:2px 7px;">${esc(badgeText)}</span>
+      <p style="margin:2px 0 0;font-size:11px;color:${GRAY};text-align:right;">${esc(fmtFecha)}</p>
     </td>
   </tr>`;
 }
+
 
 function kpiCell(label: string, value: number, color: string): string {
   return `<td style="text-align:center;padding:14px 8px;border-right:1px solid ${BORDER};">
@@ -107,11 +108,12 @@ function kpiCell(label: string, value: number, color: string): string {
 
 export function testEmailTemplate(userName: string, subject: string, message: string): string {
   return baseLayout(`
-    <h2 style="margin:0 0 12px;font-size:20px;color:${NAVY};">${subject}</h2>
-    <p style="margin:0 0 10px;">Hola <strong>${userName}</strong>,</p>
-    <p style="margin:0;">${message}</p>
+    <h2 style="margin:0 0 12px;font-size:20px;color:${NAVY};">${esc(subject)}</h2>
+    <p style="margin:0 0 10px;">Hola <strong>${esc(userName)}</strong>,</p>
+    <p style="margin:0;">${esc(message)}</p>
   `);
 }
+
 
 // ── Task Notifications ──────────────────────────────────────────────────
 
@@ -127,16 +129,16 @@ export function taskNotificationTemplate(consultorName: string, titulo: string, 
     const color = t.prioridad === 'alta' ? RED : t.prioridad === 'media' ? AMBER : GREEN;
     const fmtFecha = t.fechaVencimiento ? new Date(t.fechaVencimiento).toLocaleDateString('es-MX') : '—';
     return `<tr style="border-bottom:1px solid ${BORDER};">
-      <td style="padding:8px;font-size:13px;">${t.titulo}</td>
-      <td style="padding:8px;font-size:13px;">${t.empresa}</td>
-      <td style="padding:8px;"><span style="color:${color};font-weight:700;font-size:12px;text-transform:capitalize;">${t.prioridad||'-'}</span></td>
-      <td style="padding:8px;font-size:13px;">${fmtFecha}</td>
+      <td style="padding:8px;font-size:13px;">${esc(t.titulo)}</td>
+      <td style="padding:8px;font-size:13px;">${esc(t.empresa)}</td>
+      <td style="padding:8px;"><span style="color:${color};font-weight:700;font-size:12px;text-transform:capitalize;">${esc(t.prioridad||'-')}</span></td>
+      <td style="padding:8px;font-size:13px;">${esc(fmtFecha)}</td>
     </tr>`;
   }).join('');
 
   return baseLayout(`
-    <h2 style="margin:0 0 12px;font-size:20px;color:${NAVY};">${titulo}</h2>
-    <p>Hola <strong>${consultorName}</strong>, tienes <strong>${tareas.length}</strong> tarea(s) que requieren atención:</p>
+    <h2 style="margin:0 0 12px;font-size:20px;color:${NAVY};">${esc(titulo)}</h2>
+    <p>Hola <strong>${esc(consultorName)}</strong>, tienes <strong>${tareas.length}</strong> tarea(s) que requieren atención:</p>
     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:8px;overflow:hidden;">
       <thead>
         <tr style="background:${LIGHT};">
@@ -150,6 +152,7 @@ export function taskNotificationTemplate(consultorName: string, titulo: string, 
     </table>
   `);
 }
+
 
 // ── Weekly Summary (NUEVO — reemplaza daily) ────────────────────────────
 
@@ -301,7 +304,7 @@ export function weeklySummaryTemplate(userName: string, data: WeeklySummaryData)
   return baseLayout(`
     <h2 style="margin:0 0 4px;font-size:20px;color:${NAVY};">Resumen Semanal de Cumplimiento</h2>
     <p style="margin:0 0 16px;font-size:13px;color:${GRAY};">
-      Hola <strong>${userName}</strong>, aquí tu resumen de la semana en curso.
+      Hola <strong>${esc(userName)}</strong>, aquí tu resumen de la semana en curso.
     </p>
     ${kpis}
     ${sections}
@@ -350,8 +353,8 @@ export function reportEmailTemplate(
   const color = resumen.tasaCompletitud >= 80 ? GREEN : resumen.tasaCompletitud >= 50 ? AMBER : RED;
   return baseLayout(`
     <h2 style="margin:0 0 12px;font-size:20px;color:${NAVY};">Reporte de Tareas</h2>
-    <p style="margin:0 0 16px;"><strong>${empresa.razonSocial}</strong><br>
-    <span style="font-size:12px;color:${GRAY};">RFC: ${empresa.rfc} · Período: ${periodo} · Tipo: ${reportType}</span></p>
+    <p style="margin:0 0 16px;"><strong>${esc(empresa.razonSocial)}</strong><br>
+    <span style="font-size:12px;color:${GRAY};">RFC: ${esc(empresa.rfc)} · Período: ${esc(periodo)} · Tipo: ${esc(reportType)}</span></p>
     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:8px;overflow:hidden;">
       <tr style="border-bottom:1px solid ${BORDER};"><td style="padding:10px 12px;font-size:13px;">Total de tareas</td><td style="padding:10px 12px;text-align:right;font-size:20px;font-weight:800;">${resumen.totalTareas}</td></tr>
       <tr style="border-bottom:1px solid ${BORDER};"><td style="padding:10px 12px;font-size:13px;">Completadas</td><td style="padding:10px 12px;text-align:right;font-size:20px;font-weight:800;color:${GREEN};">${resumen.tareasCompletadas}</td></tr>
@@ -367,11 +370,11 @@ export function newMessageTemplate(recipientName: string, senderName: string, as
   const preview = contenido.length > 300 ? contenido.substring(0, 300) + '...' : contenido;
   return baseLayout(`
     <h2 style="margin:0 0 12px;font-size:20px;color:${NAVY};">Nuevo Mensaje</h2>
-    <p>Hola <strong>${recipientName}</strong>, recibiste un mensaje de <strong>${senderName}</strong>:</p>
+    <p>Hola <strong>${esc(recipientName)}</strong>, recibiste un mensaje de <strong>${esc(senderName)}</strong>:</p>
     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:8px;overflow:hidden;margin:16px 0;">
-      <tr style="border-bottom:1px solid ${BORDER};"><td style="padding:9px 12px;font-size:12px;color:${GRAY};width:80px;">De</td><td style="padding:9px 12px;font-size:13px;font-weight:600;">${senderName}</td></tr>
-      <tr style="border-bottom:1px solid ${BORDER};"><td style="padding:9px 12px;font-size:12px;color:${GRAY};">Asunto</td><td style="padding:9px 12px;font-size:13px;">${asunto}</td></tr>
-      <tr><td style="padding:9px 12px;font-size:12px;color:${GRAY};vertical-align:top;">Mensaje</td><td style="padding:9px 12px;font-size:13px;">${preview}</td></tr>
+      <tr style="border-bottom:1px solid ${BORDER};"><td style="padding:9px 12px;font-size:12px;color:${GRAY};width:80px;">De</td><td style="padding:9px 12px;font-size:13px;font-weight:600;">${esc(senderName)}</td></tr>
+      <tr style="border-bottom:1px solid ${BORDER};"><td style="padding:9px 12px;font-size:12px;color:${GRAY};">Asunto</td><td style="padding:9px 12px;font-size:13px;">${esc(asunto)}</td></tr>
+      <tr><td style="padding:9px 12px;font-size:12px;color:${GRAY};vertical-align:top;">Mensaje</td><td style="padding:9px 12px;font-size:13px;">${esc(preview)}</td></tr>
     </table>
   `);
 }
