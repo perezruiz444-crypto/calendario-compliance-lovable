@@ -31,6 +31,19 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
+    // Role check: only admins and consultores may trigger task notifications
+    const { data: roleData } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!roleData || !['administrador', 'consultor'].includes(roleData.role)) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { tareaId, consultorId, type }: TaskNotificationRequest = await req.json();
 
     console.log('Sending task notification:', { tareaId, consultorId, type });
