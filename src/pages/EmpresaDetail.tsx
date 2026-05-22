@@ -175,21 +175,10 @@ export default function EmpresaDetail() {
     if (activeTab === 'contactos' && id) fetchContactosData();
   }, [activeTab, id, fetchContactosData]);
 
-  if (loading || loadingData) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
-    </div>
-  );
-
-  if (!empresa) return (
-    <DashboardLayout>
-      <div className="text-center py-12"><p className="text-muted-foreground">Empresa no encontrada</p></div>
-    </DashboardLayout>
-  );
-
   // ── Computed stats (memoizadas) ────────────────────────────────────
+  const now = useMemo(() => new Date(), [obligaciones, tareas]);
+
   const stats = useMemo(() => {
-    const now = new Date();
     const obsVencidas = obligaciones.filter(o => o.fecha_vencimiento && new Date(o.fecha_vencimiento) < now);
     const obsSemana = obligaciones.filter(o => {
       if (!o.fecha_vencimiento) return false;
@@ -219,16 +208,28 @@ export default function EmpresaDetail() {
   const tareasComp = tareasStats.comp;
 
   const initials = useMemo(
-    () => (empresa.razon_social || '').split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase(),
-    [empresa.razon_social]
+    () => (empresa?.razon_social || '').split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase(),
+    [empresa?.razon_social]
   );
 
   const programs: ProgramStatus[] = useMemo(() => [
-    { label: 'IMMEX',         numero: empresa.immex_numero,                   fecha_fin: empresa.immex_fecha_fin,                     color: 'blue'   },
-    { label: 'PROSEC',        numero: empresa.prosec_numero,                  fecha_fin: empresa.prosec_fecha_fin,                    color: 'purple' },
-    { label: 'Padrón',        numero: empresa.padron_general_numero,          fecha_fin: null,                                        color: 'green'  },
-    { label: 'Cert. IVA/IEPS',numero: empresa.cert_iva_ieps_numero,           fecha_fin: empresa.cert_iva_ieps_fecha_vencimiento,     color: 'orange' },
-  ].filter(p => p.numero), [empresa.immex_numero, empresa.immex_fecha_fin, empresa.prosec_numero, empresa.prosec_fecha_fin, empresa.padron_general_numero, empresa.cert_iva_ieps_numero, empresa.cert_iva_ieps_fecha_vencimiento]);
+    { label: 'IMMEX',         numero: empresa?.immex_numero ?? null,                   fecha_fin: empresa?.immex_fecha_fin ?? null,                     color: 'blue'   },
+    { label: 'PROSEC',        numero: empresa?.prosec_numero ?? null,                  fecha_fin: empresa?.prosec_fecha_fin ?? null,                    color: 'purple' },
+    { label: 'Padrón',        numero: empresa?.padron_general_numero ?? null,          fecha_fin: null,                                                  color: 'green'  },
+    { label: 'Cert. IVA/IEPS',numero: empresa?.cert_iva_ieps_numero ?? null,           fecha_fin: empresa?.cert_iva_ieps_fecha_vencimiento ?? null,     color: 'orange' },
+  ].filter(p => p.numero), [empresa?.immex_numero, empresa?.immex_fecha_fin, empresa?.prosec_numero, empresa?.prosec_fecha_fin, empresa?.padron_general_numero, empresa?.cert_iva_ieps_numero, empresa?.cert_iva_ieps_fecha_vencimiento]);
+
+  if (loading || loadingData) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+    </div>
+  );
+
+  if (!empresa) return (
+    <DashboardLayout>
+      <div className="text-center py-12"><p className="text-muted-foreground">Empresa no encontrada</p></div>
+    </DashboardLayout>
+  );
 
   const renderEditable = (field: string, value: string | null, className: string) => {
     if (editingField === field) return (
