@@ -49,17 +49,9 @@ VALUES
    'anual', true, true, 20),
 
   -- ─── PADRÓN DE IMPORTADORES ──────────────────────────────────────────────
-  ('padron', 'padron',
-   'Verificación de Datos Padrón de Importadores',
-   'Regla 1.3.1 RMF 2026',
-   'Verificar y actualizar los datos en el Padrón General de Importadores ante el SAT para mantener la vigencia del padrón.',
-   'anual', true, true, 10),
-
-  ('padron', 'padron',
-   'Declaración de Valor (Forma A1) — Muestreo',
-   'Art. 64 Ley Aduanera',
-   'Presentar las declaraciones de valor de las importaciones muestreadas conforme a la metodología GATT.',
-   'mensual', false, true, 20),
+  -- Obligaciones recurrentes removidas: solo se gestionan fechas de registro/obtención
+  -- del padrón (Importadores general y sectoriales) fuera del catálogo de obligaciones,
+  -- para evitar confusión con tareas periódicas inexistentes.
 
   -- ─── CERT. IVA/IEPS ──────────────────────────────────────────────────────
   ('cert_iva_ieps', 'cert_iva_ieps',
