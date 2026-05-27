@@ -51,7 +51,7 @@ export default function Calendario() {
                 <Building2 className="w-3.5 h-3.5 text-primary" />
                 <Select
                   value={selectedEmpresaId ?? 'all'}
-                  onValueChange={(v) => setSelectedEmpresaId(v === 'all' ? null : v)}
+                  onValueChange={(v) => setSelectedEmpresaId(v)}
                 >
                   <SelectTrigger className="w-[240px] border-0 shadow-none p-0 h-auto font-mono text-xs uppercase tracking-wider focus:ring-0">
                     <SelectValue placeholder="Todas las empresas" />
