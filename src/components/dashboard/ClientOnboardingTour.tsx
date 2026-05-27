@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, Clock, CheckSquare, FileText, 
   ChevronRight, ChevronLeft, Shield, Upload, 
-  ArrowUpRight, Building2, Bell
+  ArrowUpRight, Building2, Bell, Check
 } from 'lucide-react';
 
 interface Props {
@@ -111,29 +111,28 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
       ]
     },
     {
-      title: 'Cumple en 1 Clic con tus Acuses',
-      subtitle: 'Sube evidencias para tu consultor',
-      desc: 'Cuando realices un trámite aduanero o reporte obligatorio, simplemente abre la tarea en tu lista, arrastra el PDF del acuse oficial y cámbiala a "Completada". Tu consultor recibirá una notificación inmediata para revisar tu acuse y validarlo.',
+      title: 'Márcalo como Listo y Ya',
+      subtitle: 'Sin papeleos ni cargas lentas',
+      desc: '¿Ya realizaste el trámite o la presentación obligatoria? No necesitas subir PDFs, acuses, ni archivos de evidencia pesados. Solo abre la tarea en tu lista o calendario y haz clic en el check para marcarla como "Completada". ¡Así de simple!',
       illustration: (
         <div className="relative w-full h-44 bg-gradient-to-br from-primary/5 to-indigo-500/5 rounded-2xl flex items-center justify-center border border-border/40 overflow-hidden">
           <motion.div 
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="flex flex-col items-center"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="flex flex-col items-center gap-3"
           >
-            <div className="w-28 h-20 bg-background border border-dashed border-primary/40 rounded-xl flex flex-col items-center justify-center shadow-sm hover:bg-muted/50 transition-colors p-2 cursor-pointer group">
-              <Upload className="w-5 h-5 text-primary group-hover:scale-110 transition-transform mb-1" />
-              <span className="text-[9px] font-bold text-muted-foreground uppercase">Subir Acuse PDF</span>
+            <div className="w-14 h-14 rounded-full bg-success/15 border border-success/30 text-success flex items-center justify-center shadow-md">
+              <Check className="w-8 h-8 stroke-[3px]" />
             </div>
-            <div className="flex items-center gap-1.5 mt-2 bg-success/10 border border-success/20 text-success text-[10px] font-bold px-2 py-0.5 rounded-full">
-              <CheckSquare className="w-3 h-3" /> Estado: Completado
+            <div className="flex items-center gap-1.5 bg-success/10 border border-success/20 text-success text-[10px] font-bold px-3 py-1 rounded-full">
+              ¿Cumpliste? ➡️ ¡Listo!
             </div>
           </motion.div>
         </div>
       ),
       bulletPoints: [
-        { title: 'Flujo simplificado:', text: 'Selecciona tarea ➡️ Sube acuse PDF ➡️ Marca completada.' },
-        { title: 'Validación en línea:', text: 'Tu consultor revisa y valida de inmediato la evidencia cargada.' },
+        { title: 'Cero complicaciones:', text: 'No requieres arrastrar archivos ni acuses de recibo.' },
+        { title: 'Actualización al instante:', text: 'Al marcar la tarea, tu calendario se actualiza a verde de inmediato.' },
       ]
     },
     {
