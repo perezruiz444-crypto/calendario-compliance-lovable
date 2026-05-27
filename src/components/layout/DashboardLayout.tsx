@@ -7,7 +7,7 @@ import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, LayoutDashboard, CheckSquare, Users, LogOut,
-  Menu, Calendar as CalendarIcon, MessageSquare, FileText,
+  Menu, Calendar as CalendarIcon, FileText,
   Settings, ChevronRight,
 } from 'lucide-react';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
@@ -29,7 +29,6 @@ const navItems = [
   { icon: Building2,       label: 'Mi Empresa',       path: '/mi-empresa',      roles: ['cliente'] },
   { icon: CheckSquare,     label: 'Tareas',           path: '/tareas',          roles: ['administrador', 'consultor', 'cliente'] },
   { icon: CalendarIcon,    label: 'Calendario',       path: '/calendario',      roles: ['administrador', 'consultor', 'cliente'] },
-  { icon: MessageSquare,   label: 'Mensajes',         path: '/mensajes',        roles: ['administrador', 'consultor', 'cliente'] },
   { icon: FileText,        label: 'Reportes',         path: '/reportes',        roles: ['administrador', 'consultor'] },
   { icon: Users,           label: 'Usuarios',         path: '/usuarios',        roles: ['administrador'] },
   { icon: Settings,        label: 'Configuraciones',  path: '/configuraciones', roles: ['administrador', 'consultor', 'cliente'] },

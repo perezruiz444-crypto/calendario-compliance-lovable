@@ -15,7 +15,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import EmpresaComplianceSemaforo from '@/components/dashboard/EmpresaComplianceSemaforo';
-import DashboardMensajes from '@/components/dashboard/DashboardMensajes';
 import AdminAnalytics from '@/components/dashboard/AdminAnalytics';
 import ConsultorAnalytics from '@/components/dashboard/ConsultorAnalytics';
 import ClienteAnalytics from '@/components/dashboard/ClienteAnalytics';
@@ -26,6 +25,7 @@ import RenovacionesWidget from '@/components/dashboard/RenovacionesWidget';
 import FeedbackModal from '@/components/dashboard/FeedbackModal';
 import FeedbackResultsCard from '@/components/dashboard/FeedbackResultsCard';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import ClientOnboardingTour from '@/components/dashboard/ClientOnboardingTour';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -67,6 +67,23 @@ export default function Dashboard() {
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user && role === 'cliente') {
+      const isDone = localStorage.getItem(`compliance_onboarding_done_${user.id}`);
+      if (!isDone) {
+        setOnboardingOpen(true);
+      }
+    }
+  }, [user, role, loading]);
+
+  const handleCloseOnboarding = () => {
+    if (user) {
+      localStorage.setItem(`compliance_onboarding_done_${user.id}`, 'true');
+    }
+    setOnboardingOpen(false);
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -236,8 +253,8 @@ export default function Dashboard() {
         {/* Flujo Operativo: Obligaciones del mes */}
         <DashboardObligacionesMensuales />
 
-        {/* Tareas + Mensajes */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Tareas */}
+        <div className="grid grid-cols-1 gap-6">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -308,8 +325,6 @@ export default function Dashboard() {
               </div>
             )}
           </motion.div>
-
-          <DashboardMensajes mensajes={data.mensajesRecientes} totalNoLeidos={data.mensajesNoLeidos} />
         </div>
 
         {/* Calendario */}
@@ -358,6 +373,9 @@ export default function Dashboard() {
 
       {/* Feedback modal - obligatorio para clientes */}
       {role === 'cliente' && user && <FeedbackModal userId={user.id} />}
+
+      {/* Guía de Onboarding interactiva para el Cliente */}
+      <ClientOnboardingTour isOpen={onboardingOpen} onClose={handleCloseOnboarding} />
     </DashboardLayout>
   );
 }
