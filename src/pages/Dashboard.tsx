@@ -129,6 +129,9 @@ export default function Dashboard() {
   }
 
   const firstName = data.nombreUsuario?.split(' ')[0] || 'Usuario';
+  const todayLabel = new Date().toLocaleDateString('es-MX', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  }).replace(/^\w/, (c) => c.toUpperCase());
 
   const handleQuickComplete = async (e: React.MouseEvent, tareaId: string) => {
     e.stopPropagation();
@@ -181,7 +184,7 @@ export default function Dashboard() {
             <div className="space-y-3 max-w-2xl">
               <div className="flex items-center gap-2">
                 <span className="live-dot" />
-                <p className="eyebrow-primary">{getGreeting()} · {format(new Date(), 'EEEE d \'de\' MMMM')}</p>
+                <p className="eyebrow-primary">{getGreeting()} · {todayLabel}</p>
               </div>
               <h1 className="display-1 text-foreground">
                 Hola, <span className="text-primary">{firstName}</span>.

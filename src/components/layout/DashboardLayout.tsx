@@ -8,8 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, LayoutDashboard, CheckSquare, Users, LogOut,
   Menu, Calendar as CalendarIcon, FileText,
-  Settings, ChevronRight,
+  Settings, ChevronRight, Eye, RefreshCw,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { PushNotificationPrompt } from '@/components/notifications/PushNotificationPrompt';
@@ -54,12 +55,16 @@ interface SidebarProps {
   setSelectedEmpresaId: (id: string | null) => void;
   onNavigate: (path: string) => void;
   onSignOut: () => void;
+  actualRole: string | null;
+  simulatedRole: string | null;
+  setSimulatedRole: (role: any) => void;
 }
 
 function SidebarContent({
   role, userName, userEmail, currentPage,
   empresaInfo, selectedEmpresaId, setSelectedEmpresaId,
   onNavigate, onSignOut,
+  actualRole, simulatedRole, setSimulatedRole,
 }: SidebarProps) {
   const filteredNav = navItems.filter(item => role && item.roles.includes(role));
   const initials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -144,6 +149,15 @@ function SidebarContent({
 
       {/* User footer */}
       <div className="px-3 py-3 border-t border-sidebar-border/40 mt-auto">
+        {actualRole === 'administrador' && !simulatedRole && (
+          <button
+            onClick={() => setSimulatedRole('cliente')}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-all mb-3 shadow-[0_0_0_1px_hsl(var(--primary)/0.08)]"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Ver como Cliente (Simular)
+          </button>
+        )}
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-sidebar-accent/50 mb-2">
           <Avatar className="w-8 h-8 shrink-0">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
@@ -174,7 +188,7 @@ function SidebarContent({
 // ── Layout principal ───────────────────────────────────────────────────
 
 export default function DashboardLayout({ children, currentPage }: DashboardLayoutProps) {
-  const { user, role, signOut } = useAuth();
+  const { user, role, signOut, actualRole, simulatedRole, setSimulatedRole } = useAuth();
   const navigate = useNavigate();
   const { selectedEmpresaId, setSelectedEmpresaId } = useEmpresaContext();
   const [empresaInfo, setEmpresaInfo] = useState<{ razon_social: string } | null>(null);
@@ -215,6 +229,9 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
     setSelectedEmpresaId,
     onNavigate: navigate,
     onSignOut: handleSignOut,
+    actualRole,
+    simulatedRole,
+    setSimulatedRole,
   };
 
   return (
@@ -269,6 +286,39 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
 
       {/* Main content */}
       <main className="flex-1 overflow-auto pt-14">
+        {simulatedRole && (
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-600 font-medium sticky top-0 z-50 backdrop-blur-xl">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              <span>
+                <strong>Modo Simulación Activo (Cliente):</strong> Estás explorando la plataforma exactamente como la vería un Cliente.
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => {
+                  if (user) {
+                    localStorage.removeItem(`compliance_onboarding_done_${user.id}`);
+                    toast.success('Estado del onboarding restablecido.');
+                    setTimeout(() => window.location.reload(), 800);
+                  }
+                }}
+                className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/35 transition-colors font-bold uppercase tracking-wider text-[9px] flex items-center gap-1.5 text-amber-700"
+              >
+                <RefreshCw className="w-3 h-3 animate-spin-slow" /> Restablecer Onboarding
+              </button>
+              <button 
+                onClick={() => setSimulatedRole(null)}
+                className="px-2.5 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 transition-colors font-bold uppercase tracking-wider text-[9px]"
+              >
+                Volver a Administrador
+              </button>
+            </div>
+          </div>
+        )}
         <div className="container mx-auto p-6 max-w-7xl">
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>

@@ -9,6 +9,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   role: UserRole | null;
+  actualRole: UserRole | null;
+  simulatedRole: UserRole | null;
+  setSimulatedRole: (role: UserRole | null) => void;
   loading: boolean;
   authReady: boolean;
   signIn: (email: string, password: string, captchaToken?: string) => Promise<{ error: AuthError | null }>;
@@ -21,20 +24,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [role, setRole] = useState<UserRole | null>(null);
+  const [actualRole, setActualRole] = useState<UserRole | null>(null);
+  const [simulatedRole, setSimulatedRole] = useState<UserRole | null>(() => {
+    return (sessionStorage.getItem('simulated_role') as UserRole) || null;
+  });
   const [loading, setLoading] = useState(true);
+
+  const role = simulatedRole && actualRole === 'administrador' ? simulatedRole : actualRole;
   const authReady = !loading && (!!role || !user);
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        // TOKEN_REFRESHED: the Supabase client already updated the token internally.
-        // No need to update React state — prevents unnecessary re-renders and re-fetches
-        // triggered every time the WebSocket reconnects (e.g. switching apps/tabs).
         if (event === 'TOKEN_REFRESHED') return;
 
-        // Don't interfere with password recovery or invite flows
         if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
           setSession(session);
           setUser(session?.user ?? null);
@@ -45,11 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Fetch role when session changes
         if (session?.user) {
           fetchUserRole(session.user.id);
         } else {
-          setRole(null);
+          setActualRole(null);
           setLoading(false);
         }
       }
@@ -57,7 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      // Check if we're in a password recovery/invite flow
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const type = hashParams.get('type');
       
@@ -83,7 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserRole = async (userId: string) => {
     try {
-      // Check if we're in a password recovery/invite flow first
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const type = hashParams.get('type');
       
@@ -92,31 +93,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Use SECURITY DEFINER RPC to bypass RLS on user_roles.
-      // Direct queries to user_roles return HTTP 500 due to RLS policy recursion:
-      // has_role() queries user_roles → triggers RLS → calls has_role() again → stack overflow.
       const { data, error } = await supabase.rpc('get_my_role');
 
       if (error) {
         logger.error('Error fetching user role', error);
-        setRole(null);
+        setActualRole(null);
         setLoading(false);
         return;
       }
 
       if (!data) {
         logger.warn('User has no role assigned:', userId);
-        setRole(null);
+        setActualRole(null);
         setLoading(false);
         return;
       }
 
-      setRole(data as UserRole);
+      setActualRole(data as UserRole);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching user role:', error);
-      setRole(null);
+      setActualRole(null);
       setLoading(false);
+    }
+  };
+
+  const changeSimulatedRole = (newRole: UserRole | null) => {
+    if (actualRole !== 'administrador') return;
+    setSimulatedRole(newRole);
+    if (newRole) {
+      sessionStorage.setItem('simulated_role', newRole);
+    } else {
+      sessionStorage.removeItem('simulated_role');
     }
   };
 
@@ -127,7 +135,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: captchaToken ? { captchaToken } : undefined,
     });
 
-    // Log attempt for rate limiting (fire-and-forget, SECURITY DEFINER RPC)
     supabase.rpc('record_login_attempt', {
       p_email: email,
       p_ip: null,
@@ -157,11 +164,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-    setRole(null);
+    setActualRole(null);
+    setSimulatedRole(null);
+    sessionStorage.removeItem('simulated_role');
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, authReady, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      role, 
+      actualRole,
+      simulatedRole,
+      setSimulatedRole: changeSimulatedRole,
+      loading, 
+      authReady, 
+      signIn, 
+      signUp, 
+      signOut 
+    }}>
       {children}
     </AuthContext.Provider>
   );
