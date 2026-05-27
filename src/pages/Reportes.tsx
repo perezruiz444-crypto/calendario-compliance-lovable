@@ -962,15 +962,10 @@ export default function Reportes() {
 
         {/* Gráficas según tipo de reporte */}
         <Tabs defaultValue="estado" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
-            <TabsTrigger value="estado">Estado</TabsTrigger>
-            <TabsTrigger value="empresa">Empresas</TabsTrigger>
-            <TabsTrigger value="categoria">Categorías</TabsTrigger>
-            <TabsTrigger value="rendimiento">Rendimiento</TabsTrigger>
-            <TabsTrigger value="tiempo">
-              <Clock className="w-4 h-4 mr-2" />
-              Tiempo
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="estado">Resumen de Cumplimiento</TabsTrigger>
+            <TabsTrigger value="categoria">Obligaciones por Programa</TabsTrigger>
+            <TabsTrigger value="empresa">Cumplimiento por Empresa</TabsTrigger>
           </TabsList>
 
           <TabsContent value="estado" className="space-y-6">
@@ -1185,59 +1180,6 @@ export default function Reportes() {
             </div>
           </TabsContent>
 
-          <TabsContent value="rendimiento" className="space-y-6">
-            <Card className="gradient-card shadow-card">
-              <CardHeader>
-                <CardTitle className="font-heading">Rendimiento por Consultor</CardTitle>
-                <CardDescription className="font-body">Tasa de completitud y estadísticas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {reporteData.rendimientoConsultores.map((consultor, idx) => {
-                    const progressColor = consultor.tasa < 50 ? 'from-destructive to-destructive/70' : consultor.tasa < 80 ? 'from-warning to-warning/70' : 'from-success to-success/70';
-                    return (
-                      <div key={idx} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-primary/10 p-2 rounded-full">
-                              <User className="w-5 h-5 text-primary" />
-                            </div>
-                            <h4 className="font-heading font-semibold">{consultor.name}</h4>
-                          </div>
-                          <span className={`text-2xl font-heading font-bold ${consultor.tasa < 50 ? 'text-destructive' : consultor.tasa < 80 ? 'text-warning' : 'text-success'}`}>{consultor.tasa}%</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4 text-sm mb-3">
-                          <div className="text-center p-2 rounded-lg bg-muted/50">
-                            <p className="text-muted-foreground font-body text-xs">Total</p>
-                            <p className="font-heading font-bold text-lg">{consultor.total}</p>
-                          </div>
-                          <div className="text-center p-2 rounded-lg bg-success/10">
-                            <p className="text-muted-foreground font-body text-xs">Completadas</p>
-                            <p className="font-heading font-bold text-lg text-success">{consultor.completadas}</p>
-                          </div>
-                          <div className="text-center p-2 rounded-lg bg-warning/10">
-                            <p className="text-muted-foreground font-body text-xs">Pendientes</p>
-                            <p className="font-heading font-bold text-lg text-warning">{consultor.pendientes}</p>
-                          </div>
-                        </div>
-                        <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full bg-gradient-to-r ${progressColor} rounded-full transition-all duration-500`} 
-                            style={{ width: `${consultor.tasa}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {reporteData.rendimientoConsultores.length === 0 && (
-                    <p className="text-center text-muted-foreground font-body py-8">
-                      No hay datos de rendimiento disponibles
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
 
         {/* Reportes Especializados por Categoría */}

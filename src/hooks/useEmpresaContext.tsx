@@ -17,6 +17,8 @@ const EmpresaContext = createContext<EmpresaContextType>({
 export function EmpresaProvider({ children }: { children: ReactNode }) {
   const [selectedEmpresaId, setSelectedEmpresaIdState] = useState<string | null>(() => {
     const stored = localStorage.getItem('selectedEmpresaId');
+    // Allow 'all' (special consolidated value for admins/consultants)
+    if (stored === 'all') return 'all';
     // Reject malformed values immediately — no network call needed
     if (stored && !UUID_REGEX.test(stored)) {
       localStorage.removeItem('selectedEmpresaId');
@@ -28,7 +30,7 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
   // Server-side validation: verify the stored empresaId is actually accessible
   // by the current user (RLS will reject unauthorized rows). If not, clear it.
   useEffect(() => {
-    if (!selectedEmpresaId) return;
+    if (!selectedEmpresaId || selectedEmpresaId === 'all') return; // Skip validation for 'all'
 
     supabase
       .from('empresas')
