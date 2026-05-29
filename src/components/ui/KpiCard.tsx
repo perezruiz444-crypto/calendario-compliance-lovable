@@ -1,5 +1,5 @@
 import { LucideIcon } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { AnimatedNumber } from './AnimatedNumber';
 
 export type KpiTone = 'primary' | 'destructive' | 'success' | 'warning';
@@ -23,11 +23,12 @@ const toneMap: Record<KpiTone, { num: string; chip: string; accent: string }> = 
 
 export function KpiCard({ title, value, suffix, icon: Icon, tone = 'primary', sub, index = 0 }: KpiCardProps) {
   const t = toneMap[tone];
+  const reduced = useReducedMotion();
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: reduced ? 0 : 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: 0.05 + index * 0.06, ease: [0.4, 0, 0.2, 1] }}
+      transition={{ duration: reduced ? 0 : 0.35, delay: reduced ? 0 : 0.05 + index * 0.06, ease: [0.4, 0, 0.2, 1] }}
       className={`card-editorial ${t.accent} p-5 group`.trim()}
     >
       <div className="flex items-start justify-between mb-4">
