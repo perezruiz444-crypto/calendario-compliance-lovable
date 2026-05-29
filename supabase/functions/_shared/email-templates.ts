@@ -62,7 +62,7 @@ function baseLayout(content: string, preheader = ''): string {
               <a href="${PLATFORM_URL}" style="color:${NAVY};font-weight:600;text-decoration:none;">Acceder a la plataforma</a>
               &nbsp;·&nbsp; ${BRAND_TEAM}
             </p>
-            <p style="margin:6px 0 0;font-size:11px;color:#94a3b8;">Correo automático. Por favor no responda a este mensaje.</p>
+            <p style="margin:6px 0 0;font-size:11px;color:#94a3b8;">Este es un correo automático. Para consultas, contacta directamente a tu consultor Russell Bedford.</p>
           </td>
         </tr>
 
@@ -138,7 +138,8 @@ export function taskNotificationTemplate(consultorName: string, titulo: string, 
 
   return baseLayout(`
     <h2 style="margin:0 0 12px;font-size:20px;color:${NAVY};">${esc(titulo)}</h2>
-    <p>Hola <strong>${esc(consultorName)}</strong>, tienes <strong>${tareas.length}</strong> tarea(s) que requieren atención:</p>
+    <p>Hola <strong>${esc(consultorName)}</strong>,</p>
+    <p style="margin:0 0 16px;">Tu consultor de Russell Bedford registró las siguientes tareas en tu portal de cumplimiento. Revísalas antes de su fecha límite.</p>
     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:8px;overflow:hidden;">
       <thead>
         <tr style="background:${LIGHT};">
@@ -292,19 +293,21 @@ export function weeklySummaryTemplate(userName: string, data: WeeklySummaryData)
   if (!sections) {
     sections = `<div style="text-align:center;padding:24px;color:${GREEN};">
       <p style="font-size:32px;margin:0;">✓</p>
-      <p style="font-weight:700;color:${GREEN};margin:8px 0 4px;">¡Todo al día!</p>
-      <p style="font-size:13px;color:${GRAY};margin:0;">No hay obligaciones ni tareas pendientes esta semana.</p>
+      <p style="font-weight:700;color:${GREEN};margin:8px 0 4px;">¡Todo al corriente!</p>
+      <p style="font-size:13px;color:${GRAY};margin:0;">No hay vencimientos ni tareas pendientes esta semana. Aprovecha para revisar el calendario del siguiente mes.</p>
     </div>`;
   }
 
   const preheader = totalVencidas > 0
-    ? `${totalVencidas} obligacion(es) o tarea(s) vencida(s) requieren atención inmediata`
-    : `Tienes ${totalSemana} vencimiento(s) esta semana`;
+    ? `Vencidas: ${totalVencidas} · Esta semana: ${totalSemana} — requieren atención`
+    : totalSemana > 0
+      ? `Esta semana: ${totalSemana} vencimiento(s) · ${totalMes} este mes`
+      : `Sin pendientes esta semana · Todo al corriente`;
 
   return baseLayout(`
-    <h2 style="margin:0 0 4px;font-size:20px;color:${NAVY};">Resumen Semanal de Cumplimiento</h2>
+    <h2 style="margin:0 0 4px;font-size:20px;color:${NAVY};">Tu semana de cumplimiento</h2>
     <p style="margin:0 0 16px;font-size:13px;color:${GRAY};">
-      Hola <strong>${esc(userName)}</strong>, aquí tu resumen de la semana en curso.
+      Hola <strong>${esc(userName)}</strong>, aquí tienes un resumen de las obligaciones que requieren atención esta semana.
     </p>
     ${kpis}
     ${sections}
@@ -390,11 +393,17 @@ export function userInvitationTemplate(userName: string, setupLink: string | nul
     : `<p>Tu administrador te compartirá el enlace para configurar tu contraseña.</p>`;
 
   return baseLayout(`
-    <h2 style="margin:0 0 12px;font-size:20px;color:${NAVY};">¡Bienvenido/a a la plataforma!</h2>
+    <h2 style="margin:0 0 12px;font-size:20px;color:${NAVY};">Tu acceso a Calendario Compliance está listo</h2>
     <p>Hola <strong>${esc(userName)}</strong>,</p>
-    <p>Has sido invitado/a al <strong>Calendario de Cumplimiento de Comercio Exterior</strong> de Russell Bedford.</p>
+    <p>Has sido incorporado/a a <strong>Calendario Compliance</strong>, la plataforma de cumplimiento regulatorio de comercio exterior de Russell Bedford.</p>
+    <p style="margin:0 0 4px;">Desde aquí podrás:</p>
+    <ul style="margin:0 0 16px;padding-left:20px;font-size:13px;color:#1e293b;">
+      <li style="margin-bottom:4px;">Consultar el estado de tus obligaciones IMMEX, PROSEC e IVA/IEPS</li>
+      <li style="margin-bottom:4px;">Ver los vencimientos del mes de un vistazo</li>
+      <li>Comunicarte con tu consultor asignado</li>
+    </ul>
     ${linkSection}
-    <p style="font-size:12px;color:${GRAY};margin-top:16px;"><strong>Importante:</strong> Este enlace expira en 7 días.</p>
+    <p style="font-size:12px;color:${GRAY};margin-top:16px;">El enlace para crear tu contraseña es válido por 7 días. Si tienes dudas, tu consultor de Russell Bedford puede ayudarte directamente.</p>
   `);
 
 }

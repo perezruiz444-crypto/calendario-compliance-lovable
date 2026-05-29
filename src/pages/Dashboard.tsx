@@ -138,10 +138,10 @@ export default function Dashboard() {
     try {
       const { error } = await supabase.from('tareas').update({ estado: 'completada' }).eq('id', tareaId);
       if (error) throw error;
-      toast.success('Tarea completada');
+      toast.success('Tarea marcada como completada.');
       refetch();
     } catch {
-      toast.error('Error al completar tarea');
+      toast.error('No se pudo registrar la tarea como completada. Intenta de nuevo.');
     }
   };
 

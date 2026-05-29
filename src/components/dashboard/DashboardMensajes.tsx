@@ -44,7 +44,7 @@ export default function DashboardMensajes({ mensajes, totalNoLeidos }: Dashboard
       {mensajes.length === 0 ? (
         <div className="text-center py-10">
           <Mail className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">No hay mensajes nuevos</p>
+          <p className="text-sm text-muted-foreground">Sin mensajes nuevos por ahora.</p>
         </div>
       ) : (
         <div className="space-y-2">

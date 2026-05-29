@@ -164,7 +164,7 @@ serve(async (req: Request) => {
     let emailSent = false;
     try {
       const htmlBody = userInvitationTemplate(nombreCompleto, setupLink);
-      await sendEmail(email, `Invitación a ${nombreCompleto} - Calendario Compliance`, htmlBody);
+      await sendEmail(email, `Tu acceso a Calendario Compliance está listo — Russell Bedford`, htmlBody);
       emailSent = true;
       console.log('Invitation email sent successfully via Resend to:', email);
     } catch (emailError: any) {

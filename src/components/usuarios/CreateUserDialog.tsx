@@ -43,14 +43,14 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
       if (error) throw error;
       setEmpresas(data || []);
     } catch {
-      toast.error('Error al cargar empresas');
+      toast.error('No se pudieron cargar las empresas. Recarga la página.');
     }
   };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
+      newErrors.email = 'Ingresa un correo electrónico válido (ej. nombre@empresa.com)';
     }
     if (!formData.nombre_completo.trim()) {
       newErrors.nombre_completo = 'El nombre es requerido';
@@ -59,7 +59,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
       newErrors.empresa_id = 'Debes seleccionar una empresa para el cliente';
     }
     if (usePassword && formData.password.length < 6) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+      newErrors.password = 'La contraseña necesita al menos 6 caracteres.';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -68,7 +68,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) {
-      toast.error('Por favor corrige los errores en el formulario');
+      toast.error('Revisa los campos marcados antes de continuar.');
       return;
     }
 

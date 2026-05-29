@@ -56,7 +56,7 @@ export function SolicitudesServicio({ empresaId }: SolicitudesServicioProps) {
 
   const handleSubmit = async () => {
     if (!formData.asunto || !formData.descripcion) {
-      toast.error('Por favor completa todos los campos requeridos');
+      toast.error('Completa el asunto y la descripción antes de enviar.');
       return;
     }
 

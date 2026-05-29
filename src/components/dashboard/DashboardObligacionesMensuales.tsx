@@ -206,7 +206,7 @@ export default function DashboardObligacionesMensuales() {
   // ── Sin empresa resuelta ───────────────────────────────────────────
   if (!empresaId) {
     const msg = role === 'cliente'
-      ? 'Sin empresa asignada. Contacta al administrador.'
+      ? 'Tu cuenta aún no tiene una empresa asignada. Escribe a tu consultor Russell Bedford para activarla.'
       : 'Selecciona una empresa en la barra lateral para ver sus obligaciones.';
     return (
       <Card className="gradient-card shadow-card">
@@ -242,7 +242,7 @@ export default function DashboardObligacionesMensuales() {
         <CardContent>
           <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
             <CheckCircle2 className="w-8 h-8 text-success/50" />
-            <p className="text-sm text-muted-foreground">Sin obligaciones activas este mes</p>
+            <p className="text-sm text-muted-foreground">No hay vencimientos programados para este mes.</p>
             <Button variant="outline" size="sm" onClick={() => navigate(ctaPath)}>
               {ctaLabel}
             </Button>

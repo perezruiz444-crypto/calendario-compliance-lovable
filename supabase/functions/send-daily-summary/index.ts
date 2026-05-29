@@ -301,7 +301,14 @@ Deno.serve(async (req) => {
         })
 
         try {
-          await sendEmail(user.email, '📋 Resumen Semanal de Cumplimiento — Comercio Exterior', html)
+          const totalVencidas = (tareasVencidas?.length || 0) + obligacionesVencidas.length
+          const totalSemana = (tareasSemana?.length || 0) + obligacionesSemana.length
+          const asunto = totalVencidas > 0
+            ? `${totalVencidas} obligación(es) requieren atención esta semana — Calendario Compliance`
+            : totalSemana > 0
+              ? `Esta semana vencen ${totalSemana} obligación(es) — revisa tu calendario`
+              : `Semana en verde — sin obligaciones urgentes`
+          await sendEmail(user.email, asunto, html)
           emailsSent++
         } catch (e) {
           console.error(`Failed email for ${user.email}:`, e)

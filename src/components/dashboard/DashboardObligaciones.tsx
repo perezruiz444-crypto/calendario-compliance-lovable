@@ -363,7 +363,7 @@ export default function DashboardObligaciones() {
             {filteredItems.length === 0 ? (
               <div className="text-center py-8">
                 <CheckCircle2 className="w-8 h-8 text-success mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">No hay obligaciones en esta categoría</p>
+                <p className="text-sm text-muted-foreground">Esta categoría no tiene obligaciones activas. Si falta algo, contacta a tu consultor.</p>
               </div>
             ) : (
               filteredItems.map(({ ob, isCumplida }) => (

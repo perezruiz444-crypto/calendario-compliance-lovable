@@ -34,9 +34,9 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
 
   const slides = [
     {
-      title: '¡Te damos la bienvenida a tu Portal!',
-      subtitle: 'Tu consultor ya preparó todo',
-      desc: '¡Tu entorno de cumplimiento regulatorio ya está listo! Tu consultor de Comercio Exterior ha configurado los programas de fomento de tu empresa (IMMEX, PROSEC, etc.) y ha programado todas tus fechas de vencimiento oficiales. No necesitas configurar nada más.',
+      title: 'Tu portal de cumplimiento está listo.',
+      subtitle: 'Todo listo desde el primer día',
+      desc: 'Tu consultor de Russell Bedford ya configuró los programas de tu empresa (IMMEX, PROSEC, IVA/IEPS) y cargó las fechas de vencimiento oficiales. No necesitas configurar nada más.',
       illustration: (
         <div className="relative w-full h-44 bg-gradient-to-br from-primary/10 to-indigo-500/5 rounded-2xl flex items-center justify-center border border-primary/20 overflow-hidden shadow-inner">
           <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px]" />
@@ -58,14 +58,14 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
         </div>
       ),
       bulletPoints: [
-        { title: 'Cero configuración:', text: 'Tus programas y plazos ya están cargados.' },
-        { title: 'Seguridad absoluta:', text: 'Toda tu información está protegida con RLS de nivel empresarial.' },
+        { title: 'Listo desde hoy:', text: 'Tus programas y plazos están cargados. Sin configuraciones pendientes.' },
+        { title: 'Tu información es privada:', text: 'Solo tú y tu consultor asignado tienen acceso a los datos de tu empresa.' },
       ]
     },
     {
-      title: 'El Semáforo de Cumplimiento',
-      subtitle: 'Mantén tus programas de fomento a salvo',
-      desc: 'Olvídate de revisar hojas de cálculo complejas. Tu nuevo semáforo inteligente te avisa del estado de tus obligaciones en tiempo real. Previene cancelaciones de programas IMMEX o suspensiones del Padrón antes de que ocurran.',
+      title: 'Semáforo de Cumplimiento: verde, amarillo o rojo',
+      subtitle: 'Tu estado de cumplimiento de un vistazo',
+      desc: 'En lugar de hojas de cálculo, tienes un semáforo. Rojo: actúa hoy. Amarillo: actúa esta semana. Verde: estás al corriente. Así de claro.',
       illustration: (
         <div className="relative w-full h-44 bg-gradient-to-br from-background to-muted rounded-2xl flex items-center justify-center border border-border/40 overflow-hidden">
           <div className="flex items-center gap-6 relative z-10">
@@ -106,14 +106,14 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
         </div>
       ),
       bulletPoints: [
-        { title: 'Alertas tempranas:', text: 'Recordatorios antes de los plazos de vencimiento.' },
-        { title: 'Acción prioritaria:', text: 'Enfoca tus esfuerzos en lo que requiere atención inmediata.' },
+        { title: 'Sabes antes que venza:', text: 'Recibes avisos con días de anticipación, no el mismo día del plazo.' },
+        { title: 'Lo urgente primero:', text: 'Las obligaciones en riesgo aparecen al frente de tu lista.' },
       ]
     },
     {
-      title: 'Márcalo como Listo y Ya',
-      subtitle: 'Sin papeleos ni cargas lentas',
-      desc: '¿Ya realizaste el trámite o la presentación obligatoria? No necesitas subir PDFs, acuses, ni archivos de evidencia pesados. Solo abre la tarea en tu lista o calendario y haz clic en el check para marcarla como "Completada". ¡Así de simple!',
+      title: 'Marcar como cumplida: un clic y listo',
+      subtitle: 'Registrar cumplimiento toma segundos',
+      desc: '¿Ya presentaste la obligación? Ábrela en tu lista o calendario y marca el check. Tu cumplimiento queda registrado al instante — sin necesidad de subir archivos.',
       illustration: (
         <div className="relative w-full h-44 bg-gradient-to-br from-primary/5 to-indigo-500/5 rounded-2xl flex items-center justify-center border border-border/40 overflow-hidden">
           <motion.div 
@@ -125,20 +125,20 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
               <Check className="w-8 h-8 stroke-[3px]" />
             </div>
             <div className="flex items-center gap-1.5 bg-success/10 border border-success/20 text-success text-[10px] font-bold px-3 py-1 rounded-full">
-              ¿Cumpliste? ➡️ ¡Listo!
+              ¿Presentaste? → Marca el check
             </div>
           </motion.div>
         </div>
       ),
       bulletPoints: [
-        { title: 'Cero complicaciones:', text: 'No requieres arrastrar archivos ni acuses de recibo.' },
-        { title: 'Actualización al instante:', text: 'Al marcar la tarea, tu calendario se actualiza a verde de inmediato.' },
+        { title: 'Sin evidencia obligatoria:', text: 'Marca la obligación como cumplida sin adjuntar archivos.' },
+        { title: 'El calendario refleja el cambio al momento:', text: 'Tu equipo y tu consultor ven el avance en tiempo real.' },
       ]
     },
     {
-      title: 'Reportes y Auditorías Listos',
+      title: 'Historial de cumplimiento siempre disponible',
       subtitle: 'Tu historial seguro y exportable',
-      desc: '¿Tienes una auditoría interna o una inspección de la autoridad? En la sección de "Reportes" puedes descargar al instante reportes consolidados en formato PDF o Excel con todo tu historial de acuses y cumplimiento aduanero.',
+      desc: 'Ante una auditoría del SAT o una revisión interna, tu historial de cumplimiento está listo para exportar. En la sección "Reportes" descarga en PDF o Excel cada obligación registrada con fecha, responsable y estado.',
       illustration: (
         <div className="relative w-full h-44 bg-gradient-to-br from-background to-muted rounded-2xl flex items-center justify-center border border-border/40 overflow-hidden">
           <div className="flex items-center gap-3 relative z-10">
@@ -238,7 +238,7 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
             >
               {step === totalSteps ? (
                 <>
-                  Entendido, ¡Comenzar! <Sparkles className="w-3.5 h-3.5" />
+                  Ir al dashboard <Sparkles className="w-3.5 h-3.5" />
                 </>
               ) : (
                 <>
