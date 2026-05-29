@@ -269,7 +269,7 @@ export default function Auth() {
                   type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Mínimo 8 caracteres"
                   required
                   minLength={8}
                   maxLength={100}
