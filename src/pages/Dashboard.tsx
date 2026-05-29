@@ -163,10 +163,10 @@ export default function Dashboard() {
   ];
 
   const toneClass: Record<string, { num: string; chip: string; accent: string }> = {
-    primary:     { num: 'text-foreground',   chip: 'bg-primary/10 text-primary',         accent: 'card-accent-left' },
-    destructive: { num: 'text-destructive',  chip: 'bg-destructive/10 text-destructive', accent: 'card-accent-danger' },
-    success:     { num: 'text-success',      chip: 'bg-success/10 text-success',         accent: 'card-accent-success' },
-    warning:     { num: 'text-warning',      chip: 'bg-warning/10 text-warning',         accent: 'card-accent-warning' },
+    primary:     { num: 'text-foreground',   chip: 'text-primary/60',          accent: '' },
+    destructive: { num: 'text-destructive',  chip: 'text-destructive/70',      accent: 'card-accent-danger' },
+    success:     { num: 'text-success',      chip: 'text-success/70',          accent: 'card-accent-success' },
+    warning:     { num: 'text-warning',      chip: 'text-warning/70',          accent: 'card-accent-warning' },
   };
 
   return (
@@ -231,12 +231,12 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, delay: 0.05 + idx * 0.06, ease: [0.4, 0, 0.2, 1] }}
-                  className={`card-editorial ${t.accent} p-5 group`}
+                  className={`card-editorial ${t.accent} p-5 group`.trim()}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <p className="eyebrow text-[10px]">{kpi.title}</p>
-                    <div className={`${t.chip} p-2 rounded-lg transition-transform group-hover:scale-110`}>
-                      <Icon className="w-3.5 h-3.5" />
+                    <div className={`${t.chip} transition-transform group-hover:scale-110`}>
+                      <Icon className="w-4 h-4" />
                     </div>
                   </div>
                   <div className="flex items-baseline gap-1">
