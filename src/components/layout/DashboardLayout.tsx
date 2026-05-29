@@ -114,7 +114,10 @@ function SidebarContent({
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 px-3 py-1 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-1 space-y-0.5 overflow-y-auto min-h-[280px]">
+        {filteredNav.length === 0 && [...Array(6)].map((_, i) => (
+          <div key={i} className="h-9 rounded-lg bg-sidebar-accent/40 animate-pulse mx-0" />
+        ))}
         {filteredNav.map((item, idx) => {
           const Icon = item.icon;
           const isActive = currentPage === item.path;
