@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, LayoutDashboard, CheckSquare, Users, LogOut,
   Menu, Calendar as CalendarIcon, FileText,
-  Settings, ChevronRight, Eye, RefreshCw,
+  Settings, ChevronRight, Eye, RefreshCw, Landmark,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
@@ -27,7 +27,7 @@ interface DashboardLayoutProps {
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard',       path: '/dashboard',       roles: ['administrador', 'consultor', 'cliente'] },
   { icon: Building2,       label: 'Empresas',         path: '/empresas',        roles: ['administrador', 'consultor'] },
-  { icon: Building2,       label: 'Mi Empresa',       path: '/mi-empresa',      roles: ['cliente'] },
+  { icon: Landmark,        label: 'Mi Empresa',       path: '/mi-empresa',      roles: ['cliente'] },
   { icon: CheckSquare,     label: 'Tareas',           path: '/tareas',          roles: ['administrador', 'consultor', 'cliente'] },
   { icon: CalendarIcon,    label: 'Calendario',       path: '/calendario',      roles: ['administrador', 'consultor', 'cliente'] },
   { icon: FileText,        label: 'Reportes',         path: '/reportes',        roles: ['administrador', 'consultor'] },
@@ -272,7 +272,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
         className="hidden lg:flex fixed top-0 right-0 z-40 h-14 items-center gap-4 px-6 border-b border-border-subtle bg-background/80 backdrop-blur-xl"
         style={{ left: '16rem' }}
       >
-        <div className="hidden xl:flex items-center gap-2 text-[11px]">
+        <div className="hidden lg:flex items-center gap-2 text-[11px]">
           <span className="live-dot" />
           <span className="eyebrow text-[10px] capitalize">{todayLabel}</span>
         </div>
