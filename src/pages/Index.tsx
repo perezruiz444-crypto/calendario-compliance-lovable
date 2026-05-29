@@ -7,23 +7,25 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
 
   useEffect(() => {
+    if (!authReady) return;
+
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const type = hashParams.get('type');
-    
+
     if (type === 'recovery' || type === 'invite') {
       navigate('/set-password');
       return;
     }
-    
+
     if (user) {
       navigate('/dashboard');
     } else {
       navigate('/auth');
     }
-  }, [user, navigate]);
+  }, [user, authReady, navigate]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {

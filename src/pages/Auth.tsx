@@ -44,10 +44,10 @@ export default function Auth() {
   const [captchaReady, setCaptchaReady] = useState(false);
   const captchaContainerRef           = useRef<HTMLDivElement>(null);
   const widgetIdRef                   = useRef<string | null>(null);
-  const { signIn, user }              = useAuth();
+  const { signIn, user, authReady }   = useAuth();
   const navigate                      = useNavigate();
 
-  useEffect(() => { if (user) navigate('/dashboard'); }, [user, navigate]);
+  useEffect(() => { if (authReady && user) navigate('/dashboard'); }, [user, authReady, navigate]);
 
   // Load hCaptcha script once
   useEffect(() => {
