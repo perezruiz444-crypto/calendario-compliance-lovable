@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -13,19 +13,21 @@ import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
-import EmpresaComplianceSemaforo from '@/components/dashboard/EmpresaComplianceSemaforo';
-import AdminAnalytics from '@/components/dashboard/AdminAnalytics';
-import ConsultorAnalytics from '@/components/dashboard/ConsultorAnalytics';
-import ClienteAnalytics from '@/components/dashboard/ClienteAnalytics';
-import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
-import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
-import DashboardObligacionesMensuales from '@/components/dashboard/DashboardObligacionesMensuales';
-import RenovacionesWidget from '@/components/dashboard/RenovacionesWidget';
-import FeedbackModal from '@/components/dashboard/FeedbackModal';
-import FeedbackResultsCard from '@/components/dashboard/FeedbackResultsCard';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
-import ClientOnboardingTour from '@/components/dashboard/ClientOnboardingTour';
+
+// Heavy components — lazy loaded to keep initial bundle lean
+const DashboardCalendar = lazy(() => import('@/components/dashboard/DashboardCalendar'));
+const EmpresaComplianceSemaforo = lazy(() => import('@/components/dashboard/EmpresaComplianceSemaforo'));
+const AdminAnalytics = lazy(() => import('@/components/dashboard/AdminAnalytics'));
+const ConsultorAnalytics = lazy(() => import('@/components/dashboard/ConsultorAnalytics'));
+const ClienteAnalytics = lazy(() => import('@/components/dashboard/ClienteAnalytics'));
+const CreateTareaSheet = lazy(() => import('@/components/tareas/CreateTareaSheet'));
+const TareaDetailSheet = lazy(() => import('@/components/tareas/TareaDetailSheet'));
+const DashboardObligacionesMensuales = lazy(() => import('@/components/dashboard/DashboardObligacionesMensuales'));
+const RenovacionesWidget = lazy(() => import('@/components/dashboard/RenovacionesWidget'));
+const FeedbackModal = lazy(() => import('@/components/dashboard/FeedbackModal'));
+const FeedbackResultsCard = lazy(() => import('@/components/dashboard/FeedbackResultsCard'));
+const ClientOnboardingTour = lazy(() => import('@/components/dashboard/ClientOnboardingTour'));
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -169,8 +171,11 @@ export default function Dashboard() {
     warning:     { num: 'text-warning',      chip: 'text-warning/70',          accent: 'card-accent-warning' },
   };
 
+  const WidgetFallback = () => <div className="h-48 rounded-[var(--radius)] border border-border-subtle animate-shimmer" />;
+
   return (
     <DashboardLayout currentPage="/dashboard">
+      <Suspense fallback={<WidgetFallback />}>
       <div className="space-y-10">
 
         {/* ── Hero header editorial ── */}
@@ -379,6 +384,7 @@ export default function Dashboard() {
 
       {/* Guía de Onboarding interactiva para el Cliente */}
       <ClientOnboardingTour isOpen={onboardingOpen} onClose={handleCloseOnboarding} />
+      </Suspense>
     </DashboardLayout>
   );
 }
