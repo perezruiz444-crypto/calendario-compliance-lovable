@@ -2,13 +2,14 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresaContext } from '@/hooks/useEmpresaContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTareasShortcuts } from '@/hooks/useKeyboardShortcuts';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, Filter, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList, GanttChart } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList, GanttChart, ChevronDown, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
 
@@ -33,6 +34,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { DndContext, DragEndEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -223,20 +225,42 @@ function SortableTareaCard(props: TareaCardProps) {
   );
 }
 
-function EmptyState({ hasActiveFilters }: { hasActiveFilters: boolean }) {
+function EmptyState({ hasActiveFilters, onClearFilters, onCreateTarea, canCreate }: {
+  hasActiveFilters: boolean;
+  onClearFilters: () => void;
+  onCreateTarea: () => void;
+  canCreate: boolean;
+}) {
   return (
-    <div className="text-center py-12">
-      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-        <Search className="w-8 h-8 text-muted-foreground" />
+    <div className="text-center py-14 space-y-4">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-1">
+        {hasActiveFilters
+          ? <Search className="w-7 h-7 text-muted-foreground" />
+          : <CheckSquare className="w-7 h-7 text-muted-foreground" />
+        }
       </div>
-      <h3 className="font-heading font-semibold text-lg mb-2">
-        No se encontraron tareas
-      </h3>
-      <p className="text-sm text-muted-foreground font-body">
-        {hasActiveFilters 
-          ? 'Intenta ajustar los filtros para ver más resultados'
-          : 'No hay tareas creadas aún'}
-      </p>
+      <div className="space-y-1">
+        <h3 className="font-heading font-semibold text-lg">
+          {hasActiveFilters ? 'Sin resultados para este filtro' : 'No hay tareas aún'}
+        </h3>
+        <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+          {hasActiveFilters
+            ? 'Prueba ajustando o limpiando los filtros activos.'
+            : 'Crea la primera tarea para empezar el seguimiento de obligaciones.'}
+        </p>
+      </div>
+      <div className="flex gap-2 justify-center pt-1">
+        {hasActiveFilters && (
+          <Button variant="outline" size="sm" onClick={onClearFilters}>
+            <X className="w-4 h-4 mr-1.5" /> Limpiar filtros
+          </Button>
+        )}
+        {canCreate && (
+          <Button size="sm" onClick={onCreateTarea} className="gradient-primary">
+            <Plus className="w-4 h-4 mr-1.5" /> Nueva Tarea
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -319,6 +343,7 @@ export default function Tareas() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
   const { selectedEmpresaId } = useEmpresaContext();
+  const isMobile = useIsMobile();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Keyboard shortcuts
@@ -331,6 +356,7 @@ export default function Tareas() {
   });
   const [tareas, setTareas] = useState<any[]>([]);
   const [loadingTareas, setLoadingTareas] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -422,6 +448,7 @@ export default function Tareas() {
 
   const fetchTareas = async () => {
     setLoadingTareas(true);
+    setFetchError(false);
     try {
       let query = supabase
         .from('tareas')
@@ -468,6 +495,8 @@ export default function Tareas() {
       }
     } catch (error) {
       logger.error('Error fetching tareas', error);
+      setFetchError(true);
+      toast.error('No se pudieron cargar las tareas. Verifica tu conexión.');
     } finally {
       setLoadingTareas(false);
     }
@@ -702,6 +731,27 @@ export default function Tareas() {
     );
   }
 
+  if (fetchError) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center p-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-destructive/10 mb-1">
+            <AlertCircle className="w-8 h-8 text-destructive" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="font-heading text-xl font-semibold">No se pudieron cargar las tareas</h2>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Ocurrió un error al conectar con el servidor. Verifica tu conexión e intenta de nuevo.
+            </p>
+          </div>
+          <Button onClick={() => fetchTareas()} className="gap-2">
+            <RefreshCw className="w-4 h-4" /> Reintentar
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   const filteredTareas = getFilteredTareas();
   const tareasPendientes = filteredTareas.filter(t => t.estado === 'pendiente');
   const tareasEnProgreso = filteredTareas.filter(t => t.estado === 'en_progreso');
@@ -803,70 +853,55 @@ export default function Tareas() {
           <div className="flex flex-wrap gap-2">
             {/* View Mode Toggle */}
             <div className="flex gap-1 border rounded-lg p-1">
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="h-8"
-              >
-                <List className="w-4 h-4 mr-1" />
-                Lista
-              </Button>
-              <Button
-                variant={viewMode === 'kanban' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('kanban')}
-                className="h-8"
-              >
-                <LayoutGrid className="w-4 h-4 mr-1" />
-                Kanban
-              </Button>
-               <Button
-                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('calendar')}
-                className="h-8"
-              >
-                <CalendarViewIcon className="w-4 h-4 mr-1" />
-                Calendario
-              </Button>
-              <Button
-                variant={viewMode === 'timeline' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('timeline')}
-                className="h-8"
-              >
-                <GanttChart className="w-4 h-4 mr-1" />
-                Timeline
-              </Button>
-              <Button
-                variant={viewMode === 'obligaciones' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('obligaciones')}
-                className="h-8"
-              >
-                <ClipboardList className="w-4 h-4 mr-1" />
-                Obligaciones
-              </Button>
+              {([
+                { mode: 'list', icon: List, label: 'Lista' },
+                { mode: 'kanban', icon: LayoutGrid, label: 'Kanban' },
+                { mode: 'calendar', icon: CalendarViewIcon, label: 'Calendario' },
+                { mode: 'timeline', icon: GanttChart, label: 'Timeline' },
+                { mode: 'obligaciones', icon: ClipboardList, label: 'Obligaciones' },
+              ] as const).map(({ mode, icon: Icon, label }) => (
+                <Button
+                  key={mode}
+                  variant={viewMode === mode ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode(mode)}
+                  aria-label={label}
+                  aria-current={viewMode === mode ? 'page' : undefined}
+                  className="h-11 sm:h-8"
+                >
+                  <Icon className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">{label}</span>
+                </Button>
+              ))}
             </div>
-            
+
             {(role === 'administrador' || role === 'consultor') && (
               <>
-                <Button onClick={() => setCustomFieldsDialogOpen(true)} variant="outline" className="font-heading">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Campos
-                </Button>
-                <Button onClick={() => setTemplatesDialogOpen(true)} variant="outline" className="font-heading">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Templates
-                </Button>
-                <Button onClick={() => setAutomationsDialogOpen(true)} variant="outline" className="font-heading">
-                  <Zap className="w-4 h-4 mr-2" />
-                  Automatizaciones
-                </Button>
-                <Button onClick={() => setDialogOpen(true)} className="font-heading gradient-primary">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nueva Tarea
+                {/* Configuración secundaria en dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="font-heading h-11 sm:h-9">
+                      <Settings className="w-4 h-4 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Configurar</span>
+                      <ChevronDown className="w-3 h-3 ml-1 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setCustomFieldsDialogOpen(true)}>
+                      <Settings className="w-4 h-4 mr-2" /> Campos personalizados
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTemplatesDialogOpen(true)}>
+                      <CheckSquare className="w-4 h-4 mr-2" /> Templates
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setAutomationsDialogOpen(true)}>
+                      <Zap className="w-4 h-4 mr-2" /> Automatizaciones
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Button onClick={() => setDialogOpen(true)} className="font-heading gradient-primary h-11 sm:h-9">
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Nueva Tarea</span>
                 </Button>
               </>
             )}
@@ -1205,7 +1240,12 @@ export default function Tareas() {
                   />
                 ))}
                 {filteredTareas.length === 0 && (
-                  <EmptyState hasActiveFilters={hasActiveFilters} />
+                  <EmptyState
+                    hasActiveFilters={hasActiveFilters}
+                    onClearFilters={clearFilters}
+                    onCreateTarea={() => setDialogOpen(true)}
+                    canCreate={role === 'administrador' || role === 'consultor'}
+                  />
                 )}
               </div>
             </CardContent>
@@ -1246,6 +1286,45 @@ export default function Tareas() {
                   nowIndicator
                   eventDisplay="block"
                 />
+              </div>
+            </CardContent>
+          </Card>
+        ) : isMobile ? (
+          /* Kanban en móvil → lista simple para evitar problemas con dnd-kit touch */
+          <Card className="gradient-card shadow-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="font-heading">Tareas</CardTitle>
+                  <CardDescription className="font-body">{filteredTareas.length} de {tareas.length} tareas</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredTareas.map((tarea) => (
+                  <TareaCard
+                    key={tarea.id}
+                    tarea={tarea}
+                    onClick={() => handleTareaClick(tarea.id)}
+                    getPrioridadColor={getPrioridadColor}
+                    getEstadoColor={getEstadoColor}
+                    getInitials={getInitials}
+                    getAvatarColor={getAvatarColor}
+                    isOverdue={isOverdue}
+                    formatDate={formatDate}
+                    prioridadLabels={prioridadLabels}
+                    estadoLabels={estadoLabels}
+                  />
+                ))}
+                {filteredTareas.length === 0 && (
+                  <EmptyState
+                    hasActiveFilters={hasActiveFilters}
+                    onClearFilters={clearFilters}
+                    onCreateTarea={() => setDialogOpen(true)}
+                    canCreate={role === 'administrador' || role === 'consultor'}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>

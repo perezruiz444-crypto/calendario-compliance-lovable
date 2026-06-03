@@ -21,6 +21,7 @@ const Calendario = lazy(() => import("./pages/Calendario"));
 const Mensajes = lazy(() => import("./pages/Mensajes"));
 const Reportes = lazy(() => import("./pages/Reportes"));
 const Configuraciones = lazy(() => import("./pages/Configuraciones"));
+const Ayuda = lazy(() => import("./pages/Ayuda"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +61,7 @@ const App = () => (
                 <Route path="/reportes" element={<Reportes />} />
                 <Route path="/usuarios" element={<Usuarios />} />
                 <Route path="/configuraciones" element={<Configuraciones />} />
+                <Route path="/ayuda" element={<Ayuda />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

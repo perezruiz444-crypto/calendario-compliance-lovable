@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useEmpresaContext } from '@/hooks/useEmpresaContext';
@@ -64,6 +64,7 @@ const estadoLabels: Record<string, string> = {
 export default function Dashboard() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { selectedEmpresaId } = useEmpresaContext();
   const { data, loading: analyticsLoading, refetch } = useAnalytics(selectedEmpresaId);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
@@ -86,6 +87,13 @@ export default function Dashboard() {
     }
     setOnboardingOpen(false);
   };
+
+  useEffect(() => {
+    if (location.state?.reopenTour) {
+      setOnboardingOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state?.reopenTour]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -147,6 +155,42 @@ export default function Dashboard() {
     }
   };
 
+  // Cliente sin empresa asignada — mostrar estado de espera con CTA
+  if (role === 'cliente' && !data.empresa_id) {
+    return (
+      <DashboardLayout currentPage="/dashboard">
+        <div className="flex flex-col items-center justify-center min-h-[500px] gap-5 text-center p-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-1">
+            <Building2 className="w-10 h-10 text-primary" />
+          </div>
+          <div className="space-y-2 max-w-sm">
+            <h2 className="font-heading text-2xl font-bold tracking-tight">
+              Hola, {firstName}.
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Tu cuenta está activa pero aún no tiene una empresa asignada.
+              Contacta a tu consultor para que vincule tu perfil y puedas ver tus obligaciones.
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap justify-center pt-1">
+            <Button variant="outline" onClick={() => supabase.auth.signOut()} className="gap-1.5">
+              Cerrar sesión
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            ¿Ya lo hiciste?{' '}
+            <button
+              className="underline hover:text-foreground transition-colors"
+              onClick={() => window.location.reload()}
+            >
+              Recargar página
+            </button>
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   const kpiCards = role === 'administrador' ? [
     { title: 'Empresas Activas', value: data.totalEmpresas || 0, icon: Building2, tone: 'primary', sub: 'Total registradas' },
     { title: 'Total Usuarios', value: data.totalUsuarios || 0, icon: Users, tone: 'primary', sub: `${data.totalConsultores || 0} consultores` },
@@ -174,7 +218,7 @@ export default function Dashboard() {
   const WidgetFallback = () => <div className="h-48 rounded-[var(--radius)] border border-border-subtle animate-shimmer" />;
 
   return (
-    <DashboardLayout currentPage="/dashboard">
+    <DashboardLayout currentPage="/dashboard" onReopenTour={role === 'cliente' ? () => setOnboardingOpen(true) : undefined}>
       <Suspense fallback={<WidgetFallback />}>
       <div className="space-y-10">
 

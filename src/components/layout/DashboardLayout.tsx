@@ -9,6 +9,7 @@ import {
   Building2, LayoutDashboard, CheckSquare, Users, LogOut,
   Menu, Calendar as CalendarIcon, FileText,
   Settings, ChevronRight, Eye, RefreshCw, Landmark,
+  HelpCircle, PlayCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
@@ -22,6 +23,7 @@ import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDr
 interface DashboardLayoutProps {
   children: ReactNode;
   currentPage?: string;
+  onReopenTour?: () => void;
 }
 
 const navItems = [
@@ -32,6 +34,7 @@ const navItems = [
   { icon: CalendarIcon,    label: 'Calendario',       path: '/calendario',      roles: ['administrador', 'consultor', 'cliente'] },
   { icon: FileText,        label: 'Reportes',         path: '/reportes',        roles: ['administrador', 'consultor'] },
   { icon: Users,           label: 'Usuarios',         path: '/usuarios',        roles: ['administrador'] },
+  { icon: HelpCircle,      label: 'Ayuda',            path: '/ayuda',           roles: ['administrador', 'consultor', 'cliente'] },
   { icon: Settings,        label: 'Configuraciones',  path: '/configuraciones', roles: ['administrador', 'consultor', 'cliente'] },
 ];
 
@@ -58,6 +61,7 @@ interface SidebarProps {
   actualRole: string | null;
   simulatedRole: string | null;
   setSimulatedRole: (role: any) => void;
+  onReopenTour?: () => void;
 }
 
 function SidebarContent({
@@ -65,6 +69,7 @@ function SidebarContent({
   empresaInfo, selectedEmpresaId, setSelectedEmpresaId,
   onNavigate, onSignOut,
   actualRole, simulatedRole, setSimulatedRole,
+  onReopenTour,
 }: SidebarProps) {
   const filteredNav = navItems.filter(item => role && item.roles.includes(role));
   const initials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -176,6 +181,15 @@ function SidebarContent({
             </p>
           </div>
         </div>
+        {role === 'cliente' && onReopenTour && (
+          <button
+            onClick={onReopenTour}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors mb-1"
+          >
+            <PlayCircle className="w-3.5 h-3.5" />
+            Ver tutorial
+          </button>
+        )}
         <button
           onClick={onSignOut}
           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
@@ -190,7 +204,7 @@ function SidebarContent({
 
 // ── Layout principal ───────────────────────────────────────────────────
 
-export default function DashboardLayout({ children, currentPage }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, currentPage, onReopenTour }: DashboardLayoutProps) {
   const { user, role, signOut, actualRole, simulatedRole, setSimulatedRole } = useAuth();
   const navigate = useNavigate();
   const { selectedEmpresaId, setSelectedEmpresaId } = useEmpresaContext();
@@ -235,6 +249,7 @@ export default function DashboardLayout({ children, currentPage }: DashboardLayo
     actualRole,
     simulatedRole,
     setSimulatedRole,
+    onReopenTour,
   };
 
   return (
