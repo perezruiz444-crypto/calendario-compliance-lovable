@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useEmpresasList } from '@/hooks/useEmpresasList';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -17,7 +18,6 @@ interface CreateUserDialogProps {
 
 export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUserDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [empresas, setEmpresas] = useState<Array<{ id: string; razon_social: string }>>([]);
   const [usePassword, setUsePassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -27,25 +27,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
     empresa_id: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (open) {
-      fetchEmpresas();
-    }
-  }, [open]);
-
-  const fetchEmpresas = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('empresas')
-        .select('id, razon_social')
-        .order('razon_social');
-      if (error) throw error;
-      setEmpresas(data || []);
-    } catch {
-      toast.error('No se pudieron cargar las empresas. Recarga la página.');
-    }
-  };
+  const { empresas } = useEmpresasList(open);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};

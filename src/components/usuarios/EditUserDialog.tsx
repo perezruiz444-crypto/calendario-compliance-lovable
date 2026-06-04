@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { useEmpresasList } from '@/hooks/useEmpresasList';
 
 interface EditUserDialogProps {
   open: boolean;
@@ -22,7 +23,7 @@ interface EditUserDialogProps {
 
 export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user }: EditUserDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [empresas, setEmpresas] = useState<Array<{ id: string; razon_social: string }>>([]);
+  const { empresas } = useEmpresasList(open);
   const [formData, setFormData] = useState({
     email: '',
     nombreCompleto: '',
@@ -31,10 +32,7 @@ export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user
   });
 
   useEffect(() => {
-    if (open) {
-      fetchEmpresas();
-      fetchUserEmpresa();
-    }
+    if (open) fetchUserEmpresa();
   }, [open]);
 
   useEffect(() => {
@@ -48,20 +46,6 @@ export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user
       fetchUserEmpresa();
     }
   }, [user]);
-
-  const fetchEmpresas = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('empresas')
-        .select('id, razon_social')
-        .order('razon_social');
-
-      if (error) throw error;
-      setEmpresas(data || []);
-    } catch (error: any) {
-      console.error('Error al cargar empresas:', error);
-    }
-  };
 
   const fetchUserEmpresa = async () => {
     if (!user) return;

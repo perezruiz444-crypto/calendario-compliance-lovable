@@ -2,15 +2,9 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-/**
- * Hook para edición inline de campos de la tabla `empresas`.
- * - startEditing(field, value): activa modo edición
- * - cancelEditing(): cancela
- * - saveField(): guarda en DB y actualiza local
- * - handleKeyDown: enter/escape handler
- */
 export function useInlineEdit(
-  empresaId: string | undefined,
+  recordId: string | undefined,
+  tableName: string,
   onLocalUpdate: (field: string, value: string) => void,
   canEdit: boolean
 ) {
@@ -37,12 +31,12 @@ export function useInlineEdit(
   };
 
   const saveField = async () => {
-    if (!editingField || !empresaId) return;
+    if (!editingField || !recordId) return;
     try {
       const { error } = await supabase
-        .from('empresas')
+        .from(tableName as any)
         .update({ [editingField]: editValue })
-        .eq('id', empresaId);
+        .eq('id', recordId);
       if (error) throw error;
       onLocalUpdate(editingField, editValue);
       toast.success('Actualizado');
