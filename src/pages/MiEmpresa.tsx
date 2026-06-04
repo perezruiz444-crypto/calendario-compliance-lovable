@@ -423,15 +423,17 @@ export default function MiEmpresa() {
               <CardHeader>
                 <CardTitle className="font-heading flex items-center gap-2">
                   <ClipboardList className="w-5 h-5" />
-                  Mis Obligaciones
+                  Obligaciones de la Empresa
                   <Badge variant="secondary" className="ml-2">{filteredObligaciones.length}</Badge>
                 </CardTitle>
-                <CardDescription>Marca como completadas las obligaciones del periodo actual</CardDescription>
+                <CardDescription>
+                  Ves todas las obligaciones activas de tu empresa. Solo puedes marcar como cumplidas las que tienen el badge <span className="font-semibold text-primary">"Asignada a ti"</span>.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {filteredObligaciones.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
-                    {obligaciones.length === 0 ? 'No hay obligaciones asignadas' : 'No se encontraron obligaciones con los filtros aplicados'}
+                    {obligaciones.length === 0 ? 'Tu empresa aún no tiene obligaciones activas' : 'No se encontraron obligaciones con los filtros aplicados'}
                   </p>
                 ) : (() => {
                   const grouped = filteredObligaciones.reduce((acc: Record<string, any[]>, ob: any) => {
@@ -458,18 +460,28 @@ export default function MiEmpresa() {
                               const mapKey = `${ob.id}:${periodKey}`;
                               const isCompleted = cumplimientos[mapKey] || false;
                               const resp = ob.responsable_id ? responsables[ob.responsable_id] : null;
+                              const esMia = misAsignaciones.has(ob.id);
 
                               return (
-                                <div key={ob.id} className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${isCompleted ? 'bg-success/10 border-success/30' : ''}`}>
-                                  <Checkbox
-                                    checked={isCompleted}
-                                    onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
-                                  />
+                                <div key={ob.id} className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${isCompleted ? 'bg-success/10 border-success/30' : esMia ? 'border-primary/30' : 'opacity-80'}`}>
+                                  {esMia ? (
+                                    <Checkbox
+                                      checked={isCompleted}
+                                      onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
+                                    />
+                                  ) : (
+                                    <div className="w-4 h-4 shrink-0" aria-hidden />
+                                  )}
                                   <div className="flex-1 min-w-0">
                                     <p className={`font-heading font-medium text-sm ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
                                       {ob.nombre}
                                     </p>
                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                      {esMia && (
+                                        <Badge className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/15">
+                                          Asignada a ti
+                                        </Badge>
+                                      )}
                                       {ob.presentacion && (
                                         <Badge variant="outline" className="text-xs">{ob.presentacion}</Badge>
                                       )}
@@ -508,6 +520,7 @@ export default function MiEmpresa() {
                       ))}
                     </div>
                   );
+
                 })()}
               </CardContent>
             </Card>
