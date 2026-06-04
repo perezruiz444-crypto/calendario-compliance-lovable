@@ -169,6 +169,7 @@ export default function MiEmpresa() {
 
   // Filtered obligations
   const filteredObligaciones = obligaciones.filter((ob: any) => {
+    if (filterAsignacion === 'mias' && !misAsignaciones.has(ob.id)) return false;
     if (searchTerm && !ob.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     if (filterCategoria !== 'todas' && ob.categoria !== filterCategoria) return false;
     if (filterEstado !== 'todos') {
@@ -179,6 +180,7 @@ export default function MiEmpresa() {
     }
     return true;
   });
+
 
   const categorias = [...new Set(obligaciones.map((o: any) => o.categoria))];
 
