@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, Suspense, lazy } from 'react';
+import { useEffect, useState, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useEmpresaDetailData } from '@/hooks/useEmpresaDetailData';
 import { useInlineEdit } from '@/hooks/useInlineEdit';
 import { useNavigate, useParams, Link } from 'react-router-dom';
@@ -148,13 +148,15 @@ export default function EmpresaDetail() {
 
   const canEdit = role === 'administrador' || role === 'consultor';
 
+  const handleNotFound = useCallback(() => navigate('/empresas'), [navigate]);
+
   const {
     empresa, setEmpresa,
     tareas, obligaciones, cumplimientoKeys,
     loadingData,
     domicilios, agentes, apoderados, loadingContactos,
     fetchEmpresaData, fetchContactosData,
-  } = useEmpresaDetailData(id, () => navigate('/empresas'));
+  } = useEmpresaDetailData(id, handleNotFound);
 
   const {
     editingField, editValue, setEditValue, inputRef,

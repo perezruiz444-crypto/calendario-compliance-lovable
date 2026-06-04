@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { fetchCumplimientoKeys } from '@/lib/obligaciones';
@@ -26,6 +26,10 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
   const [loadingContactos, setLoadingContactos] = useState(false);
   const [hasFetchedContactos, setHasFetchedContactos] = useState(false);
 
+  // Ref para evitar que el callback externo invalide el useCallback y cause loops infinitos
+  const onNotFoundRef = useRef(onNotFound);
+  useEffect(() => { onNotFoundRef.current = onNotFound; }, [onNotFound]);
+
   const fetchEmpresaData = useCallback(async () => {
     if (!empresaId) return;
     setLoadingData(true);
@@ -38,7 +42,7 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
       if (error) throw error;
       if (!empresaData) {
         toast.error('Empresa no encontrada');
-        onNotFound?.();
+        onNotFoundRef.current?.();
         return;
       }
       setEmpresa(empresaData);
@@ -68,7 +72,7 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
     } finally {
       setLoadingData(false);
     }
-  }, [empresaId, onNotFound]);
+  }, [empresaId]);
 
   const fetchContactosData = useCallback(async () => {
     if (!empresaId || hasFetchedContactos) return;
