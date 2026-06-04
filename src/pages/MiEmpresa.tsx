@@ -128,6 +128,10 @@ export default function MiEmpresa() {
 
   const toggleCumplimiento = async (obligacionId: string, presentacion: string | null) => {
     if (!user) return;
+    if (!misAsignaciones.has(obligacionId)) {
+      toast.error('Solo puedes marcar las obligaciones asignadas a ti');
+      return;
+    }
     const periodKey = getCurrentPeriodKey(presentacion);
     const mapKey = `${obligacionId}:${periodKey}`;
     const isCompleted = cumplimientos[mapKey];
@@ -144,6 +148,7 @@ export default function MiEmpresa() {
       setEvidenciaObl({ id: obligacionId, presentacion, periodoKey: periodKey, nombre: ob?.nombre });
     }
   };
+
 
   const handleEvidenciaCompleted = () => {
     if (evidenciaObl) {
