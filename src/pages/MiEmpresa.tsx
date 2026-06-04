@@ -90,7 +90,7 @@ export default function MiEmpresa() {
       setObligaciones(obs);
       const asignSet = new Set<string>((misAsigRes.data || []).map((r: any) => r.obligacion_id));
       setMisAsignaciones(asignSet);
-
+      const responsableIds = [...new Set(obs.filter((o: any) => o.responsable_id).map((o: any) => o.responsable_id))];
       if (responsableIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
@@ -105,6 +105,7 @@ export default function MiEmpresa() {
           setResponsables(rMap);
         }
       }
+
 
       if (obs.length > 0) {
         const obIds = obs.map((o: any) => o.id);
