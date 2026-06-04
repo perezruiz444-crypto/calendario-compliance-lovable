@@ -1,115 +1,69 @@
-# Plan — Activación rápida de obligaciones y split de Padrón
+## Cambio de comportamiento
 
-## Parte 1 — Estado actual del catálogo
+El cliente verá **todas las obligaciones activas de su empresa** (igual que el consultor), pero se mantienen las asignaciones en `obligacion_responsables` y toda la lógica de evidencias, cumplimientos, mensajes, etc.
 
-Categorías/programas existentes hoy en `obligaciones_catalogo`:
-- `immex`, `prosec`, `cert_iva_ieps`, `padron`, `general`, `oea`, `otro`
+## Cambios
 
-**No existe** distinción entre Padrón **General** y Padrón **Sectorial/Específico**: hay un único `programa = 'padron'` con 3 obligaciones mezcladas (Forma A1, Renovación Padrones Sectoriales, Verificación Datos Padrón Importadores).
+### 1. `src/pages/MiEmpresa.tsx` — traer todas las obligaciones de la empresa
 
-También importante: la tabla `empresa_programas` tiene un CHECK que solo permite `('immex','prosec','padron','cert_iva_ieps','general')`. Y **no existen triggers** que generen ocurrencias automáticamente al insertar en `empresa_programas` (a pesar de lo que dice el spec). Hoy la generación se hace llamando manualmente a `generar_ocurrencias_obligacion(obligacion_id)`.
+Reemplazar el bloque actual (L67-89) que filtra por `obligacion_responsables.user_id = auth.uid()`:
 
----
-
-## Parte 2 — Cómo agregar obligaciones rápido desde SQL Editor
-
-Dado que no hay trigger automático en `empresa_programas`, el flujo más rápido y confiable es **insertar directo en `obligaciones` desde el catálogo** y luego disparar la generación anual.
-
-### Snippet reutilizable (cambia solo el RFC y los programas)
-
-```sql
-WITH emp AS (
-  SELECT id FROM empresas WHERE rfc = 'XXXX010101XXX' LIMIT 1
-),
-nuevas AS (
-  INSERT INTO obligaciones (
-    empresa_id, catalogo_id, categoria, nombre, descripcion,
-    articulos, presentacion, fecha_vencimiento, estado, activa, created_by
-  )
-  SELECT
-    emp.id, c.id, c.categoria, c.nombre, c.descripcion,
-    c.articulos, c.presentacion,
-    -- fecha semilla: primer vencimiento del año actual
-    make_date(EXTRACT(YEAR FROM CURRENT_DATE)::int,
-              COALESCE(c.mes_vencimiento, 1),
-              LEAST(COALESCE(c.dia_vencimiento,1), 28)),
-    'vigente', true, auth.uid()
-  FROM obligaciones_catalogo c, emp
-  WHERE c.activo = true
-    AND c.programa IN ('immex','prosec','padron','cert_iva_ieps','general') -- ajusta aquí
-  ON CONFLICT (empresa_id, catalogo_id, fecha_vencimiento)
-    WHERE catalogo_id IS NOT NULL AND fecha_vencimiento IS NOT NULL
-    DO NOTHING
-  RETURNING id
-)
-SELECT generar_ocurrencias_obligacion(id) FROM nuevas;
+```ts
+// Antes
+supabase.from('obligacion_responsables').select('obligacion_id').eq('user_id', user.id),
+// ...
+.in('id', idsAsignadas).eq('activa', true)
 ```
 
-Esto:
-1. Toma la empresa por RFC.
-2. Inserta una "semilla" por cada obligación de los programas indicados.
-3. La función `generar_ocurrencias_obligacion` expande el año completo (mensuales, trimestrales, anuales, etc.).
+Por una consulta directa a `obligaciones`:
 
-Si solo quieres un programa, deja `programa IN ('immex')`.
-
-### Opcional: registrar también en `empresa_programas`
-
-```sql
-INSERT INTO empresa_programas (empresa_id, programa, activo, fecha_inicio)
-SELECT id, unnest(ARRAY['immex','prosec']), true, CURRENT_DATE
-FROM empresas WHERE rfc = 'XXXX010101XXX'
-ON CONFLICT (empresa_id, programa) DO UPDATE SET activo = true;
+```ts
+supabase
+  .from('obligaciones')
+  .select('*')
+  .eq('empresa_id', profile.empresa_id)
+  .eq('activa', true)
+  .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
 ```
 
-Esto deja consistente la UI del tab "Programas" en EmpresaDetail.
+Más una consulta paralela a `obligacion_responsables` filtrada por `user_id = auth.uid()` para saber **cuáles son suyas** (se usa solo para marcar visualmente, no para filtrar).
 
----
+### 2. Badge "Asignada a ti"
 
-## Parte 3 — Split Padrón General vs Padrón Sectorial
+En cada card/fila de obligación en `MiEmpresa.tsx`, si su `id` está en el set de `misAsignaciones`, mostrar badge pequeño en color primary: *"Asignada a ti"*. El resto se muestra sin badge.
 
-Propongo crear **dos programas separados** en el catálogo, al mismo nivel que `immex`/`prosec`:
+### 3. Filtro opcional
 
-| Programa nuevo | Cubre | Obligaciones que migran del actual `padron` |
-|---|---|---|
-| `padron_general` | Padrón de Importadores (registro base SAT) | `Verificación de Datos Padrón de Importadores`, `Declaración de Valor (Forma A1) — Muestreo` |
-| `padron_sectorial` | Padrones Sectoriales específicos (Anexo 10 RGCE) | `Renovación Padrones Sectoriales` |
+Agregar un toggle/tab arriba de la lista: **"Todas" | "Solo asignadas a mí"** (default: "Todas"). Estado local, sin persistir. Permite al cliente concentrarse en lo suyo cuando quiera.
 
-### Migración SQL (estructura)
+### 4. RLS — verificar que ya permite
 
-```sql
--- 1. Ampliar el CHECK de empresa_programas
-ALTER TABLE empresa_programas DROP CONSTRAINT empresa_programas_programa_check;
-ALTER TABLE empresa_programas ADD CONSTRAINT empresa_programas_programa_check
-  CHECK (programa IN ('immex','prosec','padron_general','padron_sectorial','cert_iva_ieps','general'));
+La política `Users can view obligaciones of their empresas` en `obligaciones` ya permite al cliente leer todas las obligaciones de su empresa vía `profiles.empresa_id`. No requiere migración.
 
--- 2. Reclasificar catálogo
-UPDATE obligaciones_catalogo
-SET programa = 'padron_general', categoria = 'padron_general'
-WHERE programa = 'padron'
-  AND nombre IN (
-    'Verificación de Datos Padrón de Importadores',
-    'Declaración de Valor (Forma A1) — Muestreo'
-  );
+Igual con `obligacion_cumplimientos` (política `obligacion_cumplimientos_select_scoped` permite ver los de la empresa) y `obligacion_responsables` (política para clientes ya permite ver los de su empresa). Todo intacto.
 
-UPDATE obligaciones_catalogo
-SET programa = 'padron_sectorial', categoria = 'padron_sectorial'
-WHERE programa = 'padron'
-  AND nombre = 'Renovación Padrones Sectoriales';
+### 5. Permisos de marcar cumplimiento
 
--- 3. Migrar empresas que ya tenían 'padron'
-UPDATE empresa_programas SET programa = 'padron_general' WHERE programa = 'padron';
--- (las que también tengan sectoriales se agregan a mano según el caso)
-```
+La política actual `Clientes can insert cumplimientos for their empresa` permite a cualquier cliente de la empresa marcar cualquier obligación de su empresa como cumplida. **Decidir:**
+- (a) Dejarlo así: cualquier cliente puede marcar.
+- (b) Restringir vía UI: el botón "Marcar cumplida" / subir evidencia solo aparece si la obligación está asignada al usuario (`misAsignaciones.has(id)`).
 
-### Cambios de UI implicados
+Recomendado **(b)** — visibilidad total, pero acción solo sobre las suyas. Sin cambios en RLS, solo gate en el componente.
 
-- `EmpresaProgramasTab`, `ProgramaRow`, `OnboardingEmpresaWizard`: agregar las 2 nuevas filas con sus íconos y labels ("Padrón General", "Padrón Sectorial").
-- `CatalogoAdmin`: actualizar selector de programa.
-- Filtros/colores en Calendario y Reportes que hoy usen `padron` → mapear a los 2 nuevos (mantener `padron` como alias retrocompatible si quedara algún registro huérfano).
+## Archivos a modificar
 
----
+- `src/pages/MiEmpresa.tsx` — query nueva, badge, filtro, gate de acciones.
 
-## Preguntas para confirmar antes de ejecutar
+## Lo que NO cambia
 
-1. ¿Hago la migración del split de Padrón ahora (estructura + reclasificación + UI), o solo te dejo el snippet de la Parte 2 para que sigas activando empresas a mano por ahora?
-2. Para Padrón Sectorial, ¿quieres que en el catálogo agregue ya obligaciones específicas por sector (siderúrgico, textil, calzado, etc.) o por ahora dejamos la genérica "Renovación Padrones Sectoriales"?
+- RLS / políticas / esquema: nada.
+- Vista del consultor (`EmpresaDetail.tsx`): igual.
+- Tabla `obligacion_responsables`: se mantiene y se sigue usando.
+- Cumplimientos, evidencias, mensajes, dashboard: igual.
+
+## Verificación
+
+1. Como Marlene en `/mi-empresa`: ver las ~30 obligaciones de ITW, con badge "Asignada a ti" en las 2 suyas.
+2. Toggle "Solo asignadas a mí" → filtra a 2.
+3. Botón "Marcar cumplida" / subir evidencia: solo visible en las 2 asignadas.
+4. Como Ruth: sin cambios.
