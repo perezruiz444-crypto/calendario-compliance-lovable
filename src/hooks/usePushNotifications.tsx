@@ -27,8 +27,6 @@ export function usePushNotifications() {
       const registration = await navigator.serviceWorker.register('/service-worker.js', {
         scope: '/'
       });
-      console.log('Service Worker registered:', registration);
-      
       // Check if already subscribed
       if ('pushManager' in registration) {
         const subscription = await (registration as any).pushManager.getSubscription();
@@ -113,10 +111,7 @@ export function usePushNotifications() {
   };
 
   const showNotification = async (title: string, options?: NotificationOptions) => {
-    if (permission !== 'granted') {
-      console.log('Notification permission not granted');
-      return;
-    }
+    if (permission !== 'granted') return;
 
     try {
       const registration = await navigator.serviceWorker.ready;
