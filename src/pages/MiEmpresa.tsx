@@ -399,11 +399,21 @@ export default function MiEmpresa() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Select value={filterAsignacion} onValueChange={(v: any) => setFilterAsignacion(v)}>
+                    <SelectTrigger className="w-full sm:w-[170px]">
+                      <SelectValue placeholder="Asignación" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas de la empresa</SelectItem>
+                      <SelectItem value="mias">Solo asignadas a mí</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <ExportarCumplimientoButton
                     obligaciones={obligaciones}
                     cumplimientos={cumplimientos}
                     empresaNombre={empresa.razon_social}
                   />
+
                 </div>
               </CardContent>
             </Card>
