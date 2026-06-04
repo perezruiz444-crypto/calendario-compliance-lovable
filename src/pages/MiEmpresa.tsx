@@ -33,6 +33,7 @@ export default function MiEmpresa() {
   const [apoderados, setApoderados] = useState<any[]>([]);
   const [domicilios, setDomicilios] = useState<any[]>([]);
   const [obligaciones, setObligaciones] = useState<any[]>([]);
+  const [misAsignaciones, setMisAsignaciones] = useState<Set<string>>(new Set());
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
   const [responsables, setResponsables] = useState<Record<string, { nombre: string; tipo: string }>>({});
   const [tareas, setTareas] = useState<any[]>([]);
@@ -43,6 +44,8 @@ export default function MiEmpresa() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState<string>('todos');
   const [filterCategoria, setFilterCategoria] = useState<string>('todas');
+  const [filterAsignacion, setFilterAsignacion] = useState<'todas' | 'mias'>('todas');
+
 
   // Dialogs
   const [historialObl, setHistorialObl] = useState<any | null>(null);
@@ -64,10 +67,16 @@ export default function MiEmpresa() {
         .from('profiles').select('empresa_id').eq('id', user?.id).maybeSingle();
       if (!profile?.empresa_id) { setLoadingData(false); return; }
 
-      const [empresaRes, apoderadosRes, domiciliosRes, obligacionesRes, tareasRes] = await Promise.all([
+      const [empresaRes, apoderadosRes, domiciliosRes, obligacionesRes, misAsigRes, tareasRes] = await Promise.all([
         supabase.from('empresas').select('*').eq('id', profile.empresa_id).maybeSingle(),
         supabase.from('apoderados_legales').select('*').eq('empresa_id', profile.empresa_id),
         supabase.from('domicilios_operacion').select('*').eq('empresa_id', profile.empresa_id),
+        supabase
+          .from('obligaciones')
+          .select('*')
+          .eq('empresa_id', profile.empresa_id)
+          .eq('activa', true)
+          .order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
         supabase.from('obligacion_responsables').select('obligacion_id').eq('user_id', user.id),
         supabase.from('tareas').select('*').eq('empresa_id', profile.empresa_id).neq('estado', 'completada').order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
       ]);
@@ -76,20 +85,11 @@ export default function MiEmpresa() {
       setApoderados(apoderadosRes.data || []);
       setDomicilios(domiciliosRes.data || []);
       setTareas(tareasRes.data || []);
-      const idsAsignadas = (obligacionesRes.data || []).map((r: any) => r.obligacion_id);
-      let obs: any[] = [];
-      if (idsAsignadas.length > 0) {
-        const { data: obsData } = await supabase
-          .from('obligaciones')
-          .select('*')
-          .in('id', idsAsignadas)
-          .eq('activa', true)
-          .order('fecha_vencimiento', { ascending: true, nullsFirst: false });
-        obs = obsData || [];
-      }
-      setObligaciones(obs);
 
-      // Fetch responsable names
+      const obs = obligacionesRes.data || [];
+      setObligaciones(obs);
+      const asignSet = new Set<string>((misAsigRes.data || []).map((r: any) => r.obligacion_id));
+      setMisAsignaciones(asignSet);
       const responsableIds = [...new Set(obs.filter((o: any) => o.responsable_id).map((o: any) => o.responsable_id))];
       if (responsableIds.length > 0) {
         const { data: profilesData } = await supabase
@@ -105,6 +105,7 @@ export default function MiEmpresa() {
           setResponsables(rMap);
         }
       }
+
 
       if (obs.length > 0) {
         const obIds = obs.map((o: any) => o.id);
@@ -127,6 +128,10 @@ export default function MiEmpresa() {
 
   const toggleCumplimiento = async (obligacionId: string, presentacion: string | null) => {
     if (!user) return;
+    if (!misAsignaciones.has(obligacionId)) {
+      toast.error('Solo puedes marcar las obligaciones asignadas a ti');
+      return;
+    }
     const periodKey = getCurrentPeriodKey(presentacion);
     const mapKey = `${obligacionId}:${periodKey}`;
     const isCompleted = cumplimientos[mapKey];
@@ -143,6 +148,7 @@ export default function MiEmpresa() {
       setEvidenciaObl({ id: obligacionId, presentacion, periodoKey: periodKey, nombre: ob?.nombre });
     }
   };
+
 
   const handleEvidenciaCompleted = () => {
     if (evidenciaObl) {
@@ -163,6 +169,7 @@ export default function MiEmpresa() {
 
   // Filtered obligations
   const filteredObligaciones = obligaciones.filter((ob: any) => {
+    if (filterAsignacion === 'mias' && !misAsignaciones.has(ob.id)) return false;
     if (searchTerm && !ob.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     if (filterCategoria !== 'todas' && ob.categoria !== filterCategoria) return false;
     if (filterEstado !== 'todos') {
@@ -173,6 +180,7 @@ export default function MiEmpresa() {
     }
     return true;
   });
+
 
   const categorias = [...new Set(obligaciones.map((o: any) => o.categoria))];
 
@@ -391,11 +399,21 @@ export default function MiEmpresa() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Select value={filterAsignacion} onValueChange={(v: any) => setFilterAsignacion(v)}>
+                    <SelectTrigger className="w-full sm:w-[170px]">
+                      <SelectValue placeholder="Asignación" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas de la empresa</SelectItem>
+                      <SelectItem value="mias">Solo asignadas a mí</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <ExportarCumplimientoButton
                     obligaciones={obligaciones}
                     cumplimientos={cumplimientos}
                     empresaNombre={empresa.razon_social}
                   />
+
                 </div>
               </CardContent>
             </Card>
@@ -405,15 +423,17 @@ export default function MiEmpresa() {
               <CardHeader>
                 <CardTitle className="font-heading flex items-center gap-2">
                   <ClipboardList className="w-5 h-5" />
-                  Mis Obligaciones
+                  Obligaciones de la Empresa
                   <Badge variant="secondary" className="ml-2">{filteredObligaciones.length}</Badge>
                 </CardTitle>
-                <CardDescription>Marca como completadas las obligaciones del periodo actual</CardDescription>
+                <CardDescription>
+                  Ves todas las obligaciones activas de tu empresa. Solo puedes marcar como cumplidas las que tienen el badge <span className="font-semibold text-primary">"Asignada a ti"</span>.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {filteredObligaciones.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
-                    {obligaciones.length === 0 ? 'No hay obligaciones asignadas' : 'No se encontraron obligaciones con los filtros aplicados'}
+                    {obligaciones.length === 0 ? 'Tu empresa aún no tiene obligaciones activas' : 'No se encontraron obligaciones con los filtros aplicados'}
                   </p>
                 ) : (() => {
                   const grouped = filteredObligaciones.reduce((acc: Record<string, any[]>, ob: any) => {
@@ -440,18 +460,28 @@ export default function MiEmpresa() {
                               const mapKey = `${ob.id}:${periodKey}`;
                               const isCompleted = cumplimientos[mapKey] || false;
                               const resp = ob.responsable_id ? responsables[ob.responsable_id] : null;
+                              const esMia = misAsignaciones.has(ob.id);
 
                               return (
-                                <div key={ob.id} className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${isCompleted ? 'bg-success/10 border-success/30' : ''}`}>
-                                  <Checkbox
-                                    checked={isCompleted}
-                                    onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
-                                  />
+                                <div key={ob.id} className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${isCompleted ? 'bg-success/10 border-success/30' : esMia ? 'border-primary/30' : 'opacity-80'}`}>
+                                  {esMia ? (
+                                    <Checkbox
+                                      checked={isCompleted}
+                                      onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
+                                    />
+                                  ) : (
+                                    <div className="w-4 h-4 shrink-0" aria-hidden />
+                                  )}
                                   <div className="flex-1 min-w-0">
                                     <p className={`font-heading font-medium text-sm ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
                                       {ob.nombre}
                                     </p>
                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                      {esMia && (
+                                        <Badge className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/15">
+                                          Asignada a ti
+                                        </Badge>
+                                      )}
                                       {ob.presentacion && (
                                         <Badge variant="outline" className="text-xs">{ob.presentacion}</Badge>
                                       )}
@@ -490,6 +520,7 @@ export default function MiEmpresa() {
                       ))}
                     </div>
                   );
+
                 })()}
               </CardContent>
             </Card>
