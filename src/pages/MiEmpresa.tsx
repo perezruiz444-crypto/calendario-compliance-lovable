@@ -33,6 +33,7 @@ export default function MiEmpresa() {
   const [apoderados, setApoderados] = useState<any[]>([]);
   const [domicilios, setDomicilios] = useState<any[]>([]);
   const [obligaciones, setObligaciones] = useState<any[]>([]);
+  const [misAsignaciones, setMisAsignaciones] = useState<Set<string>>(new Set());
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
   const [responsables, setResponsables] = useState<Record<string, { nombre: string; tipo: string }>>({});
   const [tareas, setTareas] = useState<any[]>([]);
@@ -43,6 +44,8 @@ export default function MiEmpresa() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState<string>('todos');
   const [filterCategoria, setFilterCategoria] = useState<string>('todas');
+  const [filterAsignacion, setFilterAsignacion] = useState<'todas' | 'mias'>('todas');
+
 
   // Dialogs
   const [historialObl, setHistorialObl] = useState<any | null>(null);
