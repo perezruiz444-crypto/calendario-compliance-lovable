@@ -185,9 +185,9 @@ export default function Auth() {
           <div>
             <h1 className="text-4xl font-bold text-white leading-tight font-heading">
               Cumplimiento de<br />Comercio Exterior<br />
-              <span className="text-white/60">sin complicaciones.</span>
+              <span className="text-white/75">sin complicaciones.</span>
             </h1>
-            <p className="text-white/60 text-sm mt-4 leading-relaxed max-w-xs">
+            <p className="text-white/80 text-sm mt-4 leading-relaxed max-w-xs">
               Gestiona todas las obligaciones regulatorias de tus empresas desde un solo lugar.
             </p>
           </div>
@@ -198,7 +198,7 @@ export default function Auth() {
                 <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
                   <Icon className="w-3.5 h-3.5 text-white/70" />
                 </div>
-                <span className="text-sm text-white/70">{text}</span>
+                <span className="text-sm text-white/85">{text}</span>
               </div>
             ))}
           </div>
@@ -237,7 +237,7 @@ export default function Auth() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 Correo electrónico
@@ -301,7 +301,7 @@ export default function Auth() {
             >
               ¿Olvidaste tu contraseña?
             </button>
-            <p className="text-xs text-muted-foreground/60">
+            <p className="text-xs text-muted-foreground">
               ¿Sin acceso? Contacta a tu administrador
             </p>
           </div>

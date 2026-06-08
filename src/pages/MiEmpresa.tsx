@@ -209,7 +209,7 @@ export default function MiEmpresa() {
     <DashboardLayout currentPage="/mi-empresa">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-heading font-bold text-foreground mb-2">Mi Empresa</h1>
+          <h1 className="h2 text-foreground mb-2">Mi Empresa</h1>
           <p className="text-muted-foreground font-body">Información y documentación de tu empresa</p>
         </div>
 

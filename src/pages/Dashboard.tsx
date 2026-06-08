@@ -106,7 +106,7 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center p-6">
         <ShieldAlert className="h-12 w-12 text-muted-foreground" />
-        <h2 className="font-heading text-xl font-semibold">Cuenta pendiente de activación</h2>
+        <h2 className="h4">Cuenta pendiente de activación</h2>
         <p className="text-muted-foreground text-sm max-w-xs">
           Tu cuenta fue creada pero aún no tiene un rol asignado.
           Contacta al administrador del sistema.
@@ -164,7 +164,7 @@ export default function Dashboard() {
             <Building2 className="w-10 h-10 text-primary" />
           </div>
           <div className="space-y-2 max-w-sm">
-            <h2 className="font-heading text-2xl font-bold tracking-tight">
+            <h2 className="h3">
               Hola, {firstName}.
             </h2>
             <p className="text-muted-foreground leading-relaxed">
@@ -318,7 +318,7 @@ export default function Dashboard() {
                 <p className="eyebrow-primary mb-1.5 flex items-center gap-1.5">
                   <Calendar className="w-3 h-3" /> Próximos vencimientos
                 </p>
-                <h3 className="font-heading text-xl font-bold tracking-tight">Próximas Tareas</h3>
+                <h3 className="h4">Próximas Tareas</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">Próximas 10 tareas por vencer</p>
               </div>
               <Button variant="outline" size="sm" onClick={() => navigate('/tareas')} className="font-heading">

@@ -143,7 +143,7 @@ export default function Configuraciones() {
             <Settings className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">Configuraciones</h1>
+            <h1 className="h2">Configuraciones</h1>
             <p className="text-muted-foreground">
               Personaliza tu experiencia y preferencias del sistema
             </p>

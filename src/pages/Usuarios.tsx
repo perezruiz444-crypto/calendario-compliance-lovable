@@ -143,7 +143,7 @@ export default function Usuarios() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
+            <h1 className="h2 text-foreground mb-2">
               Gestión de Usuarios
             </h1>
             <p className="text-muted-foreground font-body">

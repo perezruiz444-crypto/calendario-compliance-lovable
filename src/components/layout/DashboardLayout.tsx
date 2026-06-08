@@ -133,7 +133,7 @@ function SidebarContent({
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.28, delay: 0.04 + idx * 0.035, ease: [0.4, 0, 0.2, 1] }}
               onClick={() => onNavigate(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group relative ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-lg text-sm transition-all duration-200 group relative ${
                 isActive
                   ? 'bg-primary/10 text-primary font-semibold shadow-[0_0_0_1px_hsl(var(--primary)/0.08)]'
                   : 'font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground hover:translate-x-0.5'
@@ -160,7 +160,7 @@ function SidebarContent({
         {actualRole === 'administrador' && !simulatedRole && (
           <button
             onClick={() => setSimulatedRole('cliente')}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-all mb-3 shadow-[0_0_0_1px_hsl(var(--primary)/0.08)]"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 min-h-[44px] rounded-lg text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-all mb-3 shadow-[0_0_0_1px_hsl(var(--primary)/0.08)]"
           >
             <Eye className="w-3.5 h-3.5" />
             Ver como Cliente (Simular)
@@ -184,7 +184,7 @@ function SidebarContent({
         {role === 'cliente' && onReopenTour && (
           <button
             onClick={onReopenTour}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors mb-1"
+            className="w-full flex items-center gap-2.5 px-3 py-2 min-h-[44px] rounded-lg text-xs text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors mb-1"
           >
             <PlayCircle className="w-3.5 h-3.5" />
             Ver tutorial
@@ -192,7 +192,7 @@ function SidebarContent({
         )}
         <button
           onClick={onSignOut}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
+          className="w-full flex items-center gap-2.5 px-3 py-2 min-h-[44px] rounded-lg text-xs text-sidebar-foreground/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
         >
           <LogOut className="w-3.5 h-3.5" />
           Cerrar sesión

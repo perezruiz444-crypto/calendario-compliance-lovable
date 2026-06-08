@@ -42,7 +42,7 @@ const Index = () => {
         <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-6">
           <Building2 className="w-8 h-8 text-primary-foreground" />
         </div>
-        <h1 className="text-3xl font-heading font-bold text-foreground mb-1">
+        <h1 className="h2 text-foreground mb-1">
           Calendario Compliance
         </h1>
         <p className="text-muted-foreground font-body mb-8">Calendario Compliance</p>

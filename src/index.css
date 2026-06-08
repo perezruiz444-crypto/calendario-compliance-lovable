@@ -203,6 +203,25 @@ body::before {
     letter-spacing: -0.03em;
   }
 
+  /* Heading scale — systematic, ratio 1.25. Use by hierarchy, not by desired size.
+     h1 48 / h2 32 / h3 24 / h4 20. Fixed weight per level. */
+  .h1 {
+    @apply font-heading text-5xl font-bold leading-tight;
+    letter-spacing: -0.03em;
+  }
+  .h2 {
+    @apply font-heading text-3xl font-bold leading-tight;
+    letter-spacing: -0.02em;
+  }
+  .h3 {
+    @apply font-heading text-2xl font-semibold leading-snug;
+    letter-spacing: -0.015em;
+  }
+  .h4 {
+    @apply font-heading text-xl font-semibold leading-snug;
+    letter-spacing: -0.01em;
+  }
+
   /* Hairline divider */
   .hairline {
     border-top: 1px solid hsl(var(--border-subtle));
