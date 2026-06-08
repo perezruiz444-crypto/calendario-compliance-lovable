@@ -4,8 +4,8 @@
 - React 18 + TypeScript (strict mode OFF) + Vite + SWC
 - Tailwind CSS + Radix UI (shadcn/ui pattern) + Framer Motion
 - React Router v6 (lazy loading en todas las páginas)
-- React Query v5 para data fetching y caching
-- React Hook Form + Zod para formularios
+- React Query v5 instalado, pero hoy solo provee el QueryClient global — el data fetching real es Supabase directo (ver Data Fetching)
+- Zod para validación de formularios (con `.parse()` manual, no `zodResolver`)
 - Supabase (auth, PostgreSQL, RLS) — sin backend custom
 
 ## Comandos
@@ -38,13 +38,19 @@ QueryClientProvider → AuthProvider → EmpresaProvider → ErrorBoundary
 - CAPTCHA disponible en signIn (pasar captchaToken)
 
 ### Data Fetching
-React Query + Supabase. Patrón estándar:
+El fetching real es **Supabase directo** con `useEffect` + `useState` (no React Query).
+React Query solo provee el `QueryClient` global en App.tsx. Patrón estándar (ver `src/hooks/useEmpresasList.ts`):
 ```typescript
-const { data } = useQuery({
-  queryKey: ['entidad', params],
-  queryFn: () => supabase.from('tabla').select('*').eq('empresa_id', id)
-})
+const [data, setData] = useState([]);
+useEffect(() => {
+  supabase.from('tabla').select('*').eq('empresa_id', id)
+    .then(({ data, error }) => {
+      if (error) { toast.error('No se pudo cargar.'); return; }
+      setData(data || []);
+    });
+}, [id]);
 ```
+Errores → `toast.error()` (Sonner). Excepciones no controladas → `ErrorBoundary` (`console.error`).
 
 ### Componentes UI
 - Usar `cn()` (clsx) para classnames condicionales
