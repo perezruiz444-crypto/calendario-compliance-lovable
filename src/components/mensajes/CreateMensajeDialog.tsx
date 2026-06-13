@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { Send } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface CreateMensajeDialogProps {
   open: boolean;
@@ -46,7 +47,7 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
       if (error) throw error;
       setUsuarios(data || []);
     } catch (error) {
-      console.error('Error fetching usuarios:', error);
+      logger.error('Error fetching usuarios:', error);
     }
   };
 
@@ -60,7 +61,7 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
       if (error) throw error;
       setEmpresas(data || []);
     } catch (error) {
-      console.error('Error fetching empresas:', error);
+      logger.error('Error fetching empresas:', error);
     }
   };
 
@@ -92,7 +93,7 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
       if (data && data.length > 0) {
         supabase.functions.invoke('send-message-notification', {
           body: { mensaje_id: data[0].id }
-        }).catch(err => console.error('Error sending email notification:', err));
+        }).catch(err => logger.error('Error sending email notification:', err));
       }
 
       toast.success('Mensaje enviado exitosamente');

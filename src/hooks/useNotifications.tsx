@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { usePushNotifications } from './usePushNotifications';
 import { differenceInDays, isValid } from 'date-fns';
+import { logger } from '@/lib/logger';
 
 export interface Notification {
   id: string;
@@ -112,7 +113,7 @@ export function useNotifications() {
       setNotifications((data as Notification[]) || []);
       setUnreadCount((data as Notification[] | null)?.filter(n => !n.leida).length || 0);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      logger.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }
@@ -171,7 +172,7 @@ export function useNotifications() {
         .update({ leida: true })
         .eq('id', notificationId);
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      logger.error('Error marking notification as read:', error);
     }
   };
 
@@ -186,7 +187,7 @@ export function useNotifications() {
       setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
       setUnreadCount(0);
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      logger.error('Error marking all notifications as read:', error);
     }
   };
 

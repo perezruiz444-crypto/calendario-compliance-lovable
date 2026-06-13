@@ -29,6 +29,7 @@ import {
   getNextVencimiento, isRecurring, fetchCumplimientoKeys,
 } from '@/lib/obligaciones';
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
+import { logger } from '@/lib/logger';
 
 interface Props {
   empresaId: string;
@@ -79,7 +80,7 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
       .select('*')
       .eq('empresa_id', empresaId)
       .order('created_at', { ascending: false });
-    if (error) { toast.error('Error al cargar obligaciones'); console.error(error); }
+    if (error) { toast.error('Error al cargar obligaciones'); logger.error('Error en la operación', error); }
     else {
       setObligaciones(data || []);
       // Fetch cumplimientos for current periods
@@ -553,6 +554,7 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
                         <td className="p-2 text-right">
                           <div className="flex items-center justify-end gap-1">
                             <Button
+                              aria-label={ob.activa ? 'Desactivar' : 'Activar'}
                               size="icon"
                               variant="ghost"
                               className={`h-7 w-7 ${ob.activa ? 'text-primary' : 'text-muted-foreground'}`}
@@ -566,8 +568,8 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
                             >
                               {ob.activa ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(ob)}><Pencil className="w-3.5 h-3.5" /></Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(ob.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                            <Button aria-label="Editar obligación" size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(ob)}><Pencil className="w-3.5 h-3.5" /></Button>
+                            <Button aria-label="Eliminar obligación" size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(ob.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                           </div>
                         </td>
                       )}

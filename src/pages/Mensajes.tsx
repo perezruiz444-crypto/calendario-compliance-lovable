@@ -15,6 +15,7 @@ import { MensajeDetailDialog } from '@/components/mensajes/MensajeDetailDialog';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { logger } from '@/lib/logger';
 
 export default function Mensajes() {
   const { user, loading } = useAuth();
@@ -51,7 +52,7 @@ export default function Mensajes() {
       if (error) throw error;
       setMensajes(data || []);
     } catch (error) {
-      console.error('Error fetching mensajes:', error);
+      logger.error('Error fetching mensajes:', error);
       toast.error('Error al cargar mensajes');
     } finally {
       setLoadingMensajes(false);

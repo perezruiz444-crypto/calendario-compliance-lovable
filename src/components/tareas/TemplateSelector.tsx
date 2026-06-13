@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { FileText, Repeat, Clock, Check, ChevronRight } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { logger } from '@/lib/logger';
 
 interface TemplateSelectorProps {
   onSelect: (template: any) => void;
@@ -35,7 +36,7 @@ export function TemplateSelector({ onSelect }: TemplateSelectorProps) {
       if (error) throw error;
       setTemplates(data || []);
     } catch (error) {
-      console.error('Error fetching templates:', error);
+      logger.error('Error fetching templates:', error);
     } finally {
       setLoading(false);
     }
@@ -49,7 +50,7 @@ export function TemplateSelector({ onSelect }: TemplateSelectorProps) {
     try {
       await supabase.rpc('increment_template_usage', { template_id: template.id });
     } catch (error) {
-      console.error('Error incrementing template usage:', error);
+      logger.error('Error incrementing template usage:', error);
     }
 
     // Reset animation after delay

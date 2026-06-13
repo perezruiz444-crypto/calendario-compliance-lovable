@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Loader2, User, Mail, Phone, Key, Shield, Save } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 export default function ProfileSection() {
   const { user, role } = useAuth();
@@ -31,7 +32,7 @@ export default function ProfileSection() {
         .single();
       if (data) setProfile({ nombre_completo: data.nombre_completo || '', telefono: data.telefono || '' });
     } catch (e) {
-      console.error(e);
+      logger.error('Error al cargar el perfil', e);
     } finally {
       setLoading(false);
     }

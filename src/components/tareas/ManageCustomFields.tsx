@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, GripVertical } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface ManageCustomFieldsProps {
   open: boolean;
@@ -48,7 +49,7 @@ export default function ManageCustomFields({ open, onOpenChange }: ManageCustomF
       if (error) throw error;
       setFields(data || []);
     } catch (error) {
-      console.error('Error fetching custom fields:', error);
+      logger.error('Error fetching custom fields:', error);
       toast.error('Error al cargar campos personalizados');
     }
   };

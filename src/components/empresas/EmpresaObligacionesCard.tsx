@@ -153,6 +153,7 @@ function ObligacionRow({
             {canEdit && (
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
+                  aria-label="Editar fecha"
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6"
@@ -163,6 +164,7 @@ function ObligacionRow({
                 </Button>
                 {item.tipo === 'vencimiento' && item.fecha && isPast(new Date(item.fecha)) && (
                   <Button
+                    aria-label="Renovar (+1 año)"
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 text-success hover:text-success hover:bg-success/10"
@@ -238,6 +240,7 @@ function SectionNotes({
           <p className="text-xs text-muted-foreground flex-1">{noteValue}</p>
           {canEdit && (
             <Button
+              aria-label="Editar nota"
               variant="ghost"
               size="icon"
               className="h-5 w-5 opacity-0 group-hover/note:opacity-100 transition-opacity"

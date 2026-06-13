@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/command';
 import { Search, Building2, CheckSquare, MessageSquare, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { logger } from '@/lib/logger';
 
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
@@ -99,7 +100,7 @@ export function GlobalSearch() {
         documentos: documentosRes.data || []
       });
     } catch (error) {
-      console.error('Error searching:', error);
+      logger.error('Error searching:', error);
     } finally {
       setLoading(false);
     }

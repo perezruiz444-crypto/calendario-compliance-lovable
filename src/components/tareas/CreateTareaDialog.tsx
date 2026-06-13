@@ -17,6 +17,7 @@ import { FileAttachments } from './FileAttachments';
 import { TareaPreview } from './TareaPreview';
 import { Repeat, Save, Eye, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/logger';
 
 interface CreateTareaDialogProps {
   open: boolean;
@@ -105,7 +106,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
       if (error) throw error;
       setCategorias(data || []);
     } catch (error) {
-      console.error('Error fetching categorias:', error);
+      logger.error('Error fetching categorias:', error);
     }
   };
 
@@ -142,7 +143,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
         });
       }
     } catch (error) {
-      console.error('Error loading draft:', error);
+      logger.error('Error loading draft:', error);
     }
   };
 
@@ -182,7 +183,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
         setCurrentDraftId(data.id);
       }
     } catch (error) {
-      console.error('Error saving draft:', error);
+      logger.error('Error saving draft:', error);
     } finally {
       setSavingDraft(false);
     }
@@ -199,7 +200,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
       
       setCurrentDraftId(null);
     } catch (error) {
-      console.error('Error deleting draft:', error);
+      logger.error('Error deleting draft:', error);
     }
   };
 
@@ -230,7 +231,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
       if (error) throw error;
       setEmpresas(data || []);
     } catch (error) {
-      console.error('Error fetching empresas:', error);
+      logger.error('Error fetching empresas:', error);
     }
   };
 
@@ -284,7 +285,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
       if (error) throw error;
       setConsultores(data || []);
     } catch (error) {
-      console.error('Error fetching consultores:', error);
+      logger.error('Error fetching consultores:', error);
       toast.error('Error al cargar consultores');
     }
   };

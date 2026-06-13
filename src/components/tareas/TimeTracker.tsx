@@ -9,6 +9,7 @@ import { Play, Pause, Clock, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { logger } from '@/lib/logger';
 
 interface TimeTrackerProps {
   tareaId: string;
@@ -59,7 +60,7 @@ export function TimeTracker({ tareaId }: TimeTrackerProps) {
         .reduce((sum, e) => sum + (e.duracion_minutos || 0), 0);
       setTotalTime(total);
     } catch (error) {
-      console.error('Error fetching time entries:', error);
+      logger.error('Error fetching time entries:', error);
     } finally {
       setLoading(false);
     }

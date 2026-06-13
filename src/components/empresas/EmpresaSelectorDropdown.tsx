@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { useEffect, useState, useMemo } from 'react';
 import { Building2, Globe } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,7 +69,7 @@ export function EmpresaSelectorDropdown({
       setEmpresas(data);
       if (!selectedEmpresaId && data.length > 0) onEmpresaSelect(data[0].id);
     } catch (e) {
-      console.error(e);
+      logger.error('Error al cargar empresas', e);
     } finally {
       setLoading(false);
     }

@@ -123,8 +123,8 @@ export function AgentesAduanalesCard({ empresaId, agentes, canEdit, onUpdate }: 
               </div>
               {canEdit && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(agente)}><Pencil className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(agente.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  <Button aria-label="Editar agente aduanal" variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(agente)}><Pencil className="w-3.5 h-3.5" /></Button>
+                  <Button aria-label="Eliminar agente aduanal" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(agente.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                 </div>
               )}
             </div>

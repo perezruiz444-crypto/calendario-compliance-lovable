@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, Pencil, Palette, Tag } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { logger } from '@/lib/logger';
 
 interface Category {
   id: string;
@@ -61,7 +62,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange, onCategoryC
       if (error) throw error;
       setCategories(data || []);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      logger.error('Error fetching categories:', error);
       toast.error('Error al cargar categorías');
     }
   };
@@ -126,7 +127,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange, onCategoryC
       fetchCategories();
       onCategoryChange?.();
     } catch (error: any) {
-      console.error('Error saving category:', error);
+      logger.error('Error saving category:', error);
       toast.error(error.message || 'Error al guardar categoría');
     } finally {
       setLoading(false);

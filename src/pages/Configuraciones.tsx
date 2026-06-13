@@ -20,6 +20,7 @@ import ProfileSection from '@/components/configuraciones/ProfileSection';
 import SecurityAuditSection from '@/components/configuraciones/SecurityAuditSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface NotificationSetting {
   id: string;
@@ -94,7 +95,7 @@ export default function Configuraciones() {
       if (error) throw error;
       setSettings(data || []);
     } catch (error) {
-      console.error('Error fetching settings:', error);
+      logger.error('Error fetching settings:', error);
     } finally {
       setLoading(false);
     }

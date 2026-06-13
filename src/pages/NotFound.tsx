@@ -3,13 +3,14 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import { logger } from '@/lib/logger';
 
 const NotFound = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+    logger.error("404 Error: User attempted to access non-existent route:", location.pathname);
   }, [location.pathname]);
 
   return (

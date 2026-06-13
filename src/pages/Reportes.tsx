@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { generateReportPDF, generateCategoriaReportPDF, generateCumplimientoMensualPDF } from '@/lib/pdfGenerator';
 import { buildCategoriaReportData, buildCumplimientoMensualData } from '@/lib/reportDataBuilders';
 import { exportToExcel } from '@/lib/excelExport';
+import { logger } from '@/lib/logger';
 
 export default function Reportes() {
   const { user, role, loading } = useAuth();
@@ -115,7 +116,7 @@ export default function Reportes() {
       if (error) throw error;
       setEmpresas(data || []);
     } catch (error) {
-      console.error('Error fetching empresas:', error);
+      logger.error('Error fetching empresas:', error);
     }
   };
 
@@ -141,7 +142,7 @@ export default function Reportes() {
         setConsultores(profiles || []);
       }
     } catch (error) {
-      console.error('Error fetching consultores:', error);
+      logger.error('Error fetching consultores:', error);
     }
   };
 
@@ -155,7 +156,7 @@ export default function Reportes() {
       if (error) throw error;
       setCategorias(data || []);
     } catch (error) {
-      console.error('Error fetching categorias:', error);
+      logger.error('Error fetching categorias:', error);
     }
   };
 
@@ -575,7 +576,7 @@ export default function Reportes() {
         }
       });
     } catch (error) {
-      console.error('Error fetching report data:', error);
+      logger.error('Error fetching report data:', error);
     } finally {
       setLoadingData(false);
     }
@@ -727,7 +728,7 @@ export default function Reportes() {
 
                       toast.success("PDF generado — el reporte se ha descargado correctamente");
                     } catch (err: unknown) {
-                      console.error('Error generating PDF:', err);
+                      logger.error('Error generating PDF:', err);
                       toast.error(err instanceof Error ? err.message : 'Error al generar PDF');
                     }
                   }}

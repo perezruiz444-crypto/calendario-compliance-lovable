@@ -25,6 +25,7 @@ import { EvidenciaCumplimiento } from '@/components/obligaciones/EvidenciaCumpli
 import { ExportarCumplimientoButton } from '@/components/obligaciones/ExportarCumplimientoButton';
 import MisVencimientos from '@/components/empresas/MisVencimientos';
 import MisDocumentos from '@/components/empresas/MisDocumentos';
+import { logger } from '@/lib/logger';
 
 export default function MiEmpresa() {
   const { user, role, loading } = useAuth();
@@ -120,7 +121,7 @@ export default function MiEmpresa() {
         }
       }
     } catch (error) {
-      console.error('Error fetching empresa data:', error);
+      logger.error('Error fetching empresa data:', error);
     } finally {
       setLoadingData(false);
     }
@@ -503,6 +504,7 @@ export default function MiEmpresa() {
                                     </div>
                                   </div>
                                   <Button
+                                    aria-label="Ver historial"
                                     variant="ghost"
                                     size="icon"
                                     className="h-7 w-7 shrink-0"

@@ -632,6 +632,7 @@ export function CatalogoAdmin() {
                           <td className="p-2.5">
                             <div className="flex items-center gap-1 justify-end">
                               <Button
+                                aria-label="Editar"
                                 size="icon" variant="ghost" className="h-7 w-7"
                                 onClick={() => handleEdit(item)}
                                 title="Editar"
@@ -639,6 +640,7 @@ export function CatalogoAdmin() {
                                 <Pencil className="w-3 h-3" />
                               </Button>
                               <Button
+                                aria-label={item.activo ? 'Desactivar' : 'Reactivar'}
                                 size="icon" variant="ghost"
                                 className={`h-7 w-7 ${item.activo ? 'text-muted-foreground' : 'text-success'}`}
                                 onClick={() => handleToggleActivo(item)}
@@ -648,6 +650,7 @@ export function CatalogoAdmin() {
                               </Button>
                               {!item.activo && (
                                 <Button
+                                  aria-label="Eliminar permanentemente"
                                   size="icon" variant="ghost"
                                   className="h-7 w-7 text-destructive hover:text-destructive"
                                   onClick={() => handleDelete(item.id)}

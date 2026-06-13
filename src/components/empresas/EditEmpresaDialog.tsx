@@ -12,6 +12,7 @@ import EmpresaFormApoderados from './EmpresaFormApoderados';
 import EmpresaFormMatrizSeguridad from './EmpresaFormMatrizSeguridad';
 import EmpresaFormPadronImportadores from './EmpresaFormPadronImportadores';
 import EmpresaFormAgentesAduanales from './EmpresaFormAgentesAduanales';
+import { logger } from '@/lib/logger';
 interface EditEmpresaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -39,7 +40,7 @@ export default function EditEmpresaDialog({ open, onOpenChange, onEmpresaUpdated
 
     if (error) {
       toast.error('Error al cargar datos de la empresa');
-      console.error(error);
+      logger.error('Error al cargar datos de la empresa', error);
     } else if (!data) {
       toast.error('Empresa no encontrada');
       onOpenChange(false);

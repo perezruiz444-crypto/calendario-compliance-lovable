@@ -9,6 +9,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/lib/logger';
 
 interface NotificationPreference {
   id: string;
@@ -41,7 +42,7 @@ export function NotificationSettings() {
       if (error) throw error;
       setPreferences(data || []);
     } catch (error) {
-      console.error('Error loading notification preferences:', error);
+      logger.error('Error loading notification preferences:', error);
       toast.error('Error al cargar las preferencias');
     } finally {
       setLoading(false);
@@ -71,7 +72,7 @@ export function NotificationSettings() {
       
       toast.success('Preferencia actualizada');
     } catch (error) {
-      console.error('Error updating preference:', error);
+      logger.error('Error updating preference:', error);
       toast.error('Error al actualizar preferencia');
     }
   };

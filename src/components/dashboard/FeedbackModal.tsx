@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { MessageSquareHeart, Sparkles, Clock, CheckCircle2, ChevronRight, ChevronLeft, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 const STORAGE_KEY = 'has_submitted_feedback_v1';
 const SESSION_COUNT_KEY = 'session_count_v1';
@@ -109,7 +110,7 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
       });
       setOpen(false);
     } catch (err) {
-      console.error(err);
+      logger.error('Error al enviar la encuesta', err);
       toast.error('Error al enviar la encuesta. Intenta de nuevo.');
     } finally {
       setLoading(false);

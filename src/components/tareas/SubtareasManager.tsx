@@ -25,6 +25,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { logger } from '@/lib/logger';
 
 interface SubtareasManagerProps {
   tareaId: string;
@@ -155,7 +156,7 @@ export function SubtareasManager({ tareaId }: SubtareasManagerProps) {
       const progreso = total > 0 ? Math.round((completadas / total) * 100) : 0;
       setProgress({ total, completadas, progreso });
     } catch (error) {
-      console.error('Error fetching subtareas:', error);
+      logger.error('Error fetching subtareas:', error);
     } finally {
       setLoading(false);
     }
@@ -177,7 +178,7 @@ export function SubtareasManager({ tareaId }: SubtareasManagerProps) {
         setConsultores(data || []);
       }
     } catch (error) {
-      console.error('Error fetching consultores:', error);
+      logger.error('Error fetching consultores:', error);
     }
   };
 
@@ -255,7 +256,7 @@ export function SubtareasManager({ tareaId }: SubtareasManagerProps) {
       );
       await Promise.all(updates);
     } catch (error) {
-      console.error('Error reordering:', error);
+      logger.error('Error reordering:', error);
       toast.error('Error al reordenar');
       fetchSubtareas();
     }

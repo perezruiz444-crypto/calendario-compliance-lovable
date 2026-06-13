@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getCurrentPeriodKey } from '@/lib/obligaciones';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export interface Obligacion {
   id: string;
@@ -109,7 +110,7 @@ export function useObligacionCumplimientos(obligaciones: Obligacion[], empresaId
         toast.success('Cumplimiento marcado');
       }
     } catch (error) {
-      console.error(error);
+      logger.error('Error al actualizar el cumplimiento', error);
       // Revert on failure
       setCumplimientos((prev) => ({ ...prev, [obl.id]: wasComplete }));
       toast.error('No tienes permiso o hubo un error al actualizar');

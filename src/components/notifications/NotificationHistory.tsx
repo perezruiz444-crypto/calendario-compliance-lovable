@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { logger } from '@/lib/logger';
 
 interface NotificationLog {
   id: string;
@@ -66,7 +67,7 @@ export function NotificationHistory() {
       if (error) throw error;
       setLogs(data || []);
     } catch (error) {
-      console.error('Error loading notification logs:', error);
+      logger.error('Error loading notification logs:', error);
       toast.error('Error al cargar historial');
     } finally {
       setLoading(false);

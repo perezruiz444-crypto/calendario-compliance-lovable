@@ -18,6 +18,7 @@ import SendNotificationDialog from './SendNotificationDialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { MultipleAssignees } from './MultipleAssignees';
+import { logger } from '@/lib/logger';
 
 interface TareaDetailSheetProps {
   open: boolean;
@@ -89,7 +90,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
         .order('created_at', { ascending: true });
       setComentarios(comentariosData || []);
     } catch (error) {
-      console.error('Error fetching tarea:', error);
+      logger.error('Error fetching tarea:', error);
       toast.error('Error al cargar la tarea');
     } finally {
       setLoadingData(false);
@@ -123,7 +124,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
       showSaveIndicator(field);
       onUpdate?.();
     } catch (error) {
-      console.error('Error updating field:', error);
+      logger.error('Error updating field:', error);
       toast.error('Error al actualizar');
     }
   }, [tareaId, onUpdate]);

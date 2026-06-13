@@ -112,8 +112,8 @@ export function DomiciliosCard({ empresaId, domicilios, canEdit, onUpdate }: Dom
               </div>
               {canEdit && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(d)}><Pencil className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  <Button aria-label="Editar domicilio" variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(d)}><Pencil className="w-3.5 h-3.5" /></Button>
+                  <Button aria-label="Eliminar domicilio" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                 </div>
               )}
             </div>

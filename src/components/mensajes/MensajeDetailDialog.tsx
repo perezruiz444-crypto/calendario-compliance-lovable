@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Mail, Clock, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { logger } from '@/lib/logger';
 
 interface MensajeDetailDialogProps {
   open: boolean;
@@ -58,7 +59,7 @@ export function MensajeDetailDialog({ open, onOpenChange, mensajeId, onUpdate }:
       }
     } catch (error: any) {
       toast.error('Error al cargar mensaje');
-      console.error(error);
+      logger.error('Error al cargar mensaje', error);
     } finally {
       setLoading(false);
     }

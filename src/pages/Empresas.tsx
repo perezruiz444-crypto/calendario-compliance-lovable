@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -65,7 +66,7 @@ export default function Empresas() {
         }
       }
     } catch (error) {
-      console.error('Error fetching empresas:', error);
+      logger.error('Error fetching empresas:', error);
     } finally {
       setLoadingEmpresas(false);
     }
@@ -228,7 +229,7 @@ export default function Empresas() {
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <Button aria-label="Más opciones" variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>

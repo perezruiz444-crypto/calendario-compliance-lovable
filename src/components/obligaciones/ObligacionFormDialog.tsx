@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ChevronDown, Calendar, User, Users, RefreshCw, Lightbulb } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/logger';
 
 interface CatalogoMinItem {
   id: string;
@@ -168,7 +169,7 @@ export function ObligacionFormDialog({ open, onOpenChange, onSubmit, initialData
 
       setUsuarios(results);
     } catch (err) {
-      console.error('Error fetching usuarios:', err);
+      logger.error('Error fetching usuarios:', err);
       toast.error('Error al cargar consultores y clientes');
     }
   };

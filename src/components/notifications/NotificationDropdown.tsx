@@ -26,7 +26,7 @@ export function NotificationDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button aria-label="Notificaciones" variant="ghost" size="icon" className="relative">
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
             <Badge 

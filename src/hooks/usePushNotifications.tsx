@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export function usePushNotifications() {
   const { user } = useAuth();
@@ -33,7 +34,7 @@ export function usePushNotifications() {
         setIsSubscribed(!!subscription);
       }
     } catch (error) {
-      console.error('Service Worker registration failed:', error);
+      logger.error('Service Worker registration failed:', error);
     }
   };
 
@@ -57,7 +58,7 @@ export function usePushNotifications() {
       }
       return false;
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      logger.error('Error requesting notification permission:', error);
       toast.error('Error al solicitar permisos de notificación');
       return false;
     }
@@ -79,7 +80,7 @@ export function usePushNotifications() {
           .eq('id', user.id);
       }
     } catch (error) {
-      console.error('Error subscribing to push notifications:', error);
+      logger.error('Error subscribing to push notifications:', error);
       toast.error('Error al suscribirse a notificaciones');
     }
   };
@@ -105,7 +106,7 @@ export function usePushNotifications() {
       
       toast.success('Notificaciones desactivadas');
     } catch (error) {
-      console.error('Error unsubscribing from push notifications:', error);
+      logger.error('Error unsubscribing from push notifications:', error);
       toast.error('Error al desactivar notificaciones');
     }
   };
@@ -121,7 +122,7 @@ export function usePushNotifications() {
         ...options
       });
     } catch (error) {
-      console.error('Error showing notification:', error);
+      logger.error('Error showing notification:', error);
     }
   };
 

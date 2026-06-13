@@ -362,6 +362,7 @@ export default function Dashboard() {
                       </div>
                       {tarea.estado !== 'completada' && (
                         <Button
+                          aria-label="Marcar como completada"
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-success hover:text-success hover:bg-success/10"

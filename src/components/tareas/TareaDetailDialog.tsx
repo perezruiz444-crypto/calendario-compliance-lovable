@@ -12,6 +12,7 @@ import { Send, MessageSquare, Calendar, User, Paperclip, Repeat } from 'lucide-r
 import { format } from 'date-fns';
 import { FileAttachments } from './FileAttachments';
 import SendNotificationDialog from './SendNotificationDialog';
+import { logger } from '@/lib/logger';
 
 interface TareaDetailDialogProps {
   open: boolean;
@@ -108,7 +109,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
       }
     } catch (error: any) {
       toast.error('Error al cargar la tarea');
-      console.error(error);
+      logger.error('Error al cargar la tarea', error);
     } finally {
       setLoadingData(false);
     }
@@ -137,7 +138,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
       fetchTareaData();
     } catch (error: any) {
       toast.error('Error al agregar comentario');
-      console.error(error);
+      logger.error('Error al agregar comentario', error);
     } finally {
       setLoading(false);
     }
@@ -156,7 +157,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
       fetchTareaData();
     } catch (error: any) {
       toast.error('Error al actualizar estado');
-      console.error(error);
+      logger.error('Error al actualizar estado', error);
     }
   };
 

@@ -190,7 +190,7 @@ export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaForm
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSector())}
             className="font-body"
           />
-          <Button type="button" onClick={addSector} size="icon">
+          <Button aria-label="Agregar sector" type="button" onClick={addSector} size="icon">
             <Plus className="w-4 h-4" />
           </Button>
         </div>

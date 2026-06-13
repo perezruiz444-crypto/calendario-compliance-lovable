@@ -239,7 +239,7 @@ export default function EmpresaDetail() {
       <div className="flex items-center gap-2">
         <Input ref={inputRef} value={editValue} onChange={e => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown} onBlur={saveField} className="h-7 text-sm" />
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={cancelEditing}><X className="w-3 h-3" /></Button>
+        <Button aria-label="Cancelar edición" variant="ghost" size="icon" className="h-6 w-6" onClick={cancelEditing}><X className="w-3 h-3" /></Button>
       </div>
     );
     return (

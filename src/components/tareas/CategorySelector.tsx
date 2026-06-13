@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface CategorySelectorProps {
   value: string;
@@ -67,7 +68,7 @@ export function CategorySelector({ value, onValueChange }: CategorySelectorProps
       if (error) throw error;
       setCategories(data || []);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      logger.error('Error fetching categories:', error);
       toast.error('Error al cargar categorías');
     } finally {
       setLoading(false);

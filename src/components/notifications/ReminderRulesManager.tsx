@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { logger } from '@/lib/logger';
 
 interface ReminderRule {
   id: string;
@@ -94,7 +95,7 @@ export function ReminderRulesManager() {
       setRules(rulesWithEmpresas);
       setEmpresas(empresasData || []);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       toast.error('Error al cargar reglas');
     } finally {
       setLoading(false);
@@ -158,7 +159,7 @@ export function ReminderRulesManager() {
       setDialogOpen(false);
       loadData();
     } catch (error) {
-      console.error('Error saving rule:', error);
+      logger.error('Error saving rule:', error);
       toast.error('Error al guardar regla');
     } finally {
       setSaving(false);
@@ -180,7 +181,7 @@ export function ReminderRulesManager() {
 
       toast.success(rule.activa ? 'Regla desactivada' : 'Regla activada');
     } catch (error) {
-      console.error('Error toggling rule:', error);
+      logger.error('Error toggling rule:', error);
       toast.error('Error al actualizar regla');
     }
   };
@@ -197,7 +198,7 @@ export function ReminderRulesManager() {
       setRules(prev => prev.filter(r => r.id !== rule.id));
       toast.success('Regla eliminada');
     } catch (error) {
-      console.error('Error deleting rule:', error);
+      logger.error('Error deleting rule:', error);
       toast.error('Error al eliminar regla');
     }
   };
@@ -420,6 +421,7 @@ export function ReminderRulesManager() {
                           onCheckedChange={() => handleToggleActive(rule)}
                         />
                         <Button
+                          aria-label="Editar regla"
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenDialog(rule)}
@@ -428,7 +430,7 @@ export function ReminderRulesManager() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                            <Button aria-label="Eliminar regla" variant="ghost" size="icon" className="text-destructive hover:text-destructive">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>

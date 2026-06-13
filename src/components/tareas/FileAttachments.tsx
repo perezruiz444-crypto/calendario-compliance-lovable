@@ -191,6 +191,7 @@ export function FileAttachments({ tareaId, attachments, onAttachmentsChange, rea
               </div>
               <div className="flex items-center gap-2">
                 <Button
+                  aria-label="Descargar archivo"
                   type="button"
                   variant="ghost"
                   size="icon"
@@ -201,6 +202,7 @@ export function FileAttachments({ tareaId, attachments, onAttachmentsChange, rea
                 </Button>
                 {!readonly && (
                   <Button
+                    aria-label="Quitar archivo"
                     type="button"
                     variant="ghost"
                     size="icon"

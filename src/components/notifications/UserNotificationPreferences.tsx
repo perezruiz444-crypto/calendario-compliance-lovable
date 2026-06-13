@@ -9,6 +9,7 @@ import { Bell, Mail, Smartphone, Clock, RotateCcw, Loader2 } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/lib/logger';
 
 interface NotificationPreference {
   notification_key: string;
@@ -127,7 +128,7 @@ export function UserNotificationPreferences() {
         });
       }
     } catch (error) {
-      console.error('Error loading preferences:', error);
+      logger.error('Error loading preferences:', error);
       toast.error('Error al cargar preferencias');
     } finally {
       setLoading(false);
@@ -163,7 +164,7 @@ export function UserNotificationPreferences() {
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error updating preference:', error);
+      logger.error('Error updating preference:', error);
       // Revert on error
       setPreferences(prev => ({ ...prev, [key]: currentPref }));
       toast.error('Error al actualizar preferencia');
@@ -183,7 +184,7 @@ export function UserNotificationPreferences() {
       if (error) throw error;
       toast.success('Preferencia actualizada');
     } catch (error) {
-      console.error('Error updating profile setting:', error);
+      logger.error('Error updating profile setting:', error);
       setProfileSettings(prev => ({ ...prev, [field]: oldValue }));
       toast.error('Error al actualizar preferencia');
     }
@@ -219,7 +220,7 @@ export function UserNotificationPreferences() {
 
       toast.success('Preferencias restauradas a valores predeterminados');
     } catch (error) {
-      console.error('Error resetting preferences:', error);
+      logger.error('Error resetting preferences:', error);
       toast.error('Error al restaurar preferencias');
     } finally {
       setSaving(false);

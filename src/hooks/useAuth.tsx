@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActualRole(data as UserRole);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching user role:', error);
+      logger.error('Error fetching user role:', error);
       setActualRole(null);
       setLoading(false);
     }

@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Palette, RotateCcw, Save, Copy, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface ColorConfig {
   label: string;
@@ -274,7 +275,7 @@ export default function ThemeEditor() {
       if (error) throw error;
       toast.success('Tema guardado — todos los usuarios verán los cambios');
     } catch (err) {
-      console.error('Error saving theme:', err);
+      logger.error('Error saving theme:', err);
       toast.error('Error al guardar el tema');
     } finally {
       setSaving(false);

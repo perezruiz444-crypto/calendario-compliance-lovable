@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, UserPlus, UserMinus, Users } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { logger } from '@/lib/logger';
 
 interface ManageConsultoresDialogProps {
   open: boolean;
@@ -90,7 +91,7 @@ export default function ManageConsultoresDialog({
       setConsultores(disponibles);
 
     } catch (error: any) {
-      console.error('Error fetching data:', error);
+      logger.error('Error fetching data:', error);
       toast.error('Error al cargar consultores');
     } finally {
       setLoading(false);
@@ -121,7 +122,7 @@ export default function ManageConsultoresDialog({
       setSelectedConsultor('');
       fetchData();
     } catch (error: any) {
-      console.error('Error assigning consultor:', error);
+      logger.error('Error assigning consultor:', error);
       toast.error('Error al asignar consultor');
     } finally {
       setLoading(false);
@@ -142,7 +143,7 @@ export default function ManageConsultoresDialog({
       toast.success('Consultor desasignado correctamente');
       fetchData();
     } catch (error: any) {
-      console.error('Error unassigning consultor:', error);
+      logger.error('Error unassigning consultor:', error);
       toast.error('Error al desasignar consultor');
     } finally {
       setLoading(false);

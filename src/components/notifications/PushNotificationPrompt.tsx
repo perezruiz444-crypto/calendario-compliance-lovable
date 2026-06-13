@@ -56,6 +56,7 @@ export function PushNotificationPrompt() {
                   </p>
                 </div>
                 <Button
+                  aria-label="Cerrar"
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 flex-shrink-0"

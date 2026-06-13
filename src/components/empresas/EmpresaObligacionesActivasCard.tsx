@@ -191,6 +191,7 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
                     {canEdit && (
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
+                          aria-label="Editar obligación"
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7"
@@ -200,6 +201,7 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
                         <Button
+                          aria-label="Desactivar obligación"
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-muted-foreground hover:text-destructive"

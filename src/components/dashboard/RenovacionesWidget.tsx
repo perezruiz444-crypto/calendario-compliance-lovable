@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { differenceInDays, addMonths } from 'date-fns';
 import { ShieldAlert, AlertTriangle, Clock, CheckCircle2, RefreshCw } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface RenovacionAlerta {
   empresa: string;
@@ -107,7 +108,7 @@ export default function RenovacionesWidget() {
       nuevasAlertas.sort((a, b) => a.diasRestantes - b.diasRestantes);
       setAlertas(nuevasAlertas);
     } catch (err) {
-      console.error('Error fetching renovaciones:', err);
+      logger.error('Error fetching renovaciones:', err);
     } finally {
       setLoading(false);
     }

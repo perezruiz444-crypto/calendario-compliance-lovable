@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Shield, Search, RefreshCw, Activity, Database, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { logger } from '@/lib/logger';
 
 interface AuditLog {
   id: string;
@@ -51,7 +52,7 @@ export default function SecurityAuditSection() {
       if (error) throw error;
       setLogs(data || []);
     } catch (e) {
-      console.error(e);
+      logger.error('Error al cargar los logs de auditoría', e);
     } finally {
       setLoading(false);
     }

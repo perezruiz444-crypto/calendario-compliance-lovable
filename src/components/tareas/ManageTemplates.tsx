@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -121,7 +122,7 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
       if (error) throw error;
       setTemplates(data || []);
     } catch (error) {
-      console.error('Error fetching templates:', error);
+      logger.error('Error fetching templates:', error);
       toast.error('Error al cargar templates');
     }
   };
@@ -136,7 +137,7 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
       if (error) throw error;
       setCategorias(data || []);
     } catch (error) {
-      console.error('Error fetching categorias:', error);
+      logger.error('Error fetching categorias:', error);
     }
   };
 
@@ -259,7 +260,7 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
         <SheetHeader className="px-6 pt-6 pb-3">
           <SheetTitle className="font-heading text-lg flex items-center gap-2">
             {showForm && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 mr-1" onClick={resetForm}>
+              <Button aria-label="Volver" variant="ghost" size="icon" className="h-7 w-7 mr-1" onClick={resetForm}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
@@ -337,10 +338,10 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
                             </div>
                           </div>
                           <div className="flex gap-0.5 shrink-0">
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEdit(template)}>
+                            <Button aria-label="Editar template" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEdit(template)}>
                               <Edit className="w-3.5 h-3.5" />
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(template.id)}>
+                            <Button aria-label="Eliminar template" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(template.id)}>
                               <Trash2 className="w-3.5 h-3.5 text-destructive" />
                             </Button>
                           </div>
@@ -551,6 +552,7 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
                         <GripVertical className="w-3 h-3 text-muted-foreground/40" />
                         <span className="text-sm flex-1 truncate">{sub.titulo}</span>
                         <Button
+                          aria-label="Quitar subtarea"
                           type="button"
                           size="icon"
                           variant="ghost"

@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { useEmpresasList } from '@/hooks/useEmpresasList';
+import { logger } from '@/lib/logger';
 
 interface EditUserDialogProps {
   open: boolean;
@@ -62,7 +63,7 @@ export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user
         setFormData(prev => ({ ...prev, empresaId: data.empresa_id || '' }));
       }
     } catch (error: any) {
-      console.error('Error al cargar empresa del usuario:', error);
+      logger.error('Error al cargar empresa del usuario:', error);
     }
   };
 
@@ -102,7 +103,7 @@ export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user
       onUserUpdated();
       onOpenChange(false);
     } catch (error: any) {
-      console.error('Error updating user:', error);
+      logger.error('Error updating user:', error);
       toast.error(error.message || 'Error al actualizar usuario');
     } finally {
       setLoading(false);

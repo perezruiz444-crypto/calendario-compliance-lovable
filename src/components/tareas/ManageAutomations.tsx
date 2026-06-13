@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Zap, Plus, Trash2, Edit, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface AutomationRule {
   id: string;
@@ -61,7 +62,7 @@ export function ManageAutomations() {
       if (error) throw error;
       setRules((data || []) as AutomationRule[]);
     } catch (error) {
-      console.error('Error fetching rules:', error);
+      logger.error('Error fetching rules:', error);
     } finally {
       setLoading(false);
     }
@@ -85,7 +86,7 @@ export function ManageAutomations() {
         setConsultores(data || []);
       }
     } catch (error) {
-      console.error('Error fetching consultores:', error);
+      logger.error('Error fetching consultores:', error);
     }
   };
 

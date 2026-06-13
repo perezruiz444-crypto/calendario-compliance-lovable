@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface AgenteAduanal {
   id?: string;
@@ -40,7 +41,7 @@ export default function EmpresaFormAgentesAduanales({ empresaId }: EmpresaFormAg
       .eq('empresa_id', empresaId);
 
     if (error) {
-      console.error('Error fetching agentes:', error);
+      logger.error('Error fetching agentes:', error);
     } else {
       setAgentes(data || []);
     }

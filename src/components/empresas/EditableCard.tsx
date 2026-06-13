@@ -2,6 +2,7 @@ import { useState, ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Pencil, X, Check, Loader2 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface EditableCardProps {
   title: string;
@@ -32,7 +33,7 @@ export function EditableCard({
       await onSave();
       setIsEditing(false);
     } catch (error) {
-      console.error('Error saving:', error);
+      logger.error('Error saving:', error);
     } finally {
       setIsSaving(false);
     }

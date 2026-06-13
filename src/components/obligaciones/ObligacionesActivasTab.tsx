@@ -11,6 +11,7 @@ import {
 } from '@/lib/obligaciones';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { logger } from '@/lib/logger';
 
 export function ObligacionesActivasTab() {
   const { user } = useAuth();
@@ -31,7 +32,7 @@ export function ObligacionesActivasTab() {
       .order('fecha_vencimiento', { ascending: true, nullsFirst: false });
 
     if (error) {
-      console.error(error);
+      logger.error('Error al cargar obligaciones activas', error);
       setLoading(false);
       return;
     }

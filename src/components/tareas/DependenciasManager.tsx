@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, AlertCircle, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface DependenciasManagerProps {
   tareaId: string;
@@ -53,7 +54,7 @@ export function DependenciasManager({ tareaId }: DependenciasManagerProps) {
       if (blockedError) throw blockedError;
       setBloqueadoPor(blocked || []);
     } catch (error) {
-      console.error('Error fetching dependencias:', error);
+      logger.error('Error fetching dependencias:', error);
     } finally {
       setLoading(false);
     }
@@ -70,7 +71,7 @@ export function DependenciasManager({ tareaId }: DependenciasManagerProps) {
       if (error) throw error;
       setDisponiblesTareas(data || []);
     } catch (error) {
-      console.error('Error fetching tareas:', error);
+      logger.error('Error fetching tareas:', error);
     }
   };
 
@@ -82,7 +83,7 @@ export function DependenciasManager({ tareaId }: DependenciasManagerProps) {
       if (error) throw error;
       setIsBlocked(data);
     } catch (error) {
-      console.error('Error checking if blocked:', error);
+      logger.error('Error checking if blocked:', error);
     }
   };
 
