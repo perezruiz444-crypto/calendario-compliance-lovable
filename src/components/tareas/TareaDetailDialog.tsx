@@ -120,6 +120,10 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
       toast.error('El comentario no puede estar vacío');
       return;
     }
+    if (!user) {
+      toast.error('Sesión no válida. Vuelve a iniciar sesión.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -127,7 +131,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
         .from('comentarios')
         .insert({
           tarea_id: tareaId,
-          user_id: user?.id,
+          user_id: user.id,
           contenido: nuevoComentario.trim()
         });
 

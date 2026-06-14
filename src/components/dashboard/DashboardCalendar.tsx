@@ -147,6 +147,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     const { data: obs } = await obsQuery;
 
     (obs || []).forEach(ob => {
+      if (!ob.fecha_vencimiento) return;
       const d = new Date(ob.fecha_vencimiento + 'T12:00:00');
       const isDone = ob.estado === 'completada';
       const overdue = !isDone && d < today;
@@ -174,9 +175,10 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     const { data: tareas } = await tareasQuery;
 
     (tareas || []).forEach(t => {
+      if (!t.fecha_vencimiento) return;
       const d = new Date(t.fecha_vencimiento + 'T12:00:00');
       const overdue = d < today;
-      const { bg, border } = eventColor('tarea', t.prioridad, overdue);
+      const { bg, border } = eventColor('tarea', t.prioridad ?? undefined, overdue);
       allEvents.push({
         id: `tarea-${t.id}`,
         title: t.titulo,
@@ -184,7 +186,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         backgroundColor: bg,
         borderColor: border,
         textColor: 'hsl(var(--foreground))',
-        extendedProps: { type: 'tarea', rawId: t.id, prioridad: t.prioridad, estado: t.estado, data: t },
+        extendedProps: { type: 'tarea', rawId: t.id, prioridad: t.prioridad ?? undefined, estado: t.estado ?? undefined, data: t },
       });
     });
 
@@ -200,6 +202,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     const { data: docs } = await docsQuery;
 
     (docs || []).forEach(doc => {
+      if (!doc.fecha_vencimiento) return;
       const { bg, border } = eventColor('documento');
       allEvents.push({
         id: `doc-${doc.id}`,

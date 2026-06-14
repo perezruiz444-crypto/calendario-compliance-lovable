@@ -153,7 +153,7 @@ export function CatalogoAdmin() {
 
   const [coverage, setCoverage]           = useState<CatalogoCoverage[]>([]);
   const [loadingHealth, setLoadingHealth] = useState(false);
-  const banderas = useMemo(() => banderas, [coverage]);
+  const banderas = useMemo<BanderaRoja[]>(() => calcBanderas(coverage), [coverage]);
 
   useEffect(() => { fetchItems(); }, []);
 
@@ -683,7 +683,7 @@ export function CatalogoAdmin() {
                       <AlertTriangle className="w-4 h-4 text-amber-500" />
                       Puntos a revisar
                     </p>
-                    {banderas.map((b) => (
+                    {banderas.map((b: BanderaRoja) => (
                       <div key={`${b.id}-${b.tipo}`} className="flex items-start justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-3">
                         <p className="text-sm text-amber-800 dark:text-amber-300">{b.mensaje}</p>
                         <Button

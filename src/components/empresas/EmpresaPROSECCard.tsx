@@ -20,7 +20,8 @@ const emptyForm = (empresa: Empresa) => ({
   prosec_fecha_autorizacion: empresa.prosec_fecha_autorizacion || '',
   prosec_fecha_ultima_renovacion: empresa.prosec_fecha_ultima_renovacion || '',
   prosec_fecha_siguiente_renovacion: empresa.prosec_fecha_siguiente_renovacion || '',
-  prosec_sectores: Array.isArray(empresa.prosec_sectores) ? empresa.prosec_sectores : [],
+  // prosec_sectores llega como Json desde Supabase pero siempre son strings; lo fijamos a string[].
+  prosec_sectores: Array.isArray(empresa.prosec_sectores) ? empresa.prosec_sectores.map(String) : [],
 });
 
 export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECCardProps) {
@@ -72,10 +73,10 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
   };
 
   const removeSector = (index: number) => {
-    setFormData({ ...formData, prosec_sectores: formData.prosec_sectores.filter((_: any, i: number) => i !== index) });
+    setFormData({ ...formData, prosec_sectores: formData.prosec_sectores.filter((_, i) => i !== index) });
   };
 
-  const sectores = Array.isArray(empresa.prosec_sectores) ? empresa.prosec_sectores : [];
+  const sectores = Array.isArray(empresa.prosec_sectores) ? empresa.prosec_sectores.map(String) : [];
   const hasData = empresa.prosec_numero || empresa.prosec_fecha_autorizacion || empresa.prosec_fecha_siguiente_renovacion;
 
   return (

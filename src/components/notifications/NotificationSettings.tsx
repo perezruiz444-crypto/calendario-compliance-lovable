@@ -15,7 +15,7 @@ interface NotificationPreference {
   id: string;
   notification_key: string;
   name: string;
-  description: string;
+  description: string | null;
   category: string;
   enabled: boolean;
 }

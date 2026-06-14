@@ -111,11 +111,12 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
   };
 
   const loadDraft = async () => {
+    if (!user) return;
     try {
       const { data, error } = await supabase
         .from('tareas_borradores')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -293,7 +294,8 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    
+    if (!user) { toast.error('Sesión no válida. Vuelve a iniciar sesión.'); return; }
+
     // Validate form data
     try {
       tareaSchema.parse(formData);
@@ -326,7 +328,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
         fecha_vencimiento: formData.fecha_vencimiento || null,
         categoria_id: formData.categoria_id || null,
         archivos_adjuntos: attachments.length > 0 ? attachments : null,
-        creado_por: user?.id,
+        creado_por: user.id,
         es_recurrente: formData.es_recurrente,
         frecuencia_recurrencia: formData.es_recurrente ? formData.frecuencia_recurrencia : null,
         intervalo_recurrencia: formData.es_recurrente ? formData.intervalo_recurrencia : null,

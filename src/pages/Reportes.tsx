@@ -250,7 +250,7 @@ export default function Reportes() {
       if (empresasError) throw empresasError;
 
       // Fetch profiles for consultor names
-      const consultorIds = [...new Set(tareas?.map(t => t.consultor_asignado_id).filter(Boolean))];
+      const consultorIds = [...new Set(tareas?.map(t => t.consultor_asignado_id).filter((id): id is string => Boolean(id)))];
       let consultorMap: Record<string, string> = {};
       
       if (consultorIds.length > 0) {
@@ -282,7 +282,7 @@ export default function Reportes() {
       }
 
       // Fetch categoria names
-      const categoriaIds = [...new Set(tareas?.map(t => t.categoria_id).filter(Boolean))];
+      const categoriaIds = [...new Set(tareas?.map(t => t.categoria_id).filter((id): id is string => Boolean(id)))];
       let categoriaMap: Record<string, string> = {};
       
       if (categoriaIds.length > 0) {
@@ -391,8 +391,8 @@ export default function Reportes() {
 
       // Rendimiento de consultores
       const rendimientoConsultores = Object.keys(consultorCounts).map(nombre => {
-        const tareasConsultor = tareas?.filter(t => 
-          consultorMap[t.consultor_asignado_id] === nombre
+        const tareasConsultor = tareas?.filter(t =>
+          t.consultor_asignado_id != null && consultorMap[t.consultor_asignado_id] === nombre
         ) || [];
         
         const completadas = tareasConsultor.filter(t => t.estado === 'completada').length;
@@ -421,6 +421,7 @@ export default function Reportes() {
       }
 
       tareas?.forEach(t => {
+        if (!t.created_at) return;
         const createdMonth = format(new Date(t.created_at), 'MMM yyyy', { locale: es });
         if (tareasTimeline[createdMonth]) {
           tareasTimeline[createdMonth].creadas++;

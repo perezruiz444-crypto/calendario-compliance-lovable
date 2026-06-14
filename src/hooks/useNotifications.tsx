@@ -31,6 +31,7 @@ async function insertVencimientoAlerts(userId: string) {
     const today = new Date();
 
     for (const ob of obs) {
+      if (!ob.fecha_vencimiento) continue;
       const d = new Date(ob.fecha_vencimiento);
       if (!isValid(d)) continue;
       const daysLeft = differenceInDays(d, today);

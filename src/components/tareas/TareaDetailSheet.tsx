@@ -143,9 +143,10 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
 
   const handleAddComentario = async () => {
     if (!nuevoComentario.trim()) return;
+    if (!user) { toast.error('Sesión no válida. Vuelve a iniciar sesión.'); return; }
     setLoading(true);
     try {
-      const { error } = await supabase.from('comentarios').insert({ tarea_id: tareaId, user_id: user?.id, contenido: nuevoComentario });
+      const { error } = await supabase.from('comentarios').insert({ tarea_id: tareaId, user_id: user.id, contenido: nuevoComentario });
       if (error) throw error;
       toast.success('Comentario agregado');
       setNuevoComentario('');

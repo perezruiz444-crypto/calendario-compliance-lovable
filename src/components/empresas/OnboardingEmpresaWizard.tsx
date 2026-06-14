@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import type { EmpresaProgramaInsert } from '@/types/domain';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building2, Percent, Shield, Globe, Package, FileCheck,
@@ -152,7 +153,7 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
         const { error: progError } = await supabase
           .from('empresa_programas')
           .insert(
-            programasSeleccionados.map(programa => ({
+            programasSeleccionados.map((programa: string): EmpresaProgramaInsert => ({
               empresa_id: data.id,
               programa,
               activo: true,

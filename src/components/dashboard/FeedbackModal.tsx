@@ -91,7 +91,7 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
   };
 
   const handleSubmit = async () => {
-    if (!q1 || !q5) return;
+    if (!q1 || !q5 || !userId) return;
     setLoading(true);
     try {
       const { error } = await supabase.from('feedback_clientes').insert({

@@ -47,6 +47,7 @@ export function EmpresaSelectorDropdown({
   }, [user, role]);
 
   const fetchEmpresas = async () => {
+    if (!user) return;
     setLoading(true);
     try {
       let data: any[] = [];
@@ -58,7 +59,7 @@ export function EmpresaSelectorDropdown({
         const { data: asig } = await supabase
           .from('consultor_empresa_asignacion')
           .select('empresa_id')
-          .eq('consultor_id', user?.id);
+          .eq('consultor_id', user.id);
         const ids = asig?.map(a => a.empresa_id) || [];
         if (ids.length > 0) {
           const { data: d } = await supabase

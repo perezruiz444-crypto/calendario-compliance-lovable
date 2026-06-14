@@ -219,8 +219,8 @@ export default function EmpresaDetail() {
     { label: 'IMMEX',         numero: empresa?.immex_numero ?? null,                   fecha_fin: empresa?.immex_fecha_fin ?? null,                     color: 'blue'   },
     { label: 'PROSEC',        numero: empresa?.prosec_numero ?? null,                  fecha_fin: empresa?.prosec_fecha_fin ?? null,                    color: 'purple' },
     { label: 'Padrón',        numero: empresa?.padron_general_numero ?? null,          fecha_fin: null,                                                  color: 'green'  },
-    { label: 'Cert. IVA/IEPS',numero: empresa?.cert_iva_ieps_numero ?? null,           fecha_fin: empresa?.cert_iva_ieps_fecha_vencimiento ?? null,     color: 'orange' },
-  ].filter(p => p.numero), [empresa?.immex_numero, empresa?.immex_fecha_fin, empresa?.prosec_numero, empresa?.prosec_fecha_fin, empresa?.padron_general_numero, empresa?.cert_iva_ieps_numero, empresa?.cert_iva_ieps_fecha_vencimiento]);
+    { label: 'Cert. IVA/IEPS',numero: empresa?.cert_iva_ieps_oficio ?? null,           fecha_fin: empresa?.cert_iva_ieps_fecha_vencimiento ?? null,     color: 'orange' },
+  ].filter(p => p.numero), [empresa?.immex_numero, empresa?.immex_fecha_fin, empresa?.prosec_numero, empresa?.prosec_fecha_fin, empresa?.padron_general_numero, empresa?.cert_iva_ieps_oficio, empresa?.cert_iva_ieps_fecha_vencimiento]);
 
   if (loading || loadingData) return (
     <div className="flex items-center justify-center min-h-screen">

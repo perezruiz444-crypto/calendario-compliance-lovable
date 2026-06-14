@@ -13,7 +13,7 @@ interface AgenteAduanal {
   id?: string;
   nombre_agente: string;
   numero_patente: string;
-  estado: string;
+  estado: string | null;
 }
 
 interface EmpresaFormAgentesAduanalesProps {

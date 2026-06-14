@@ -91,18 +91,20 @@ export function useAnalytics(empresaId?: string | null) {
   }, [user?.id, role, empresaId, authReady]);
 
   const fetchCommonData = async () => {
+    // Guarded by the effect (only runs when user is present); narrow for TS.
+    const userId = user?.id ?? '';
     // Profile name
     const { data: profile } = await supabase
       .from('profiles')
       .select('nombre_completo, empresa_id')
-      .eq('id', user?.id)
+      .eq('id', userId)
       .maybeSingle();
 
     // Unread messages count + recent
     const { data: mensajes, count: mensajesCount } = await supabase
       .from('mensajes')
       .select('id, asunto, remitente_id, created_at', { count: 'exact' })
-      .eq('destinatario_id', user?.id)
+      .eq('destinatario_id', userId)
       .eq('leido', false)
       .order('created_at', { ascending: false })
       .limit(5);
@@ -261,13 +263,13 @@ export function useAnalytics(empresaId?: string | null) {
       const fin = endOfMonth(fecha);
       
       const completadas = tareas.filter(t => {
-        if (t.estado !== 'completada') return false;
+        if (t.estado !== 'completada' || !t.updated_at) return false;
         const updated = new Date(t.updated_at);
         return updated >= inicio && updated <= fin;
       }).length;
 
       const pendientes = tareas.filter(t => {
-        if (t.estado === 'completada') return false;
+        if (t.estado === 'completada' || !t.created_at) return false;
         const created = new Date(t.created_at);
         return created >= inicio && created <= fin;
       }).length;
@@ -342,10 +344,11 @@ export function useAnalytics(empresaId?: string | null) {
   };
 
   const fetchConsultorAnalytics = async (common: Awaited<ReturnType<typeof fetchCommonData>>) => {
+    const userId = user?.id ?? '';
     const { data: asignaciones } = await supabase
       .from('consultor_empresa_asignacion')
       .select('empresa_id')
-      .eq('consultor_id', user?.id);
+      .eq('consultor_id', userId);
 
     const misEmpresas = asignaciones?.length || 0;
     const empresaIds = asignaciones?.map(a => a.empresa_id) || [];
@@ -356,7 +359,7 @@ export function useAnalytics(empresaId?: string | null) {
     } else if (empresaIds.length > 0) {
       tareasQuery = tareasQuery.or(`consultor_asignado_id.eq.${user?.id},empresa_id.in.(${empresaIds.join(',')})`);
     } else {
-      tareasQuery = tareasQuery.eq('consultor_asignado_id', user?.id);
+      tareasQuery = tareasQuery.eq('consultor_asignado_id', userId);
     }
     const { data: tareas } = await tareasQuery;
 
@@ -376,7 +379,7 @@ export function useAnalytics(empresaId?: string | null) {
       const inicio = startOfMonth(fecha);
       const fin = endOfMonth(fecha);
       const completadas = tareas?.filter(t => {
-        if (t.estado !== 'completada' || t.consultor_asignado_id !== user?.id) return false;
+        if (t.estado !== 'completada' || t.consultor_asignado_id !== user?.id || !t.updated_at) return false;
         const updated = new Date(t.updated_at);
         return updated >= inicio && updated <= fin;
       }).length || 0;
@@ -509,7 +512,7 @@ export function useAnalytics(empresaId?: string | null) {
       proximosVencimientos,
       documentosVencimiento,
       proximasTareas: allProximas,
-      empresaCliente: empresa,
+      empresaCliente: empresa ?? undefined,
       obligacionesPendientes: obData.pendientes,
       obligacionesActivas: obData.activas,
     });

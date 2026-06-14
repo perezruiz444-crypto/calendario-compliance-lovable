@@ -11,9 +11,9 @@ import { logger } from '@/lib/logger';
 interface Apoderado {
   id?: string;
   nombre: string;
-  tipo_apoderado: string;
-  poder_notarial_instrumento: string;
-  poder_notarial_libro: string;
+  tipo_apoderado: string | null;
+  poder_notarial_instrumento: string | null;
+  poder_notarial_libro: string | null;
   poder_notarial_anio: number | null;
 }
 
@@ -165,7 +165,7 @@ export default function EmpresaFormApoderados({ empresaId }: EmpresaFormApoderad
                 <div className="space-y-2">
                   <Label className="font-heading">Tipo de Apoderado</Label>
                   <Input
-                    value={apoderado.tipo_apoderado}
+                    value={apoderado.tipo_apoderado ?? ''}
                     onChange={(e) => updateApoderado(index, 'tipo_apoderado', e.target.value)}
                     placeholder="Ej: A, B, C"
                     className="font-body"
@@ -179,7 +179,7 @@ export default function EmpresaFormApoderados({ empresaId }: EmpresaFormApoderad
                   <div className="space-y-2">
                     <Label className="font-heading text-sm">Instrumento</Label>
                     <Input
-                      value={apoderado.poder_notarial_instrumento}
+                      value={apoderado.poder_notarial_instrumento ?? ''}
                       onChange={(e) => updateApoderado(index, 'poder_notarial_instrumento', e.target.value)}
                       className="font-body"
                     />
@@ -187,7 +187,7 @@ export default function EmpresaFormApoderados({ empresaId }: EmpresaFormApoderad
                   <div className="space-y-2">
                     <Label className="font-heading text-sm">Libro</Label>
                     <Input
-                      value={apoderado.poder_notarial_libro}
+                      value={apoderado.poder_notarial_libro ?? ''}
                       onChange={(e) => updateApoderado(index, 'poder_notarial_libro', e.target.value)}
                       className="font-body"
                     />

@@ -15,8 +15,8 @@ interface Category {
   id: string;
   nombre: string;
   descripcion: string | null;
-  color: string;
-  created_at: string;
+  color: string | null;
+  created_at: string | null;
 }
 
 interface ManageCategoriesDialogProps {
@@ -81,7 +81,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange, onCategoryC
     setFormData({
       nombre: category.nombre,
       descripcion: category.descripcion || '',
-      color: category.color
+      color: category.color ?? '#6366f1'
     });
   };
 
@@ -280,7 +280,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange, onCategoryC
                             <div className="flex items-start gap-3">
                               <div
                                 className="w-4 h-4 rounded-full flex-shrink-0 mt-1"
-                                style={{ backgroundColor: category.color }}
+                                style={{ backgroundColor: category.color ?? undefined }}
                               />
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-heading font-semibold text-sm mb-1">

@@ -37,11 +37,12 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
   }, [open]);
 
   const fetchUsuarios = async () => {
+    if (!user) return;
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, nombre_completo')
-        .neq('id', user?.id)
+        .neq('id', user.id)
         .order('nombre_completo');
 
       if (error) throw error;
@@ -72,6 +73,10 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
       toast.error('Por favor completa todos los campos requeridos');
       return;
     }
+    if (!user) {
+      toast.error('Sesión no válida. Vuelve a iniciar sesión.');
+      return;
+    }
 
     setLoading(true);
 
@@ -79,7 +84,7 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
       const { data, error } = await supabase
         .from('mensajes')
         .insert({
-          remitente_id: user?.id,
+          remitente_id: user.id,
           destinatario_id: formData.destinatario_id,
           empresa_id: formData.empresa_id || null,
           asunto: formData.asunto.trim(),

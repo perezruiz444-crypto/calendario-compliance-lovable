@@ -62,7 +62,10 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
           .order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
       ]);
 
-      setTareas((tarRes.data || []) as TareaConJoins[]);
+      // El tipo inferido por Supabase para los joins (profiles, categorias_tareas)
+      // no se solapa estructuralmente con TareaConJoins, por lo que el cast directo
+      // falla bajo noImplicitAny. Cast vía unknown: la forma en runtime sí coincide.
+      setTareas((tarRes.data || []) as unknown as TareaConJoins[]);
       setObligaciones(obsRes.data || []);
 
       const obsIds = (obsRes.data || []).map(o => o.id);

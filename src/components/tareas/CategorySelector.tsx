@@ -38,7 +38,7 @@ interface Category {
   id: string;
   nombre: string;
   descripcion: string | null;
-  color: string;
+  color: string | null;
 }
 
 export function CategorySelector({ value, onValueChange }: CategorySelectorProps) {
@@ -152,7 +152,7 @@ export function CategorySelector({ value, onValueChange }: CategorySelectorProps
                 <>
                   <div
                     className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: selectedCategory.color }}
+                    style={{ backgroundColor: selectedCategory.color ?? undefined }}
                   />
                   <span className="truncate">{selectedCategory.nombre}</span>
                 </>
@@ -203,7 +203,7 @@ export function CategorySelector({ value, onValueChange }: CategorySelectorProps
                   />
                   <div
                     className="w-3 h-3 rounded-full mr-2"
-                    style={{ backgroundColor: category.color }}
+                    style={{ backgroundColor: category.color ?? undefined }}
                   />
                   <div className="flex-1">
                     <p className="font-medium">{category.nombre}</p>

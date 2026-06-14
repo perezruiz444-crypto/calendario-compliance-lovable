@@ -319,6 +319,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
       toast.error('Las tareas recurrentes necesitan una fecha de inicio');
       return;
     }
+    if (!user) { toast.error('Sesión no válida. Vuelve a iniciar sesión.'); return; }
     setLoading(true);
     try {
       const empresaIds = selectedEmpresaIds.length > 0 ? selectedEmpresaIds : [formData.empresa_id];
@@ -331,7 +332,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
         fecha_vencimiento: formData.fecha_vencimiento || null,
         categoria_id: formData.categoria_id || null,
         archivos_adjuntos: attachments.length > 0 ? attachments : null,
-        creado_por: user?.id,
+        creado_por: user.id,
         es_recurrente: formData.es_recurrente,
         frecuencia_recurrencia: formData.es_recurrente ? formData.frecuencia_recurrencia : null,
         intervalo_recurrencia: formData.es_recurrente ? formData.intervalo_recurrencia : null,

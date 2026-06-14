@@ -69,12 +69,13 @@ export function TimeTracker({ tareaId }: TimeTrackerProps) {
   const handleStart = async () => {
     try {
       const { data: user } = await supabase.auth.getUser();
-      
+      if (!user.user) { toast.error('Sesión no válida. Vuelve a iniciar sesión.'); return; }
+
       const { error } = await supabase
         .from('time_entries')
         .insert({
           tarea_id: tareaId,
-          user_id: user.user?.id,
+          user_id: user.user.id,
           inicio: new Date().toISOString()
         });
 

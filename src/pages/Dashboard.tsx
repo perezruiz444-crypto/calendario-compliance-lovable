@@ -156,7 +156,7 @@ export default function Dashboard() {
   };
 
   // Cliente sin empresa asignada — mostrar estado de espera con CTA
-  if (role === 'cliente' && !data.empresa_id) {
+  if (role === 'cliente' && !data.empresaCliente) {
     return (
       <DashboardLayout currentPage="/dashboard">
         <div className="flex flex-col items-center justify-center min-h-[500px] gap-5 text-center p-8">

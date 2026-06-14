@@ -62,10 +62,11 @@ export default function MiEmpresa() {
   }, [user, role]);
 
   const fetchEmpresaData = async () => {
+    if (!user) { setLoadingData(false); return; }
     setLoadingData(true);
     try {
       const { data: profile } = await supabase
-        .from('profiles').select('empresa_id').eq('id', user?.id).maybeSingle();
+        .from('profiles').select('empresa_id').eq('id', user.id).maybeSingle();
       if (!profile?.empresa_id) { setLoadingData(false); return; }
 
       const [empresaRes, apoderadosRes, domiciliosRes, obligacionesRes, misAsigRes, tareasRes] = await Promise.all([

@@ -252,7 +252,8 @@ function tableStyles(accentColor: [number,number,number] = C.navy) {
     tableLineWidth: 0,
     rowPageBreak: 'avoid' as const,
     styles: { overflow: 'ellipsize' as const },
-    margin: { left: 10, right: 10 },
+    // NOTE: margin intentionally omitted — each call site sets its own margin.
+    // Including it here overwrote per-call margins (e.g. two-column layouts), a real bug (TS2783).
   };
 }
 
@@ -568,7 +569,7 @@ export async function generateReportPDF(
           ? c.dias_restantes
           : Math.ceil((new Date(c.fecha_vencimiento).getTime() - hoy.getTime()) / 86400000);
         const riesgo: 'alto' | 'medio' | 'bajo' = dias <= 7 ? 'alto' : dias <= 30 ? 'medio' : 'bajo';
-        return {
+        const item: ObligacionCategoriaItem = {
           nombre: `${c.tipo} — ${c.razon_social}`,
           empresa: c.razon_social,
           fecha_vencimiento: c.fecha_vencimiento,
@@ -577,6 +578,7 @@ export async function generateReportPDF(
           presentacion: null,
           riesgo,
         };
+        return item;
       });
 
     if (asObligaciones.length > 0) {

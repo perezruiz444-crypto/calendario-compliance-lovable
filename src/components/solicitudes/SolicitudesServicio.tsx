@@ -59,6 +59,10 @@ export function SolicitudesServicio({ empresaId }: SolicitudesServicioProps) {
       toast.error('Completa el asunto y la descripción antes de enviar.');
       return;
     }
+    if (!user) {
+      toast.error('Sesión no válida. Vuelve a iniciar sesión.');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -66,7 +70,7 @@ export function SolicitudesServicio({ empresaId }: SolicitudesServicioProps) {
         .from('solicitudes_servicio')
         .insert({
           empresa_id: empresaId,
-          solicitante_id: user?.id,
+          solicitante_id: user.id,
           asunto: formData.asunto,
           descripcion: formData.descripcion,
           prioridad: formData.prioridad,
