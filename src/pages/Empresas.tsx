@@ -1,7 +1,9 @@
 import { logger } from '@/lib/logger';
 import { useEffect, useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/queryKeys';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,53 +26,68 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+type EmpresaListRow = {
+  id: string;
+  razon_social: string;
+  rfc: string;
+  immex_numero: string | null;
+  prosec_numero: string | null;
+  cert_iva_ieps_oficio: string | null;
+  padron_general_numero: string | null;
+  domicilio_fiscal: string | null;
+  created_at: string;
+};
+
+async function fetchEmpresasConTareas(): Promise<{
+  empresas: EmpresaListRow[];
+  taskCounts: Record<string, number>;
+}> {
+  const { data, error } = await supabase
+    .from('empresas')
+    .select('id, razon_social, rfc, immex_numero, prosec_numero, cert_iva_ieps_oficio, padron_general_numero, domicilio_fiscal, created_at')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  const empresas = (data ?? []) as EmpresaListRow[];
+
+  const taskCounts: Record<string, number> = {};
+  if (empresas.length > 0) {
+    const { data: tareasData } = await supabase
+      .from('tareas')
+      .select('empresa_id')
+      .in('estado', ['pendiente', 'en_progreso']);
+    (tareasData ?? []).forEach(t => {
+      if (t.empresa_id) taskCounts[t.empresa_id] = (taskCounts[t.empresa_id] || 0) + 1;
+    });
+  }
+  return { empresas, taskCounts };
+}
+
 export default function Empresas() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const [empresas, setEmpresas] = useState<any[]>([]);
-  const [loadingEmpresas, setLoadingEmpresas] = useState(true);
+  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [consultoresDialogOpen, setConsultoresDialogOpen] = useState(false);
   const [selectedEmpresa, setSelectedEmpresa] = useState<{ id: string; nombre: string } | null>(null);
   const [deleteEmpresaId, setDeleteEmpresaId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
+
+  const { data, isLoading: loadingEmpresas } = useQuery({
+    queryKey: queryKeys.empresas.list({ scope: 'admin-list' }),
+    enabled: !!user && !!role,
+    queryFn: fetchEmpresasConTareas,
+  });
+  // Referencias estables para no invalidar el useMemo de filtrado en cada render.
+  const empresas = useMemo(() => data?.empresas ?? [], [data]);
+  const taskCounts = data?.taskCounts ?? {};
+
+  const invalidateEmpresas = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.empresas.all });
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth');
     if (!loading && role && !['administrador', 'consultor'].includes(role)) navigate('/dashboard');
   }, [user, role, loading, navigate]);
-
-  const fetchEmpresas = async () => {
-    setLoadingEmpresas(true);
-    try {
-      const { data, error } = await supabase
-        .from('empresas')
-        .select('id, razon_social, rfc, immex_numero, prosec_numero, cert_iva_ieps_oficio, padron_general_numero, domicilio_fiscal, created_at')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      setEmpresas(data || []);
-
-      // Fetch pending task counts per empresa
-      if (data && data.length > 0) {
-        const { data: tareasData } = await supabase
-          .from('tareas')
-          .select('empresa_id')
-          .in('estado', ['pendiente', 'en_progreso']);
-        if (tareasData) {
-          const counts: Record<string, number> = {};
-          tareasData.forEach(t => {
-            counts[t.empresa_id] = (counts[t.empresa_id] || 0) + 1;
-          });
-          setTaskCounts(counts);
-        }
-      }
-    } catch (error) {
-      logger.error('Error fetching empresas:', error);
-    } finally {
-      setLoadingEmpresas(false);
-    }
-  };
 
   const handleDuplicateEmpresa = async (empresaId: string) => {
     try {
@@ -92,7 +109,7 @@ export default function Empresas() {
       if (insertError) throw insertError;
 
       toast.success('Empresa duplicada exitosamente');
-      fetchEmpresas();
+      invalidateEmpresas();
       navigate(`/empresas/${newEmpresa.id}`);
     } catch (error: any) {
       toast.error(error.message || 'Error al duplicar empresa');
@@ -125,13 +142,12 @@ export default function Empresas() {
       if (error) throw error;
       toast.success('Empresa eliminada exitosamente');
       setDeleteEmpresaId(null);
-      fetchEmpresas();
+      invalidateEmpresas();
     } catch (error: any) {
       toast.error(error.message || 'Error al eliminar empresa');
     }
   };
 
-  useEffect(() => { if (user && role) fetchEmpresas(); }, [user, role]);
 
   const filtered = useMemo(() => {
     if (!search) return empresas;
@@ -286,7 +302,7 @@ export default function Empresas() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onEmpresaCreated={(empresaId) => {
-          fetchEmpresas();
+          invalidateEmpresas();
           if (empresaId) navigate(`/empresas/${empresaId}`);
         }}
       />
