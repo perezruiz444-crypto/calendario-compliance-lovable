@@ -137,10 +137,10 @@ serve(async (req: Request) => {
 
     console.log('User created successfully:', userData.user.id);
 
-    // Assign role directly (triggers depend on email confirmation which doesn't happen with recovery links)
+    // Assign role idempotently (trigger handle_new_user may already have inserted it via metadata.role)
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .insert({ user_id: userData.user.id, role });
+      .upsert({ user_id: userData.user.id, role }, { onConflict: 'user_id,role', ignoreDuplicates: true });
 
     if (roleError) {
       console.error('Error assigning role:', roleError);
