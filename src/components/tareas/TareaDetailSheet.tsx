@@ -15,6 +15,7 @@ import { Send, MessageSquare, Calendar as CalendarIcon, Paperclip, Repeat, Check
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import SendNotificationDialog from './SendNotificationDialog';
+import { FileAttachments } from './FileAttachments';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { MultipleAssignees } from './MultipleAssignees';
