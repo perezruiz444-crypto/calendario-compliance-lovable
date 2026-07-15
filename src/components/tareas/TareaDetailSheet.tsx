@@ -15,6 +15,7 @@ import { Send, MessageSquare, Calendar as CalendarIcon, Paperclip, Repeat, Check
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import SendNotificationDialog from './SendNotificationDialog';
+import { FileAttachments } from './FileAttachments';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { MultipleAssignees } from './MultipleAssignees';
@@ -399,25 +400,28 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
               </div>
             )}
 
-            {/* Archivos */}
-            {tarea.archivos_adjuntos && tarea.archivos_adjuntos.length > 0 && (
-              <div>
-                <label className="text-xs font-heading text-muted-foreground mb-1.5 block flex items-center gap-1">
-                  <Paperclip className="h-3 w-3" /> Archivos ({tarea.archivos_adjuntos.length})
-                </label>
-                <div className="space-y-1.5">
-                  {tarea.archivos_adjuntos.map((file: any, i: number) => (
-                    <div key={i} className="flex items-center gap-2 p-2 border rounded-md text-sm">
-                      <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="flex-1 truncate">{file.name || 'Archivo'}</span>
-                      {file.url && (
-                        <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-primary text-xs hover:underline">Ver</a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Evidencias */}
+            <div>
+              <label className="text-xs font-heading text-muted-foreground mb-1.5 block flex items-center gap-1">
+                <Paperclip className="h-3 w-3" /> Evidencias ({tarea.archivos_adjuntos?.length || 0})
+              </label>
+              <FileAttachments
+                tareaId={tarea.id}
+                attachments={tarea.archivos_adjuntos || []}
+                onAttachmentsChange={async (next) => {
+                  const { error } = await supabase
+                    .from('tareas')
+                    .update({ archivos_adjuntos: next.length > 0 ? next : null })
+                    .eq('id', tarea.id);
+                  if (error) {
+                    toast.error('No se pudo guardar la evidencia: ' + error.message);
+                    return;
+                  }
+                  setTarea((prev: any) => ({ ...prev, archivos_adjuntos: next }));
+                  onUpdate?.();
+                }}
+              />
+            </div>
 
             {/* Comentarios */}
             <div className="border-t pt-5">

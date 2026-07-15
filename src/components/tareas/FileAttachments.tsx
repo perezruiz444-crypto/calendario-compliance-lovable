@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,7 @@ interface FileAttachmentsProps {
 export function FileAttachments({ tareaId, attachments, onAttachmentsChange, readonly = false }: FileAttachmentsProps) {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
+  const inputId = `file-upload-${useId()}`;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -149,7 +150,7 @@ export function FileAttachments({ tareaId, attachments, onAttachmentsChange, rea
         <div>
           <input
             type="file"
-            id="file-upload"
+            id={inputId}
             multiple
             onChange={handleFileSelect}
             className="hidden"
@@ -158,7 +159,7 @@ export function FileAttachments({ tareaId, attachments, onAttachmentsChange, rea
           <Button
             type="button"
             variant="outline"
-            onClick={() => document.getElementById('file-upload')?.click()}
+            onClick={() => document.getElementById(inputId)?.click()}
             disabled={uploading}
             className="w-full font-heading"
           >

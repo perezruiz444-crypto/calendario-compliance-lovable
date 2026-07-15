@@ -1,21 +1,32 @@
+
 ## Problema
-La base de datos está activa. Lo que falla es la edge function `create-user`: intenta insertar en `user_roles` un rol que el trigger `handle_new_user` ya insertó, y revienta con duplicate key. Además, no pasa el `role` en el metadata, así que el trigger siempre asigna `cliente` por defecto (bug adicional).
+
+Hoy el componente `FileAttachments` sí funciona (sube a Supabase Storage bucket `task-attachments`, valida MIME/tamaño, descarga, elimina), pero **solo se usa en modo edición al crear tareas**. Al abrir una tarea existente (`TareaDetailDialog` y `TareaDetailSheet`), los archivos aparecen **solo lectura**, y si la tarea no tiene adjuntos, la sección ni siquiera se muestra. Resultado: el usuario percibe que "el espacio de evidencias no funciona por tarea".
+
+Además, cuando se suben archivos, no se persisten de vuelta a la columna `tareas.archivos_adjuntos` (falta el `UPDATE` a la tabla en el detalle).
 
 ## Cambios
 
-### 1. `supabase/functions/create-user/index.ts`
-- Pasar `role` dentro de `user_metadata` al llamar `auth.admin.createUser`, para que el trigger `handle_new_user` asigne el rol correcto desde el inicio.
-- Cambiar el `INSERT` posterior en `user_roles` por un `UPSERT` con `onConflict: 'user_id,role'` e `ignoreDuplicates: true` (queda como respaldo idempotente por si el trigger no corriera).
-- Como fallback: si la inserción del rol falla por cualquier motivo distinto a duplicado, **no** dejar el usuario huérfano — hacer `auth.admin.deleteUser(newUser.user.id)` y devolver error.
+### 1. `src/components/tareas/TareaDetailDialog.tsx`
+- Mostrar **siempre** la sección "Evidencias / Archivos adjuntos" (no solo cuando ya hay archivos).
+- Reemplazar `readonly={true}` por editable, con permisos:
+  - Consultores/administradores: siempre pueden subir/eliminar.
+  - Clientes: pueden subir/eliminar solo si la tarea les está asignada o es de su empresa.
+- `onAttachmentsChange` debe hacer `UPDATE public.tareas SET archivos_adjuntos = <nuevo array> WHERE id = tarea.id`, refrescar el estado local y mostrar `toast.success`.
+- Renombrar el título visible a "Evidencias" para alinear con el lenguaje de la app.
 
-### 2. `supabase/functions/send-user-invitation/index.ts` (verificar)
-Revisar si tiene el mismo patrón (insertar rol después de crear el usuario) y aplicar la misma corrección de idempotencia + pasar `role` en metadata.
+### 2. `src/components/tareas/TareaDetailSheet.tsx`
+- Reemplazar el listado inline actual (líneas ~403-409) por el componente `FileAttachments` completo, con la misma lógica de permisos y persistencia que el Dialog.
+- Mostrar siempre la sección, aun cuando esté vacía, con un texto guía ("Sube el archivo que respalda el cumplimiento de esta tarea").
 
-## Lo que NO cambia
-- Trigger `handle_new_user`, tabla `user_roles`, RLS, ni schema.
-- Flujo de invitación por email ni UI de `CreateUserDialog.tsx`.
+### 3. `src/components/tareas/FileAttachments.tsx`
+- Bug menor: el `<input id="file-upload">` usa un id fijo; si dos instancias coexisten (dialog + sheet + create), el click abre el input equivocado. Cambiar a un id único por instancia (`useId()`).
+- Sin cambios de lógica de subida.
 
-## Verificación
-- Crear un consultor con contraseña → debe quedar con rol `consultor` (no `cliente`).
-- Crear un cliente con contraseña asociado a una empresa → sin error de duplicado, rol `cliente` correcto.
-- Revisar logs de la edge function tras la prueba: sin errores `23505`.
+### 4. Verificación
+- Ya existen las policies de `storage.objects` para bucket `task-attachments` (migración `20260404000000_fix_storage_and_profiles_rls.sql`) y grants sobre `tareas`. No se requiere migración.
+- Verificar en runtime: abrir una tarea existente → subir un PDF → cerrar y reabrir → el archivo persiste y se puede descargar/eliminar.
+
+## Fuera de alcance
+- No se toca la lógica de evidencias de **obligaciones** (`EvidenciaCumplimiento.tsx`), que ya funciona con su propio bucket `evidencias-cumplimiento`.
+- No se cambia el bucket ni las políticas RLS.
