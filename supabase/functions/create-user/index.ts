@@ -45,13 +45,14 @@ Deno.serve(async (req) => {
 
     const { email, password, nombre_completo, role, empresa_id } = await req.json()
 
-    // Create the user with empresa_id in metadata for the handle_new_user trigger
+    // Create the user with role + empresa_id in metadata so handle_new_user trigger asigna el rol correcto
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { 
+      user_metadata: {
         nombre_completo,
+        role,
         ...(empresa_id ? { empresa_id } : {})
       }
     })
@@ -64,13 +65,15 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Assign role
+    // Idempotent role upsert (trigger handle_new_user may already have inserted it)
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .insert({ user_id: newUser.user.id, role })
+      .upsert({ user_id: newUser.user.id, role }, { onConflict: 'user_id,role', ignoreDuplicates: true })
 
     if (roleError) {
       console.error('Error assigning role:', roleError)
+      // Rollback: delete orphan auth user
+      await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
       return new Response(JSON.stringify({ error: 'Error al asignar rol al usuario.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
