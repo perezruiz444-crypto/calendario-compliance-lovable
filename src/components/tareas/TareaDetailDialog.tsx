@@ -342,20 +342,33 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
             </div>
           )}
 
-          {/* Archivos Adjuntos */}
-          {tarea.archivos_adjuntos && tarea.archivos_adjuntos.length > 0 && (
-            <div className="border-t pt-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Paperclip className="w-5 h-5 text-primary" />
-                <h3 className="font-heading font-semibold">Archivos Adjuntos ({tarea.archivos_adjuntos.length})</h3>
-              </div>
-              <FileAttachments
-                attachments={tarea.archivos_adjuntos}
-                onAttachmentsChange={() => {}}
-                readonly={true}
-              />
+          {/* Evidencias / Archivos Adjuntos */}
+          <div className="border-t pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Paperclip className="w-5 h-5 text-primary" />
+              <h3 className="font-heading font-semibold">
+                Evidencias ({tarea.archivos_adjuntos?.length || 0})
+              </h3>
             </div>
-          )}
+            <p className="text-xs text-muted-foreground font-body mb-3">
+              Sube el archivo que respalda el cumplimiento de esta tarea (PDF, imágenes, Excel, Word).
+            </p>
+            <FileAttachments
+              tareaId={tarea.id}
+              attachments={tarea.archivos_adjuntos || []}
+              onAttachmentsChange={async (next) => {
+                const { error } = await supabase
+                  .from('tareas')
+                  .update({ archivos_adjuntos: next.length > 0 ? next : null })
+                  .eq('id', tarea.id);
+                if (error) {
+                  toast.error('No se pudo guardar la evidencia: ' + error.message);
+                  return;
+                }
+                setTarea((prev: any) => ({ ...prev, archivos_adjuntos: next }));
+              }}
+            />
+          </div>
 
           {/* Comentarios */}
           <div className="border-t pt-6">
