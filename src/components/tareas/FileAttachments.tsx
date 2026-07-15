@@ -16,6 +16,7 @@ interface FileAttachmentsProps {
 export function FileAttachments({ tareaId, attachments, onAttachmentsChange, readonly = false }: FileAttachmentsProps) {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
+  const inputId = `file-upload-${useId()}`;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
