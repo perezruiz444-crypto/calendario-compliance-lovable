@@ -150,7 +150,7 @@ export function FileAttachments({ tareaId, attachments, onAttachmentsChange, rea
         <div>
           <input
             type="file"
-            id="file-upload"
+            id={inputId}
             multiple
             onChange={handleFileSelect}
             className="hidden"
@@ -159,7 +159,7 @@ export function FileAttachments({ tareaId, attachments, onAttachmentsChange, rea
           <Button
             type="button"
             variant="outline"
-            onClick={() => document.getElementById('file-upload')?.click()}
+            onClick={() => document.getElementById(inputId)?.click()}
             disabled={uploading}
             className="w-full font-heading"
           >
