@@ -1,69 +1,21 @@
-## Cambio de comportamiento
-
-El cliente verá **todas las obligaciones activas de su empresa** (igual que el consultor), pero se mantienen las asignaciones en `obligacion_responsables` y toda la lógica de evidencias, cumplimientos, mensajes, etc.
+## Problema
+La base de datos está activa. Lo que falla es la edge function `create-user`: intenta insertar en `user_roles` un rol que el trigger `handle_new_user` ya insertó, y revienta con duplicate key. Además, no pasa el `role` en el metadata, así que el trigger siempre asigna `cliente` por defecto (bug adicional).
 
 ## Cambios
 
-### 1. `src/pages/MiEmpresa.tsx` — traer todas las obligaciones de la empresa
+### 1. `supabase/functions/create-user/index.ts`
+- Pasar `role` dentro de `user_metadata` al llamar `auth.admin.createUser`, para que el trigger `handle_new_user` asigne el rol correcto desde el inicio.
+- Cambiar el `INSERT` posterior en `user_roles` por un `UPSERT` con `onConflict: 'user_id,role'` e `ignoreDuplicates: true` (queda como respaldo idempotente por si el trigger no corriera).
+- Como fallback: si la inserción del rol falla por cualquier motivo distinto a duplicado, **no** dejar el usuario huérfano — hacer `auth.admin.deleteUser(newUser.user.id)` y devolver error.
 
-Reemplazar el bloque actual (L67-89) que filtra por `obligacion_responsables.user_id = auth.uid()`:
-
-```ts
-// Antes
-supabase.from('obligacion_responsables').select('obligacion_id').eq('user_id', user.id),
-// ...
-.in('id', idsAsignadas).eq('activa', true)
-```
-
-Por una consulta directa a `obligaciones`:
-
-```ts
-supabase
-  .from('obligaciones')
-  .select('*')
-  .eq('empresa_id', profile.empresa_id)
-  .eq('activa', true)
-  .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
-```
-
-Más una consulta paralela a `obligacion_responsables` filtrada por `user_id = auth.uid()` para saber **cuáles son suyas** (se usa solo para marcar visualmente, no para filtrar).
-
-### 2. Badge "Asignada a ti"
-
-En cada card/fila de obligación en `MiEmpresa.tsx`, si su `id` está en el set de `misAsignaciones`, mostrar badge pequeño en color primary: *"Asignada a ti"*. El resto se muestra sin badge.
-
-### 3. Filtro opcional
-
-Agregar un toggle/tab arriba de la lista: **"Todas" | "Solo asignadas a mí"** (default: "Todas"). Estado local, sin persistir. Permite al cliente concentrarse en lo suyo cuando quiera.
-
-### 4. RLS — verificar que ya permite
-
-La política `Users can view obligaciones of their empresas` en `obligaciones` ya permite al cliente leer todas las obligaciones de su empresa vía `profiles.empresa_id`. No requiere migración.
-
-Igual con `obligacion_cumplimientos` (política `obligacion_cumplimientos_select_scoped` permite ver los de la empresa) y `obligacion_responsables` (política para clientes ya permite ver los de su empresa). Todo intacto.
-
-### 5. Permisos de marcar cumplimiento
-
-La política actual `Clientes can insert cumplimientos for their empresa` permite a cualquier cliente de la empresa marcar cualquier obligación de su empresa como cumplida. **Decidir:**
-- (a) Dejarlo así: cualquier cliente puede marcar.
-- (b) Restringir vía UI: el botón "Marcar cumplida" / subir evidencia solo aparece si la obligación está asignada al usuario (`misAsignaciones.has(id)`).
-
-Recomendado **(b)** — visibilidad total, pero acción solo sobre las suyas. Sin cambios en RLS, solo gate en el componente.
-
-## Archivos a modificar
-
-- `src/pages/MiEmpresa.tsx` — query nueva, badge, filtro, gate de acciones.
+### 2. `supabase/functions/send-user-invitation/index.ts` (verificar)
+Revisar si tiene el mismo patrón (insertar rol después de crear el usuario) y aplicar la misma corrección de idempotencia + pasar `role` en metadata.
 
 ## Lo que NO cambia
-
-- RLS / políticas / esquema: nada.
-- Vista del consultor (`EmpresaDetail.tsx`): igual.
-- Tabla `obligacion_responsables`: se mantiene y se sigue usando.
-- Cumplimientos, evidencias, mensajes, dashboard: igual.
+- Trigger `handle_new_user`, tabla `user_roles`, RLS, ni schema.
+- Flujo de invitación por email ni UI de `CreateUserDialog.tsx`.
 
 ## Verificación
-
-1. Como Marlene en `/mi-empresa`: ver las ~30 obligaciones de ITW, con badge "Asignada a ti" en las 2 suyas.
-2. Toggle "Solo asignadas a mí" → filtra a 2.
-3. Botón "Marcar cumplida" / subir evidencia: solo visible en las 2 asignadas.
-4. Como Ruth: sin cambios.
+- Crear un consultor con contraseña → debe quedar con rol `consultor` (no `cliente`).
+- Crear un cliente con contraseña asociado a una empresa → sin error de duplicado, rol `cliente` correcto.
+- Revisar logs de la edge function tras la prueba: sin errores `23505`.
