@@ -1128,6 +1128,7 @@ export type Database = {
           presentacion: string | null
           programa: string
           updated_at: string
+          usar_ultimo_dia_habil: boolean
         }
         Insert: {
           activo?: boolean
@@ -1147,6 +1148,7 @@ export type Database = {
           presentacion?: string | null
           programa: string
           updated_at?: string
+          usar_ultimo_dia_habil?: boolean
         }
         Update: {
           activo?: boolean
@@ -1166,6 +1168,7 @@ export type Database = {
           presentacion?: string | null
           programa?: string
           updated_at?: string
+          usar_ultimo_dia_habil?: boolean
         }
         Relationships: []
       }
