@@ -559,6 +559,7 @@ export type Database = {
           cert_iva_ieps_fecha_vencimiento: string | null
           cert_iva_ieps_nota: string | null
           cert_iva_ieps_oficio: string | null
+          cert_iva_ieps_rubro: string | null
           created_at: string | null
           created_by: string | null
           datos_notario: string | null
@@ -606,6 +607,7 @@ export type Database = {
           cert_iva_ieps_fecha_vencimiento?: string | null
           cert_iva_ieps_nota?: string | null
           cert_iva_ieps_oficio?: string | null
+          cert_iva_ieps_rubro?: string | null
           created_at?: string | null
           created_by?: string | null
           datos_notario?: string | null
@@ -653,6 +655,7 @@ export type Database = {
           cert_iva_ieps_fecha_vencimiento?: string | null
           cert_iva_ieps_nota?: string | null
           cert_iva_ieps_oficio?: string | null
+          cert_iva_ieps_rubro?: string | null
           created_at?: string | null
           created_by?: string | null
           datos_notario?: string | null
