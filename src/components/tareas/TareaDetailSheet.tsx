@@ -406,6 +406,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                 <Paperclip className="h-3 w-3" /> Evidencias ({tarea.archivos_adjuntos?.length || 0})
               </label>
               <FileAttachments
+                empresaId={tarea.empresa_id}
                 tareaId={tarea.id}
                 attachments={tarea.archivos_adjuntos || []}
                 onAttachmentsChange={async (next) => {

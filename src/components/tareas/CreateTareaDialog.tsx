@@ -547,6 +547,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
             <div className="space-y-2">
               <Label className="font-heading">Archivos Adjuntos</Label>
               <FileAttachments
+                empresaId={formData.empresa_id || undefined}
                 attachments={attachments}
                 onAttachmentsChange={setAttachments}
               />

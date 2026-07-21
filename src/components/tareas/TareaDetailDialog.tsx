@@ -354,6 +354,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
               Sube el archivo que respalda el cumplimiento de esta tarea (PDF, imágenes, Excel, Word).
             </p>
             <FileAttachments
+              empresaId={tarea.empresa_id}
               tareaId={tarea.id}
               attachments={tarea.archivos_adjuntos || []}
               onAttachmentsChange={async (next) => {

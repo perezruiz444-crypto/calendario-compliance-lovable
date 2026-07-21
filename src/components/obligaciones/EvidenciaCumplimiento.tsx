@@ -10,13 +10,14 @@ import { Loader2, Upload } from 'lucide-react';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  empresaId: string;
   obligacionId: string;
   periodoKey: string;
   userId: string;
   onCompleted: () => void;
 }
 
-export function EvidenciaCumplimiento({ open, onOpenChange, obligacionId, periodoKey, userId, onCompleted }: Props) {
+export function EvidenciaCumplimiento({ open, onOpenChange, empresaId, obligacionId, periodoKey, userId, onCompleted }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -33,27 +34,27 @@ export function EvidenciaCumplimiento({ open, onOpenChange, obligacionId, period
       }
     }
     setUploading(true);
-    let evidenciaUrl: string | null = null;
+    // Guardamos el PATH del objeto en storage, no una URL. La URL firmada se
+    // genera bajo demanda al descargar (ver CumplimientoHistorial). El primer
+    // segmento DEBE ser empresa_id para que la RLS por empresa aísle el acceso.
+    let evidenciaPath: string | null = null;
 
     try {
       if (withEvidence && file) {
         const ext = file.name.split('.').pop();
-        const path = `${obligacionId}/${periodoKey}/${Date.now()}.${ext}`;
+        const path = `${empresaId}/${obligacionId}/${periodoKey}/${Date.now()}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from('evidencias-cumplimiento')
           .upload(path, file);
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage
-          .from('evidencias-cumplimiento')
-          .getPublicUrl(path);
-        evidenciaUrl = urlData.publicUrl;
+        evidenciaPath = path;
       }
 
       const { error } = await supabase.from('obligacion_cumplimientos').insert({
         obligacion_id: obligacionId,
         periodo_key: periodoKey,
         completada_por: userId,
-        evidencia_url: evidenciaUrl,
+        evidencia_url: evidenciaPath,
       });
       if (error) throw error;
 

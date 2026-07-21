@@ -1,4 +1,20 @@
 -- supabase/migrations/20260430000000_empresa_programas.sql
+--
+-- ⚠️  LINAJE MUERTO — PARCIALMENTE NO APLICADO A LA BASE. NO DISEÑAR SOBRE ESTO.
+-- ----------------------------------------------------------------------------
+-- Verificado contra la base viva (proyecto svozqrjhwaohfmbkhpig, 2026-07-19):
+-- las siguientes funciones/objetos declarados en este archivo NUNCA se aplicaron
+-- y NO existen en producción:
+--     * generar_obligaciones_empresa_programa(uuid, text, integer)
+--     * generar_obligaciones_todos_programas_activos(integer)
+--     * ultimo_dia_habil(integer, integer)
+--     * cron.schedule('generar-obligaciones-anual', ...)
+-- SÍ se aplicaron: la columna usar_ultimo_dia_habil y la tabla empresa_programas
+-- (esta última con una columna extra `sectores` agregada fuera de migración).
+-- El motor REAL vive en 20260719000000_baseline_reconciliacion_motor_obligaciones.sql.
+-- Si se necesita "último día hábil" o generación por-programa, rediseñar desde
+-- el estado vivo — NO resucitar las funciones de este archivo.
+-- ----------------------------------------------------------------------------
 
 -- ============================================================
 -- 1. Flag usar_ultimo_dia_habil en catálogo

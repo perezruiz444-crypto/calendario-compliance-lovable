@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, ClipboardList, ChevronDown, TrendingUp, ListTodo, Loader2, Search, History, User } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { AgentesAduanalesCard } from '@/components/empresas/AgentesAduanalesCard';
 import { DocumentosManager } from '@/components/documentos/DocumentosManager';
 import { SolicitudesServicio } from '@/components/solicitudes/SolicitudesServicio';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
@@ -33,6 +34,7 @@ export default function MiEmpresa() {
   const [empresa, setEmpresa] = useState<any>(null);
   const [apoderados, setApoderados] = useState<any[]>([]);
   const [domicilios, setDomicilios] = useState<any[]>([]);
+  const [agentesAduanales, setAgentesAduanales] = useState<any[]>([]);
   const [obligaciones, setObligaciones] = useState<any[]>([]);
   const [misAsignaciones, setMisAsignaciones] = useState<Set<string>>(new Set());
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
@@ -69,10 +71,11 @@ export default function MiEmpresa() {
         .from('profiles').select('empresa_id').eq('id', user.id).maybeSingle();
       if (!profile?.empresa_id) { setLoadingData(false); return; }
 
-      const [empresaRes, apoderadosRes, domiciliosRes, obligacionesRes, misAsigRes, tareasRes] = await Promise.all([
+      const [empresaRes, apoderadosRes, domiciliosRes, agentesRes, obligacionesRes, misAsigRes, tareasRes] = await Promise.all([
         supabase.from('empresas').select('*').eq('id', profile.empresa_id).maybeSingle(),
         supabase.from('apoderados_legales').select('*').eq('empresa_id', profile.empresa_id),
         supabase.from('domicilios_operacion').select('*').eq('empresa_id', profile.empresa_id),
+        supabase.from('agentes_aduanales').select('*').eq('empresa_id', profile.empresa_id),
         supabase
           .from('obligaciones')
           .select('*')
@@ -86,6 +89,7 @@ export default function MiEmpresa() {
       setEmpresa(empresaRes.data);
       setApoderados(apoderadosRes.data || []);
       setDomicilios(domiciliosRes.data || []);
+      setAgentesAduanales(agentesRes.data || []);
       setTareas(tareasRes.data || []);
 
       const obs = obligacionesRes.data || [];
@@ -293,7 +297,7 @@ export default function MiEmpresa() {
 
         {/* Tabs */}
         <Tabs defaultValue="obligaciones" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="obligaciones" className="font-heading">Obligaciones</TabsTrigger>
             <TabsTrigger value="tareas" className="font-heading flex items-center gap-1.5">
               Tareas
@@ -302,6 +306,7 @@ export default function MiEmpresa() {
             <TabsTrigger value="programas" className="font-heading">Programas</TabsTrigger>
             <TabsTrigger value="certificaciones" className="font-heading">Certificaciones</TabsTrigger>
             <TabsTrigger value="domicilios" className="font-heading">Domicilios</TabsTrigger>
+            <TabsTrigger value="agentes" className="font-heading">Agentes Aduanales</TabsTrigger>
           </TabsList>
 
           {/* Obligaciones Tab */}
@@ -690,6 +695,16 @@ export default function MiEmpresa() {
               <Card><CardContent className="py-12 text-center"><Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" /><p className="text-muted-foreground">No hay domicilios registrados</p></CardContent></Card>
             )}
           </TabsContent>
+
+          {/* Agentes Aduanales Tab */}
+          <TabsContent value="agentes" className="space-y-4">
+            <AgentesAduanalesCard
+              empresaId={empresa.id}
+              agentes={agentesAduanales}
+              canEdit={false}
+              onUpdate={fetchEmpresaData}
+            />
+          </TabsContent>
         </Tabs>
 
         {/* Calendario completo (vista expandida opcional) */}
@@ -741,10 +756,11 @@ export default function MiEmpresa() {
       )}
 
       {/* Evidencia Dialog */}
-      {evidenciaObl && user && (
+      {evidenciaObl && user && empresa && (
         <EvidenciaCumplimiento
           open={!!evidenciaObl}
           onOpenChange={(open) => { if (!open) setEvidenciaObl(null); }}
+          empresaId={empresa.id}
           obligacionId={evidenciaObl.id}
           periodoKey={evidenciaObl.periodoKey}
           userId={user.id}

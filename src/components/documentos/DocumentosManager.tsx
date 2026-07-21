@@ -103,11 +103,8 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('documentos')
-        .getPublicUrl(fileName);
-
+      // Bucket privado: guardamos el PATH del objeto, no una URL pública.
+      // La URL firmada se genera bajo demanda al descargar (handleDownload).
       // Create documento record
       const { error: dbError } = await supabase
         .from('documentos')
@@ -117,7 +114,7 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
           descripcion: formData.descripcion,
           tipo_documento: formData.tipo_documento,
           categoria: formData.categoria || null,
-          archivo_url: publicUrl,
+          archivo_url: fileName,
           archivo_nombre: selectedFile.name,
           archivo_tamano: selectedFile.size,
           fecha_documento: formData.fecha_documento || null,
@@ -148,18 +145,15 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
     }
   };
 
-  const handleDelete = async (documentoId: string, archivoUrl: string) => {
+  const handleDelete = async (documentoId: string, archivoPath: string) => {
     if (!confirm('¿Estás seguro de eliminar este documento?')) return;
 
     try {
-      // Extract file path from URL
-      const urlParts = archivoUrl.split('/');
-      const filePath = urlParts.slice(urlParts.indexOf('documentos') + 1).join('/');
-
+      // archivo_url ahora contiene el path del objeto directamente.
       // Delete from storage
       const { error: storageError } = await supabase.storage
         .from('documentos')
-        .remove([filePath]);
+        .remove([archivoPath]);
 
       if (storageError) logger.error('Error deleting file', storageError);
 
@@ -180,10 +174,14 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
     }
   };
 
-  const handleDownload = async (archivoUrl: string, archivoNombre: string) => {
+  const handleDownload = async (archivoPath: string, archivoNombre: string) => {
     try {
-      const response = await fetch(archivoUrl);
-      const blob = await response.blob();
+      // Bucket privado: descargamos el objeto directamente (la RLS por empresa
+      // autoriza según el primer segmento del path = empresa_id).
+      const { data: blob, error } = await supabase.storage
+        .from('documentos')
+        .download(archivoPath);
+      if (error || !blob) throw error || new Error('No se pudo descargar');
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

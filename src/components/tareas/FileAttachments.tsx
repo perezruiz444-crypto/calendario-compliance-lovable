@@ -7,20 +7,33 @@ import { Upload, File, X, Download, FileText, Image as ImageIcon } from 'lucide-
 import { useAuth } from '@/hooks/useAuth';
 
 interface FileAttachmentsProps {
+  empresaId?: string;
   tareaId?: string;
   attachments: any[];
   onAttachmentsChange: (attachments: any[]) => void;
   readonly?: boolean;
 }
 
-export function FileAttachments({ tareaId, attachments, onAttachmentsChange, readonly = false }: FileAttachmentsProps) {
+export function FileAttachments({ empresaId, tareaId, attachments, onAttachmentsChange, readonly = false }: FileAttachmentsProps) {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
+  // Un id de borrador estable por instancia: agrupa los adjuntos de una tarea
+  // aún no creada bajo empresa_id/draft-{uuid}/... hasta que la tarea exista.
+  const [draftId] = useState(() => crypto.randomUUID());
   const inputId = `file-upload-${useId()}`;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    // Garantía de aislamiento: el path DEBE empezar con empresa_id para que la
+    // RLS por empresa de task-attachments autorice. Si el invocador no aportó
+    // empresa (p. ej. un formulario que olvidó el gating), bloqueamos aquí.
+    if (!empresaId) {
+      toast.error('Selecciona una empresa antes de adjuntar archivos');
+      e.target.value = '';
+      return;
+    }
 
     setUploading(true);
 
@@ -52,10 +65,12 @@ export function FileAttachments({ tareaId, attachments, onAttachmentsChange, rea
           continue;
         }
 
-        // Generate unique file path
+        // Path aislado por empresa (mismo patrón que documentos y evidencias):
+        //   empresa_id/tarea_id/...      para tareas ya creadas
+        //   empresa_id/draft-{uuid}/...  para borradores aún sin tarea
         const fileExt = file.name.split('.').pop();
-        const fileName = `${user?.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `${fileName}`;
+        const scope = tareaId ?? `draft-${draftId}`;
+        const filePath = `${empresaId}/${scope}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
         // Upload to Supabase Storage
         const { error: uploadError } = await supabase.storage
@@ -64,15 +79,12 @@ export function FileAttachments({ tareaId, attachments, onAttachmentsChange, rea
 
         if (uploadError) throw uploadError;
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('task-attachments')
-          .getPublicUrl(filePath);
-
+        // Bucket privado: guardamos solo el path. La descarga usa
+        // supabase.storage.download(path) (ver handleDownload), autorizada por
+        // RLS; no persistimos URLs públicas (no funcionan en bucket privado).
         uploadedFiles.push({
           name: file.name,
           path: filePath,
-          url: publicUrl,
           size: file.size,
           type: file.type
         });
@@ -160,14 +172,16 @@ export function FileAttachments({ tareaId, attachments, onAttachmentsChange, rea
             type="button"
             variant="outline"
             onClick={() => document.getElementById(inputId)?.click()}
-            disabled={uploading}
+            disabled={uploading || !empresaId}
             className="w-full font-heading"
           >
             <Upload className="w-4 h-4 mr-2" />
             {uploading ? 'Cargando...' : 'Adjuntar Archivos'}
           </Button>
           <p className="text-xs text-muted-foreground font-body mt-1">
-            Máximo 10MB por archivo. Formatos: PDF, DOC, XLS, TXT, imágenes
+            {!empresaId
+              ? 'Selecciona una empresa primero para poder adjuntar archivos'
+              : 'Máximo 10MB por archivo. Formatos: PDF, DOC, XLS, TXT, imágenes'}
           </p>
         </div>
       )}

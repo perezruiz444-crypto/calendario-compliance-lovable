@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { Loader2, CheckCircle2, XCircle, Paperclip } from 'lucide-react';
 import { getPeriodLabel } from '@/lib/obligaciones';
 
 interface Props {
@@ -23,6 +23,26 @@ interface Cumplimiento {
 export function CumplimientoHistorial({ open, onOpenChange, obligacionId, obligacionNombre, presentacion }: Props) {
   const [data, setData] = useState<Cumplimiento[]>([]);
   const [loading, setLoading] = useState(true);
+  const [descargando, setDescargando] = useState<string | null>(null);
+
+  // La evidencia vive en un bucket privado. Generamos una URL firmada de corta
+  // duración solo al descargar; nunca persistimos URLs (expirarían y dejarían
+  // enlaces muertos). El path guardado ya empieza con empresa_id, por lo que la
+  // RLS por empresa autoriza (o rechaza) esta firma según el usuario.
+  const descargarEvidencia = async (path: string, periodoKey: string) => {
+    setDescargando(periodoKey);
+    try {
+      const { data: signed, error } = await supabase.storage
+        .from('evidencias-cumplimiento')
+        .createSignedUrl(path, 60);
+      if (error || !signed?.signedUrl) throw error || new Error('No se pudo generar el enlace');
+      window.open(signed.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (err: any) {
+      toast.error('No se pudo abrir la evidencia');
+    } finally {
+      setDescargando(null);
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -69,7 +89,18 @@ export function CumplimientoHistorial({ open, onOpenChange, obligacionId, obliga
                   {getPeriodLabel(presentacion, c.periodo_key)}
                 </span>
                 {c.evidencia_url && (
-                  <Badge variant="outline" className="text-[10px] px-1">📎</Badge>
+                  <button
+                    type="button"
+                    onClick={() => descargarEvidencia(c.evidencia_url!, c.periodo_key)}
+                    disabled={descargando === c.periodo_key}
+                    className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-accent transition-colors disabled:opacity-50"
+                    title="Ver evidencia"
+                  >
+                    {descargando === c.periodo_key
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <Paperclip className="w-3 h-3" />}
+                    Evidencia
+                  </button>
                 )}
               </div>
             ))}

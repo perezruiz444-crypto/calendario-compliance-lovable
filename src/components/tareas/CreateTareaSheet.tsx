@@ -758,7 +758,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                       <Paperclip className="h-3 w-3 inline mr-1" />
                       Archivos
                     </Label>
-                    <FileAttachments attachments={attachments} onAttachmentsChange={setAttachments} />
+                    <FileAttachments empresaId={formData.empresa_id || undefined} attachments={attachments} onAttachmentsChange={setAttachments} />
                   </div>
                 </CollapsibleContent>
               </Collapsible>
