@@ -1,7 +1,7 @@
 # Calendario Compliance — Instrucciones del Proyecto
 
 ## Stack
-- React 18 + TypeScript (strict mode OFF) + Vite + SWC
+- React 18 + TypeScript (strict mode ON — `noImplicitAny`, `strictNullChecks`; `no-explicit-any` en ESLint es `warn` mientras se corrigen `any` preexistentes) + Vite + SWC
 - Tailwind CSS + Radix UI (shadcn/ui pattern) + Framer Motion
 - React Router v6 (lazy loading en todas las páginas)
 - React Query v5 instalado, pero hoy solo provee el QueryClient global — el data fetching real es Supabase directo (ver Data Fetching)
