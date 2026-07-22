@@ -52,7 +52,7 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
           .from('tareas')
           .select('*, profiles:consultor_asignado_id(nombre_completo), categorias_tareas(nombre, color)')
           .eq('empresa_id', empresaId)
-          .order('fecha_vencimiento', { ascending: true })
+          .order('created_at', { ascending: false })
           .limit(10),
         supabase
           .from('obligaciones')
