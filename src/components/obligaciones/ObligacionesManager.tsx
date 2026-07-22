@@ -591,7 +591,7 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
                       <td className="p-2">
                         <div className="flex items-center gap-2">
                           <span>{displayDate}</span>
-                          {vencInfo && getVencimientoBadge(next ? format(next.date, 'yyyy-MM-dd') : ob.fecha_vencimiento)}
+                          {vencInfo && getVencimientoBadge(fechaVenc)}
                         </div>
                       </td>
                       <td className="p-2"><Badge variant="outline" className="text-xs capitalize">{ob.estado}</Badge></td>
