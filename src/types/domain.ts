@@ -22,6 +22,20 @@ export type EmpresaProgramaInsert = Tables['empresa_programas']['Insert'];
 
 export type ObligacionCumplimiento = Tables['obligacion_cumplimientos']['Row'];
 
+/**
+ * Fase 2 — modelo de ocurrencias (tabla `obligacion_ocurrencias`).
+ * Tipos generados por Supabase tras aplicar 20260721100000/100001.
+ */
+export type ObligacionOcurrencia = Tables['obligacion_ocurrencias']['Row'];
+export type ObligacionOcurrenciaInsert = Tables['obligacion_ocurrencias']['Insert'];
+
+/** Ocurrencia con su obligación (join frecuente para render de listas/calendario). */
+export type OcurrenciaConObligacion = ObligacionOcurrencia & {
+  obligaciones?: Pick<Obligacion, 'id' | 'nombre' | 'categoria' | 'presentacion' | 'descripcion'> & {
+    empresas?: { razon_social: string | null } | null;
+  } | null;
+};
+
 export type DomicilioOperacion = Tables['domicilios_operacion']['Row'];
 export type AgenteAduanal = Tables['agentes_aduanales']['Row'];
 export type ApoderadoLegal = Tables['apoderados_legales']['Row'];

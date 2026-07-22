@@ -12,12 +12,14 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   empresaId: string;
   obligacionId: string;
+  /** Fase 2: ocurrencia a la que pertenece este cumplimiento (recurrentes). NULL para manuales/eventuales. */
+  ocurrenciaId?: string | null;
   periodoKey: string;
   userId: string;
   onCompleted: () => void;
 }
 
-export function EvidenciaCumplimiento({ open, onOpenChange, empresaId, obligacionId, periodoKey, userId, onCompleted }: Props) {
+export function EvidenciaCumplimiento({ open, onOpenChange, empresaId, obligacionId, ocurrenciaId = null, periodoKey, userId, onCompleted }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -52,7 +54,10 @@ export function EvidenciaCumplimiento({ open, onOpenChange, empresaId, obligacio
 
       const { error } = await supabase.from('obligacion_cumplimientos').insert({
         obligacion_id: obligacionId,
+        ocurrencia_id: ocurrenciaId,
+        empresa_id: empresaId,
         periodo_key: periodoKey,
+        completada: true,
         completada_por: userId,
         evidencia_url: evidenciaPath,
       });

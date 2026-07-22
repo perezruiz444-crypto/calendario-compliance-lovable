@@ -26,7 +26,7 @@ import {
 import {
   CATEGORIA_LABELS, CATEGORIA_COLORS,
   getCurrentPeriodKey, getPeriodLabel, formatDateShort, getVencimientoInfo, programaToCategoria,
-  getNextVencimiento, isRecurring, fetchCumplimientoKeys,
+  isRecurring,
 } from '@/lib/obligaciones';
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
 import { logger } from '@/lib/logger';
@@ -57,6 +57,8 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const [obligaciones, setObligaciones] = useState<any[]>([]);
   const [cumplimientoKeys, setCumplimientoKeys] = useState<Set<string>>(new Set());
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
+  // Fase 2: próxima ocurrencia pendiente (o la más próxima) por obligación_id.
+  const [proximaOcurrencia, setProximaOcurrencia] = useState<Record<string, { id: string; periodo_key: string; fecha_vencimiento: string }>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -69,6 +71,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
 const [profiles, setProfiles] = useState<Record<string, string>>({});
 const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 const [selectedObId, setSelectedObId] = useState<string | null>(null);
+const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(null);
   const [chooserOpen, setChooserOpen] = useState(false);
   const [sugerenciaCatalogoItem, setSugerenciaCatalogoItem] = useState<CatalogoMinItem | null>(null);
   const [sugerenciaDialogOpen, setSugerenciaDialogOpen] = useState(false);
@@ -93,11 +96,43 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
 
   const fetchCumplimientos = async (obs: any[]) => {
     const obIds = obs.map(ob => ob.id);
-    const keys = await fetchCumplimientoKeys(supabase, obIds);
-    const map: Record<string, boolean> = {};
-    keys.forEach(k => { map[k] = true; });
-    setCumplimientos(map);
-    setCumplimientoKeys(keys);
+    if (obIds.length === 0) { setCumplimientos({}); setProximaOcurrencia({}); return; }
+
+    // Ocurrencias de estas obligaciones (ordenadas por fecha).
+    const { data: ocData } = await supabase
+      .from('obligacion_ocurrencias')
+      .select('id, obligacion_id, periodo_key, fecha_vencimiento')
+      .in('obligacion_id', obIds)
+      .order('fecha_vencimiento', { ascending: true });
+    const ocs = ocData || [];
+
+    // Cumplimientos vigentes -> set de ocurrencias cumplidas.
+    const ocIds = ocs.map((o: any) => o.id);
+    let cumplidas = new Set<string>();
+    if (ocIds.length > 0) {
+      const { data: cData } = await supabase
+        .from('obligacion_cumplimientos')
+        .select('ocurrencia_id, completada, vigente')
+        .in('ocurrencia_id', ocIds);
+      cumplidas = new Set((cData || []).filter((c: any) => c.vigente && c.completada && c.ocurrencia_id).map((c: any) => c.ocurrencia_id));
+    }
+
+    // Map cumplimientos por ocurrencia_id + próxima ocurrencia pendiente por obligación.
+    const cMap: Record<string, boolean> = {};
+    const proxMap: Record<string, { id: string; periodo_key: string; fecha_vencimiento: string }> = {};
+    ocs.forEach((oc: any) => {
+      cMap[oc.id] = cumplidas.has(oc.id);
+      if (!proxMap[oc.obligacion_id]) {
+        // primera pendiente; si todas cumplidas, la primera (ya ordenadas por fecha)
+        proxMap[oc.obligacion_id] = { id: oc.id, periodo_key: oc.periodo_key, fecha_vencimiento: oc.fecha_vencimiento };
+      } else if (!cumplidas.has(oc.id) && cumplidas.has(proxMap[oc.obligacion_id].id)) {
+        proxMap[oc.obligacion_id] = { id: oc.id, periodo_key: oc.periodo_key, fecha_vencimiento: oc.fecha_vencimiento };
+      }
+    });
+
+    setCumplimientos(cMap);
+    setProximaOcurrencia(proxMap);
+    setCumplimientoKeys(new Set(Object.keys(cMap).filter(k => cMap[k])));
   };
 
   useEffect(() => { fetchObligaciones(); }, [empresaId]);
@@ -144,32 +179,39 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
 
   const toggleCumplimiento = async (obligacionId: string, presentacion: string | null) => {
     if (!user) return;
-    const periodKey = getCurrentPeriodKey(presentacion);
-    const mapKey = `${obligacionId}:${periodKey}`;
-    const isCompleted = cumplimientos[mapKey];
+    const oc = proximaOcurrencia[obligacionId];
+    if (!oc) { toast.error('Esta obligación no tiene ocurrencias para cumplir'); return; }
+    const isCompleted = cumplimientos[oc.id];
 
     if (isCompleted) {
-      // Remove completion
-      const { error } = await supabase
+      // Desmarcar = corrección append-only (nunca DELETE).
+      const { data: existing } = await supabase
         .from('obligacion_cumplimientos')
-        .delete()
-        .eq('obligacion_id', obligacionId)
-        .eq('periodo_key', periodKey);
+        .select('id')
+        .eq('ocurrencia_id', oc.id)
+        .eq('vigente', true)
+        .maybeSingle();
+      if (!existing?.id) { toast.error('No se encontró el cumplimiento'); return; }
+      const { error } = await supabase.rpc('corregir_cumplimiento', {
+        p_cumplimiento_id: existing.id, p_completada: false, p_notas: null,
+      });
       if (error) { toast.error('Error al desmarcar'); return; }
-      setCumplimientos(prev => ({ ...prev, [mapKey]: false }));
+      setCumplimientos(prev => ({ ...prev, [oc.id]: false }));
       toast.success('Cumplimiento desmarcado');
     } else {
-      // Add completion
       const { error } = await supabase
         .from('obligacion_cumplimientos')
         .insert({
           obligacion_id: obligacionId,
-          periodo_key: periodKey,
+          ocurrencia_id: oc.id,
+          empresa_id: empresaId,
+          periodo_key: oc.periodo_key,
+          completada: true,
           completada_por: user.id,
         });
       if (error) { toast.error('Error al marcar cumplimiento'); return; }
-      setCumplimientos(prev => ({ ...prev, [mapKey]: true }));
-      toast.success(`Marcada como completada - ${getPeriodLabel(presentacion, periodKey)}`);
+      setCumplimientos(prev => ({ ...prev, [oc.id]: true }));
+      toast.success(`Marcada como completada - ${getPeriodLabel(presentacion, oc.periodo_key)}`);
     }
   };
 
@@ -284,20 +326,23 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
 
     generateObligacionesPDF(
       empresa,
-      filtered.map(ob => ({
-        ...ob,
-        completada_periodo: cumplimientos[`${ob.id}:${getCurrentPeriodKey(ob.presentacion)}`] || false,
-        periodo_actual: getPeriodLabel(ob.presentacion, getCurrentPeriodKey(ob.presentacion)),
-      }))
+      filtered.map(ob => {
+        const oc = proximaOcurrencia[ob.id];
+        return {
+          ...ob,
+          completada_periodo: oc ? (cumplimientos[oc.id] || false) : false,
+          periodo_actual: getPeriodLabel(ob.presentacion, oc?.periodo_key ?? getCurrentPeriodKey(ob.presentacion)),
+        };
+      })
     );
     toast.success('Reporte PDF generado');
   };
 
   const handleExportExcel = async () => {
     const rows = filtered.map(ob => {
-      const periodKey = getCurrentPeriodKey(ob.presentacion);
-      const mapKey = `${ob.id}:${periodKey}`;
-      const isCompleted = cumplimientos[mapKey] || false;
+      const oc = proximaOcurrencia[ob.id];
+      const periodKey = oc?.periodo_key ?? getCurrentPeriodKey(ob.presentacion);
+      const isCompleted = oc ? (cumplimientos[oc.id] || false) : false;
 
       return {
         'Categoría': CATEGORIA_LABELS[ob.categoria] || ob.categoria,
@@ -467,12 +512,12 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
               <tbody>
                 {filtered.map(ob => {
                   const recurring = isRecurring(ob.presentacion);
-                  const next = getNextVencimiento(ob.fecha_vencimiento, ob.presentacion, cumplimientoKeys, ob.id);
-                  const periodKey = next?.periodKey || getCurrentPeriodKey(ob.presentacion);
-                  const mapKey = `${ob.id}:${periodKey}`;
-                  const isCompleted = cumplimientos[mapKey] || false;
-                  const displayDate = next ? format(next.date, 'dd/MM/yyyy') : formatDateShort(ob.fecha_vencimiento);
-                  const vencInfo = next ? getVencimientoInfo(format(next.date, 'yyyy-MM-dd')) : getVencimientoInfo(ob.fecha_vencimiento);
+                  const oc = proximaOcurrencia[ob.id];
+                  const periodKey = oc?.periodo_key ?? getCurrentPeriodKey(ob.presentacion);
+                  const isCompleted = oc ? (cumplimientos[oc.id] || false) : false;
+                  const fechaVenc = oc?.fecha_vencimiento ?? ob.fecha_vencimiento;
+                  const displayDate = fechaVenc ? formatDateShort(fechaVenc) : '-';
+                  const vencInfo = getVencimientoInfo(fechaVenc);
 
                   return (
                     <tr key={ob.id} className={`border-b last:border-0 hover:bg-muted/50 transition-colors ${isCompleted ? 'bg-success/5' : ''}`}>
@@ -496,7 +541,7 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
                           <div>
                            <button
   className={`font-medium text-left hover:text-primary transition-colors ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
-  onClick={() => { setSelectedObId(ob.id); setDetailSheetOpen(true); }}
+  onClick={() => { setSelectedObId(ob.id); setSelectedOcurrenciaId(proximaOcurrencia[ob.id]?.id ?? null); setDetailSheetOpen(true); }}
 >
   {ob.nombre}
 </button>
@@ -594,8 +639,9 @@ const [selectedObId, setSelectedObId] = useState<string | null>(null);
 
       <ObligacionDetailSheet
         open={detailSheetOpen}
-        onOpenChange={setDetailSheetOpen}
+        onOpenChange={(o) => { setDetailSheetOpen(o); if (!o) setSelectedOcurrenciaId(null); }}
         obligacionId={selectedObId}
+        ocurrenciaId={selectedOcurrenciaId}
         onCumplimientoChange={() => fetchObligaciones()}
       />
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>

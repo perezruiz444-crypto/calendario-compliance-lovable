@@ -15,6 +15,9 @@ import { toast } from 'sonner';
 import { isPast, startOfDay, format, addDays } from 'date-fns';
 import { es as esLocaleDate } from 'date-fns/locale';
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
+import { ObligacionesPorUrgencia } from '@/components/obligaciones/ObligacionesPorUrgencia';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
 
 interface FcEvent {
   id: string;
@@ -59,12 +62,12 @@ interface DashboardCalendarProps {
 }
 
 function eventColor(type: string, prioridad?: string, isOverdue?: boolean, isDone?: boolean): { bg: string; border: string } {
-  if (isDone) return { bg: 'hsl(142 71% 45% / 0.15)', border: 'hsl(142 71% 45%)' };
-  if (isOverdue) return { bg: 'hsl(0 84% 60% / 0.15)', border: 'hsl(0 84% 60%)' };
+  if (isDone) return { bg: 'hsl(var(--success) / 0.15)', border: 'hsl(var(--success))' };
+  if (isOverdue) return { bg: 'hsl(var(--destructive) / 0.15)', border: 'hsl(var(--destructive))' };
   if (type === 'tarea') {
-    if (prioridad === 'alta')  return { bg: 'hsl(25 95% 53% / 0.15)', border: 'hsl(25 95% 53%)' };
-    if (prioridad === 'media') return { bg: 'hsl(48 96% 53% / 0.15)', border: 'hsl(48 96% 53%)' };
-    if (prioridad === 'baja')  return { bg: 'hsl(142 71% 45% / 0.15)', border: 'hsl(142 71% 45%)' };
+    if (prioridad === 'alta')  return { bg: 'hsl(var(--urgent) / 0.15)', border: 'hsl(var(--urgent))' };
+    if (prioridad === 'media') return { bg: 'hsl(var(--warning) / 0.15)', border: 'hsl(var(--warning))' };
+    if (prioridad === 'baja')  return { bg: 'hsl(var(--success) / 0.15)', border: 'hsl(var(--success))' };
     return { bg: 'hsl(var(--primary) / 0.12)', border: 'hsl(var(--primary))' };
   }
   if (type === 'documento')  return { bg: 'hsl(221 83% 53% / 0.12)', border: 'hsl(221 83% 53%)' };
@@ -101,7 +104,9 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [showNext30, setShowNext30] = useState(false);
   const [selectedObId, setSelectedObId] = useState<string | null>(null);
+  const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(null);
   const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
   // Por defecto, los clientes no ven Tareas (son operativas internas del despacho)
   const [activeTypes, setActiveTypes] = useState<Set<EventType>>(
@@ -135,10 +140,12 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     const allEvents: FcEvent[] = [];
     const today = startOfDay(new Date());
 
+    // Fase 2: el timeline se alimenta de OCURRENCIAS reales (fecha_vencimiento vive
+    // aquí, no en la obligación-semilla). El estado "cumplida" viene del cumplimiento
+    // vigente de la ocurrencia.
     let obsQuery = supabase
-      .from('obligaciones')
-      .select('id, nombre, empresa_id, categoria, fecha_vencimiento, catalogo_id, estado, empresas(razon_social)')
-      .eq('activa', true)
+      .from('obligacion_ocurrencias')
+      .select('id, obligacion_id, empresa_id, periodo_key, fecha_vencimiento, estado, obligaciones(nombre, categoria, catalogo_id), empresas(razon_social)')
       .gte('fecha_vencimiento', startStr)
       .lte('fecha_vencimiento', endStr);
     if (filterEmpresaId && filterEmpresaId !== 'all') {
@@ -146,20 +153,35 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     }
     const { data: obs } = await obsQuery;
 
-    (obs || []).forEach(ob => {
+    // Cumplimientos vigentes de esas ocurrencias -> set de ocurrencias cumplidas.
+    const ocIds = (obs || []).map((o: any) => o.id);
+    let cumplidasSet = new Set<string>();
+    if (ocIds.length > 0) {
+      const { data: cData } = await supabase
+        .from('obligacion_cumplimientos')
+        .select('ocurrencia_id, completada, vigente')
+        .in('ocurrencia_id', ocIds);
+      cumplidasSet = new Set(
+        (cData || []).filter((c: any) => c.vigente && c.completada && c.ocurrencia_id).map((c: any) => c.ocurrencia_id)
+      );
+    }
+
+    (obs || []).forEach((ob: any) => {
       if (!ob.fecha_vencimiento) return;
       const d = new Date(ob.fecha_vencimiento + 'T12:00:00');
-      const isDone = ob.estado === 'completada';
+      const isDone = cumplidasSet.has(ob.id) || ob.estado === 'cumplida';
       const overdue = !isDone && d < today;
+      const nombre = ob.obligaciones?.nombre ?? 'Obligación';
       const { bg, border } = eventColor('obligacion', undefined, overdue, isDone);
       allEvents.push({
-        id: `ob-${ob.id}`,
-        title: `${isDone ? '✓ ' : ''}${ob.nombre}${ob.empresas?.razon_social ? ` · ${ob.empresas.razon_social}` : ''}`,
+        id: `oc-${ob.id}`,
+        title: `${isDone ? '✓ ' : ''}${nombre}${ob.empresas?.razon_social ? ` · ${ob.empresas.razon_social}` : ''}`,
         start: ob.fecha_vencimiento,
         backgroundColor: bg,
         borderColor: border,
         textColor: 'hsl(var(--foreground))',
-        extendedProps: { type: 'obligacion', rawId: ob.id, empresaId: ob.empresa_id, isRecurrente: !!ob.catalogo_id, estado: ob.estado, data: ob },
+        // rawId = obligación padre (para abrir el detail sheet); ocurrenciaId aparte.
+        extendedProps: { type: 'obligacion', rawId: ob.obligacion_id, ocurrenciaId: ob.id, empresaId: ob.empresa_id, isRecurrente: !!ob.obligaciones?.catalogo_id, estado: ob.estado, data: ob },
       });
     });
 
@@ -243,6 +265,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     const { extendedProps } = arg.event;
     if (extendedProps.type === 'obligacion' && extendedProps.rawId) {
       setSelectedObId(extendedProps.rawId);
+      setSelectedOcurrenciaId((extendedProps as any).ocurrenciaId ?? null);
       setSheetOpen(true);
       return;
     }
@@ -327,12 +350,51 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
             />
           </div>
         </CardContent>
+
+        {next30.length > 0 && (
+          <div className="px-6 pb-5">
+            <Collapsible open={showNext30} onOpenChange={setShowNext30}>
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border-subtle bg-muted/30 hover:bg-muted/50 transition-colors text-sm font-semibold"
+                >
+                  <CalendarDays className="w-4 h-4 text-primary" />
+                  <span className="font-heading">Próximos 30 días</span>
+                  <span className="text-muted-foreground font-normal">({next30.length})</span>
+                  <ChevronDown className={`w-4 h-4 ml-auto text-muted-foreground transition-transform ${showNext30 ? 'rotate-180' : ''}`} />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-3">
+                <ObligacionesPorUrgencia
+                  items={next30}
+                  getFecha={(e) => e.start}
+                  getKey={(e) => e.id}
+                  renderItem={(e) => (
+                    <button
+                      type="button"
+                      onClick={() => handleEventClick({ event: { extendedProps: e.extendedProps, id: e.id, title: e.title } } as unknown as EventClickArg)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border-subtle bg-card hover:shadow-elegant transition-all text-left"
+                    >
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: TYPE_COLORS[e.extendedProps.type] }} />
+                      <span className="flex-1 min-w-0 truncate text-sm font-medium">{e.title}</span>
+                      <span className="text-xs text-muted-foreground shrink-0 font-mono">
+                        {format(new Date(e.start + 'T12:00:00'), 'dd MMM', { locale: esLocaleDate })}
+                      </span>
+                    </button>
+                  )}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        )}
       </Card>
 
       <ObligacionDetailSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         obligacionId={selectedObId}
+        ocurrenciaId={selectedOcurrenciaId}
         onCumplimientoChange={() => { if (dateRange) fetchEvents(dateRange.start, dateRange.end); }}
       />
 

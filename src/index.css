@@ -20,11 +20,11 @@
     --popover-foreground: 222 47% 11%;
 
     /* Navy editorial */
-    --primary: 218 76% 23%;
+    --primary: 218 80% 19%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 218 60% 32%;
     --primary-light: 218 60% 96%;
-    --primary-glow: 214 70% 55%;
+    --primary-glow: 214 75% 52%;
 
     --secondary: 220 25% 95%;
     --secondary-foreground: 222 35% 18%;
@@ -33,12 +33,13 @@
     --muted-foreground: 222 18% 42%;
 
     /* Accent ahora alineado con navy (rojo solo destructivo) */
-    --accent: 214 70% 55%;
+    --accent: 214 75% 52%;
     --accent-foreground: 0 0% 100%;
 
     /* Status */
-    --success: 152 60% 32%;
+    --success: 152 65% 38%;
     --success-foreground: 0 0% 100%;
+    --success-glow: 152 65% 45%;
     --warning: 36 90% 45%;
     --warning-foreground: 0 0% 100%;
     --destructive: 4 76% 49%;
@@ -77,13 +78,13 @@
     --shadow-float:     0 24px 48px -20px hsl(218 40% 20% / 0.20);
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(218 76% 23%) 0%, hsl(214 70% 45%) 100%);
-    --gradient-hero:    linear-gradient(135deg, hsl(218 76% 23%) 0%, hsl(214 70% 55%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(218 80% 19%) 0%, hsl(214 75% 42%) 100%);
+    --gradient-hero:    linear-gradient(135deg, hsl(218 80% 19%) 0%, hsl(214 75% 52%) 100%);
     --gradient-card:    linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 25% 99%) 100%);
     --gradient-subtle:  linear-gradient(180deg, hsl(220 30% 98%) 0%, hsl(220 25% 96%) 100%);
     --gradient-mesh:
-      radial-gradient(at 20% 0%, hsl(214 70% 55% / 0.08) 0px, transparent 50%),
-      radial-gradient(at 80% 100%, hsl(218 76% 23% / 0.06) 0px, transparent 50%);
+      radial-gradient(at 20% 0%, hsl(214 75% 52% / 0.08) 0px, transparent 50%),
+      radial-gradient(at 80% 100%, hsl(218 80% 19% / 0.06) 0px, transparent 50%);
   }
 }
 
@@ -260,6 +261,7 @@ body::before {
 
   /* Glow */
   .glow-primary { box-shadow: 0 0 32px hsl(var(--primary-glow) / 0.25); }
+  .glow-success { box-shadow: 0 0 32px hsl(var(--success-glow) / 0.25); }
 
   /* Status pills */
   .status-vencida   { @apply bg-destructive/10 text-destructive border border-destructive/20 font-semibold; }

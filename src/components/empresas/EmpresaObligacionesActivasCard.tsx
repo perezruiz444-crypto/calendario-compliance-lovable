@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useObligacionCumplimientos } from '@/hooks/useObligacionCumplimientos';
 import { toast } from 'sonner';
 import { ObligacionFormDialog } from '@/components/obligaciones/ObligacionFormDialog';
 import {
@@ -50,8 +49,10 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
   const [loading, setLoading] = useState(true);
   const [deactivating, setDeactivating] = useState<string | null>(null);
   const [editObl, setEditObl] = useState<Obligacion | null>(null);
-
-  const { cumplimientos, toggleCumplimiento, toggling } = useObligacionCumplimientos(obligaciones, empresaId);
+  const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
+  const [toggling, setToggling] = useState<string | null>(null);
+  // Fase 2: próxima ocurrencia pendiente por obligación_id.
+  const [proximaOcurrencia, setProximaOcurrencia] = useState<Record<string, { id: string; periodo_key: string; fecha_vencimiento: string }>>({});
 
   const fetchData = async () => {
     setLoading(true);
@@ -66,10 +67,88 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
 
       const obls = (oblData || []) as Obligacion[];
       setObligaciones(obls);
+
+      // Ocurrencias + cumplimientos vigentes de estas obligaciones.
+      const obIds = obls.map((o) => o.id);
+      if (obIds.length > 0) {
+        const { data: ocData } = await supabase
+          .from('obligacion_ocurrencias')
+          .select('id, obligacion_id, periodo_key, fecha_vencimiento')
+          .in('obligacion_id', obIds)
+          .order('fecha_vencimiento', { ascending: true });
+        const ocs = ocData || [];
+        const ocIds = ocs.map((o: any) => o.id);
+        let cumplidas = new Set<string>();
+        if (ocIds.length > 0) {
+          const { data: cData } = await supabase
+            .from('obligacion_cumplimientos')
+            .select('ocurrencia_id, completada, vigente')
+            .in('ocurrencia_id', ocIds);
+          cumplidas = new Set((cData || []).filter((c: any) => c.vigente && c.completada && c.ocurrencia_id).map((c: any) => c.ocurrencia_id));
+        }
+        const cMap: Record<string, boolean> = {};
+        const proxMap: Record<string, { id: string; periodo_key: string; fecha_vencimiento: string }> = {};
+        ocs.forEach((oc: any) => {
+          cMap[oc.id] = cumplidas.has(oc.id);
+          if (!proxMap[oc.obligacion_id]) {
+            proxMap[oc.obligacion_id] = { id: oc.id, periodo_key: oc.periodo_key, fecha_vencimiento: oc.fecha_vencimiento };
+          } else if (!cumplidas.has(oc.id) && cumplidas.has(proxMap[oc.obligacion_id].id)) {
+            proxMap[oc.obligacion_id] = { id: oc.id, periodo_key: oc.periodo_key, fecha_vencimiento: oc.fecha_vencimiento };
+          }
+        });
+        setCumplimientos(cMap);
+        setProximaOcurrencia(proxMap);
+      } else {
+        setCumplimientos({});
+        setProximaOcurrencia({});
+      }
     } catch {
       toast.error('Error al cargar obligaciones');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Toggle append-only sobre la próxima ocurrencia de la obligación.
+  const toggleCumplimiento = async (obl: Obligacion) => {
+    if (!user) return;
+    const oc = proximaOcurrencia[obl.id];
+    if (!oc) { toast.error('Esta obligación no tiene ocurrencias para cumplir'); return; }
+    const isCompleted = cumplimientos[oc.id];
+    setToggling(obl.id);
+    try {
+      if (isCompleted) {
+        const { data: existing } = await supabase
+          .from('obligacion_cumplimientos')
+          .select('id')
+          .eq('ocurrencia_id', oc.id)
+          .eq('vigente', true)
+          .maybeSingle();
+        if (existing?.id) {
+          const { error } = await supabase.rpc('corregir_cumplimiento', {
+            p_cumplimiento_id: existing.id, p_completada: false, p_notas: null,
+          });
+          if (error) throw error;
+        }
+        setCumplimientos((prev) => ({ ...prev, [oc.id]: false }));
+        toast.success('Cumplimiento desmarcado');
+      } else {
+        const { error } = await supabase.from('obligacion_cumplimientos').insert({
+          obligacion_id: obl.id,
+          ocurrencia_id: oc.id,
+          empresa_id: empresaId,
+          periodo_key: oc.periodo_key,
+          completada: true,
+          completada_por: user.id,
+        });
+        if (error) throw error;
+        setCumplimientos((prev) => ({ ...prev, [oc.id]: true }));
+        toast.success('Cumplimiento marcado');
+      }
+    } catch {
+      toast.error('No tienes permiso o hubo un error');
+    } finally {
+      setToggling(null);
     }
   };
 
@@ -92,7 +171,8 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
   };
 
   const getStatusBadge = (obl: Obligacion) => {
-    const info = getVencimientoInfo(obl.fecha_vencimiento);
+    const fecha = proximaOcurrencia[obl.id]?.fecha_vencimiento ?? obl.fecha_vencimiento;
+    const info = getVencimientoInfo(fecha);
     if (!info) return null;
     const config = {
       vencido: { label: 'Vencido', className: 'bg-destructive/10 text-destructive border-destructive/30', icon: ShieldAlert },
@@ -146,9 +226,11 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
           {obligaciones.length > 0 ? (
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {obligaciones.map((obl) => {
-                const isCompleted = cumplimientos[obl.id] || false;
-                const periodKey = getCurrentPeriodKey(obl.presentacion);
+                const oc = proximaOcurrencia[obl.id];
+                const isCompleted = oc ? (cumplimientos[oc.id] || false) : false;
+                const periodKey = oc?.periodo_key ?? getCurrentPeriodKey(obl.presentacion);
                 const periodLabel = getPeriodLabel(obl.presentacion, periodKey);
+                const fechaVenc = oc?.fecha_vencimiento ?? obl.fecha_vencimiento;
 
                 return (
                   <div
@@ -178,8 +260,8 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
                         {obl.presentacion && (
                           <span className="text-xs text-muted-foreground">{obl.presentacion} · {periodLabel}</span>
                         )}
-                        {obl.fecha_vencimiento && (
-                          <span className="text-xs text-muted-foreground">Vence: {formatDateShort(obl.fecha_vencimiento)}</span>
+                        {fechaVenc && (
+                          <span className="text-xs text-muted-foreground">Vence: {formatDateShort(fechaVenc)}</span>
                         )}
                       </div>
                     </div>

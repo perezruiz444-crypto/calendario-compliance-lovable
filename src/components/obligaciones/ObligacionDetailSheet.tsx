@@ -20,10 +20,12 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   obligacionId: string | null;
+  /** Fase 2: si viene, el sheet opera sobre ESTA ocurrencia concreta (calendario). */
+  ocurrenciaId?: string | null;
   onCumplimientoChange?: () => void;
 }
 
-export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId, onCumplimientoChange }: Props) {
+export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId, ocurrenciaId = null, onCumplimientoChange }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [ob, setOb] = useState<any>(null);
@@ -32,67 +34,114 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
   const [saving, setSaving] = useState(false);
   const [evidencia, setEvidencia] = useState('');
   const [periodKey, setPeriodKey] = useState('');
+  const [activeOcurrenciaId, setActiveOcurrenciaId] = useState<string | null>(null);
   const [historial, setHistorial] = useState<any[]>([]);
 
   useEffect(() => {
-    if (open && obligacionId) fetchData();
-  }, [open, obligacionId]);
+    if (open && (obligacionId || ocurrenciaId)) fetchData();
+  }, [open, obligacionId, ocurrenciaId]);
 
   const fetchData = async () => {
-    if (!obligacionId) return;
     setLoading(true);
     setEvidencia('');
 
-    const { data, error } = await supabase
-      .from('obligaciones')
-      .select('*, empresas(id, razon_social)')
-      .eq('id', obligacionId)
-      .maybeSingle();
+    // Resolver la obligación + la ocurrencia objetivo.
+    let resolvedObligacionId = obligacionId;
+    let targetOcurrencia: any = null;
 
-    if (error || !data) { setLoading(false); return; }
-    setOb(data);
+    if (ocurrenciaId) {
+      // Vía calendario: cargar la ocurrencia concreta y su obligación.
+      const { data: oc } = await supabase
+        .from('obligacion_ocurrencias')
+        .select('*, obligaciones(*, empresas(id, razon_social))')
+        .eq('id', ocurrenciaId)
+        .maybeSingle();
+      if (!oc) { setLoading(false); return; }
+      targetOcurrencia = oc;
+      resolvedObligacionId = (oc as any).obligacion_id;
+      const obl = (oc as any).obligaciones;
+      // Merge: datos de la obligación + fecha/periodo de la ocurrencia.
+      setOb({ ...obl, id: (oc as any).obligacion_id, fecha_vencimiento: (oc as any).fecha_vencimiento });
+      setPeriodKey((oc as any).periodo_key);
+      setActiveOcurrenciaId((oc as any).id);
+    } else {
+      // Vía legacy: obligación + próxima ocurrencia pendiente (o la más próxima).
+      const { data, error } = await supabase
+        .from('obligaciones')
+        .select('*, empresas(id, razon_social)')
+        .eq('id', obligacionId)
+        .maybeSingle();
+      if (error || !data) { setLoading(false); return; }
 
-    const pk = getCurrentPeriodKey(data.presentacion);
-    setPeriodKey(pk);
+      const { data: oc } = await supabase
+        .from('obligacion_ocurrencias')
+        .select('*')
+        .eq('obligacion_id', obligacionId!)
+        .order('fecha_vencimiento', { ascending: true })
+        .limit(1)
+        .maybeSingle();
 
-    const { data: cumpl } = await supabase
-      .from('obligacion_cumplimientos')
-      .select('*')
-      .eq('obligacion_id', obligacionId)
-      .eq('periodo_key', pk)
-      .maybeSingle();
+      targetOcurrencia = oc;
+      setOb({ ...data, fecha_vencimiento: (oc as any)?.fecha_vencimiento ?? data.fecha_vencimiento });
+      setPeriodKey((oc as any)?.periodo_key ?? getCurrentPeriodKey(data.presentacion));
+      setActiveOcurrenciaId((oc as any)?.id ?? null);
+    }
 
-    setIsCumplida(!!cumpl);
-    if (cumpl?.notas) setEvidencia(cumpl.notas);
+    // Estado de cumplimiento vigente para la ocurrencia objetivo.
+    if (targetOcurrencia?.id) {
+      const { data: cumpl } = await supabase
+        .from('obligacion_cumplimientos')
+        .select('*')
+        .eq('ocurrencia_id', targetOcurrencia.id)
+        .eq('vigente', true)
+        .maybeSingle();
+      setIsCumplida(!!cumpl && cumpl.completada);
+      if (cumpl?.notas) setEvidencia(cumpl.notas);
+    } else {
+      setIsCumplida(false);
+    }
 
-    const { data: hist } = await supabase
-      .from('obligacion_cumplimientos')
-      .select('*, profiles(nombre_completo)')
-      .eq('obligacion_id', obligacionId)
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    setHistorial(hist || []);
+    // Historial: por obligación padre.
+    if (resolvedObligacionId) {
+      const { data: hist } = await supabase
+        .from('obligacion_cumplimientos')
+        .select('*, profiles(nombre_completo)')
+        .eq('obligacion_id', resolvedObligacionId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      setHistorial(hist || []);
+    }
     setLoading(false);
   };
 
   const handleMarcarCumplida = async () => {
     if (!ob || !user) return;
+    if (!activeOcurrenciaId) { toast.error('No hay una ocurrencia asociada para registrar'); return; }
     setSaving(true);
     try {
       if (isCumplida) {
-        await supabase
+        // Desmarcar = corrección append-only (nunca DELETE).
+        const { data: existing } = await supabase
           .from('obligacion_cumplimientos')
-          .delete()
-          .eq('obligacion_id', ob.id)
-          .eq('periodo_key', periodKey);
+          .select('id')
+          .eq('ocurrencia_id', activeOcurrenciaId)
+          .eq('vigente', true)
+          .maybeSingle();
+        if (existing?.id) {
+          const { error } = await supabase.rpc('corregir_cumplimiento', {
+            p_cumplimiento_id: existing.id, p_completada: false, p_notas: null,
+          });
+          if (error) throw error;
+        }
         setIsCumplida(false);
         toast.success('Cumplimiento desmarcado');
       } else {
         const { error } = await supabase
           .from('obligacion_cumplimientos')
-          .upsert({
+          .insert({
             obligacion_id: ob.id,
+            ocurrencia_id: activeOcurrenciaId,
+            empresa_id: ob.empresa_id,
             periodo_key: periodKey,
             completada: true,
             completada_por: user.id,

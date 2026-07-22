@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import { getCurrentPeriodKey, getPeriodLabel, CATEGORIA_LABELS, formatDateShort } from '@/lib/obligaciones';
+import { CATEGORIA_LABELS, formatDateShort } from '@/lib/obligaciones';
 
+// Fase 2: `id` es el ocurrencia_id; `cumplimientos` se indexa por ese id.
 interface Obligacion {
   id: string;
   nombre: string;
@@ -49,8 +50,7 @@ export function ExportarCumplimientoButton({ obligaciones, cumplimientos, empres
         doc.addPage();
         y = 20;
       }
-      const pk = getCurrentPeriodKey(ob.presentacion);
-      const isCompleted = cumplimientos[`${ob.id}:${pk}`] || false;
+      const isCompleted = cumplimientos[ob.id] || false;
       const nombre = ob.nombre.length > 40 ? ob.nombre.substring(0, 40) + '…' : ob.nombre;
 
       doc.text(nombre, cols[0], y);
@@ -62,10 +62,7 @@ export function ExportarCumplimientoButton({ obligaciones, cumplimientos, empres
     });
 
     // Summary
-    const completadas = obligaciones.filter(ob => {
-      const pk = getCurrentPeriodKey(ob.presentacion);
-      return cumplimientos[`${ob.id}:${pk}`];
-    }).length;
+    const completadas = obligaciones.filter(ob => cumplimientos[ob.id]).length;
 
     y += 5;
     if (y > 185) { doc.addPage(); y = 20; }

@@ -20,7 +20,7 @@ import { DocumentosManager } from '@/components/documentos/DocumentosManager';
 import { SolicitudesServicio } from '@/components/solicitudes/SolicitudesServicio';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import { toast } from 'sonner';
-import { getCurrentPeriodKey, getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
+import { getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
 import { CumplimientoHistorial } from '@/components/obligaciones/CumplimientoHistorial';
 import { EvidenciaCumplimiento } from '@/components/obligaciones/EvidenciaCumplimiento';
 import { ExportarCumplimientoButton } from '@/components/obligaciones/ExportarCumplimientoButton';
@@ -77,10 +77,9 @@ export default function MiEmpresa() {
         supabase.from('domicilios_operacion').select('*').eq('empresa_id', profile.empresa_id),
         supabase.from('agentes_aduanales').select('*').eq('empresa_id', profile.empresa_id),
         supabase
-          .from('obligaciones')
-          .select('*')
+          .from('obligacion_ocurrencias')
+          .select('*, obligaciones(id, nombre, categoria, presentacion, descripcion, responsable_id, responsable_tipo)')
           .eq('empresa_id', profile.empresa_id)
-          .eq('activa', true)
           .order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
         supabase.from('obligacion_responsables').select('obligacion_id').eq('user_id', user.id),
         supabase.from('tareas').select('*').eq('empresa_id', profile.empresa_id).neq('estado', 'completada').order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
@@ -92,10 +91,32 @@ export default function MiEmpresa() {
       setAgentesAduanales(agentesRes.data || []);
       setTareas(tareasRes.data || []);
 
-      const obs = obligacionesRes.data || [];
+      // Fase 2: cada fila es una OCURRENCIA con su obligación. La aplanamos a un
+      // shape compatible con el render (ob.nombre, ob.categoria, ...), pero cada
+      // "ob" es en realidad una ocurrencia: su `id` es el ocurrencia_id, y
+      // `obligacion_id` apunta a la obligación padre (para asignaciones/historial).
+      const ocs = obligacionesRes.data || [];
+      const obs = ocs.map((oc: any) => ({
+        // Identidad de la ocurrencia (para cumplimiento y key de lista)
+        id: oc.id,                       // ocurrencia_id
+        obligacion_id: oc.obligacion_id, // obligación padre
+        periodo_key: oc.periodo_key,
+        fecha_vencimiento: oc.fecha_vencimiento,
+        estado_ocurrencia: oc.estado,
+        // Datos heredados de la obligación (para render)
+        nombre: oc.obligaciones?.nombre ?? 'Obligación',
+        categoria: oc.obligaciones?.categoria ?? 'otro',
+        presentacion: oc.obligaciones?.presentacion ?? null,
+        descripcion: oc.obligaciones?.descripcion ?? null,
+        responsable_id: oc.obligaciones?.responsable_id ?? null,
+        responsable_tipo: oc.obligaciones?.responsable_tipo ?? null,
+      }));
       setObligaciones(obs);
+
+      // Las asignaciones son por OBLIGACIÓN padre.
       const asignSet = new Set<string>((misAsigRes.data || []).map((r: any) => r.obligacion_id));
       setMisAsignaciones(asignSet);
+
       const responsableIds = [...new Set(obs.filter((o: any) => o.responsable_id).map((o: any) => o.responsable_id))];
       if (responsableIds.length > 0) {
         const { data: profilesData } = await supabase
@@ -112,16 +133,17 @@ export default function MiEmpresa() {
         }
       }
 
-
+      // Cumplimientos vigentes ligados a estas ocurrencias -> map por ocurrencia_id.
       if (obs.length > 0) {
-        const obIds = obs.map((o: any) => o.id);
+        const ocIds = obs.map((o: any) => o.id);
         const { data: cData } = await supabase
           .from('obligacion_cumplimientos')
-          .select('obligacion_id, periodo_key')
-          .in('obligacion_id', obIds);
+          .select('ocurrencia_id, completada, vigente')
+          .eq('empresa_id', profile.empresa_id)
+          .in('ocurrencia_id', ocIds);
         if (cData) {
           const map: Record<string, boolean> = {};
-          cData.forEach((c: any) => { map[`${c.obligacion_id}:${c.periodo_key}`] = true; });
+          cData.forEach((c: any) => { if (c.vigente && c.ocurrencia_id) map[c.ocurrencia_id] = c.completada; });
           setCumplimientos(map);
         }
       }
@@ -132,34 +154,49 @@ export default function MiEmpresa() {
     }
   };
 
-  const toggleCumplimiento = async (obligacionId: string, presentacion: string | null) => {
+  // Fase 2: `ob` es una ocurrencia aplanada (id = ocurrencia_id, obligacion_id = padre).
+  const toggleCumplimiento = async (ob: any) => {
     if (!user) return;
-    if (!misAsignaciones.has(obligacionId)) {
+    if (!misAsignaciones.has(ob.obligacion_id)) {
       toast.error('Solo puedes marcar las obligaciones asignadas a ti');
       return;
     }
-    const periodKey = getCurrentPeriodKey(presentacion);
-    const mapKey = `${obligacionId}:${periodKey}`;
-    const isCompleted = cumplimientos[mapKey];
+    const ocurrenciaId = ob.id;
+    const isCompleted = cumplimientos[ocurrenciaId];
 
     if (isCompleted) {
-      const { error } = await supabase.from('obligacion_cumplimientos').delete()
-        .eq('obligacion_id', obligacionId).eq('periodo_key', periodKey);
+      // Desmarcar = corrección append-only (nunca DELETE). Busca el cumplimiento vigente.
+      const { data: existing } = await supabase
+        .from('obligacion_cumplimientos')
+        .select('id')
+        .eq('ocurrencia_id', ocurrenciaId)
+        .eq('vigente', true)
+        .maybeSingle();
+      if (!existing?.id) { toast.error('No se encontró el cumplimiento'); return; }
+      const { error } = await supabase.rpc('corregir_cumplimiento', {
+        p_cumplimiento_id: existing.id,
+        p_completada: false,
+        p_notas: null,
+      });
       if (error) { toast.error('Error al desmarcar'); return; }
-      setCumplimientos(prev => ({ ...prev, [mapKey]: false }));
+      setCumplimientos(prev => ({ ...prev, [ocurrenciaId]: false }));
       toast.success('Cumplimiento desmarcado');
     } else {
-      // Show evidence dialog instead of direct insert
-      const ob = obligaciones.find((o: any) => o.id === obligacionId);
-      setEvidenciaObl({ id: obligacionId, presentacion, periodoKey: periodKey, nombre: ob?.nombre });
+      // Mostrar dialog de evidencia (inserta contra ocurrencia_id).
+      setEvidenciaObl({
+        id: ob.obligacion_id,
+        ocurrenciaId,
+        presentacion: ob.presentacion,
+        periodoKey: ob.periodo_key,
+        nombre: ob.nombre,
+      });
     }
   };
 
 
   const handleEvidenciaCompleted = () => {
     if (evidenciaObl) {
-      const mapKey = `${evidenciaObl.id}:${evidenciaObl.periodoKey}`;
-      setCumplimientos(prev => ({ ...prev, [mapKey]: true }));
+      setCumplimientos(prev => ({ ...prev, [evidenciaObl.ocurrenciaId]: true }));
       setEvidenciaObl(null);
     }
   };
@@ -179,8 +216,7 @@ export default function MiEmpresa() {
     if (searchTerm && !ob.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     if (filterCategoria !== 'todas' && ob.categoria !== filterCategoria) return false;
     if (filterEstado !== 'todos') {
-      const pk = getCurrentPeriodKey(ob.presentacion);
-      const isCompleted = cumplimientos[`${ob.id}:${pk}`] || false;
+      const isCompleted = cumplimientos[ob.id] || false;
       if (filterEstado === 'cumplida' && !isCompleted) return false;
       if (filterEstado === 'pendiente' && isCompleted) return false;
     }
@@ -313,10 +349,7 @@ export default function MiEmpresa() {
           <TabsContent value="obligaciones" className="space-y-4">
             {/* Progress Summary Cards */}
             {obligaciones.length > 0 && (() => {
-              const completadas = obligaciones.filter((ob: any) => {
-                const pk = getCurrentPeriodKey(ob.presentacion);
-                return cumplimientos[`${ob.id}:${pk}`];
-              }).length;
+              const completadas = obligaciones.filter((ob: any) => cumplimientos[ob.id]).length;
               const total = obligaciones.length;
               const porVencer = obligaciones.filter((ob: any) => {
                 if (!ob.fecha_vencimiento) return false;
@@ -463,18 +496,17 @@ export default function MiEmpresa() {
                           </CollapsibleTrigger>
                           <CollapsibleContent className="pl-6 space-y-2 mt-1">
                             {(obs as any[]).map((ob: any) => {
-                              const periodKey = getCurrentPeriodKey(ob.presentacion);
-                              const mapKey = `${ob.id}:${periodKey}`;
-                              const isCompleted = cumplimientos[mapKey] || false;
+                              const periodKey = ob.periodo_key;
+                              const isCompleted = cumplimientos[ob.id] || false;
                               const resp = ob.responsable_id ? responsables[ob.responsable_id] : null;
-                              const esMia = misAsignaciones.has(ob.id);
+                              const esMia = misAsignaciones.has(ob.obligacion_id);
 
                               return (
                                 <div key={ob.id} className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${isCompleted ? 'bg-success/10 border-success/30' : esMia ? 'border-primary/30' : 'opacity-80'}`}>
                                   {esMia ? (
                                     <Checkbox
                                       checked={isCompleted}
-                                      onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
+                                      onCheckedChange={() => toggleCumplimiento(ob)}
                                     />
                                   ) : (
                                     <div className="w-4 h-4 shrink-0" aria-hidden />
@@ -749,7 +781,7 @@ export default function MiEmpresa() {
         <CumplimientoHistorial
           open={!!historialObl}
           onOpenChange={(open) => { if (!open) setHistorialObl(null); }}
-          obligacionId={historialObl.id}
+          obligacionId={historialObl.obligacion_id}
           obligacionNombre={historialObl.nombre}
           presentacion={historialObl.presentacion}
         />
@@ -762,6 +794,7 @@ export default function MiEmpresa() {
           onOpenChange={(open) => { if (!open) setEvidenciaObl(null); }}
           empresaId={empresa.id}
           obligacionId={evidenciaObl.id}
+          ocurrenciaId={evidenciaObl.ocurrenciaId}
           periodoKey={evidenciaObl.periodoKey}
           userId={user.id}
           onCompleted={handleEvidenciaCompleted}

@@ -951,7 +951,11 @@ export type Database = {
           id: string
           notas: string | null
           obligacion_id: string
+          ocurrencia_id: string | null
           periodo_key: string
+          reemplazado_por: string | null
+          updated_at: string
+          vigente: boolean
         }
         Insert: {
           completada?: boolean
@@ -963,7 +967,11 @@ export type Database = {
           id?: string
           notas?: string | null
           obligacion_id: string
+          ocurrencia_id?: string | null
           periodo_key: string
+          reemplazado_por?: string | null
+          updated_at?: string
+          vigente?: boolean
         }
         Update: {
           completada?: boolean
@@ -975,11 +983,83 @@ export type Database = {
           id?: string
           notas?: string | null
           obligacion_id?: string
+          ocurrencia_id?: string | null
           periodo_key?: string
+          reemplazado_por?: string | null
+          updated_at?: string
+          vigente?: boolean
         }
         Relationships: [
           {
             foreignKeyName: "obligacion_cumplimientos_obligacion_id_fkey"
+            columns: ["obligacion_id"]
+            isOneToOne: false
+            referencedRelation: "obligaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obligacion_cumplimientos_ocurrencia_id_fkey"
+            columns: ["ocurrencia_id"]
+            isOneToOne: false
+            referencedRelation: "obligacion_ocurrencias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obligacion_cumplimientos_reemplazado_por_fkey"
+            columns: ["reemplazado_por"]
+            isOneToOne: false
+            referencedRelation: "obligacion_cumplimientos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obligacion_ocurrencias: {
+        Row: {
+          articulos_snapshot: string | null
+          catalogo_version: number | null
+          created_at: string
+          empresa_id: string
+          estado: string
+          fecha_vencimiento: string
+          id: string
+          obligacion_id: string
+          periodo_key: string
+          updated_at: string
+        }
+        Insert: {
+          articulos_snapshot?: string | null
+          catalogo_version?: number | null
+          created_at?: string
+          empresa_id: string
+          estado?: string
+          fecha_vencimiento: string
+          id?: string
+          obligacion_id: string
+          periodo_key: string
+          updated_at?: string
+        }
+        Update: {
+          articulos_snapshot?: string | null
+          catalogo_version?: number | null
+          created_at?: string
+          empresa_id?: string
+          estado?: string
+          fecha_vencimiento?: string
+          id?: string
+          obligacion_id?: string
+          periodo_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligacion_ocurrencias_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obligacion_ocurrencias_obligacion_id_fkey"
             columns: ["obligacion_id"]
             isOneToOne: false
             referencedRelation: "obligaciones"
@@ -1129,6 +1209,9 @@ export type Database = {
           programa: string
           updated_at: string
           usar_ultimo_dia_habil: boolean
+          version: number
+          vigente_desde: string
+          vigente_hasta: string | null
         }
         Insert: {
           activo?: boolean
@@ -1149,6 +1232,9 @@ export type Database = {
           programa: string
           updated_at?: string
           usar_ultimo_dia_habil?: boolean
+          version?: number
+          vigente_desde?: string
+          vigente_hasta?: string | null
         }
         Update: {
           activo?: boolean
@@ -1169,6 +1255,9 @@ export type Database = {
           programa?: string
           updated_at?: string
           usar_ultimo_dia_habil?: boolean
+          version?: number
+          vigente_desde?: string
+          vigente_hasta?: string | null
         }
         Relationships: []
       }
@@ -1597,6 +1686,7 @@ export type Database = {
           frecuencia_recurrencia: string | null
           id: string
           intervalo_recurrencia: number | null
+          ocurrencia_id: string | null
           prioridad: Database["public"]["Enums"]["prioridad_tarea"] | null
           proxima_generacion: string | null
           tarea_padre_id: string | null
@@ -1619,6 +1709,7 @@ export type Database = {
           frecuencia_recurrencia?: string | null
           id?: string
           intervalo_recurrencia?: number | null
+          ocurrencia_id?: string | null
           prioridad?: Database["public"]["Enums"]["prioridad_tarea"] | null
           proxima_generacion?: string | null
           tarea_padre_id?: string | null
@@ -1641,6 +1732,7 @@ export type Database = {
           frecuencia_recurrencia?: string | null
           id?: string
           intervalo_recurrencia?: number | null
+          ocurrencia_id?: string | null
           prioridad?: Database["public"]["Enums"]["prioridad_tarea"] | null
           proxima_generacion?: string | null
           tarea_padre_id?: string | null
@@ -1660,6 +1752,13 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_ocurrencia_id_fkey"
+            columns: ["ocurrencia_id"]
+            isOneToOne: false
+            referencedRelation: "obligacion_ocurrencias"
             referencedColumns: ["id"]
           },
           {
@@ -1890,6 +1989,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calcular_periodo_key: {
+        Args: { p_fecha: string; p_frecuencia: string }
+        Returns: string
+      }
+      corregir_cumplimiento: {
+        Args: {
+          p_completada: boolean
+          p_cumplimiento_id: string
+          p_notas?: string
+        }
+        Returns: string
+      }
       crear_organizacion_inicial: {
         Args: {
           p_nombre_cuenta: string

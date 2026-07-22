@@ -4,10 +4,10 @@ import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresaContext } from '@/hooks/useEmpresaContext';
-import { useObligacionCumplimientos } from '@/hooks/useObligacionCumplimientos';
+import { useOcurrenciasCumplimientos } from '@/hooks/useOcurrenciasCumplimientos';
 import {
   CATEGORIA_LABELS, CATEGORIA_COLORS,
-  getCurrentPeriodKey, formatDateShort, getVencimientoInfo, getPeriodLabel
+  formatDateShort, getVencimientoInfo, getPeriodLabel
 } from '@/lib/obligaciones';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,9 +21,12 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
+import { ObligacionesPorUrgencia } from '@/components/obligaciones/ObligacionesPorUrgencia';
 
+// Fase 2: cada ítem es una OCURRENCIA aplanada (id = ocurrencia_id).
 interface Obligacion {
-  id: string;
+  id: string;               // ocurrencia_id
+  obligacion_id: string;    // obligación padre (para el detail sheet)
   nombre: string;
   categoria: string;
   presentacion: string | null;
@@ -70,13 +73,35 @@ export default function DashboardObligacionesMensuales() {
 
   const [empresaId, setEmpresaId]         = useState<string | null>(null);
   const [empresaNombre, setEmpresaNombre] = useState<string>('');
-  const [obligaciones, setObligaciones]   = useState<Obligacion[]>([]);
-  const [loading, setLoading]             = useState(true);
   const [ocultarCumplidas, setOcultarCumplidas] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedObId, setSelectedObId] = useState<string | null>(null);
+  const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(null);
 
-  const { cumplimientos, toggleCumplimiento, toggling, refetch: refetchCumplimientos } = useObligacionCumplimientos(obligaciones, empresaId);
+  // Fase 2: ocurrencias + cumplimientos de la empresa (append-only, Realtime).
+  const { ocurrencias, cumplimientos, toggleCumplimiento, toggling, loading, refetch: refetchCumplimientos } =
+    useOcurrenciasCumplimientos(empresaId);
+
+  // Obligaciones del MES actual, aplanadas desde las ocurrencias del hook.
+  const obligaciones = useMemo<Obligacion[]>(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    return ocurrencias
+      .filter((oc) => {
+        if (!oc.fecha_vencimiento) return false;
+        const d = new Date(oc.fecha_vencimiento + 'T12:00:00');
+        return d.getFullYear() === y && d.getMonth() === m;
+      })
+      .map((oc) => ({
+        id: oc.id,
+        obligacion_id: oc.obligacion_id,
+        nombre: oc.obligaciones?.nombre ?? 'Obligación',
+        categoria: oc.obligaciones?.categoria ?? 'otro',
+        presentacion: oc.obligaciones?.presentacion ?? null,
+        fecha_vencimiento: oc.fecha_vencimiento,
+      }));
+  }, [ocurrencias]);
 
   // --- resolve empresaId + nombre empresa ---
   useEffect(() => {
@@ -92,56 +117,23 @@ export default function DashboardObligacionesMensuales() {
           .maybeSingle();
         if (cancelled) return;
         setEmpresaId(data?.empresa_id ?? null);
-        if (!data?.empresa_id) setLoading(false);
       })();
     } else {
       const id = selectedEmpresaId && selectedEmpresaId !== 'all'
         ? selectedEmpresaId : null;
       setEmpresaId(id);
-      if (!id) { setEmpresaNombre(''); setObligaciones([]); setLoading(false); }
+      if (!id) setEmpresaNombre('');
     }
 
     return () => { cancelled = true; };
   }, [user, role, selectedEmpresaId]);
 
-  // --- fetch cuando empresaId cambia ---
+  // Nombre de la empresa
   useEffect(() => {
-    if (!empresaId) return;
-    fetchObligaciones();
+    if (!empresaId) { setEmpresaNombre(''); return; }
+    supabase.from('empresas').select('razon_social').eq('id', empresaId).maybeSingle()
+      .then(({ data }) => setEmpresaNombre(data?.razon_social || ''));
   }, [empresaId]);
-
-  const fetchObligaciones = async () => {
-    if (!empresaId) return;
-    setLoading(true);
-
-    const now = new Date();
-    const year  = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const days  = getDaysInMonth(now);
-    const firstDay = `${year}-${month}-01T12:00:00`;
-    const lastDay  = `${year}-${month}-${String(days).padStart(2, '0')}T12:00:00`;
-
-    const [{ data: oblData }, { data: empData }] = await Promise.all([
-      supabase
-        .from('obligaciones')
-        .select('id, nombre, categoria, presentacion, fecha_vencimiento')
-        .eq('empresa_id', empresaId)
-        .eq('activa', true)
-        .gte('fecha_vencimiento', firstDay)
-        .lte('fecha_vencimiento', lastDay)
-        .order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
-      supabase
-        .from('empresas')
-        .select('razon_social')
-        .eq('id', empresaId)
-        .maybeSingle(),
-    ]);
-
-    const obls = (oblData || []) as Obligacion[];
-    setObligaciones(obls);
-    setEmpresaNombre(empData?.razon_social || '');
-    setLoading(false);
-  };
 
   // Ordenamiento inteligente: Vencidas -> Urgentes -> Próximas -> Vigentes -> Cumplidas
   const obligacionesOrdenadas = useMemo(() => {
@@ -252,6 +244,72 @@ export default function DashboardObligacionesMensuales() {
     );
   }
 
+  // ── Render de una fila de obligación (compartido entre lista flat y agrupada) ──
+  const renderObligacionRow = (obl: Obligacion) => {
+    const isCompleted = !!cumplimientos[obl.id];
+    const info        = getVencimientoInfo(obl.fecha_vencimiento);
+    const accentColor =
+      isCompleted                   ? 'hsl(var(--success))'     :
+      info?.status === 'vencido'    ? 'hsl(var(--destructive))' :
+      info?.status === 'urgente'    ? 'hsl(var(--urgent))'       :
+      info?.status === 'proximo'    ? 'hsl(var(--warning))'     :
+      'hsl(var(--border))';
+
+    return (
+      <div
+        key={obl.id}
+        className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 border rounded-lg transition-colors mb-1.5 ${
+          isCompleted ? 'bg-success/5 border-success/20' : 'hover:bg-accent/10'
+        }`}
+        style={{ borderLeft: `3px solid ${accentColor}` }}
+      >
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Checkbox
+            checked={isCompleted}
+            disabled={toggling === obl.id}
+            onCheckedChange={() => {
+              const oc = ocurrencias.find((o) => o.id === obl.id);
+              if (oc) toggleCumplimiento(oc);
+            }}
+            aria-label={`Marcar ${obl.nombre} como cumplida`}
+            className="shrink-0"
+          />
+          <div
+            className="flex-1 min-w-0 cursor-pointer hover:underline decoration-muted-foreground/30"
+            onClick={() => {
+              setSelectedObId(obl.obligacion_id);
+              setSelectedOcurrenciaId(obl.id);
+              setSheetOpen(true);
+            }}
+            role="button"
+          >
+            <p className={`font-medium text-sm truncate font-heading ${
+              isCompleted ? 'line-through text-muted-foreground' : ''
+            }`}>
+              {obl.nombre}
+            </p>
+            <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground flex-wrap">
+              <Badge className={`text-xs ${CATEGORIA_COLORS[obl.categoria] || CATEGORIA_COLORS.otro}`}>
+                {CATEGORIA_LABELS[obl.categoria] || obl.categoria}
+              </Badge>
+              {obl.presentacion && (
+                <span className="text-[10px] uppercase font-semibold text-muted-foreground/70">
+                  {getPeriodLabel(obl.presentacion, ocurrencias.find((o) => o.id === obl.id)?.periodo_key ?? '')}
+                </span>
+              )}
+              {obl.fecha_vencimiento && (
+                <span className="hidden sm:inline">{formatDateShort(obl.fecha_vencimiento)}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="self-end sm:self-auto pl-7 sm:pl-0 shrink-0">
+          <SemaforoBadge fecha={obl.fecha_vencimiento} cumplida={isCompleted} />
+        </div>
+      </div>
+    );
+  };
+
   // ── Lista normal ───────────────────────────────────────────────────
   return (
     <>
@@ -294,70 +352,20 @@ export default function DashboardObligacionesMensuales() {
       </CardHeader>
 
       <CardContent>
-        <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
+        <div className="max-h-[320px] overflow-y-auto pr-1">
           {obligacionesOrdenadas.length === 0 ? (
             <p className="text-sm text-center text-muted-foreground py-6">Todas las obligaciones están cumplidas 🎉</p>
+          ) : obligacionesOrdenadas.length > 8 ? (
+            <ObligacionesPorUrgencia
+              items={obligacionesOrdenadas}
+              getFecha={(obl) => obl.fecha_vencimiento}
+              getKey={(obl) => obl.id}
+              renderItem={renderObligacionRow}
+            />
           ) : (
-            obligacionesOrdenadas.map((obl) => {
-            const isCompleted = !!cumplimientos[obl.id];
-            const info        = getVencimientoInfo(obl.fecha_vencimiento);
-            const accentColor =
-              isCompleted                   ? 'hsl(var(--success))'     :
-              info?.status === 'vencido'    ? 'hsl(var(--destructive))' :
-              info?.status === 'urgente'    ? 'hsl(var(--urgent))'       :
-              info?.status === 'proximo'    ? 'hsl(var(--warning))'     :
-              'hsl(var(--border))';
-
-            return (
-              <div
-                key={obl.id}
-                className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 border rounded-lg transition-colors ${
-                  isCompleted ? 'bg-success/5 border-success/20' : 'hover:bg-accent/10'
-                }`}
-                style={{ borderLeft: `3px solid ${accentColor}` }}
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Checkbox
-                    checked={isCompleted}
-                    disabled={toggling === obl.id}
-                    onCheckedChange={() => toggleCumplimiento(obl)}
-                    aria-label={`Marcar ${obl.nombre} como cumplida`}
-                    className="shrink-0"
-                  />
-                  <div 
-                    className="flex-1 min-w-0 cursor-pointer hover:underline decoration-muted-foreground/30"
-                    onClick={() => {
-                      setSelectedObId(obl.id);
-                      setSheetOpen(true);
-                    }}
-                    role="button"
-                  >
-                    <p className={`font-medium text-sm truncate font-heading ${
-                      isCompleted ? 'line-through text-muted-foreground' : ''
-                    }`}>
-                      {obl.nombre}
-                    </p>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground flex-wrap">
-                      <Badge className={`text-xs ${CATEGORIA_COLORS[obl.categoria] || CATEGORIA_COLORS.otro}`}>
-                        {CATEGORIA_LABELS[obl.categoria] || obl.categoria}
-                      </Badge>
-                      {obl.presentacion && (
-                        <span className="text-[10px] uppercase font-semibold text-muted-foreground/70">
-                          {getPeriodLabel(obl.presentacion, getCurrentPeriodKey(obl.presentacion))}
-                        </span>
-                      )}
-                      {obl.fecha_vencimiento && (
-                        <span className="hidden sm:inline">{formatDateShort(obl.fecha_vencimiento)}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="self-end sm:self-auto pl-7 sm:pl-0 shrink-0">
-                  <SemaforoBadge fecha={obl.fecha_vencimiento} cumplida={isCompleted} />
-                </div>
-              </div>
-            );
-            })
+            <div className="space-y-1.5">
+              {obligacionesOrdenadas.map(renderObligacionRow)}
+            </div>
           )}
         </div>
       </CardContent>
@@ -365,8 +373,9 @@ export default function DashboardObligacionesMensuales() {
 
     <ObligacionDetailSheet
       open={sheetOpen}
-      onOpenChange={setSheetOpen}
+      onOpenChange={(o) => { setSheetOpen(o); if (!o) setSelectedOcurrenciaId(null); }}
       obligacionId={selectedObId}
+      ocurrenciaId={selectedOcurrenciaId}
       onCumplimientoChange={refetchCumplimientos}
     />
     </>

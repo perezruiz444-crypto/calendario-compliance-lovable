@@ -10,16 +10,22 @@ Todo el sistema está implementado en `src/index.css` como variables CSS y clase
 
 | Token | Valor HSL | Cuándo usar |
 |-------|-----------|-------------|
-| `--primary` | `218 76% 23%` | Acciones principales, estado activo en nav, CTA primario |
-| `--primary-glow` | `214 70% 55%` | Gradientes, anillos de focus, highlights |
-| `--accent` | `214 70% 55%` | Igual que primary-glow — para elementos interactivos secundarios |
-| `--success` | `152 60% 32%` | Tareas completadas, estados OK, métricas positivas |
+| `--primary` | `218 80% 19%` | Acciones principales, estado activo en nav, CTA primario |
+| `--primary-glow` | `214 75% 52%` | Gradientes, anillos de focus, highlights |
+| `--accent` | `214 75% 52%` | Igual que primary-glow — para elementos interactivos secundarios |
+| `--success` | `152 65% 38%` | Tareas completadas, estados OK, métricas positivas |
+| `--success-glow` | `152 65% 45%` | Estados de éxito con más presencia (paralelo a primary-glow), `.glow-success` |
 | `--warning` | `36 90% 45%` | Tareas pendientes, vencimientos próximos |
 | `--destructive` | `4 76% 49%` | Errores, acciones destructivas, prioridad urgente |
 | `--urgent` | `25 95% 53%` | Solo para prioridad "urgente" — distinto del destructive |
 | `--muted-foreground` | — | Texto secundario, labels, descripciones |
 | `--border` | — | Bordes de cards y separadores |
 | `--border-subtle` | — | Bordes de secciones grandes (más suave que --border) |
+
+**v2 (2026-07):** primary y success se profundizaron/vivificaron tras investigar
+referencias (saaslandingpage.com, saasinterface.com) y tendencias fintech/compliance
+2026 — navy sigue siendo la elección correcta para esta categoría, pero con más
+contraste y un verde-esmeralda más vibrante para estados de cumplimiento.
 
 **Regla:** Nunca uses colores hexadecimales inline. Siempre `hsl(var(--token))` o la clase Tailwind correspondiente.
 
@@ -96,6 +102,32 @@ Usa la sombra más ligera que sirva. No subas de nivel sin razón.
 
 ---
 
+## Progressive disclosure (listas de obligaciones)
+
+Las listas de obligaciones/vencimientos usan **agrupación por urgencia con
+disclosure progresivo** en vez de listas planas: resumen (KPIs/badges) siempre
+visible, detalle agrupado y colapsable debajo.
+
+Componente compartido: `src/components/obligaciones/ObligacionesPorUrgencia.tsx`.
+Agrupa cualquier lista de ítems con fecha de vencimiento en 4 secciones —
+Vencidas, Urgentes, Próximas, Al día — usando `getVencimientoInfo()` de
+`src/lib/obligaciones.ts`. Vencidas y Urgentes se muestran expandidas por
+defecto; Próximas y Al día colapsadas.
+
+**Cuándo usar:**
+- Vistas de página completa con listas potencialmente largas (`ObligacionesActivasTab`).
+- Widgets de dashboard cuando la lista supera ~8 ítems (`DashboardObligacionesMensuales`
+  cae a lista flat simple por debajo de ese umbral — no todo necesita agrupación).
+- Paneles secundarios como "Próximos 30 días" en `DashboardCalendar`.
+
+**No usar** para listas ya cortas (≤ 8 ítems) donde el agrupamiento añade
+fricción sin beneficio — en ese caso, lista flat simple.
+
+Los estados completados/cumplidos van aparte, colapsados detrás de un toggle
+"Ver completadas (N)" — nunca mezclados en el mismo grupo que las pendientes.
+
+---
+
 ## Cards
 
 ### Card editorial (dashboard principal)
@@ -144,6 +176,8 @@ Usa la sombra más ligera que sirva. No subas de nivel sin razón.
 - `PageHeader.tsx` para títulos de página
 - `EmptyState` (patrón en Tareas) para listas vacías
 - `ClientOnboardingTour` como referencia de first-run
+- `ObligacionesPorUrgencia.tsx` para cualquier lista de obligaciones/vencimientos
+  que necesite agrupación por urgencia (ver sección "Progressive disclosure")
 
 **Crear nuevo cuando:** el patrón se repite 3+ veces con la misma estructura.
 

@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, User, Filter, Mail, Send, FileDown, Clock, TrendingUp, CheckCircle2, XCircle } from 'lucide-react';
 import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
-import { getCurrentPeriodKey, CATEGORIA_LABELS } from '@/lib/obligaciones';
+import { CATEGORIA_LABELS } from '@/lib/obligaciones';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { generateReportPDF, generateCategoriaReportPDF, generateCumplimientoMensualPDF } from '@/lib/pdfGenerator';
@@ -514,39 +514,40 @@ export default function Reportes() {
         categoria: t.categoria_id ? (categoriaMap[t.categoria_id] || '-') : '-',
       }));
 
-      // Fetch obligaciones activas pendientes de cumplimiento
-      let obQuery = supabase.from('obligaciones').select('id, nombre, categoria, presentacion, fecha_vencimiento, empresa_id').eq('activa', true);
+      // Fase 2: obligaciones pendientes = OCURRENCIAS sin cumplimiento vigente completado.
+      let ocQuery = supabase
+        .from('obligacion_ocurrencias')
+        .select('id, empresa_id, fecha_vencimiento, obligaciones(nombre, categoria)');
       if (selectedEmpresa !== 'todas') {
-        obQuery = obQuery.eq('empresa_id', selectedEmpresa);
+        ocQuery = ocQuery.eq('empresa_id', selectedEmpresa);
       }
-      const { data: obligacionesActivas } = await obQuery;
+      const { data: ocurrenciasActivas } = await ocQuery;
 
       let obligacionesPendientesDetalle: Array<{ nombre: string; empresa: string; categoria: string; fecha_vencimiento: string | null }> = [];
       let obPendientesCount = 0;
 
-      if (obligacionesActivas && obligacionesActivas.length > 0) {
-        const obIds = obligacionesActivas.map(o => o.id);
+      if (ocurrenciasActivas && ocurrenciasActivas.length > 0) {
+        const ocIds = (ocurrenciasActivas as any[]).map(o => o.id);
         const { data: cumplimientos } = await supabase
           .from('obligacion_cumplimientos')
-          .select('obligacion_id, periodo_key')
-          .in('obligacion_id', obIds)
-          .eq('completada', true);
+          .select('ocurrencia_id, completada, vigente')
+          .in('ocurrencia_id', ocIds);
 
-        const cumplSet = new Set((cumplimientos || []).map(c => `${c.obligacion_id}:${c.periodo_key}`));
+        const cumplidasSet = new Set(
+          (cumplimientos || []).filter((c: any) => c.vigente && c.completada && c.ocurrencia_id).map((c: any) => c.ocurrencia_id)
+        );
 
-        obligacionesPendientesDetalle = obligacionesActivas
-          .filter(ob => {
-            const pk = getCurrentPeriodKey(ob.presentacion);
-            return !cumplSet.has(`${ob.id}:${pk}`);
-          })
-          .map(ob => ({
-            nombre: ob.nombre,
-            empresa: empresaMap[ob.empresa_id] || empresasData?.find(e => e.id === ob.empresa_id)?.razon_social || '-',
-            categoria: CATEGORIA_LABELS[ob.categoria] || ob.categoria,
-            fecha_vencimiento: ob.fecha_vencimiento,
+        obligacionesPendientesDetalle = (ocurrenciasActivas as any[])
+          .filter(oc => !cumplidasSet.has(oc.id))
+          .map(oc => ({
+            nombre: oc.obligaciones?.nombre ?? 'Obligación',
+            empresa: empresaMap[oc.empresa_id] || empresasData?.find(e => e.id === oc.empresa_id)?.razon_social || '-',
+            categoria: CATEGORIA_LABELS[oc.obligaciones?.categoria] || oc.obligaciones?.categoria || '-',
+            fecha_vencimiento: oc.fecha_vencimiento,
           }));
         obPendientesCount = obligacionesPendientesDetalle.length;
       }
+      const obligacionesActivas = ocurrenciasActivas;
 
       const tareasPendientesCount = tareas?.filter(t => t.estado === 'pendiente' || t.estado === 'en_progreso').length || 0;
 
