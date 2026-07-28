@@ -63,7 +63,7 @@ async function fetchEmpresasConTareas(): Promise<{
 }
 
 export default function Empresas() {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, authReady } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -72,11 +72,18 @@ export default function Empresas() {
   const [deleteEmpresaId, setDeleteEmpresaId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
-  const { data, isLoading: loadingEmpresas } = useQuery({
-    queryKey: queryKeys.empresas.list({ scope: 'admin-list' }),
-    enabled: !!user && !!role,
+  const { data, isLoading: loadingEmpresas, isError, error } = useQuery({
+    queryKey: [...queryKeys.empresas.list({ scope: 'admin-list' }), role],
+    enabled: !!user && !!role && authReady,
     queryFn: fetchEmpresasConTareas,
   });
+
+  useEffect(() => {
+    if (isError) {
+      toast.error('Error al cargar empresas. Verifica permisos.');
+      logger.error('Error cargando empresas:', error);
+    }
+  }, [isError, error]);
   // Referencias estables para no invalidar el useMemo de filtrado en cada render.
   const empresas = useMemo(() => data?.empresas ?? [], [data]);
   const taskCounts = data?.taskCounts ?? {};

@@ -33,7 +33,8 @@ export function EmpresaSelectorDropdown({
   onEmpresaSelect: externalOnSelect,
   selectedEmpresaId: externalSelectedId,
 }: EmpresaSelectorProps) {
-  const { user, role } = useAuth();
+  const { user, role, authReady } = useAuth();
+  const [errorStatus, setErrorStatus] = useState<boolean>(false);
   const empresaContext = useEmpresaContext();
 
   const selectedEmpresaId = externalSelectedId ?? empresaContext.selectedEmpresaId;
@@ -43,8 +44,8 @@ export function EmpresaSelectorDropdown({
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    if (user && role) fetchEmpresas();
-  }, [user, role]);
+    if (authReady && user && role) fetchEmpresas();
+  }, [authReady, user, role]);
 
   const fetchEmpresas = async () => {
     if (!user) return;
@@ -68,9 +69,14 @@ export function EmpresaSelectorDropdown({
         }
       }
       setEmpresas(data);
-      if (!selectedEmpresaId && data.length > 0) onEmpresaSelect(data[0].id);
+      if (!selectedEmpresaId && data.length > 0) {
+        if (role === 'administrador') onEmpresaSelect('all');
+        else onEmpresaSelect(data[0].id);
+      }
+      setErrorStatus(false);
     } catch (e) {
       logger.error('Error al cargar empresas', e);
+      setErrorStatus(true);
     } finally {
       setLoading(false);
     }
@@ -97,7 +103,9 @@ export function EmpresaSelectorDropdown({
         <div className="w-9 h-9 rounded-lg bg-sidebar-foreground/10 flex items-center justify-center">
           <Building2 className="w-4 h-4 text-sidebar-foreground/40" />
         </div>
-        <span className="text-xs text-sidebar-foreground/50">Sin empresas asignadas</span>
+        <span className="text-xs text-sidebar-foreground/50">
+          {errorStatus ? 'Error al cargar' : 'Sin empresas asignadas'}
+        </span>
       </div>
     );
   }

@@ -109,7 +109,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setActualRole(data as UserRole);
+      const fetchedRole = data as UserRole;
+      setActualRole(fetchedRole);
+      if (fetchedRole !== 'administrador') {
+        setSimulatedRole(null);
+        sessionStorage.removeItem('simulated_role');
+      }
       setLoading(false);
     } catch (error) {
       logger.error('Error fetching user role:', error);
