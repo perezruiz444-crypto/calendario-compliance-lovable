@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { TrendingUp, Users, FileText } from 'lucide-react';
+import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { TrendingUp, FileText } from 'lucide-react';
 import { AnalyticsData } from '@/hooks/useAnalytics';
 import { Badge } from '@/components/ui/badge';
 
@@ -12,7 +12,7 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
   return (
     <div className="space-y-6">
       {/* Gráficos principales */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6">
         <Card className="gradient-card shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -32,36 +32,6 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
                 <Line type="monotone" dataKey="completadas" stroke="hsl(var(--success))" name="Completadas" strokeWidth={2} />
                 <Line type="monotone" dataKey="pendientes" stroke="hsl(var(--warning))" name="Pendientes" strokeWidth={2} />
               </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Top 5 Consultores por Carga
-            </CardTitle>
-            <CardDescription>Distribución de tareas activas</CardDescription>
-          </CardHeader>
-          <CardContent className="px-2 sm:px-6">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={data.tareasPorConsultor || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="nombre" 
-                  angle={-45} 
-                  textAnchor="end" 
-                  height={100} 
-                  tickFormatter={(value: string) => value.length > 15 ? value.substring(0, 15) + '…' : value}
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="total" fill="hsl(var(--primary))" name="Total" />
-                <Bar dataKey="completadas" fill="hsl(var(--success))" name="Completadas" />
-              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
