@@ -16,7 +16,7 @@ export default {
     extend: {
     fontFamily: {
         heading: ['Space Grotesk', 'system-ui', 'sans-serif'],
-        body: ['DM Sans', 'system-ui', 'sans-serif'],
+        body: ['Space Grotesk', 'system-ui', 'sans-serif'],
         mono: ['DM Mono', 'monospace'],
       },
       colors: {
