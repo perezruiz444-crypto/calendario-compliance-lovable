@@ -167,7 +167,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
     font-size: 15px;
     line-height: 1.55;
     letter-spacing: 0;
@@ -186,7 +186,7 @@
   h4 { font-size: 1rem;    font-weight: 600; }
 
   input, textarea, select {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
     font-size: 14px;
   }
 
@@ -246,7 +246,7 @@ body::before {
 
   /* Typography */
   .font-heading { font-family: 'Space Grotesk', system-ui, sans-serif; }
-  .font-body    { font-family: 'DM Sans', system-ui, sans-serif; }
+  .font-body    { font-family: 'Space Grotesk', system-ui, sans-serif; }
   .font-mono    { font-family: 'DM Mono', monospace; font-feature-settings: "tnum"; }
 
   /* Eyebrow editorial */
@@ -388,7 +388,7 @@ body::before {
 
 /* ── FullCalendar overrides ─────────────────────────────────── */
 .fc {
-  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-family: 'Space Grotesk', system-ui, sans-serif !important;
   font-size: 13px;
 }
 .fc .fc-toolbar-title {
@@ -398,7 +398,7 @@ body::before {
   letter-spacing: -0.025em;
 }
 .fc .fc-button {
-  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-family: 'Space Grotesk', system-ui, sans-serif !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   text-transform: none !important;
@@ -459,7 +459,7 @@ body::before {
   transform: translateY(-1px);
 }
 .fc .fc-list-event-title {
-  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-family: 'Space Grotesk', system-ui, sans-serif !important;
   font-size: 13px !important;
 }
 .fc-theme-standard td, .fc-theme-standard th {
