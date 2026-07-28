@@ -193,7 +193,7 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
         .maybeSingle();
       if (!existing?.id) { toast.error('No se encontró el cumplimiento'); return; }
       const { error } = await supabase.rpc('corregir_cumplimiento', {
-        p_cumplimiento_id: existing.id, p_completada: false, p_notas: null,
+        p_cumplimiento_id: existing.id, p_completada: false,
       });
       if (error) { toast.error('Error al desmarcar'); return; }
       setCumplimientos(prev => ({ ...prev, [oc.id]: false }));

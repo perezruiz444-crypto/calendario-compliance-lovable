@@ -176,7 +176,7 @@ export default function MiEmpresa() {
       const { error } = await supabase.rpc('corregir_cumplimiento', {
         p_cumplimiento_id: existing.id,
         p_completada: false,
-        p_notas: null,
+
       });
       if (error) { toast.error('Error al desmarcar'); return; }
       setCumplimientos(prev => ({ ...prev, [ocurrenciaId]: false }));

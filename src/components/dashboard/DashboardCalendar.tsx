@@ -32,6 +32,7 @@ interface FcEvent {
     prioridad?: string;
     estado?: string;
     rawId?: string;
+    ocurrenciaId?: string;
     empresaId?: string;
     isRecurrente?: boolean;
     data: any;

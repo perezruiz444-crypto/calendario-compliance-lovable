@@ -114,7 +114,7 @@ export function useOcurrenciasCumplimientos(empresaId: string | null) {
         const { error } = await supabase.rpc('corregir_cumplimiento', {
           p_cumplimiento_id: existing.id,
           p_completada: !wasComplete,
-          p_notas: null,
+
         });
         if (error) throw error;
       } else {

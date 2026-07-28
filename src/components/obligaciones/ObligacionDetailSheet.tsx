@@ -69,7 +69,7 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
       const { data, error } = await supabase
         .from('obligaciones')
         .select('*, empresas(id, razon_social)')
-        .eq('id', obligacionId)
+        .eq('id', obligacionId!)
         .maybeSingle();
       if (error || !data) { setLoading(false); return; }
 
@@ -129,7 +129,7 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
           .maybeSingle();
         if (existing?.id) {
           const { error } = await supabase.rpc('corregir_cumplimiento', {
-            p_cumplimiento_id: existing.id, p_completada: false, p_notas: null,
+            p_cumplimiento_id: existing.id, p_completada: false,
           });
           if (error) throw error;
         }

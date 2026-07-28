@@ -126,7 +126,7 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
           .maybeSingle();
         if (existing?.id) {
           const { error } = await supabase.rpc('corregir_cumplimiento', {
-            p_cumplimiento_id: existing.id, p_completada: false, p_notas: null,
+            p_cumplimiento_id: existing.id, p_completada: false,
           });
           if (error) throw error;
         }
