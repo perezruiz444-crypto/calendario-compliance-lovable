@@ -19,6 +19,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDropdown';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -270,6 +271,7 @@ export default function DashboardLayout({ children, currentPage, onReopenTour }:
             <span className="font-heading font-bold text-sm">Compliance</span>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <NotificationDropdown />
             <Sheet>
               <SheetTrigger asChild>
@@ -298,6 +300,7 @@ export default function DashboardLayout({ children, currentPage, onReopenTour }:
           <GlobalSearch />
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle />
           <NotificationDropdown />
         </div>
       </div>

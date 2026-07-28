@@ -38,10 +38,13 @@ const PageLoader = () => (
   </div>
 );
 
+import { ThemeProvider } from "@/components/ThemeProvider";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <EmpresaProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <AuthProvider>
+        <EmpresaProvider>
         <ErrorBoundary>
           <Sonner />
           <BrowserRouter>
@@ -69,6 +72,7 @@ const App = () => (
         </ErrorBoundary>
       </EmpresaProvider>
     </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
