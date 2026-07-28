@@ -247,166 +247,264 @@ export default function MiEmpresa() {
     );
   }
 
+  const completadas = obligaciones.filter((ob: any) => cumplimientos[ob.id]).length;
+  const total = obligaciones.length;
+  const pendientes = total - completadas;
+  const porVencer = obligaciones.filter((ob: any) => {
+    if (!ob.fecha_vencimiento) return false;
+    const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
+    return dias >= 0 && dias <= 30 && !cumplimientos[ob.id];
+  }).length;
+  const score = total > 0 ? Math.round((completadas / total) * 100) : 0;
+  
+  const upcomingObligations = [...obligaciones]
+    .filter(ob => !cumplimientos[ob.id] && ob.fecha_vencimiento)
+    .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+    .slice(0, 8);
+
   return (
     <DashboardLayout currentPage="/mi-empresa">
       <div className="space-y-6">
-        <div>
-          <h1 className="h2 text-foreground mb-2">Mi Empresa</h1>
-          <p className="text-muted-foreground font-body">Información y documentación de tu empresa</p>
+        
+        {/* HERO BANNER */}
+        <div className="relative overflow-hidden rounded-2xl bg-primary text-primary-foreground shadow-elegant">
+          {/* Radial gradient background */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent"></div>
+          
+          <div className="relative p-6 sm:p-8 flex flex-col md:flex-row gap-6 items-start md:items-center">
+            {/* Avatar */}
+            <div className="flex-shrink-0 w-20 h-20 bg-white/15 rounded-xl flex items-center justify-center text-3xl font-heading font-bold shadow-inner">
+              {empresa.razon_social?.substring(0, 2).toUpperCase() || 'EM'}
+            </div>
+            
+            <div className="flex-1 space-y-2">
+              <h1 className="text-3xl sm:text-4xl font-heading font-bold text-white tracking-tight">
+                {empresa.razon_social}
+              </h1>
+              <div className="flex flex-wrap gap-4 text-white/70 font-body text-sm">
+                <span className="flex items-center gap-1.5"><FileText className="w-4 h-4" /> RFC: {empresa.rfc}</span>
+                <span className="flex items-center gap-1.5"><Building2 className="w-4 h-4" /> {empresa.domicilio_fiscal}</span>
+              </div>
+              
+              {/* Program Badges */}
+              <div className="flex flex-wrap gap-2 mt-3">
+                {empresa.immex_numero && <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-medium border border-white/10">IMMEX: {empresa.immex_numero}</span>}
+                {empresa.prosec_numero && <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-medium border border-white/10">PROSEC: {empresa.prosec_numero}</span>}
+                {empresa.padron_general_numero && <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-medium border border-white/10">Padrón: {empresa.padron_general_numero}</span>}
+                {empresa.cert_iva_ieps_oficio && <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-medium border border-white/10">Cert IVA/IEPS</span>}
+              </div>
+            </div>
+          </div>
+          
+          {/* KPI Strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10 border-t border-white/10 bg-black/10">
+            <div className="p-4 flex flex-col items-center justify-center">
+              <span className="text-3xl font-heading font-bold">{completadas}</span>
+              <span className="text-xs text-white/70 uppercase tracking-wider font-medium mt-1">Completadas</span>
+            </div>
+            <div className="p-4 flex flex-col items-center justify-center">
+              <span className="text-3xl font-heading font-bold">{pendientes}</span>
+              <span className="text-xs text-white/70 uppercase tracking-wider font-medium mt-1">Pendientes</span>
+            </div>
+            <div className="p-4 flex flex-col items-center justify-center">
+              <span className="text-3xl font-heading font-bold text-destructive-foreground">{porVencer}</span>
+              <span className="text-xs text-white/70 uppercase tracking-wider font-medium mt-1">Por Vencer</span>
+            </div>
+            <div className="p-4 flex flex-col items-center justify-center">
+              <span className="text-3xl font-heading font-bold">{tareas.length}</span>
+              <span className="text-xs text-white/70 uppercase tracking-wider font-medium mt-1">Tareas</span>
+            </div>
+          </div>
         </div>
 
-        {/* Info General */}
-        <Card className="gradient-card shadow-elegant">
-          <CardHeader>
-            <CardTitle className="font-heading flex items-center gap-2">
-              <Building2 className="w-5 h-5" />
-              {empresa.razon_social}
-            </CardTitle>
-            <CardDescription className="font-body">
-              RFC: {empresa.rfc} {empresa.telefono && `• Tel: ${empresa.telefono}`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-heading font-medium text-muted-foreground">Domicilio Fiscal</p>
-                <p className="text-sm font-body">{empresa.domicilio_fiscal}</p>
-              </div>
-              {empresa.actividad_economica && (
-                <div>
-                  <p className="text-sm font-heading font-medium text-muted-foreground">Actividad Económica</p>
-                  <p className="text-sm font-body">{empresa.actividad_economica}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Mis próximos vencimientos — vista limpia para clientes */}
-        <MisVencimientos
-          empresaId={empresa.id}
-          onSubirEvidencia={(ob) => setEvidenciaObl(ob)}
-        />
-
-        {/* Documentos por vencer */}
-        <MisDocumentos
-          empresaId={empresa.id}
-          onVerTodos={() => document.querySelector('[data-section="documentos"]')?.scrollIntoView({ behavior: 'smooth' })}
-        />
-
-        {/* Alertas */}
-        <Card className="gradient-card shadow-card">
-          <CardHeader>
-            <CardTitle className="font-heading flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              Alertas y Vencimientos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              { label: 'Certificación IVA/IEPS', fecha: empresa.cert_iva_ieps_fecha_vencimiento },
-              { label: 'Matriz de Seguridad', fecha: empresa.matriz_seguridad_fecha_vencimiento },
-              { label: 'Programa IMMEX', fecha: empresa.immex_fecha_fin },
-              { label: 'Programa PROSEC', fecha: empresa.prosec_fecha_siguiente_renovacion },
-            ].filter(a => a.fecha).map((alerta, i) => {
-              const alert = getVencimientoAlert(alerta.fecha);
-              const Icon = alert?.icon || Calendar;
-              return (
-                <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-heading font-medium text-sm">{alerta.label}</p>
-                    <p className="text-xs text-muted-foreground font-body">
-                      Vence: {format(parseISO(alerta.fecha!), 'dd/MM/yyyy', { locale: es })}
-                    </p>
+        {/* Command Center Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* LEFT: Score & Programs */}
+          <div className="space-y-6">
+            <Card className="card-editorial shadow-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="font-heading text-lg">Compliance Score</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center py-6">
+                <div className="relative w-32 h-32 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-muted/20" />
+                    <circle 
+                      cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="8" fill="transparent"
+                      strokeDasharray={`${251.2}`} 
+                      strokeDashoffset={251.2 - (251.2 * score) / 100}
+                      className="text-primary transition-all duration-1000 ease-out" 
+                      strokeLinecap="round" 
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-3xl font-heading font-bold text-primary">{score}%</span>
                   </div>
-                  <Badge variant={alert?.color as any} className="flex items-center gap-1">
-                    <Icon className="w-3 h-3" />{alert?.text}
-                  </Badge>
                 </div>
-              );
-            })}
-            {!empresa.cert_iva_ieps_fecha_vencimiento && !empresa.matriz_seguridad_fecha_vencimiento && !empresa.immex_fecha_fin && !empresa.prosec_fecha_siguiente_renovacion && (
-              <p className="text-center text-muted-foreground text-sm py-4">No hay alertas de vencimiento</p>
-            )}
-          </CardContent>
-        </Card>
+                <p className="text-sm text-muted-foreground mt-4 font-body text-center">Nivel de cumplimiento actual</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="card-editorial shadow-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="font-heading text-lg">Programas Activos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[
+                  { label: 'Certificación IVA/IEPS', fecha: empresa.cert_iva_ieps_fecha_vencimiento, active: !!empresa.cert_iva_ieps_oficio },
+                  { label: 'Matriz de Seguridad', fecha: empresa.matriz_seguridad_fecha_vencimiento, active: !!empresa.matriz_seguridad_fecha_vencimiento },
+                  { label: 'Programa IMMEX', fecha: empresa.immex_fecha_fin, active: !!empresa.immex_numero },
+                  { label: 'Programa PROSEC', fecha: empresa.prosec_fecha_siguiente_renovacion, active: !!empresa.prosec_numero },
+                ].filter(p => p.active).map((prog, i) => {
+                  const alert = getVencimientoAlert(prog.fecha);
+                  const Icon = alert?.icon || Calendar;
+                  return (
+                    <div key={i} className="flex flex-col gap-1 p-3 border rounded-lg bg-card hover:bg-muted/30 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <span className="font-medium text-sm">{prog.label}</span>
+                        {prog.fecha && <Badge variant={alert?.color as any} className="text-[10px] h-4 px-1"><Icon className="w-3 h-3 mr-1" />{alert?.text}</Badge>}
+                      </div>
+                      {prog.fecha && <span className="text-xs text-muted-foreground">Vence: {format(parseISO(prog.fecha), 'dd/MM/yyyy', { locale: es })}</span>}
+                    </div>
+                  );
+                })}
+                {!empresa.cert_iva_ieps_oficio && !empresa.matriz_seguridad_fecha_vencimiento && !empresa.immex_numero && !empresa.prosec_numero && (
+                  <p className="text-sm text-muted-foreground text-center py-2">Sin programas registrados</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Tabs */}
+          {/* CENTER: Upcoming Obligations */}
+          <div className="space-y-6">
+            <Card className="card-editorial shadow-card h-full">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="font-heading text-lg">Próximas a Vencer</CardTitle>
+                  <CardDescription>Obligaciones pendientes más urgentes</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {upcomingObligations.length > 0 ? (
+                  <div className="space-y-3">
+                    {upcomingObligations.map(ob => {
+                      const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
+                      const statusClass = dias < 0 ? 'status-vencida' : dias <= 15 ? 'status-pendiente' : 'status-cumplida';
+                      const urgencyColor = dias < 0 ? 'bg-destructive' : dias <= 15 ? 'bg-warning' : 'bg-success';
+                      return (
+                        <div key={ob.id} className="flex gap-3 items-start p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
+                          <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${urgencyColor}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium leading-tight truncate">{ob.nombre}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge className={`text-[10px] h-4 px-1.5 py-0 border-0 shadow-none font-medium ${statusClass}`}>
+                                {dias < 0 ? 'Vencido' : `${dias} días`}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">Vence: {format(parseISO(ob.fecha_vencimiento), 'dd MMM yyyy', { locale: es })}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-40 text-center">
+                    <CheckCircle className="w-8 h-8 text-success/50 mb-2" />
+                    <p className="text-muted-foreground text-sm">No hay obligaciones próximas a vencer</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* RIGHT: Tasks */}
+          <div className="space-y-6">
+            <Card className="card-editorial shadow-card h-full flex flex-col">
+              <CardHeader className="pb-2">
+                <CardTitle className="font-heading text-lg flex items-center justify-between">
+                  <span>Tareas Pendientes</span>
+                  {tareas.length > 0 && <Badge variant="secondary">{tareas.length}</Badge>}
+                </CardTitle>
+                <CardDescription>Acciones requeridas para tu empresa</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-auto max-h-[400px]">
+                {tareas.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                    <ListTodo className="w-8 h-8 text-muted-foreground/50 mb-2" />
+                    <p className="text-muted-foreground text-sm">No hay tareas pendientes 🎉</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {tareas.map(tarea => {
+                      const isCompleting = completingTarea === tarea.id;
+                      const prioridadColors: Record<string, string> = {
+                        alta: 'bg-destructive/10 text-destructive border-destructive/30',
+                        media: 'bg-warning/10 text-warning border-warning/30',
+                        baja: 'bg-muted text-muted-foreground',
+                      };
+                      return (
+                        <div key={tarea.id} className="flex items-start gap-3 p-3 border rounded-lg bg-card hover:bg-muted/30 transition-colors">
+                          <div className="pt-0.5">
+                            <Checkbox
+                              disabled={isCompleting}
+                              onCheckedChange={async () => {
+                                setCompletingTarea(tarea.id);
+                                const { error } = await supabase
+                                  .from('tareas')
+                                  .update({ estado: 'completada' })
+                                  .eq('id', tarea.id);
+                                if (error) {
+                                  toast.error('Error al completar tarea');
+                                } else {
+                                  setTareas(prev => prev.filter(t => t.id !== tarea.id));
+                                  toast.success('Tarea completada');
+                                }
+                                setCompletingTarea(null);
+                              }}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-heading font-medium text-sm leading-tight">{tarea.titulo}</p>
+                            {tarea.descripcion && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{tarea.descripcion}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              {tarea.prioridad && (
+                                <Badge variant="outline" className={`text-[10px] h-4 px-1 py-0 ${prioridadColors[tarea.prioridad] || ''}`}>
+                                  {tarea.prioridad}
+                                </Badge>
+                              )}
+                              {tarea.fecha_vencimiento && (
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {format(parseISO(tarea.fecha_vencimiento), 'dd/MM/yyyy', { locale: es })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {isCompleting && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Tabs - 4 Tabs */}
         <Tabs defaultValue="obligaciones" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="obligaciones" className="font-heading">Obligaciones</TabsTrigger>
-            <TabsTrigger value="tareas" className="font-heading flex items-center gap-1.5">
-              Tareas
-              {tareas.length > 0 && <Badge variant="secondary" className="text-xs h-5 px-1.5">{tareas.length}</Badge>}
-            </TabsTrigger>
-            <TabsTrigger value="programas" className="font-heading">Programas</TabsTrigger>
-            <TabsTrigger value="certificaciones" className="font-heading">Certificaciones</TabsTrigger>
-            <TabsTrigger value="domicilios" className="font-heading">Domicilios</TabsTrigger>
-            <TabsTrigger value="agentes" className="font-heading">Agentes Aduanales</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto p-1">
+            <TabsTrigger value="obligaciones" className="font-heading py-2">Obligaciones</TabsTrigger>
+            <TabsTrigger value="documentos" className="font-heading py-2">Documentos</TabsTrigger>
+            <TabsTrigger value="programas" className="font-heading py-2">Programas</TabsTrigger>
+            <TabsTrigger value="contactos" className="font-heading py-2">Contactos</TabsTrigger>
           </TabsList>
 
           {/* Obligaciones Tab */}
           <TabsContent value="obligaciones" className="space-y-4">
-            {/* Progress Summary Cards */}
-            {obligaciones.length > 0 && (() => {
-              const completadas = obligaciones.filter((ob: any) => cumplimientos[ob.id]).length;
-              const total = obligaciones.length;
-              const porVencer = obligaciones.filter((ob: any) => {
-                if (!ob.fecha_vencimiento) return false;
-                const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
-                return dias >= 0 && dias <= 30;
-              }).length;
-              const pct = total > 0 ? Math.round((completadas / total) * 100) : 0;
-
-              return (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <Card className="bg-success/5 border-success/20">
-                      <CardContent className="pt-4 pb-4 flex items-center gap-3">
-                        <div className="bg-success/10 p-2 rounded-lg"><CheckCircle className="w-5 h-5 text-success" /></div>
-                        <div>
-                          <p className="text-2xl font-heading font-bold text-success">{completadas}</p>
-                          <p className="text-xs text-muted-foreground">Completadas este periodo</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-warning/5 border-warning/20">
-                      <CardContent className="pt-4 pb-4 flex items-center gap-3">
-                        <div className="bg-warning/10 p-2 rounded-lg"><ClipboardList className="w-5 h-5 text-warning" /></div>
-                        <div>
-                          <p className="text-2xl font-heading font-bold text-warning">{total - completadas}</p>
-                          <p className="text-xs text-muted-foreground">Pendientes</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-destructive/5 border-destructive/20">
-                      <CardContent className="pt-4 pb-4 flex items-center gap-3">
-                        <div className="bg-destructive/10 p-2 rounded-lg"><AlertCircle className="w-5 h-5 text-destructive" /></div>
-                        <div>
-                          <p className="text-2xl font-heading font-bold text-destructive">{porVencer}</p>
-                          <p className="text-xs text-muted-foreground">Próximas a vencer</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  {/* Progress Bar */}
-                  <Card>
-                    <CardContent className="pt-4 pb-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-heading font-medium flex items-center gap-1.5">
-                          <TrendingUp className="w-4 h-4" /> Cumplimiento del Periodo
-                        </span>
-                        <span className="text-lg font-heading font-bold text-primary">{pct}%</span>
-                      </div>
-                      <Progress value={pct} className="h-3" />
-                    </CardContent>
-                  </Card>
-                </div>
-              );
-            })()}
-
-            {/* Filters Bar */}
-            <Card>
+            <Card className="shadow-card">
               <CardContent className="pt-4 pb-4">
                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
                   <div className="relative flex-1 w-full sm:max-w-xs">
@@ -453,13 +551,11 @@ export default function MiEmpresa() {
                     cumplimientos={cumplimientos}
                     empresaNombre={empresa.razon_social}
                   />
-
                 </div>
               </CardContent>
             </Card>
 
-            {/* Grouped by Category */}
-            <Card>
+            <Card className="card-editorial shadow-card">
               <CardHeader>
                 <CardTitle className="font-heading flex items-center gap-2">
                   <ClipboardList className="w-5 h-5" />
@@ -487,8 +583,8 @@ export default function MiEmpresa() {
                     <div className="space-y-3">
                       {Object.entries(grouped).map(([cat, obs]) => (
                         <Collapsible key={cat} defaultOpen>
-                          <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 hover:bg-muted/50 rounded px-2 transition-colors">
-                            <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform [&[data-state=open]]:rotate-180" />
+                          <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 hover:bg-muted/50 rounded px-2 transition-colors [&[data-state=open]>svg]:rotate-180">
+                            <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform" />
                             <Badge variant="outline" className={`text-xs ${CATEGORIA_COLORS[cat] || ''}`}>
                               {CATEGORIA_LABELS[cat] || cat}
                             </Badge>
@@ -517,24 +613,24 @@ export default function MiEmpresa() {
                                     </p>
                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                                       {esMia && (
-                                        <Badge className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/15">
+                                        <Badge className="text-[10px] h-4 px-1.5 py-0 bg-primary/15 text-primary border-primary/30 hover:bg-primary/15">
                                           Asignada a ti
                                         </Badge>
                                       )}
                                       {ob.presentacion && (
-                                        <Badge variant="outline" className="text-xs">{ob.presentacion}</Badge>
+                                        <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0">{ob.presentacion}</Badge>
                                       )}
                                       <span className="text-xs text-muted-foreground">
                                         {getPeriodLabel(ob.presentacion, periodKey)}
                                       </span>
                                       {ob.fecha_vencimiento && (() => {
                                         const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
-                                        if (dias < 0) return <Badge variant="destructive" className="text-xs">Vencido</Badge>;
-                                        if (dias <= 30) return <Badge className="bg-destructive/20 text-destructive text-xs">{dias}d</Badge>;
+                                        if (dias < 0) return <Badge variant="destructive" className="text-[10px] h-4 px-1.5 py-0">Vencido</Badge>;
+                                        if (dias <= 30) return <Badge className="bg-destructive/20 text-destructive text-[10px] h-4 px-1.5 py-0 border-transparent">{dias}d</Badge>;
                                         return null;
                                       })()}
                                       {resp && (
-                                        <Badge variant="outline" className={`text-xs gap-1 ${resp.tipo === 'cliente' ? 'bg-accent/10 text-accent-foreground' : 'bg-primary/10 text-primary'}`}>
+                                        <Badge variant="outline" className={`text-[10px] h-4 px-1.5 py-0 gap-1 ${resp.tipo === 'cliente' ? 'bg-accent/10 text-accent-foreground' : 'bg-primary/10 text-primary'}`}>
                                           <User className="w-3 h-3" />
                                           {resp.nombre.length > 15 ? resp.nombre.substring(0, 15) + '…' : resp.nombre}
                                         </Badge>
@@ -560,220 +656,163 @@ export default function MiEmpresa() {
                       ))}
                     </div>
                   );
-
                 })()}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Tareas Tab */}
-          <TabsContent value="tareas" className="space-y-4">
-            <Card>
+          {/* Documentos Tab */}
+          <TabsContent value="documentos" className="space-y-6">
+            <Card className="card-editorial shadow-card">
               <CardHeader>
-                <CardTitle className="font-heading flex items-center gap-2">
-                  <ListTodo className="w-5 h-5" />
-                  Mis Tareas Pendientes
-                  <Badge variant="secondary" className="ml-2">{tareas.length}</Badge>
-                </CardTitle>
-                <CardDescription>Tareas asignadas a tu empresa que puedes marcar como completadas</CardDescription>
+                <CardTitle className="font-heading text-lg">Documentos</CardTitle>
+                <CardDescription>Documentos y archivos de tu empresa</CardDescription>
               </CardHeader>
               <CardContent>
-                {tareas.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No hay tareas pendientes 🎉</p>
-                ) : (
-                  <div className="space-y-2">
-                    {tareas.map(tarea => {
-                      const isCompleting = completingTarea === tarea.id;
-                      const prioridadColors: Record<string, string> = {
-                        alta: 'bg-destructive/10 text-destructive border-destructive/30',
-                        media: 'bg-warning/10 text-warning border-warning/30',
-                        baja: 'bg-muted text-muted-foreground',
-                      };
-                      return (
-                        <div key={tarea.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                          <Checkbox
-                            disabled={isCompleting}
-                            onCheckedChange={async () => {
-                              setCompletingTarea(tarea.id);
-                              const { error } = await supabase
-                                .from('tareas')
-                                .update({ estado: 'completada' })
-                                .eq('id', tarea.id);
-                              if (error) {
-                                toast.error('Error al completar tarea');
-                              } else {
-                                setTareas(prev => prev.filter(t => t.id !== tarea.id));
-                                toast.success('Tarea completada');
-                              }
-                              setCompletingTarea(null);
-                            }}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-heading font-medium text-sm truncate">{tarea.titulo}</p>
-                            {tarea.descripcion && (
-                              <p className="text-xs text-muted-foreground truncate mt-0.5">{tarea.descripcion}</p>
-                            )}
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              {tarea.prioridad && (
-                                <Badge variant="outline" className={`text-xs ${prioridadColors[tarea.prioridad] || ''}`}>
-                                  {tarea.prioridad}
-                                </Badge>
-                              )}
-                              {tarea.fecha_vencimiento && (
-                                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  {format(parseISO(tarea.fecha_vencimiento), 'dd/MM/yyyy', { locale: es })}
-                                </span>
-                              )}
-                              <Badge variant="outline" className="text-xs">
-                                {tarea.estado === 'en_progreso' ? 'En progreso' : 'Pendiente'}
-                              </Badge>
-                            </div>
-                          </div>
-                          {isCompleting && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                {empresa && <DocumentosManager empresaId={empresa.id} empresaNombre={empresa.razon_social} />}
+              </CardContent>
+            </Card>
+            <Card className="card-editorial shadow-card">
+              <CardHeader>
+                <CardTitle className="font-heading text-lg">Solicitudes de Servicio</CardTitle>
+                <CardDescription>Crea y gestiona tus solicitudes de atención</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {empresa && <SolicitudesServicio empresaId={empresa.id} />}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Programas Tab */}
+          {/* Programas Tab (Merged Programas + Certificaciones) */}
           <TabsContent value="programas" className="space-y-4">
-            {empresa.immex_numero && (
-              <Card className="gradient-card">
-                <CardHeader><CardTitle className="font-heading text-lg">Programa IMMEX</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><p className="text-xs font-heading text-muted-foreground">Número</p><p className="text-sm font-body">{empresa.immex_numero}</p></div>
-                    {empresa.immex_tipo && <div><p className="text-xs font-heading text-muted-foreground">Tipo</p><p className="text-sm font-body">{empresa.immex_tipo}</p></div>}
-                    {empresa.immex_modalidad && <div><p className="text-xs font-heading text-muted-foreground">Modalidad</p><p className="text-sm font-body">{empresa.immex_modalidad}</p></div>}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            {empresa.prosec_numero && (
-              <Card className="gradient-card">
-                <CardHeader><CardTitle className="font-heading text-lg">Programa PROSEC</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><p className="text-xs font-heading text-muted-foreground">Número</p><p className="text-sm font-body">{empresa.prosec_numero}</p></div>
-                    {empresa.prosec_modalidad && <div><p className="text-xs font-heading text-muted-foreground">Modalidad</p><p className="text-sm font-body">{empresa.prosec_modalidad}</p></div>}
-                    {empresa.prosec_fecha_ultima_renovacion && <div><p className="text-xs font-heading text-muted-foreground">Última Renovación</p><p className="text-sm font-body">{format(parseISO(empresa.prosec_fecha_ultima_renovacion), 'dd/MM/yyyy', { locale: es })}</p></div>}
-                    {empresa.prosec_fecha_siguiente_renovacion && <div><p className="text-xs font-heading text-muted-foreground">Siguiente Renovación</p><p className="text-sm font-body">{format(parseISO(empresa.prosec_fecha_siguiente_renovacion), 'dd/MM/yyyy', { locale: es })}</p></div>}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            {empresa.padron_general_numero && (
-              <Card className="gradient-card">
-                <CardHeader><CardTitle className="font-heading text-lg">Padrón de Importadores</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><p className="text-xs font-heading text-muted-foreground">Número</p><p className="text-sm font-body">{empresa.padron_general_numero}</p></div>
-                    {empresa.padron_general_estado && <div><p className="text-xs font-heading text-muted-foreground">Estado</p><Badge>{empresa.padron_general_estado}</Badge></div>}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            {!empresa.immex_numero && !empresa.prosec_numero && !empresa.padron_general_numero && (
-              <Card><CardContent className="py-12 text-center"><FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" /><p className="text-muted-foreground">No hay programas registrados</p></CardContent></Card>
-            )}
-          </TabsContent>
-
-          {/* Certificaciones Tab */}
-          <TabsContent value="certificaciones" className="space-y-4">
-            {empresa.cert_iva_ieps_oficio ? (
-              <Card className="gradient-card">
-                <CardHeader>
-                  <CardTitle className="font-heading text-lg flex items-center gap-2"><Shield className="w-5 h-5" />Certificación IVA/IEPS</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><p className="text-xs font-heading text-muted-foreground">Oficio</p><p className="text-sm font-body">{empresa.cert_iva_ieps_oficio}</p></div>
-                    {empresa.cert_iva_ieps_fecha_autorizacion && (
-                      <div><p className="text-xs font-heading text-muted-foreground">Fecha Autorización</p><p className="text-sm font-body">{format(parseISO(empresa.cert_iva_ieps_fecha_autorizacion), 'dd/MM/yyyy', { locale: es })}</p></div>
-                    )}
-                  </div>
-                  {apoderados.length > 0 && (
-                    <div className="pt-3 border-t">
-                      <p className="text-xs font-heading text-muted-foreground mb-2">Apoderados Legales</p>
-                      <div className="space-y-2">
-                        {apoderados.map(a => (
-                          <div key={a.id} className="text-sm font-body">
-                            {a.nombre}{a.tipo_apoderado && <Badge variant="outline" className="ml-2">{a.tipo_apoderado}</Badge>}
-                          </div>
-                        ))}
-                      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* IMMEX */}
+              {empresa.immex_numero && (
+                <Card className="gradient-card shadow-sm border-primary/10">
+                  <CardHeader className="pb-3"><CardTitle className="font-heading text-base flex items-center gap-2"><Shield className="w-4 h-4 text-primary"/>Programa IMMEX</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                      <div><p className="eyebrow-primary text-muted-foreground">Número</p><p className="text-sm font-body font-medium">{empresa.immex_numero}</p></div>
+                      {empresa.immex_tipo && <div><p className="eyebrow-primary text-muted-foreground">Tipo</p><p className="text-sm font-body">{empresa.immex_tipo}</p></div>}
+                      {empresa.immex_modalidad && <div className="col-span-2"><p className="eyebrow-primary text-muted-foreground">Modalidad</p><p className="text-sm font-body">{empresa.immex_modalidad}</p></div>}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card><CardContent className="py-12 text-center"><Shield className="w-12 h-12 text-muted-foreground mx-auto mb-4" /><p className="text-muted-foreground">No hay certificaciones registradas</p></CardContent></Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
+              {/* PROSEC */}
+              {empresa.prosec_numero && (
+                <Card className="gradient-card shadow-sm border-primary/10">
+                  <CardHeader className="pb-3"><CardTitle className="font-heading text-base flex items-center gap-2"><Shield className="w-4 h-4 text-primary"/>Programa PROSEC</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                      <div><p className="eyebrow-primary text-muted-foreground">Número</p><p className="text-sm font-body font-medium">{empresa.prosec_numero}</p></div>
+                      {empresa.prosec_modalidad && <div><p className="eyebrow-primary text-muted-foreground">Modalidad</p><p className="text-sm font-body">{empresa.prosec_modalidad}</p></div>}
+                      {empresa.prosec_fecha_ultima_renovacion && <div><p className="eyebrow-primary text-muted-foreground">Última Ren.</p><p className="text-sm font-body">{format(parseISO(empresa.prosec_fecha_ultima_renovacion), 'dd/MM/yyyy', { locale: es })}</p></div>}
+                      {empresa.prosec_fecha_siguiente_renovacion && <div><p className="eyebrow-primary text-muted-foreground">Siguiente Ren.</p><p className="text-sm font-body">{format(parseISO(empresa.prosec_fecha_siguiente_renovacion), 'dd/MM/yyyy', { locale: es })}</p></div>}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {/* Padrón */}
+              {empresa.padron_general_numero && (
+                <Card className="gradient-card shadow-sm border-primary/10">
+                  <CardHeader className="pb-3"><CardTitle className="font-heading text-base flex items-center gap-2"><Shield className="w-4 h-4 text-primary"/>Padrón de Importadores</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                      <div><p className="eyebrow-primary text-muted-foreground">Número</p><p className="text-sm font-body font-medium">{empresa.padron_general_numero}</p></div>
+                      {empresa.padron_general_estado && <div><p className="eyebrow-primary text-muted-foreground">Estado</p><Badge variant="outline" className="mt-0.5">{empresa.padron_general_estado}</Badge></div>}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {/* Certificación IVA/IEPS */}
+              {empresa.cert_iva_ieps_oficio && (
+                <Card className="gradient-card shadow-sm border-primary/10">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="font-heading text-base flex items-center gap-2"><Shield className="w-4 h-4 text-primary" />Certificación IVA/IEPS</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                      <div><p className="eyebrow-primary text-muted-foreground">Oficio</p><p className="text-sm font-body font-medium">{empresa.cert_iva_ieps_oficio}</p></div>
+                      {empresa.cert_iva_ieps_fecha_autorizacion && (
+                        <div><p className="eyebrow-primary text-muted-foreground">Autorización</p><p className="text-sm font-body">{format(parseISO(empresa.cert_iva_ieps_fecha_autorizacion), 'dd/MM/yyyy', { locale: es })}</p></div>
+                      )}
+                    </div>
+                    {apoderados.length > 0 && (
+                      <div className="pt-3 border-t">
+                        <p className="eyebrow-primary text-muted-foreground mb-2">Apoderados Legales</p>
+                        <div className="space-y-1.5">
+                          {apoderados.map(a => (
+                            <div key={a.id} className="text-sm font-body flex items-center justify-between">
+                              <span>{a.nombre}</span>
+                              {a.tipo_apoderado && <Badge variant="secondary" className="text-[10px] px-1.5 h-4 py-0">{a.tipo_apoderado}</Badge>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+              
+              {!empresa.immex_numero && !empresa.prosec_numero && !empresa.padron_general_numero && !empresa.cert_iva_ieps_oficio && (
+                <div className="col-span-full">
+                  <Card className="shadow-none bg-muted/20 border-dashed">
+                    <CardContent className="py-10 text-center">
+                      <FileText className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+                      <p className="text-muted-foreground text-sm">No hay programas ni certificaciones registrados</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
           </TabsContent>
 
-          {/* Domicilios Tab */}
-          <TabsContent value="domicilios" className="space-y-4">
-            {domicilios.length > 0 ? domicilios.map(d => (
-              <Card key={d.id} className="gradient-card">
-                <CardHeader><CardTitle className="font-heading text-lg">{d.tipo || 'Domicilio de Operación'}</CardTitle></CardHeader>
-                <CardContent><p className="text-sm font-body">{d.domicilio}</p></CardContent>
-              </Card>
-            )) : (
-              <Card><CardContent className="py-12 text-center"><Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" /><p className="text-muted-foreground">No hay domicilios registrados</p></CardContent></Card>
-            )}
-          </TabsContent>
+          {/* Contactos Tab (Merged Domicilios + Agentes) */}
+          <TabsContent value="contactos" className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-heading font-medium flex items-center gap-2"><Building2 className="w-5 h-5" /> Domicilios</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {domicilios.length > 0 ? domicilios.map(d => (
+                  <Card key={d.id} className="gradient-card shadow-sm border-primary/5">
+                    <CardHeader className="pb-2"><CardTitle className="font-heading text-base">{d.tipo || 'Domicilio de Operación'}</CardTitle></CardHeader>
+                    <CardContent><p className="text-sm font-body text-muted-foreground">{d.domicilio}</p></CardContent>
+                  </Card>
+                )) : (
+                  <div className="col-span-full py-6 text-center border border-dashed rounded-lg bg-muted/10">
+                    <p className="text-muted-foreground text-sm">No hay domicilios registrados</p>
+                  </div>
+                )}
+              </div>
+            </div>
 
-          {/* Agentes Aduanales Tab */}
-          <TabsContent value="agentes" className="space-y-4">
-            <AgentesAduanalesCard
-              empresaId={empresa.id}
-              agentes={agentesAduanales}
-              canEdit={false}
-              onUpdate={fetchEmpresaData}
-            />
+            <div className="space-y-4 pt-4 border-t border-border/50">
+              <h3 className="text-lg font-heading font-medium flex items-center gap-2"><User className="w-5 h-5" /> Agentes Aduanales</h3>
+              <AgentesAduanalesCard
+                empresaId={empresa.id}
+                agentes={agentesAduanales}
+                canEdit={false}
+                onUpdate={fetchEmpresaData}
+              />
+            </div>
           </TabsContent>
         </Tabs>
 
-        {/* Calendario completo (vista expandida opcional) */}
-        <details className="rounded-lg border bg-card">
-          <summary className="cursor-pointer px-4 py-3 text-sm font-medium hover:bg-muted/30 select-none">
+        {/* Calendario completo */}
+        <details className="rounded-xl border border-border/50 bg-card shadow-sm overflow-hidden [&[open]>summary>svg]:rotate-180">
+          <summary className="cursor-pointer px-5 py-4 text-sm font-heading font-medium hover:bg-muted/30 select-none flex items-center justify-between">
             Ver calendario completo del año
+            <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform" />
           </summary>
-          <div className="p-4 pt-0">
+          <div className="p-5 pt-0 border-t border-border/50">
             <DashboardCalendar height="500px" onEventClick={(event) => {
               if (event.resource.type === 'documento') {
-                document.querySelector('[data-section="documentos"]')?.scrollIntoView({ behavior: 'smooth' });
+                const trigger = document.querySelector('[value="documentos"]') as HTMLElement;
+                if (trigger) trigger.click();
               }
             }} />
           </div>
         </details>
-
-        {/* Documentos y Solicitudes */}
-        <div className="mt-6 space-y-6" data-section="documentos">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-heading">Documentos</CardTitle>
-              <CardDescription>Documentos y archivos de tu empresa</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {empresa && <DocumentosManager empresaId={empresa.id} empresaNombre={empresa.razon_social} />}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-heading">Solicitudes de Servicio</CardTitle>
-              <CardDescription>Crea y gestiona tus solicitudes de atención</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {empresa && <SolicitudesServicio empresaId={empresa.id} />}
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
       {/* Historial Dialog */}
@@ -803,3 +842,4 @@ export default function MiEmpresa() {
     </DashboardLayout>
   );
 }
+
