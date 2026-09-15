@@ -1,48 +1,23 @@
-## Causa raíz (confirmada en la BD)
+# Plan: estabilizar el acceso a empresas
 
-Tu usuario `perezruiz444@gmail.com` (`5d30eb0b…`) tiene **dos filas en `user_roles`**: `cliente` y `administrador`.
+## Diagnóstico confirmado
+- La base de datos está activa y responde normalmente; no hay errores críticos de PostgreSQL ni de autenticación en las últimas 24 horas.
+- Las 6 empresas siguen guardadas y tienen creador válido.
+- Los dos administradores conservan únicamente el rol `administrador`; no hay roles duplicados.
+- `get_my_role()` ya prioriza correctamente administrador sobre consultor y cliente.
+- El problema confirmado está en los permisos base: no aparecen privilegios para `authenticated` sobre `empresas`, `profiles`, `user_roles` ni `consultor_empresa_asignacion`. Las reglas por usuario no pueden funcionar si falta este permiso previo.
+- Además, `user_roles` y `consultor_empresa_asignacion` tienen reglas creadas pero la protección por filas está desactivada; el analizador lo marca como error de seguridad.
 
-Toda la app resuelve el rol con la función `get_my_role()`:
+## Cambios propuestos
+1. Restaurar los permisos mínimos para usuarios autenticados en las tablas necesarias para el selector, la lista y la edición de empresas.
+2. Mantener los permisos elevados exclusivamente para operaciones internas; no conceder acceso anónimo a datos de empresas o usuarios.
+3. Activar la protección por filas en `user_roles` y `consultor_empresa_asignacion` y consolidar sus reglas para evitar duplicados o recursión.
+4. Ajustar las reglas de `empresas` para usar `get_my_role()`/`has_role()` de forma determinista, conservando:
+   - administrador: todas las empresas;
+   - consultor: solo empresas asignadas;
+   - cliente: solo su empresa.
+5. Restringir la ejecución pública de las funciones sensibles que el analizador detectó, sin bloquear las funciones que la app necesita estando autenticado.
+6. Validar después del cambio los tres perfiles de acceso y confirmar que un administrador recibe las 6 empresas desde la misma consulta usada por el selector y el menú.
 
-```sql
-SELECT role::text FROM public.user_roles WHERE user_id = auth.uid() LIMIT 1;
-```
-
-No tiene `ORDER BY`, así que con dos filas Postgres puede devolver **`cliente`**. Cuando eso pasa:
-
-- La política `empresas_select_scoped` entra por la rama de cliente y solo deja ver la empresa de tu `profiles.empresa_id` → el menú de Empresas y el selector se quedan vacíos.
-- `useAuth` (línea 96) llama a la misma RPC, así que la UI también te trata como cliente.
-
-Es intermitente por diseño: depende del plan de ejecución, por eso "a veces" sí veías todo.
-
-## Plan de corrección
-
-**1. Hacer `get_my_role()` determinista (migración)**
-
-Redefinir la función para que devuelva siempre el rol de mayor privilegio:
-
-```sql
-CREATE OR REPLACE FUNCTION public.get_my_role()
-RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT role::text FROM public.user_roles
-  WHERE user_id = auth.uid()
-  ORDER BY CASE role
-    WHEN 'administrador' THEN 1
-    WHEN 'consultor'     THEN 2
-    ELSE 3 END
-  LIMIT 1;
-$$;
-```
-
-Sin cambiar firma ni políticas: todas las RLS que ya la usan se corrigen solas.
-
-**2. Limpiar la fila `cliente` sobrante de tu usuario admin** (operación de datos, reversible: se puede reinsertar).
-
-**3. Verificación**
-
-- Consultar `get_my_role()` y las empresas visibles para tu `user_id`.
-- Abrir `/empresas` en el preview y confirmar que aparecen todas y que el selector se llena.
-
-## Hallazgo adicional (aparte, te lo señalo sin tocarlo aún)
-
-`user_roles` tiene **RLS deshabilitado** (sus 3 políticas están inactivas). No es la causa de este bug, pero es un riesgo: cualquier usuario autenticado puede leer los roles de todos. Si quieres, lo activo en una migración aparte después de confirmar que el fix principal funciona.
+## Resultado esperado
+El administrador podrá volver a listar, seleccionar y editar todas las empresas, mientras consultores y clientes mantendrán su alcance limitado. No se eliminarán empresas, obligaciones ni usuarios.
