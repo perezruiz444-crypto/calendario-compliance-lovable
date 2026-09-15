@@ -1,0 +1,41 @@
+ALTER FUNCTION public.calcular_periodo_key(date, text) SET search_path = public;
+ALTER FUNCTION public.trg_generar_ocurrencias_empresa_programa() SET search_path = public;
+
+REVOKE ALL ON FUNCTION public.assign_role_on_invitation_accepted() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.auto_assign_consultor_to_empresa() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.expand_existing_obligaciones() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.generar_ocurrencias_obligacion(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.log_audit_event() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.marcar_obligacion_cumplida() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.notify_new_comentario() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.notify_new_mensaje() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.notify_new_solicitud() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.notify_tarea_assigned() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.notify_tarea_unblocked() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.set_cumplimiento_empresa_id() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.set_empresa_created_by() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.sync_profile_email() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.trg_generar_ocurrencias_empresa_programa() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.trg_generar_ocurrencias_fn() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.update_invitation_on_user_confirm() FROM PUBLIC, anon, authenticated;
+
+REVOKE ALL ON FUNCTION public.corregir_cumplimiento(uuid, boolean, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.corregir_cumplimiento(uuid, boolean, text) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.crear_organizacion_inicial(text, text, text, jsonb) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.crear_organizacion_inicial(text, text, text, jsonb) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.get_subtareas_progress(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_subtareas_progress(uuid) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.get_total_time_spent(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_total_time_spent(uuid) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.get_user_empresa_id(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_user_empresa_id(uuid) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.increment_template_usage(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.increment_template_usage(uuid) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.is_tarea_blocked(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_tarea_blocked(uuid) TO authenticated, service_role;
+
+REVOKE ALL ON FUNCTION public.is_login_blocked(text, inet) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_login_blocked(text, inet) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.record_login_attempt(text, inet, boolean) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.record_login_attempt(text, inet, boolean) TO authenticated, service_role;
