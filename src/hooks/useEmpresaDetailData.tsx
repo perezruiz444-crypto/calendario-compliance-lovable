@@ -77,8 +77,10 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
     }
   }, [empresaId]);
 
-  const fetchContactosData = useCallback(async () => {
-    if (!empresaId || hasFetchedContactos) return;
+  // Carga incondicional: la usan las tarjetas de contactos para refrescarse
+  // después de un alta, edición o baja.
+  const refetchContactos = useCallback(async () => {
+    if (!empresaId) return;
     setLoadingContactos(true);
     try {
       const [domRes, agRes, apRes] = await Promise.all([
@@ -95,7 +97,13 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
     } finally {
       setLoadingContactos(false);
     }
-  }, [empresaId, hasFetchedContactos]);
+  }, [empresaId]);
+
+  // Carga perezosa: solo la primera vez que se abre la pestaña de contactos.
+  const fetchContactosData = useCallback(async () => {
+    if (hasFetchedContactos) return;
+    await refetchContactos();
+  }, [hasFetchedContactos, refetchContactos]);
 
   useEffect(() => { fetchEmpresaData(); }, [fetchEmpresaData]);
 
@@ -112,5 +120,6 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
     loadingContactos,
     fetchEmpresaData,
     fetchContactosData,
+    refetchContactos,
   };
 }

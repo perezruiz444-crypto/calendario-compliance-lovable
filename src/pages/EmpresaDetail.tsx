@@ -155,7 +155,7 @@ export default function EmpresaDetail() {
     tareas, obligaciones, cumplimientoKeys,
     loadingData,
     domicilios, agentes, apoderados, loadingContactos,
-    fetchEmpresaData, fetchContactosData,
+    fetchEmpresaData, fetchContactosData, refetchContactos,
   } = useEmpresaDetailData(id, handleNotFound);
 
   const {
@@ -592,10 +592,10 @@ export default function EmpresaDetail() {
             ) : (
               <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                  <AgentesAduanalesCard empresaId={id!} agentes={agentes} canEdit={canEdit} onUpdate={fetchContactosData} />
-                  <ApoderadosCard empresaId={id!} apoderados={apoderados} canEdit={canEdit} onUpdate={fetchContactosData} />
+                  <AgentesAduanalesCard empresaId={id!} agentes={agentes} canEdit={canEdit} onUpdate={refetchContactos} />
+                  <ApoderadosCard empresaId={id!} apoderados={apoderados} canEdit={canEdit} onUpdate={refetchContactos} />
                 </div>
-                <DomiciliosCard empresaId={id!} domicilios={domicilios} canEdit={canEdit} onUpdate={fetchContactosData} />
+                <DomiciliosCard empresaId={id!} domicilios={domicilios} canEdit={canEdit} onUpdate={refetchContactos} />
               </Suspense>
             )}
           </TabsContent>
