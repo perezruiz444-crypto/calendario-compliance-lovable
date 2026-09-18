@@ -5,6 +5,7 @@ import { Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { EditableInfoCard } from './EditableInfoCard';
+import { DomiciliosProgramaSection } from './DomiciliosProgramaSection';
 import type { Empresa } from '@/types/domain';
 
 interface EmpresaCertificacionCardProps {

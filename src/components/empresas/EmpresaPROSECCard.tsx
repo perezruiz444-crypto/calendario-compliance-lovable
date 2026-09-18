@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { EditableInfoCard } from './EditableInfoCard';
+import { DomiciliosProgramaSection } from './DomiciliosProgramaSection';
 import type { Empresa } from '@/types/domain';
 
 interface EmpresaPROSECCardProps {
