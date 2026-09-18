@@ -82,7 +82,7 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
     setLoadingContactos(true);
     try {
       const [domRes, agRes, apRes] = await Promise.all([
-        supabase.from('domicilios_operacion').select('*').eq('empresa_id', empresaId),
+        supabase.from('domicilios_operacion').select('*').eq('empresa_id', empresaId).is('programa', null),
         supabase.from('agentes_aduanales').select('*').eq('empresa_id', empresaId),
         supabase.from('apoderados_legales').select('*').eq('empresa_id', empresaId),
       ]);
