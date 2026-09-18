@@ -4,6 +4,7 @@ import { ClipboardList } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { EditableInfoCard } from './EditableInfoCard';
+import { DomiciliosProgramaSection } from './DomiciliosProgramaSection';
 
 interface EmpresaPadronGeneralCardProps {
   empresaId: string;
@@ -109,6 +110,7 @@ export function EmpresaPadronGeneralCard({ empresaId, canEdit }: EmpresaPadronGe
       ) : (
         <p className="text-muted-foreground font-body">No registrado</p>
       )}
+      <DomiciliosProgramaSection empresaId={empresaId} programa="padron_general" canEdit={canEdit} />
     </EditableInfoCard>
   );
 }

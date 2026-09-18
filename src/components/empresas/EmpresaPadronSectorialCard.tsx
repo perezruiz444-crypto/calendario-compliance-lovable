@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { DomiciliosProgramaSection } from './DomiciliosProgramaSection';
 
 interface Registro {
   id: string;
@@ -147,6 +148,7 @@ export function EmpresaPadronSectorialCard({ empresaId, canEdit }: EmpresaPadron
             )}
           </div>
         )}
+        <DomiciliosProgramaSection empresaId={empresaId} programa="padron_sectorial" canEdit={canEdit} />
       </CardContent>
     </Card>
   );

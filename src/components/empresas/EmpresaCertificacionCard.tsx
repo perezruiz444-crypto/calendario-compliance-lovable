@@ -5,6 +5,7 @@ import { Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { EditableInfoCard } from './EditableInfoCard';
+import { DomiciliosProgramaSection } from './DomiciliosProgramaSection';
 import type { Empresa } from '@/types/domain';
 
 interface EmpresaCertificacionCardProps {
@@ -184,6 +185,7 @@ export function EmpresaCertificacionCard({ empresa, canEdit, onUpdate }: Empresa
       ) : (
         <p className="text-muted-foreground font-body">No registrado</p>
       )}
+      <DomiciliosProgramaSection empresaId={empresa.id} programa="certificacion_iva_ieps" canEdit={canEdit} />
     </EditableInfoCard>
   );
 }
