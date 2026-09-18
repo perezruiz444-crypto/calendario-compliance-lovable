@@ -482,6 +482,7 @@ export type Database = {
           domicilio: string
           empresa_id: string
           id: string
+          programa: string | null
           tipo: string | null
         }
         Insert: {
@@ -489,6 +490,7 @@ export type Database = {
           domicilio: string
           empresa_id: string
           id?: string
+          programa?: string | null
           tipo?: string | null
         }
         Update: {
@@ -496,6 +498,7 @@ export type Database = {
           domicilio?: string
           empresa_id?: string
           id?: string
+          programa?: string | null
           tipo?: string | null
         }
         Relationships: [
