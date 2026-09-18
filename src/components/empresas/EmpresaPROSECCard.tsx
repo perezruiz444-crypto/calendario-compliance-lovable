@@ -217,6 +217,7 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
       ) : (
         <p className="text-muted-foreground font-body">No registrado</p>
       )}
+      <DomiciliosProgramaSection empresaId={empresa.id} programa="prosec" canEdit={canEdit} />
     </EditableInfoCard>
   );
 }

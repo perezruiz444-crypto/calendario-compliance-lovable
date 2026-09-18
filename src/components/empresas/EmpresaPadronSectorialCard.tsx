@@ -148,6 +148,7 @@ export function EmpresaPadronSectorialCard({ empresaId, canEdit }: EmpresaPadron
             )}
           </div>
         )}
+        <DomiciliosProgramaSection empresaId={empresaId} programa="padron_sectorial" canEdit={canEdit} />
       </CardContent>
     </Card>
   );

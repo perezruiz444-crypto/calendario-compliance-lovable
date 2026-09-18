@@ -185,6 +185,7 @@ export function EmpresaCertificacionCard({ empresa, canEdit, onUpdate }: Empresa
       ) : (
         <p className="text-muted-foreground font-body">No registrado</p>
       )}
+      <DomiciliosProgramaSection empresaId={empresa.id} programa="certificacion_iva_ieps" canEdit={canEdit} />
     </EditableInfoCard>
   );
 }

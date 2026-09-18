@@ -110,6 +110,7 @@ export function EmpresaPadronGeneralCard({ empresaId, canEdit }: EmpresaPadronGe
       ) : (
         <p className="text-muted-foreground font-body">No registrado</p>
       )}
+      <DomiciliosProgramaSection empresaId={empresaId} programa="padron_general" canEdit={canEdit} />
     </EditableInfoCard>
   );
 }

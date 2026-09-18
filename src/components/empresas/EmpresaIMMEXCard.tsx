@@ -141,6 +141,7 @@ export function EmpresaIMMEXCard({ empresa, canEdit, onUpdate }: EmpresaIMMEXCar
       ) : (
         <p className="text-muted-foreground font-body">No registrado</p>
       )}
+      <DomiciliosProgramaSection empresaId={empresa.id} programa="immex" canEdit={canEdit} />
     </EditableInfoCard>
   );
 }
