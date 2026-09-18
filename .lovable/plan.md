@@ -1,27 +1,29 @@
-# Direcciones por programa (IMMEX y PROSEC)
+# Direcciones por programa de fomento
 
 ## Objetivo
-Dentro de la ficha de cada empresa, permitir registrar, editar y eliminar una o varias direcciones **específicas de cada programa**: unas para IMMEX y otras para PROSEC, sin tocar el bloque general de "Domicilios de Operación".
+Dentro de la ficha de cada empresa, permitir registrar, editar y eliminar una o varias direcciones **específicas de cada programa** (IMMEX, PROSEC, Certificación IVA/IEPS, Padrón general, Padrón sectorial), sin tocar el bloque general de "Domicilios de Operación".
 
 ## Qué verá el usuario
-En el apartado **Programa IMMEX** y en el apartado **Programa PROSEC** aparece una nueva sección "Domicilios autorizados":
+En cada apartado de programa aparece una nueva sección "Domicilios autorizados":
 
 - En modo lectura: lista de las direcciones registradas (o "Sin domicilios registrados").
 - Al presionar el lápiz del apartado (modo edición): campo para escribir una dirección y botón para agregarla, más una X para quitar cualquiera de la lista.
 - Las direcciones se guardan junto con el resto del apartado al presionar la palomita, y se descartan al cancelar.
-- Solo quien ya puede editar la empresa puede modificarlas; el cliente las ve en modo lectura.
+- Solo quien ya puede editar la empresa las modifica; el cliente las ve en modo lectura.
 
 ## Alcance
-- Ficha de empresa (vista de detalle), apartados IMMEX y PROSEC.
-- El bloque general "Domicilios de Operación" se mantiene igual.
+- Ficha de empresa (vista de detalle), apartados: IMMEX, PROSEC, Certificación IVA/IEPS, Padrón de Importadores general y Padrón sectorial.
+- El bloque general "Domicilios de Operación" se mantiene igual y sigue sirviendo para direcciones no ligadas a un programa.
 
 ## Detalles técnicos
-- Se reutilizan las columnas existentes `empresas.immex_domicilios` y `empresas.prosec_domicilios` (arreglos de texto ya presentes en la tabla). **No se requiere migración de base de datos.**
-- Nuevo componente reutilizable `src/components/empresas/DomiciliosProgramaField.tsx`:
-  - props: `value: string[]`, `onChange(next: string[])`, `isEditing`, `label`.
-  - modo edición: `Input` + botón "+" (Enter también agrega), chips/filas con botón de eliminar; evita duplicados y cadenas vacías.
-  - modo lectura: lista simple con ícono `MapPin`.
-- `EmpresaIMMEXCard.tsx`: agregar `immex_domicilios` a `emptyForm`, al `useEffect` de sincronización, al `update` de Supabase y renderizar el nuevo componente en ambos modos.
-- `EmpresaPROSECCard.tsx`: mismo patrón con `prosec_domicilios` (siguiendo el estilo ya usado para `prosec_sectores`).
-- Normalización: `trim()` en cada dirección; se guarda `[]` cuando no hay ninguna.
-- Sin cambios en RLS ni en la lógica de obligaciones.
+Para que funcione igual en todos los programas se usa **una sola fuente de datos**: la tabla existente `domicilios_operacion`.
+
+1. Migración aditiva: agregar columna `programa text NULL` a `public.domicilios_operacion` (valores: `immex`, `prosec`, `certificacion_iva_ieps`, `padron_general`, `padron_sectorial`; `NULL` = domicilio general, comportamiento actual intacto). Índice por `(empresa_id, programa)`. Sin cambios de RLS (las políticas existentes por empresa ya aplican).
+2. Migración de datos aditiva: copiar los valores existentes de `empresas.immex_domicilios` y `empresas.prosec_domicilios` a filas de `domicilios_operacion` con su `programa`, sin borrar las columnas originales (reversible).
+3. Nuevo componente `src/components/empresas/DomiciliosProgramaSection.tsx`:
+   - props: `empresaId`, `programa`, `canEdit`.
+   - carga las filas de `domicilios_operacion` filtradas por `empresa_id` + `programa`; alta/edición/eliminación inline con `toast` (mismo patrón que `DomiciliosCard`).
+   - modo lectura con ícono `MapPin` cuando no se está editando.
+4. Integración en `EmpresaIMMEXCard`, `EmpresaPROSECCard`, `EmpresaCertificacionCard`, `EmpresaPadronGeneralCard` y `EmpresaPadronSectorialCard`, dentro del cuerpo de su `EditableInfoCard`.
+5. `DomiciliosCard` (general) se filtra a `programa IS NULL` para no duplicar lo que ya se ve en cada programa.
+6. Sin cambios en la lógica de obligaciones ni en permisos.
