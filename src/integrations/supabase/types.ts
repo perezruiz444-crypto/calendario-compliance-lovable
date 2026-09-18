@@ -569,7 +569,6 @@ export type Database = {
           domicilio_fiscal: string
           fecha_constitucion: string | null
           id: string
-          immex_domicilios: string[] | null
           immex_fecha_autorizacion: string | null
           immex_fecha_fin: string | null
           immex_fecha_inicio: string | null
@@ -584,7 +583,6 @@ export type Database = {
           padron_general_numero: string | null
           padron_importadores_sectores: Json | null
           padrones_sectoriales: Json | null
-          prosec_domicilios: string[] | null
           prosec_fecha_autorizacion: string | null
           prosec_fecha_fin: string | null
           prosec_fecha_inicio: string | null
@@ -617,7 +615,6 @@ export type Database = {
           domicilio_fiscal: string
           fecha_constitucion?: string | null
           id?: string
-          immex_domicilios?: string[] | null
           immex_fecha_autorizacion?: string | null
           immex_fecha_fin?: string | null
           immex_fecha_inicio?: string | null
@@ -632,7 +629,6 @@ export type Database = {
           padron_general_numero?: string | null
           padron_importadores_sectores?: Json | null
           padrones_sectoriales?: Json | null
-          prosec_domicilios?: string[] | null
           prosec_fecha_autorizacion?: string | null
           prosec_fecha_fin?: string | null
           prosec_fecha_inicio?: string | null
@@ -665,7 +661,6 @@ export type Database = {
           domicilio_fiscal?: string
           fecha_constitucion?: string | null
           id?: string
-          immex_domicilios?: string[] | null
           immex_fecha_autorizacion?: string | null
           immex_fecha_fin?: string | null
           immex_fecha_inicio?: string | null
@@ -680,7 +675,6 @@ export type Database = {
           padron_general_numero?: string | null
           padron_importadores_sectores?: Json | null
           padrones_sectoriales?: Json | null
-          prosec_domicilios?: string[] | null
           prosec_fecha_autorizacion?: string | null
           prosec_fecha_fin?: string | null
           prosec_fecha_inicio?: string | null
