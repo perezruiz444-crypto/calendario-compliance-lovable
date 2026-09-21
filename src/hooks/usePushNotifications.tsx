@@ -4,6 +4,14 @@ import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 
+const vapidPublicKey = import.meta.env.VITE_WEB_PUSH_VAPID_PUBLIC_KEY as string | undefined;
+
+function urlBase64ToUint8Array(value: string): Uint8Array {
+  const padding = '='.repeat((4 - value.length % 4) % 4);
+  const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+  return Uint8Array.from(window.atob(base64), (character) => character.charCodeAt(0));
+}
+
 export function usePushNotifications() {
   const { user } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission>('default');
@@ -68,17 +76,38 @@ export function usePushNotifications() {
     try {
       const registration = await navigator.serviceWorker.ready;
       
-      // For now, we'll just mark as subscribed
-      // In production, you'd generate a VAPID key and subscribe with pushManager
-      setIsSubscribed(true);
-      
-      // Store subscription preference in database
-      if (user) {
-        await supabase
-          .from('profiles')
-          .update({ notificaciones_activas: true })
-          .eq('id', user.id);
+      if (!user) throw new Error('Debes iniciar sesión para activar notificaciones');
+      if (!vapidPublicKey) throw new Error('Falta configurar VITE_WEB_PUSH_VAPID_PUBLIC_KEY');
+
+      const existing = await registration.pushManager.getSubscription();
+      const subscription = existing ?? await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      });
+      const json = subscription.toJSON();
+      // Generated Supabase types are refreshed after the migration is applied.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: subscriptionError } = await (supabase as any)
+        .from('push_subscriptions')
+        .upsert({
+          user_id: user.id,
+          endpoint: subscription.endpoint,
+          p256dh: json.keys?.p256dh,
+          auth: json.keys?.auth,
+          user_agent: navigator.userAgent,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,endpoint' });
+      if (subscriptionError) {
+        if (!existing) await subscription.unsubscribe();
+        throw subscriptionError;
       }
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ notificaciones_activas: true })
+        .eq('id', user.id);
+      if (profileError) throw profileError;
+      setIsSubscribed(true);
     } catch (error) {
       logger.error('Error subscribing to push notifications:', error);
       toast.error('Error al suscribirse a notificaciones');
@@ -91,6 +120,16 @@ export function usePushNotifications() {
       const subscription = 'pushManager' in registration ? await (registration as any).pushManager.getSubscription() : null;
       
       if (subscription) {
+        if (user) {
+          // Generated Supabase types are refreshed after the migration is applied.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error } = await (supabase as any)
+            .from('push_subscriptions')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('endpoint', subscription.endpoint);
+          if (error) throw error;
+        }
         await subscription.unsubscribe();
       }
       
@@ -98,10 +137,11 @@ export function usePushNotifications() {
       
       // Update database
       if (user) {
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({ notificaciones_activas: false })
           .eq('id', user.id);
+        if (error) throw error;
       }
       
       toast.success('Notificaciones desactivadas');

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { parseAppDate } from '@/lib/dates';
 import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList, GanttChart, ChevronDown, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
@@ -649,14 +650,14 @@ export default function Tareas() {
     if (!fecha) return false;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const dueDate = new Date(fecha);
+    const dueDate = parseAppDate(fecha);
     dueDate.setHours(0, 0, 0, 0);
     return dueDate < today;
   };
 
   const formatDate = (fecha: string) => {
     if (!fecha) return '';
-    const date = new Date(fecha);
+    const date = parseAppDate(fecha);
     return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
   };
 
@@ -785,12 +786,14 @@ export default function Tareas() {
   };
 
   const handleBulkUpdateEstado = async (newEstado: 'pendiente' | 'en_progreso' | 'completada' | 'cancelada') => {
+    if (selectedTareas.size === 0) return;
     try {
-      const updates = Array.from(selectedTareas).map(id =>
-        supabase.from('tareas').update({ estado: newEstado }).eq('id', id)
-      );
-      
-      await Promise.all(updates);
+      const ids = Array.from(selectedTareas);
+      const { error } = await supabase
+        .from('tareas')
+        .update({ estado: newEstado })
+        .in('id', ids);
+      if (error) throw error;
       
       toast.success(`${selectedTareas.size} tareas actualizadas a ${newEstado}`);
       
@@ -803,14 +806,16 @@ export default function Tareas() {
   };
 
   const handleBulkDelete = async () => {
+    if (selectedTareas.size === 0) return;
     if (!confirm(`¿Eliminar ${selectedTareas.size} tareas seleccionadas?`)) return;
     
     try {
-      const deletes = Array.from(selectedTareas).map(id =>
-        supabase.from('tareas').delete().eq('id', id)
-      );
-      
-      await Promise.all(deletes);
+      const ids = Array.from(selectedTareas);
+      const { error } = await supabase
+        .from('tareas')
+        .delete()
+        .in('id', ids);
+      if (error) throw error;
       
       toast.success(`${selectedTareas.size} tareas eliminadas`);
       
@@ -828,8 +833,8 @@ export default function Tareas() {
     .map(t => ({
       id: t.id,
       title: t.titulo,
-      start: new Date(t.fecha_vencimiento),
-      end: new Date(t.fecha_vencimiento),
+      start: parseAppDate(t.fecha_vencimiento),
+      end: parseAppDate(t.fecha_vencimiento),
       resource: t
     }));
 

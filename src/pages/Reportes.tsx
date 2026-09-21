@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { generateReportPDF, generateCategoriaReportPDF, generateCumplimientoMensualPDF } from '@/lib/pdfGenerator';
 import { buildCategoriaReportData, buildCumplimientoMensualData } from '@/lib/reportDataBuilders';
 import { exportToExcel } from '@/lib/excelExport';
+import { parseAppDate } from '@/lib/dates';
 import { logger } from '@/lib/logger';
 
 export default function Reportes() {
@@ -329,7 +330,7 @@ export default function Reportes() {
 
       const certificacionesVencimiento = empresasData?.filter(emp => {
         if (!emp.cert_iva_ieps_fecha_vencimiento) return false;
-        const vencimiento = new Date(emp.cert_iva_ieps_fecha_vencimiento);
+        const vencimiento = parseAppDate(emp.cert_iva_ieps_fecha_vencimiento);
         return vencimiento >= today && vencimiento <= in30Days;
       }).map(emp => ({
         razon_social: emp.razon_social,
@@ -339,7 +340,7 @@ export default function Reportes() {
 
       const matrizVencimientos = empresasData?.filter(emp => {
         if (!emp.matriz_seguridad_fecha_vencimiento) return false;
-        const vencimiento = new Date(emp.matriz_seguridad_fecha_vencimiento);
+        const vencimiento = parseAppDate(emp.matriz_seguridad_fecha_vencimiento);
         return vencimiento >= today && vencimiento <= in30Days;
       }).map(emp => ({
         razon_social: emp.razon_social,
@@ -613,7 +614,7 @@ export default function Reportes() {
           o.nombre,
           o.empresa,
           o.categoria,
-          o.fecha_vencimiento ? format(new Date(o.fecha_vencimiento), 'dd/MM/yyyy') : '-'
+          o.fecha_vencimiento ? format(parseAppDate(o.fecha_vencimiento), 'dd/MM/yyyy') : '-'
         ])
       );
     }
@@ -626,7 +627,7 @@ export default function Reportes() {
         ...reporteData.certificacionesVencimiento.map(c => [
           c.razon_social,
           c.tipo,
-          format(new Date(c.fecha_vencimiento), 'dd/MM/yyyy')
+          format(parseAppDate(c.fecha_vencimiento), 'dd/MM/yyyy')
         ])
       );
     }
@@ -650,7 +651,7 @@ export default function Reportes() {
       'Empresa': o.empresa,
       'Programa': CATEGORIA_LABELS[o.categoria] || o.categoria,
       'Vencimiento': o.fecha_vencimiento
-        ? new Date(o.fecha_vencimiento).toLocaleDateString('es-MX')
+        ? parseAppDate(o.fecha_vencimiento).toLocaleDateString('es-MX')
         : '—',
       'Estado': 'Pendiente',
     }));
@@ -1084,7 +1085,7 @@ export default function Reportes() {
                 <CardContent>
                   <div className="space-y-2">
                     {reporteData.obligacionesPendientesDetalle.map((ob, idx) => {
-                      const dias = ob.fecha_vencimiento ? differenceInDays(new Date(ob.fecha_vencimiento), new Date()) : null;
+                      const dias = ob.fecha_vencimiento ? differenceInDays(parseAppDate(ob.fecha_vencimiento), new Date()) : null;
                       return (
                         <div key={idx} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:border-warning/50 transition-colors">
                           <div className="flex-1 min-w-0">
@@ -1385,7 +1386,7 @@ export default function Reportes() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-heading font-medium text-destructive">
-                          Vence: {format(new Date(cert.fecha_vencimiento), 'dd/MM/yyyy', { locale: es })}
+                          Vence: {format(parseAppDate(cert.fecha_vencimiento), 'dd/MM/yyyy', { locale: es })}
                         </p>
                       </div>
                     </div>

@@ -14,6 +14,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { parseAppDate } from '@/lib/dates';
 
 // Heavy components — lazy loaded to keep initial bundle lean
 const DashboardCalendar = lazy(() => import('@/components/dashboard/DashboardCalendar'));
@@ -356,7 +357,7 @@ export default function Dashboard() {
                             </span>
                           )}
                           <span className="flex items-center gap-1 font-mono">
-                            <Clock className="w-3 h-3" /> {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
+                            <Clock className="w-3 h-3" /> {format(parseAppDate(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
                           </span>
                         </div>
                       </div>

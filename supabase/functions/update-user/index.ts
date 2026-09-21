@@ -93,39 +93,23 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Update or insert role in user_roles
+    // A user must have exactly one role. The database enforces UNIQUE(user_id),
+    // so changing roles replaces the previous value instead of adding a second row.
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .upsert({
         user_id: userId,
         role: role
       }, {
-        onConflict: 'user_id,role'
+        onConflict: 'user_id'
       })
 
-    // If upsert failed, try delete and insert
     if (roleError) {
-      // First delete existing role
-      await supabaseAdmin
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId)
-
-      // Then insert new role
-      const { error: insertError } = await supabaseAdmin
-        .from('user_roles')
-        .insert({
-          user_id: userId,
-          role: role
-        })
-
-      if (insertError) {
-        console.error('Error updating role:', insertError)
-        return new Response(JSON.stringify({ error: 'Failed to update user role.' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
+      console.error('Error updating role:', roleError)
+      return new Response(JSON.stringify({ error: 'Failed to update user role.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     return new Response(JSON.stringify({ success: true }), {

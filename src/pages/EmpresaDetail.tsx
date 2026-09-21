@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { parseAppDate } from '@/lib/dates';
 import ManageConsultoresDialog from '@/components/empresas/ManageConsultoresDialog';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
 import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
@@ -24,7 +25,7 @@ import {
   ShieldCheck, AlertCircle, CalendarDays, ChevronRight, MapPin,
   Target, BarChart3, Layers
 } from 'lucide-react';
-import { differenceInDays, format, isValid } from 'date-fns';
+import { differenceInCalendarDays, differenceInDays, format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // ── Lazy Imports para Code-Splitting ──────────────────────────────────
@@ -55,7 +56,7 @@ interface ProgramStatus {
 
 function ProgramBadge({ p }: { p: ProgramStatus }) {
   if (!p.numero) return null;
-  const dias = p.fecha_fin ? differenceInDays(new Date(p.fecha_fin), new Date()) : null;
+  const dias = p.fecha_fin ? differenceInCalendarDays(parseAppDate(p.fecha_fin), new Date()) : null;
   const urgent = dias !== null && dias <= 60;
   const expired = dias !== null && dias < 0;
 
@@ -78,7 +79,7 @@ function ProgramBadge({ p }: { p: ProgramStatus }) {
             {expired ? 'Vencido' : `${dias}d`}
           </p>
           <p className="text-[9px] text-muted-foreground">
-            {format(new Date(p.fecha_fin), 'dd MMM yy', { locale: es })}
+            {format(parseAppDate(p.fecha_fin), 'dd MMM yy', { locale: es })}
           </p>
         </div>
       )}
@@ -182,15 +183,17 @@ export default function EmpresaDetail() {
   const now = useMemo(() => new Date(), [obligaciones, tareas]);
 
   const stats = useMemo(() => {
-    const obsVencidas = obligaciones.filter(o => o.fecha_vencimiento && new Date(o.fecha_vencimiento) < now);
+    const obsVencidas = obligaciones.filter(
+      o => o.fecha_vencimiento && differenceInCalendarDays(parseAppDate(o.fecha_vencimiento), now) < 0
+    );
     const obsSemana = obligaciones.filter(o => {
       if (!o.fecha_vencimiento) return false;
-      const d = differenceInDays(new Date(o.fecha_vencimiento), now);
+      const d = differenceInDays(parseAppDate(o.fecha_vencimiento), now);
       return d >= 0 && d <= 7;
     });
     const obsMes = obligaciones.filter(o => {
       if (!o.fecha_vencimiento) return false;
-      const d = differenceInDays(new Date(o.fecha_vencimiento), now);
+      const d = differenceInDays(parseAppDate(o.fecha_vencimiento), now);
       return d > 7 && d <= 30;
     });
     const totalObs = obligaciones.length;
@@ -431,7 +434,7 @@ export default function EmpresaDetail() {
                 ) : (
                   <div className="max-h-[340px] overflow-y-auto">
                     {obligaciones.slice(0, 12).map((ob, i) => {
-                      const d = ob.fecha_vencimiento ? differenceInDays(new Date(ob.fecha_vencimiento), now) : null;
+                      const d = ob.fecha_vencimiento ? differenceInDays(parseAppDate(ob.fecha_vencimiento), now) : null;
                       const vencida = d !== null && d < 0;
                       const urgente = d !== null && d <= 7 && !vencida;
                       return (
@@ -447,7 +450,7 @@ export default function EmpresaDetail() {
                                 {vencida ? `−${Math.abs(d!)}d` : d === 0 ? 'Hoy' : `${d}d`}
                               </p>
                               <p className="text-[10px] text-muted-foreground">
-                                {format(new Date(ob.fecha_vencimiento), 'dd MMM', { locale: es })}
+                                {format(parseAppDate(ob.fecha_vencimiento), 'dd MMM', { locale: es })}
                               </p>
                             </div>
                           )}
@@ -482,7 +485,7 @@ export default function EmpresaDetail() {
                 ) : (
                   <div className="max-h-[340px] overflow-y-auto">
                     {tareas.slice(0, 8).map(t => {
-                      const dT = t.fecha_vencimiento ? differenceInDays(new Date(t.fecha_vencimiento), now) : null;
+                      const dT = t.fecha_vencimiento ? differenceInDays(parseAppDate(t.fecha_vencimiento), now) : null;
                       return (
                         <div key={t.id}
                           onClick={() => { setSelectedTareaId(t.id); setDetailTareaSheetOpen(true); }}
