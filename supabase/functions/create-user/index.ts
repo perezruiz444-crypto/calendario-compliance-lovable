@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     // Idempotent role upsert (trigger handle_new_user may already have inserted it)
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .upsert({ user_id: newUser.user.id, role }, { onConflict: 'user_id,role', ignoreDuplicates: true })
+      .upsert({ user_id: newUser.user.id, role }, { onConflict: 'user_id' })
 
     if (roleError) {
       console.error('Error assigning role:', roleError)

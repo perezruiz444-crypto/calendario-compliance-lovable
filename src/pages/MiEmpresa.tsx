@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { parseAppDate } from '@/lib/dates';
 import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, ClipboardList, ChevronDown, TrendingUp, ListTodo, Loader2, Search, History, User } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -259,7 +260,7 @@ export default function MiEmpresa() {
   
   const upcomingObligations = [...obligaciones]
     .filter(ob => !cumplimientos[ob.id] && ob.fecha_vencimiento)
-    .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+    .sort((a, b) => parseAppDate(a.fecha_vencimiento).getTime() - parseAppDate(b.fecha_vencimiento).getTime())
     .slice(0, 8);
 
   return (
@@ -842,4 +843,3 @@ export default function MiEmpresa() {
     </DashboardLayout>
   );
 }
-
