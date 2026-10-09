@@ -1,33 +1,90 @@
 # Calendario Compliance — Design System
 
-**Navy Trust Editorial** · Space Grotesk + DM Sans · APP UI
+**Dirección A · Expediente** · Papel + Tinta + Sello · IBM Plex Sans / Condensed / Mono · APP UI
 
-Todo el sistema está implementado en `src/index.css` como variables CSS y clases utilitarias de Tailwind. Este documento explica cuándo y cómo usar cada pieza.
+El cumplimiento se presenta como un expediente bien llevado: folios, sellos y renglones. La jerarquía la dan las **líneas y la tipografía**, no las sombras ni los degradados. Brandbook visual: https://claude.ai/artifact/8vC7erej6jHs8S19HFpbAc
+
+El sistema vive en `src/index.css` (variables CSS y clases utilitarias), `tailwind.config.ts` (tokens, escalas, radios, sombras) y `src/lib/brandColors.ts` (paleta categórica). Este documento explica cuándo y cómo usar cada pieza.
+
+---
+
+## Principios
+
+1. **Casi monocromo.** Papel, Tinta y grises. El color se reserva para estado y para el Sello.
+2. **El Sello es escaso.** Si aparece el rojo, algo exige atención o algo quedó cumplido. No lo uses como decoración.
+3. **Líneas, no sombras.** Separa con bordes de 1 px; contorno de 2 px para énfasis. Las sombras solo en capas flotantes.
+4. **Esquinas casi rectas.** Radio base de 4 px.
+5. **Estado = color + etiqueta + icono.** Nunca solo color.
+6. **Voz directa.** «El reporte anual IMMEX vence el 31 de mayo. Falta el acuse.» No «¡Ups! Tienes algo pendiente».
 
 ---
 
 ## Paleta de colores
 
+### Marca
+
+| Nombre | Hex | Token | Cuándo usar |
+|--------|-----|-------|-------------|
+| **Papel** | `#F3F3EF` | `--background` | Fondo de la app |
+| **Tinta** | `#111418` | `--foreground`, `--primary` | Texto, acciones principales, estructura |
+| **Folio** | `#5B616B` | `--muted-foreground` | Metadatos, descripciones, rótulos |
+| **Sello** | `#C8361D` | `--sello` (`bg-sello`, `text-sello`) | Acento de marca: hoy, vencido, cumplido-con-sello |
+| **Vigente** | `#1F6B45` | `--success` | Al día, completado |
+
+### Semánticos
+
 | Token | Valor HSL | Cuándo usar |
 |-------|-----------|-------------|
-| `--primary` | `218 80% 19%` | Acciones principales, estado activo en nav, CTA primario |
-| `--primary-glow` | `214 75% 52%` | Gradientes, anillos de focus, highlights |
-| `--accent` | `214 75% 52%` | Igual que primary-glow — para elementos interactivos secundarios |
-| `--success` | `152 65% 38%` | Tareas completadas, estados OK, métricas positivas |
-| `--success-glow` | `152 65% 45%` | Estados de éxito con más presencia (paralelo a primary-glow), `.glow-success` |
-| `--warning` | `36 90% 45%` | Tareas pendientes, vencimientos próximos |
-| `--destructive` | `4 76% 49%` | Errores, acciones destructivas, prioridad urgente |
-| `--urgent` | `25 95% 53%` | Solo para prioridad "urgente" — distinto del destructive |
-| `--muted-foreground` | — | Texto secundario, labels, descripciones |
-| `--border` | — | Bordes de cards y separadores |
-| `--border-subtle` | — | Bordes de secciones grandes (más suave que --border) |
+| `--primary` | `214 17% 8%` | Botón principal, nav activo, texto fuerte (en oscuro se invierte a Papel) |
+| `--accent` | `60 8% 88%` | **Superficie neutra de hover** en menús y listas (shadcn). **No** es el rojo de marca |
+| `--sello` | `9 75% 45%` | Acento de marca. Úsalo con `bg-sello` / `text-sello` |
+| `--success` | `150 55% 27%` | Tareas completadas, estados OK |
+| `--warning` | `35 100% 30%` | Pendientes, vencimientos próximos |
+| `--destructive` | `9 75% 42%` | Errores, acciones destructivas, vencido |
+| `--urgent` | `26 90% 37%` | Solo prioridad «urgente» |
+| `--band` | `214 17% 8%` | **Encabezados oscuros de marca** (héroes). No se invierte en modo oscuro |
+| `--border` | `70 7% 83%` | Bordes de tarjetas y separadores |
+| `--border-subtle` | `70 8% 88%` | Bordes de secciones grandes |
 
-**v2 (2026-07):** primary y success se profundizaron/vivificaron tras investigar
-referencias (saaslandingpage.com, saasinterface.com) y tendencias fintech/compliance
-2026 — navy sigue siendo la elección correcta para esta categoría, pero con más
-contraste y un verde-esmeralda más vibrante para estados de cumplimiento.
+> **Por qué `--sello` y `--accent` son distintos.** shadcn usa `accent` como fondo de hover (más de 30 usos). Si fuera rojo, todos los menús se pintarían de rojo y el Sello dejaría de ser escaso.
 
-**Regla:** Nunca uses colores hexadecimales inline. Siempre `hsl(var(--token))` o la clase Tailwind correspondiente.
+### Modo oscuro
+Tinta como fondo, Papel como texto, Sello más claro (`#E2553A`). `--primary` se invierte a Papel.
+
+**Trampa conocida:** `bg-primary` + `text-white` se rompe en oscuro (Papel con texto blanco). Para encabezados oscuros fijos usa **`bg-band text-band-foreground`**, que no se invierte. Para texto sobre `bg-primary` usa `text-primary-foreground`, nunca `text-white`.
+
+### Escalas crudas de Tailwind (remapeadas)
+El código legado usa `amber-500`, `blue-100`, `purple-600`… En `tailwind.config.ts` esas escalas se redefinen a partir de cinco tonos de marca, conservando su semántica:
+
+| Escala de Tailwind | Tono de marca |
+|--------------------|---------------|
+| `amber`, `orange`, `yellow` | Ocre (`#A05F00`) |
+| `green`, `emerald`, `lime` | Vigente (`#1F6B45`) |
+| `red`, `rose`, `pink` | Sello (`#C8361D`) |
+| `blue`, `sky`, `cyan`, `teal`, `indigo` | Azul acero (`#2F6FA8`) |
+| `purple`, `violet`, `fuchsia` | Ciruela (`#7A4A8C`) |
+
+**`amber-500`, `blue-100`, etc. NO son los valores por defecto de Tailwind.** En código nuevo prefiere los tokens semánticos (`text-warning`, `bg-success/10`…); las escalas existen para no reescribir el legado.
+
+### Paleta categórica (`src/lib/brandColors.ts`)
+8 tonos para categorías de tareas y gráficas: Grafito, Sello, Vigente, Ocre, Azul acero, Ciruela, Turquesa, Café. Son hex porque se guardan en BD y se usan en SVG. Importa `BRAND_CATEGORY_COLORS`; no definas colores sueltos.
+
+### Contraste (WCAG)
+
+| Combinación | Ratio |
+|-------------|-------|
+| Tinta sobre Papel | 16.6 : 1 |
+| Folio sobre Papel / sobre blanco | 5.6 / 6.2 : 1 |
+| Sello sobre Papel / sobre blanco | 4.7 / 5.3 : 1 |
+| Blanco sobre Sello (botón) | 5.3 : 1 |
+| Vigente sobre Papel | 5.8 : 1 |
+| `--warning` sobre Papel / blanco | 5.0 / 5.6 : 1 |
+| Papel sobre Tinta (modo oscuro) | 16.6 : 1 |
+| Sello `#E2553A` sobre Tinta | 4.9 : 1 |
+
+Los tonos de la **paleta categórica** (p. ej. Ocre `#B87400`, 3.4 : 1) son para relleno y gráficas, **no para texto**. Para texto usa tokens semánticos.
+
+**Regla:** nunca uses hexadecimales inline en componentes. Siempre `hsl(var(--token))` o la clase de Tailwind. Excepciones: la paleta categórica y SVG de exportación.
 
 ---
 
@@ -35,77 +92,95 @@ contraste y un verde-esmeralda más vibrante para estados de cumplimiento.
 
 | Fuente | Clase | Cuándo usar |
 |--------|-------|-------------|
-| Space Grotesk | `.font-heading` | Títulos, headings (`h1`–`h4`), KPI numbers, labels de botones |
-| DM Sans | `.font-body` (default en `body`) | Párrafos, descripciones, inputs, contenido |
-| DM Mono | `.font-mono` | Timestamps, IDs técnicos, valores numéricos tabulares |
+| IBM Plex Sans Condensed | `.font-heading` (default en `h1`–`h6`) | Títulos, KPIs, etiquetas de botón (mayúsculas) |
+| IBM Plex Sans | `.font-body` (default en `body`) | Párrafos, descripciones, inputs, contenido |
+| IBM Plex Mono | `.font-mono` | **Folios**: RFC, fechas, números de programa, rótulos, timestamps |
 
 ### Jerarquía de texto
 
 ```
-.display-1    → 4xl/5xl, font-bold, -0.035em   — Títulos de página hero
-.display-2    → 3xl/4xl, font-bold, -0.03em    — Subtítulos de sección
-h1            → 2.25rem, font-700              — Títulos de página estándar
-h2            → 1.75rem, font-700              — Secciones
-h3            → 1.25rem, font-600              — Cards y widgets
-h4            → 1rem,    font-600              — Labels de sección
-.eyebrow      → 11px, uppercase, 0.14em        — Etiquetas sobre títulos
-.eyebrow-primary → igual pero en color primary — Secciones con acento primario
+.display-1     → 4xl/6xl, bold, MAYÚSCULAS, leading 0.95  — Titular hero (login, dashboard)
+.display-2     → 3xl/4xl, bold, MAYÚSCULAS                — Títulos de página (PageHeader)
+.h1 / .h2      → 5xl / 3xl, bold, MAYÚSCULAS               — Títulos por jerarquía
+.h3 / .h4      → 2xl / xl, semibold, capitalización normal — Cards y widgets
+.eyebrow       → mono 11px, MAYÚSCULAS, 0.08em            — Rótulo sobre títulos
+.eyebrow-primary → igual, en color primary                 — Secciones con acento
+.folio         → mono xs, MAYÚSCULAS, muted               — Identificadores
+.sello         → condensed bold, MAYÚSCULAS, borde 2 px   — Estampa de estado
 ```
 
+Sin tracking negativo en ningún nivel. Los botones van en mayúsculas condensadas (`font-heading uppercase`, 0.04em).
+
 ---
 
-## Sombras
+## Forma, líneas y sombras
 
-Usa la sombra más ligera que sirva. No subas de nivel sin razón.
+- **Radio:** `--radius: 0.25rem` (4 px). Los radios `xl`, `2xl` y `3xl` se normalizan a este valor desde `tailwind.config.ts`.
+- **`rounded-full` solo** para avatares, puntos de color, spinners y switches. Etiquetas, contadores, barras de progreso, chips y recuadros de icono son **cuadrados** (`rounded-none`).
+- **Focus:** contorno de 2 px con offset de 2 px (`*:focus-visible`). Nunca `outline: none` sin reemplazo.
+- **Hover:** cambia el borde u opacidad. **No** uses `hover:scale-*` ni `hover:-translate-y-*`.
 
 | Clase | Cuándo usar |
 |-------|-------------|
-| `.shadow-elegant` | Separación mínima (inputs flotantes) |
-| `.shadow-card` | Cards estándar en estado hover |
-| `.shadow-editorial` | Cards en estado normal, widgets de dashboard |
-| `.shadow-float` | Dropdowns, popovers, elementos flotantes |
+| `.shadow-elegant` | Sin sombra (se conserva por compatibilidad) |
+| `.shadow-card`, `.shadow-editorial` | Anillo de 1 px del color de borde; sin sombra difusa |
+| `.shadow-float` | Dropdowns y popovers: anillo de Tinta + una sombra corta |
+| `shadow-md/lg/xl` de Tailwind | Capas flotantes únicamente |
+
+### Degradados
+**No se usan.** Las clases `.gradient-primary`, `.gradient-hero`, `.gradient-card`, `.gradient-subtle` y `.surface-mesh` se conservan por compatibilidad, pero **resuelven a color plano**. No las uses en código nuevo: usa `bg-primary`, `bg-card`, `bg-background`. No agregues `bg-gradient-*` ni capas `radial-gradient`.
 
 ---
 
-## Gradientes
+## Estados
 
-| Clase | Cuándo usar |
+### Etiquetas de estado (`.status-*`)
+Contorno de 2 px, sin relleno, mayúsculas condensadas, cuadradas. Siempre con etiqueta de texto.
+
+| Clase | Significado |
 |-------|-------------|
-| `.gradient-primary` | Botones CTA principales |
-| `.gradient-hero` | Header del sidebar, indicador activo de nav |
-| `.gradient-card` | Fondo sutil de cards de datos |
-| `.gradient-subtle` | Fondos de sección con ligera profundidad |
-| `.surface-mesh` | Header editorial del dashboard |
-
----
-
-## Patrones de estado
+| `.status-vencida` | Vencida (Sello/destructivo) |
+| `.status-pendiente` | Pendiente (borde discontinuo, ocre) |
+| `.status-cumplida` | Cumplida (Vigente) |
+| `.status-progreso` | En progreso (Tinta) |
 
 ### Loading
 ```tsx
-<div className="rounded-[0.625rem] border bg-card p-4 space-y-3">
+<div className="rounded-[var(--radius)] border bg-card p-4 space-y-3">
   <Skeleton className="h-4 w-3/4" />
   <Skeleton className="h-3 w-1/2" />
 </div>
 ```
 
 ### Empty state
-- Ícono centrado en `w-16 h-16 rounded-2xl bg-muted`
-- Título `.font-heading font-semibold`
+- Ícono centrado en un recuadro cuadrado `w-16 h-16 bg-muted` (sin `rounded-full`)
+- Rótulo en mono (`.eyebrow`) + título `.font-heading font-semibold`
 - Descripción `text-sm text-muted-foreground max-w-xs mx-auto`
-- CTA: botón "Nueva Tarea" si puede crear, "Limpiar filtros" si hay filtros activos
+- CTA: botón «Nueva Tarea» si puede crear, «Limpiar filtros» si hay filtros activos
 
 ### Error state
-- Ícono en `rounded-2xl bg-destructive/10`
+- Ícono en recuadro `bg-destructive/10`
 - Mensaje amigable (no el error técnico)
-- Botón "Reintentar" con `<RefreshCw />` que llama de nuevo al fetch
+- Botón «Reintentar» con `<RefreshCw />` que vuelve a llamar al fetch
+
+---
+
+## Logo e identificador
+
+Componente: `src/components/brand/Logo.tsx`.
+
+- `BrandMark`: hoja de calendario con retícula y sello de cumplido. Usa `currentColor` para el trazo (Tinta o Papel según el fondo) y `--sello` para el círculo.
+- `Logo variant="stacked"` (default): marca + «CALENDARIO / COMPLIANCE» en dos líneas, con `tagline` opcional en mono.
+- `Logo variant="inline"`: una línea, para encabezado móvil.
+
+En tamaños menores a 24 px usa `<BrandMark detailed={false} />` (sin retícula interna). Favicon: `public/favicon.svg`.
 
 ---
 
 ## Progressive disclosure (listas de obligaciones)
 
 Las listas de obligaciones/vencimientos usan **agrupación por urgencia con
-disclosure progresivo** en vez de listas planas: resumen (KPIs/badges) siempre
+disclosure progresivo** en vez de listas planas: resumen (KPIs/etiquetas) siempre
 visible, detalle agrupado y colapsable debajo.
 
 Componente compartido: `src/components/obligaciones/ObligacionesPorUrgencia.tsx`.
@@ -117,14 +192,14 @@ defecto; Próximas y Al día colapsadas.
 **Cuándo usar:**
 - Vistas de página completa con listas potencialmente largas (`ObligacionesActivasTab`).
 - Widgets de dashboard cuando la lista supera ~8 ítems (`DashboardObligacionesMensuales`
-  cae a lista flat simple por debajo de ese umbral — no todo necesita agrupación).
-- Paneles secundarios como "Próximos 30 días" en `DashboardCalendar`.
+  cae a lista simple por debajo de ese umbral — no todo necesita agrupación).
+- Paneles secundarios como «Próximos 30 días» en `DashboardCalendar`.
 
 **No usar** para listas ya cortas (≤ 8 ítems) donde el agrupamiento añade
-fricción sin beneficio — en ese caso, lista flat simple.
+fricción sin beneficio — en ese caso, lista simple.
 
 Los estados completados/cumplidos van aparte, colapsados detrás de un toggle
-"Ver completadas (N)" — nunca mezclados en el mismo grupo que las pendientes.
+«Ver completadas (N)» — nunca mezclados en el mismo grupo que las pendientes.
 
 ---
 
@@ -137,7 +212,7 @@ Los estados completados/cumplidos van aparte, colapsados detrás de un toggle
 
 ### Card shadcn estándar
 ```tsx
-<Card className="gradient-card shadow-card">
+<Card className="shadow-card">
   <CardHeader>...</CardHeader>
   <CardContent>...</CardContent>
 </Card>
@@ -161,11 +236,12 @@ Los estados completados/cumplidos van aparte, colapsados detrás de un toggle
 
 ## Accesibilidad
 
-- **Focus ring:** `box-shadow: 0 0 0 3px hsl(var(--primary-glow) / 0.25)` — nunca `outline: none` sin reemplazo
-- **Touch targets:** `h-11` (44px) en móvil, `h-8`/`h-9` en desktop
-- **Contraste:** foreground (`222 47% 11%`) sobre background (`220 30% 98%`) > 7:1
-- **ARIA:** botones de vista usan `aria-current="page"` en el activo y `aria-label` con el nombre
-- **Motion:** respetar `prefers-reduced-motion` — no agregar animaciones sin `motion-safe:`
+- **Focus:** contorno de 2 px (`outline: 2px solid hsl(var(--ring))`, offset 2 px). Nunca `outline: none` sin reemplazo.
+- **Touch targets:** `h-11` (44 px) en móvil, `h-8`/`h-9` en desktop.
+- **Contraste:** ver la tabla de la sección «Paleta». Texto normal ≥ 4.5 : 1; texto grande y gráficos ≥ 3 : 1.
+- **Estado sin depender del color:** etiqueta de texto + icono + contorno (`.status-*`).
+- **ARIA:** botones de vista usan `aria-current="page"` en el activo y `aria-label` con el nombre.
+- **Motion:** respetar `prefers-reduced-motion`; no agregar animaciones sin `motion-safe:`.
 
 ---
 
@@ -174,11 +250,20 @@ Los estados completados/cumplidos van aparte, colapsados detrás de un toggle
 **Reusar primero:**
 - `PageTransition.tsx` para transiciones entre páginas
 - `PageHeader.tsx` para títulos de página
-- `EmptyState` (patrón en Tareas) para listas vacías
+- `EmptyState` (`src/components/ui/EmptyState.tsx`) para listas vacías
+- `Logo` / `BrandMark` para cualquier uso de la marca
 - `ClientOnboardingTour` como referencia de first-run
 - `ObligacionesPorUrgencia.tsx` para cualquier lista de obligaciones/vencimientos
-  que necesite agrupación por urgencia (ver sección "Progressive disclosure")
+  que necesite agrupación por urgencia (ver «Progressive disclosure»)
 
 **Crear nuevo cuando:** el patrón se repite 3+ veces con la misma estructura.
 
 **No crear:** wrappers de un solo uso alrededor de shadcn components sin lógica propia.
+
+---
+
+## Pendientes conocidos
+
+- Las clases `gradient-*` (≈100 usos) siguen en el código aunque resuelven a color plano; renombrarlas es una limpieza aparte.
+- Reportes PDF/Excel (`src/lib/pdfGenerator.ts`) y plantillas de correo (`supabase/functions/_shared/email-templates.ts`) conservan colores anteriores; decidir si llevan la marca de la plataforma o la del despacho.
+- `src/components/configuraciones/ThemeEditor.tsx` no se usa y todavía ofrece temas «Azul Marino».

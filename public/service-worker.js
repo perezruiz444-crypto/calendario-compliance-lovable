@@ -20,8 +20,8 @@ self.addEventListener('push', (event) => {
   const data = event.data.json();
   const options = {
     body: data.contenido || data.body || '',
-    icon: '/favicon.ico',
-    badge: '/favicon.ico',
+    icon: '/icon-192.png',
+    badge: '/badge-96.png',
     tag: data.referencia_id || 'notification',
     data: {
       url: data.url || '/',
