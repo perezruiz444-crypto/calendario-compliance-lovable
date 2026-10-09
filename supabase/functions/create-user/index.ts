@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in create-user function:', error)
     return new Response(JSON.stringify({ error: 'Ocurrió un error inesperado. Intenta de nuevo.' }), {
       status: 500,

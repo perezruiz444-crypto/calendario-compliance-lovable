@@ -112,7 +112,7 @@ serve(async (req: Request) => {
     console.log('Invitation created:', invitation.id);
 
     // Create user metadata
-    const userMetadata: any = {
+    const userMetadata: { nombre_completo: string; role: string; invitation_token: string; empresa_id?: string } = {
       nombre_completo: nombreCompleto,
       role: role,
       invitation_token: token
@@ -167,8 +167,8 @@ serve(async (req: Request) => {
       await sendEmail(email, `Tu acceso a Calendario Compliance está listo — Russell Bedford`, htmlBody);
       emailSent = true;
       console.log('Invitation email sent successfully via Resend to:', email);
-    } catch (emailError: any) {
-      console.log('Email sending error:', emailError.message);
+    } catch (emailError) {
+      console.log('Email sending error:', emailError instanceof Error ? emailError.message : emailError);
       // Fallback: try Supabase Auth invite
       try {
         const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
@@ -182,8 +182,8 @@ serve(async (req: Request) => {
           emailSent = true;
           console.log('Fallback: Invitation email sent via Supabase Auth');
         }
-      } catch (fallbackError: any) {
-        console.log('Fallback email also failed:', fallbackError.message);
+      } catch (fallbackError) {
+        console.log('Fallback email also failed:', fallbackError instanceof Error ? fallbackError.message : fallbackError);
       }
     }
 
@@ -204,17 +204,18 @@ serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in send-user-invitation function:', error);
     // Expose only known safe business errors to the client
     const safeMessages = ['Unauthorized', 'Ya existe un usuario con este email'];
-    const clientMessage = safeMessages.includes(error.message)
-      ? error.message
+    const message = error instanceof Error ? error.message : ''
+    const clientMessage = safeMessages.includes(message)
+      ? message
       : 'Error interno del servidor';
     return new Response(
       JSON.stringify({ error: clientMessage }),
       {
-        status: error.message === 'Unauthorized' ? 401 : 500,
+        status: message === 'Unauthorized' ? 401 : 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );

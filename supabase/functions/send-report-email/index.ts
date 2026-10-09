@@ -1,11 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
 import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail } from '../_shared/smtp.ts'
-import { reportEmailTemplate } from '../_shared/email-templates.ts'
+import { reportEmailTemplate, type ReportResumen } from '../_shared/email-templates.ts'
 
 interface ReportEmailRequest {
   empresaId: string;
-  reportData: any;
+  // Viene del cliente sin validar (igual que antes); solo se usa `resumen`.
+  reportData: { resumen: ReportResumen };
   period: string;
   reportType: string;
 }
@@ -155,7 +156,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in send-report-email function:', error);
     return new Response(
       JSON.stringify({ error: 'Error interno del servidor' }),

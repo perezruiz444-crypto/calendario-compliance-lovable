@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
         .from('consultor_empresa_asignacion')
         .select('empresa_id')
         .eq('consultor_id', user.id);
-      allowedEmpresaIds = (asignaciones || []).map((a: any) => a.empresa_id);
+      allowedEmpresaIds = (asignaciones || []).map((a: { empresa_id: string }) => a.empresa_id);
     }
 
     // Fetch profiles (scoped for consultores)
@@ -75,10 +75,10 @@ Deno.serve(async (req) => {
     }
 
     // Fetch only the roles for visible users
-    const visibleIds = profiles.map((p: any) => p.id)
+    const visibleIds = profiles.map((p: { id: string }) => p.id)
     const { data: userRoles } = visibleIds.length
       ? await supabaseAdmin.from('user_roles').select('user_id, role').in('user_id', visibleIds)
-      : { data: [] as any[] }
+      : { data: [] as { user_id: string; role: string }[] }
 
     // Create a map of user roles for quick lookup
     const rolesMap = new Map()
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in list-users function:', error)
     return new Response(JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }), {
       status: 500,
