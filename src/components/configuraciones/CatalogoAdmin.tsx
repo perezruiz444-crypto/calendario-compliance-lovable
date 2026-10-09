@@ -327,7 +327,7 @@ export function CatalogoAdmin() {
   const totalInactivas = items.filter(i => !i.activo).length;
 
   return (
-    <Card className="gradient-card shadow-card">
+    <Card className="shadow-card">
       <CardHeader>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>

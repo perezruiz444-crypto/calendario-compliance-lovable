@@ -114,7 +114,7 @@ export default function QuickCreateEmpresa({ open, onOpenChange, onEmpresaCreate
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-heading">
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || !isValid} className="gradient-primary shadow-elegant font-heading">
+            <Button type="submit" disabled={loading || !isValid} className="shadow-elegant font-heading">
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
               Crear
             </Button>

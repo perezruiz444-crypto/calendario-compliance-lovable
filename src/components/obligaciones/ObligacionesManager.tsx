@@ -397,7 +397,7 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
   };
 
   return (
-    <Card className="gradient-card shadow-card col-span-1 lg:col-span-2">
+    <Card className="shadow-card col-span-1 lg:col-span-2">
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <CardTitle className="font-heading flex items-center gap-2">

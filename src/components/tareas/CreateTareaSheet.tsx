@@ -778,7 +778,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
               onClick={handleSubmit}
               size="sm"
               disabled={loading || !formData.titulo.trim() || !formData.empresa_id}
-              className="gradient-primary shadow-elegant font-heading"
+              className="shadow-elegant font-heading"
             >
               {loading ? 'Creando...' : 'Crear Tarea'}
             </Button>

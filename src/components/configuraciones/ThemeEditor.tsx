@@ -20,7 +20,8 @@ const COLOR_GROUPS: { title: string; colors: ColorConfig[] }[] = [
       { label: 'Primario', variable: '--primary', description: 'Color principal (botones, links, sidebar)' },
       { label: 'Primario Hover', variable: '--primary-hover', description: 'Hover del color primario' },
       { label: 'Primario Claro', variable: '--primary-light', description: 'Fondo sutil del color primario' },
-      { label: 'Acento', variable: '--accent', description: 'Color de acento (badges, alertas)' },
+      { label: 'Sello', variable: '--sello', description: 'Acento de marca: hoy, vencido, cumplido. Úsalo con moderación' },
+      { label: 'Hover neutro', variable: '--accent', description: 'Superficie de hover en menús y listas (no es el acento de marca)' },
     ],
   },
   {
@@ -29,6 +30,7 @@ const COLOR_GROUPS: { title: string; colors: ColorConfig[] }[] = [
       { label: 'Fondo', variable: '--background', description: 'Fondo principal de la página' },
       { label: 'Tarjeta', variable: '--card', description: 'Fondo de tarjetas' },
       { label: 'Secundario', variable: '--secondary', description: 'Fondo secundario / muted' },
+      { label: 'Banda', variable: '--band', description: 'Encabezados oscuros de marca (no se invierte en modo oscuro)' },
     ],
   },
   {
@@ -65,98 +67,49 @@ const COLOR_GROUPS: { title: string; colors: ColorConfig[] }[] = [
   },
 ];
 
-// Default light theme values from index.css
+// Valores por defecto del tema claro: deben coincidir con `:root` en src/index.css (Dirección A · Expediente).
+// Nota: estas variables se aplican en línea sobre <html>, así que también pisan el modo oscuro (.dark).
 const DEFAULT_COLORS: Record<string, string> = {
-  '--primary': '210 100% 20%',
-  '--primary-hover': '210 100% 25%',
-  '--primary-light': '210 100% 95%',
-  '--accent': '4 76% 49%',
-  '--background': '0 0% 100%',
+  '--primary': '214 17% 8%',            // Tinta
+  '--primary-hover': '214 12% 22%',
+  '--primary-light': '60 10% 90%',
+  '--accent': '60 8% 88%',              // hover neutro (shadcn), NO el acento de marca
+  '--sello': '9 75% 45%',               // Sello #C8361D
+  '--band': '214 17% 8%',
+  '--background': '60 14% 95%',         // Papel
   '--card': '0 0% 100%',
-  '--secondary': '0 0% 96%',
-  '--foreground': '0 0% 20%',
-  '--muted-foreground': '0 0% 40%',
-  '--success': '142 76% 36%',
-  '--warning': '38 92% 50%',
-  '--destructive': '4 76% 49%',
-  '--sidebar-background': '210 100% 15%',
-  '--sidebar-foreground': '0 0% 100%',
-  '--sidebar-accent': '210 100% 18%',
-  '--sidebar-primary': '4 76% 49%',
-  '--border': '0 0% 90%',
-  '--input': '0 0% 90%',
-  '--ring': '210 100% 20%',
+  '--secondary': '60 10% 90%',
+  '--foreground': '214 17% 8%',
+  '--muted-foreground': '217 8% 39%',   // Folio
+  '--success': '150 55% 27%',           // Vigente
+  '--warning': '35 100% 30%',
+  '--destructive': '9 75% 42%',
+  '--sidebar-background': '60 10% 92%',
+  '--sidebar-foreground': '214 17% 8%',
+  '--sidebar-accent': '60 8% 86%',
+  '--sidebar-primary': '214 17% 8%',
+  '--border': '70 7% 83%',
+  '--input': '214 8% 70%',
+  '--ring': '214 17% 8%',
 };
 
+// Variantes de Expediente: cambian el acento de marca (Sello) y conservan Papel + Tinta.
+// Cada tono de acento pasa 4.5:1 sobre Papel para uso como texto.
+const withSello = (sello: string): Record<string, string> => ({ ...DEFAULT_COLORS, '--sello': sello });
+
 const PRESET_THEMES: { name: string; colors: Record<string, string> }[] = [
-  { name: '🔵 Azul Marino (Original)', colors: { ...DEFAULT_COLORS } },
+  { name: 'Expediente (original)', colors: { ...DEFAULT_COLORS } },
+  { name: 'Expediente · Azul acero', colors: withSello('209 56% 42%') },
+  { name: 'Expediente · Vigente', colors: withSello('150 55% 27%') },
+  { name: 'Expediente · Ciruela', colors: withSello('282 31% 41%') },
   {
-    name: '🟣 Púrpura Corporativo',
+    name: 'Alto contraste',
     colors: {
       ...DEFAULT_COLORS,
-      '--primary': '262 80% 30%', '--primary-hover': '262 80% 35%', '--primary-light': '262 80% 95%',
-      '--accent': '330 70% 50%', '--sidebar-background': '262 80% 20%', '--sidebar-accent': '262 80% 25%',
-      '--sidebar-primary': '330 70% 50%', '--ring': '262 80% 30%',
-    },
-  },
-  {
-    name: '🌲 Verde Bosque',
-    colors: {
-      ...DEFAULT_COLORS,
-      '--primary': '160 60% 25%', '--primary-hover': '160 60% 30%', '--primary-light': '160 60% 95%',
-      '--accent': '30 80% 50%', '--sidebar-background': '160 60% 18%', '--sidebar-accent': '160 60% 22%',
-      '--sidebar-primary': '30 80% 50%', '--ring': '160 60% 25%',
-    },
-  },
-  {
-    name: '🔴 Rojo Ejecutivo',
-    colors: {
-      ...DEFAULT_COLORS,
-      '--primary': '0 65% 35%', '--primary-hover': '0 65% 40%', '--primary-light': '0 65% 95%',
-      '--accent': '210 70% 45%', '--sidebar-background': '0 65% 22%', '--sidebar-accent': '0 65% 28%',
-      '--sidebar-primary': '210 70% 45%', '--ring': '0 65% 35%',
-    },
-  },
-  {
-    name: '🌊 Azul Moderno',
-    colors: {
-      ...DEFAULT_COLORS,
-      '--primary': '220 85% 45%', '--primary-hover': '220 85% 50%', '--primary-light': '220 85% 95%',
-      '--accent': '45 90% 50%', '--sidebar-background': '220 85% 20%', '--sidebar-accent': '220 85% 25%',
-      '--sidebar-primary': '45 90% 50%', '--ring': '220 85% 45%',
-    },
-  },
-  {
-    name: '🤍 Monocromático',
-    colors: {
-      ...DEFAULT_COLORS,
-      '--primary': '0 0% 15%', '--primary-hover': '0 0% 22%', '--primary-light': '0 0% 96%',
-      '--accent': '0 0% 40%', '--background': '0 0% 100%', '--card': '0 0% 100%',
-      '--secondary': '0 0% 96%', '--foreground': '0 0% 10%', '--muted-foreground': '0 0% 45%',
-      '--sidebar-background': '0 0% 8%', '--sidebar-foreground': '0 0% 95%', '--sidebar-accent': '0 0% 14%',
-      '--sidebar-primary': '0 0% 70%', '--border': '0 0% 88%', '--input': '0 0% 88%',
-      '--ring': '0 0% 15%', '--destructive': '0 70% 50%', '--success': '142 60% 40%', '--warning': '38 80% 50%',
-    },
-  },
-  {
-    name: '☁️ Tonos Claros',
-    colors: {
-      ...DEFAULT_COLORS,
-      '--primary': '220 15% 50%', '--primary-hover': '220 15% 55%', '--primary-light': '220 15% 96%',
-      '--accent': '200 20% 60%', '--background': '220 20% 98%', '--card': '0 0% 100%',
-      '--secondary': '220 15% 95%', '--foreground': '220 10% 30%', '--muted-foreground': '220 10% 55%',
-      '--sidebar-background': '220 15% 94%', '--sidebar-foreground': '220 10% 25%', '--sidebar-accent': '220 15% 90%',
-      '--sidebar-primary': '200 20% 50%', '--border': '220 15% 90%', '--input': '220 15% 90%',
-      '--ring': '220 15% 50%', '--destructive': '0 55% 55%', '--success': '142 40% 45%', '--warning': '38 60% 55%',
-    },
-  },
-  {
-    name: '⚫ Grafito',
-    colors: {
-      ...DEFAULT_COLORS,
-      '--primary': '0 0% 25%', '--primary-hover': '0 0% 30%', '--primary-light': '0 0% 95%',
-      '--accent': '200 80% 50%', '--sidebar-background': '0 0% 12%', '--sidebar-accent': '0 0% 18%',
-      '--sidebar-primary': '200 80% 50%', '--ring': '0 0% 25%',
+      '--sello': '9 85% 36%', '--background': '0 0% 100%', '--foreground': '0 0% 0%', '--primary': '0 0% 0%',
+      '--primary-hover': '0 0% 15%', '--muted-foreground': '0 0% 25%', '--border': '0 0% 25%', '--input': '0 0% 25%',
+      '--sidebar-background': '0 0% 96%', '--sidebar-foreground': '0 0% 0%', '--sidebar-primary': '0 0% 0%',
+      '--ring': '0 0% 0%', '--band': '0 0% 0%',
     },
   },
 ];
@@ -337,7 +290,7 @@ export default function ThemeEditor() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {PRESET_THEMES.map((preset) => {
               const primary = preset.colors['--primary'];
-              const accent = preset.colors['--accent'];
+              const accent = preset.colors['--sello'];
               const sidebarBg = preset.colors['--sidebar-background'];
               return (
                 <button

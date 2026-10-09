@@ -87,7 +87,7 @@ export function TareasTimeline({ tareas, onTareaClick }: TareasTimelineProps) {
 
   if (timelineTareas.length === 0) {
     return (
-      <Card className="gradient-card shadow-card">
+      <Card className="shadow-card">
         <CardContent className="py-12 text-center text-muted-foreground">
           <Clock className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p className="font-medium">Sin tareas para mostrar en timeline</p>
@@ -98,7 +98,7 @@ export function TareasTimeline({ tareas, onTareaClick }: TareasTimelineProps) {
   }
 
   return (
-    <Card className="gradient-card shadow-card">
+    <Card className="shadow-card">
       <CardHeader>
         <CardTitle className="font-heading flex items-center gap-2">
           <Clock className="w-5 h-5" />

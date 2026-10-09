@@ -44,7 +44,7 @@ export function EditableCard({
   };
 
   return (
-    <Card className={`gradient-card shadow-card ${className}`}>
+    <Card className={`shadow-card ${className}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="font-heading flex items-center gap-2">
           {icon}
@@ -66,7 +66,6 @@ export function EditableCard({
                   size="sm"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="gradient-primary"
                 >
                   {isSaving ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

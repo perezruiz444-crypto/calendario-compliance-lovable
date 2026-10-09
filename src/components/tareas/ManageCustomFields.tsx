@@ -176,7 +176,7 @@ export default function ManageCustomFields({ open, onOpenChange }: ManageCustomF
             <>
               <Button
                 onClick={() => setShowForm(true)}
-                className="w-full gradient-primary shadow-elegant font-heading gap-2"
+                className="w-full shadow-elegant font-heading gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Nuevo Campo
@@ -338,7 +338,7 @@ export default function ManageCustomFields({ open, onOpenChange }: ManageCustomF
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 gradient-primary shadow-elegant font-heading"
+                  className="flex-1 shadow-elegant font-heading"
                 >
                   {loading ? 'Guardando...' : editingField ? 'Actualizar' : 'Crear'}
                 </Button>

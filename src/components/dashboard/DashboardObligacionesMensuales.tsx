@@ -181,7 +181,7 @@ export default function DashboardObligacionesMensuales() {
   // ── Loading ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <Card className="gradient-card shadow-card">
+      <Card className="shadow-card">
         <CardHeader className="pb-3">
           <Skeleton className="h-5 w-48" />
           <Skeleton className="h-4 w-36 mt-1" />
@@ -201,7 +201,7 @@ export default function DashboardObligacionesMensuales() {
       ? 'Tu cuenta aún no tiene una empresa asignada. Escribe a tu consultor Russell Bedford para activarla.'
       : 'Selecciona una empresa en la barra lateral para ver sus obligaciones.';
     return (
-      <Card className="gradient-card shadow-card">
+      <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="font-heading flex items-center gap-2">
             <ClipboardList className="w-5 h-5" /> Obligaciones del Mes
@@ -222,7 +222,7 @@ export default function DashboardObligacionesMensuales() {
     const ctaPath  = role === 'cliente' ? '/mi-empresa' : `/empresas/${empresaId}`;
     const ctaLabel = role === 'cliente' ? 'Ver mi empresa' : 'Gestionar obligaciones';
     return (
-      <Card className="gradient-card shadow-card">
+      <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="font-heading flex items-center gap-2">
             <ClipboardList className="w-5 h-5" /> Obligaciones de {mesTitulo}
@@ -313,7 +313,7 @@ export default function DashboardObligacionesMensuales() {
   // ── Lista normal ───────────────────────────────────────────────────
   return (
     <>
-    <Card className="gradient-card shadow-card">
+    <Card className="shadow-card">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div>

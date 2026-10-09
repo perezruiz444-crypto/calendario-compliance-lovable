@@ -18,7 +18,8 @@ const brandScale = (base: string) => ({
   600: mix(base, 0, 0.12), 700: mix(base, 0, 0.28), 800: mix(base, 0, 0.45),
   900: mix(base, 0, 0.6), 950: mix(base, 0, 0.75),
 });
-const OCRE = brandScale("#B87400");
+// Ocre más oscuro que el de la paleta categórica (#B87400): aquí se usa como texto (text-amber-*) y debe pasar 4.5:1 sobre Papel.
+const OCRE = brandScale("#A05F00");
 const VIGENTE = brandScale("#1F6B45");
 const SELLO = brandScale("#C8361D");
 const ACERO = brandScale("#2F6FA8");

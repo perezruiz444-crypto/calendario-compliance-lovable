@@ -155,7 +155,7 @@ export default function EditEmpresaDialog({ open, onOpenChange, onEmpresaUpdated
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-heading">
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="gradient-primary shadow-elegant font-heading">
+            <Button type="submit" disabled={loading} className="shadow-elegant font-heading">
               {loading ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
           </DialogFooter>

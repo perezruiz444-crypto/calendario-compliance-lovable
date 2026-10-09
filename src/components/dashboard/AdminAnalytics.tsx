@@ -13,7 +13,7 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
     <div className="space-y-6">
       {/* Gráficos principales */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6">
-        <Card className="gradient-card shadow-card">
+        <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -39,7 +39,7 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
 
       {/* Documentos próximos a vencer */}
       {data.documentosVencimiento && data.documentosVencimiento.length > 0 && (
-        <Card className="gradient-card shadow-card">
+        <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />

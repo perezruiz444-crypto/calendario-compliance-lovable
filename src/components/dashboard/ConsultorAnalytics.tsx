@@ -16,7 +16,7 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <Card className="gradient-card shadow-card">
+        <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -38,7 +38,7 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
           </CardContent>
         </Card>
 
-        <Card className="gradient-card shadow-card">
+        <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckSquare className="w-5 h-5" />
@@ -76,7 +76,7 @@ export default function ConsultorAnalytics({ data }: ConsultorAnalyticsProps) {
       </div>
 
       {data.documentosVencimiento && data.documentosVencimiento.length > 0 && (
-        <Card className="gradient-card shadow-card">
+        <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />

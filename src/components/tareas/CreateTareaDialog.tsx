@@ -720,7 +720,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-heading">
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading || Object.keys(errors).length > 0} className="gradient-primary shadow-elegant font-heading">
+                <Button type="submit" disabled={loading || Object.keys(errors).length > 0} className="shadow-elegant font-heading">
                   {loading ? 'Creando...' : 'Crear Tarea'}
                 </Button>
               </DialogFooter>
@@ -751,7 +751,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-heading">
                 Cancelar
               </Button>
-              <Button onClick={handleSubmit} disabled={loading || Object.keys(errors).length > 0} className="gradient-primary shadow-elegant font-heading">
+              <Button onClick={handleSubmit} disabled={loading || Object.keys(errors).length > 0} className="shadow-elegant font-heading">
                 {loading ? 'Creando...' : 'Crear Tarea'}
               </Button>
             </DialogFooter>
