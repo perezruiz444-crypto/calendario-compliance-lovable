@@ -4,8 +4,8 @@
   "description": "Sistema de gestión de compliance empresarial",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#6366f1",
+  "background_color": "#F3F3EF",
+  "theme_color": "#111418",
   "orientation": "portrait-primary",
   "icons": [
     {

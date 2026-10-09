@@ -15,9 +15,9 @@ export default {
     },
     extend: {
     fontFamily: {
-        heading: ['Space Grotesk', 'system-ui', 'sans-serif'],
-        body: ['Space Grotesk', 'system-ui', 'sans-serif'],
-        mono: ['DM Mono', 'monospace'],
+        heading: ['IBM Plex Sans Condensed', 'IBM Plex Sans', 'system-ui', 'sans-serif'],
+        body: ['IBM Plex Sans', 'system-ui', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -56,6 +56,10 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        sello: {
+          DEFAULT: "hsl(var(--sello))",
+          foreground: "hsl(var(--sello-foreground))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -74,6 +78,15 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      // Dirección A: sin sombras decorativas. Solo las capas flotantes conservan una sombra corta.
+      boxShadow: {
+        sm: "none",
+        DEFAULT: "none",
+        md: "0 8px 24px -16px hsl(214 17% 8% / 0.25)",
+        lg: "0 12px 28px -18px hsl(214 17% 8% / 0.30)",
+        xl: "0 16px 32px -20px hsl(214 17% 8% / 0.35)",
+        "2xl": "0 24px 48px -24px hsl(214 17% 8% / 0.40)",
       },
       borderRadius: {
         lg: "var(--radius)",
