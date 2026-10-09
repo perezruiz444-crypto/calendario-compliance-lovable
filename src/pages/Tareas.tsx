@@ -1059,7 +1059,7 @@ export default function Tareas() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Card 
             className="gradient-card shadow-card hover:shadow-lg transition-all cursor-pointer group"
             onClick={() => setFilterEstado('pendiente')}

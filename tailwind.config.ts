@@ -1,6 +1,29 @@
 import type { Config } from "tailwindcss";
 import tailwindAnimate from "tailwindcss-animate";
 
+
+// ── Escalas de la marca ─────────────────────────────────────────────────────
+// Dirección A: el código legado usa la paleta cruda de Tailwind (amber-500, blue-100, purple-600…).
+// En vez de editar cada componente, esas escalas se redefinen aquí a partir de cuatro tonos de marca,
+// conservando su semántica (ámbar = atención, verde = vigente, rojo = vencido, azul = informativo).
+// OJO: `amber-500`, `blue-100`, etc. NO son los valores por defecto de Tailwind.
+const mix = (hex: string, target: number, t: number) => {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => Math.round(c + (target - c) * t));
+  return `#${ch.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+};
+const brandScale = (base: string) => ({
+  50: mix(base, 255, 0.92), 100: mix(base, 255, 0.84), 200: mix(base, 255, 0.68),
+  300: mix(base, 255, 0.5), 400: mix(base, 255, 0.25), 500: base,
+  600: mix(base, 0, 0.12), 700: mix(base, 0, 0.28), 800: mix(base, 0, 0.45),
+  900: mix(base, 0, 0.6), 950: mix(base, 0, 0.75),
+});
+const OCRE = brandScale("#B87400");
+const VIGENTE = brandScale("#1F6B45");
+const SELLO = brandScale("#C8361D");
+const ACERO = brandScale("#2F6FA8");
+const CIRUELA = brandScale("#7A4A8C");
+
 export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
@@ -15,11 +38,16 @@ export default {
     },
     extend: {
     fontFamily: {
-        heading: ['Space Grotesk', 'system-ui', 'sans-serif'],
-        body: ['Space Grotesk', 'system-ui', 'sans-serif'],
-        mono: ['DM Mono', 'monospace'],
+        heading: ['IBM Plex Sans Condensed', 'IBM Plex Sans', 'system-ui', 'sans-serif'],
+        body: ['IBM Plex Sans', 'system-ui', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
+        amber: OCRE, orange: OCRE, yellow: OCRE,
+        green: VIGENTE, emerald: VIGENTE, lime: VIGENTE,
+        red: SELLO, rose: SELLO, pink: SELLO,
+        blue: ACERO, sky: ACERO, cyan: ACERO, teal: ACERO, indigo: ACERO,
+        purple: CIRUELA, violet: CIRUELA, fuchsia: CIRUELA,
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -56,6 +84,10 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        sello: {
+          DEFAULT: "hsl(var(--sello))",
+          foreground: "hsl(var(--sello-foreground))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -75,10 +107,24 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      // Dirección A: sin sombras decorativas. Solo las capas flotantes conservan una sombra corta.
+      boxShadow: {
+        sm: "none",
+        DEFAULT: "none",
+        md: "0 8px 24px -16px hsl(214 17% 8% / 0.25)",
+        lg: "0 12px 28px -18px hsl(214 17% 8% / 0.30)",
+        xl: "0 16px 32px -20px hsl(214 17% 8% / 0.35)",
+        "2xl": "0 24px 48px -24px hsl(214 17% 8% / 0.40)",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        // Dirección A: esquinas casi rectas. Los xl/2xl/3xl heredados se normalizan aquí
+        // en lugar de editar cada componente; `full` se conserva para avatares, puntos y switches.
+        xl: "var(--radius)",
+        "2xl": "var(--radius)",
+        "3xl": "var(--radius)",
       },
       keyframes: {
         "accordion-down": {

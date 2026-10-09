@@ -310,7 +310,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
                     type="button"
                     onClick={() => toggleType(t)}
                     title={TYPE_HELP[t]}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-none text-xs font-medium border transition-colors ${
                       active
                         ? 'bg-background border-border shadow-sm'
                         : 'bg-muted/40 border-transparent text-muted-foreground opacity-60 hover:opacity-100'
@@ -401,15 +401,18 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
 
       <style>{`
         .fc { font-family: inherit; }
-        .fc .fc-toolbar-title { font-size: 1.1rem; font-weight: 700; }
+        .fc .fc-toolbar-title { font-family: 'IBM Plex Sans Condensed', sans-serif; font-size: 1.2rem; font-weight: 700; text-transform: uppercase; }
         .fc .fc-button {
           background: hsl(var(--background)) !important;
           border: 1px solid hsl(var(--border)) !important;
           color: hsl(var(--muted-foreground)) !important;
-          border-radius: 9999px !important;
+          border-radius: 0 !important;
           padding: 5px 14px !important;
-          font-size: 0.78rem !important;
-          font-weight: 500 !important;
+          font-family: 'IBM Plex Sans Condensed', sans-serif !important;
+          font-size: 0.8rem !important;
+          font-weight: 600 !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.04em !important;
           box-shadow: none !important;
           transition: all 0.15s !important;
         }
@@ -422,19 +425,19 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         .fc .fc-button-group { gap: 3px; }
         .fc .fc-col-header-cell { background: transparent; }
         .fc .fc-col-header-cell-cushion {
-          font-size: 0.68rem; font-weight: 600;
-          text-transform: uppercase; letter-spacing: 0.06em;
+          font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; font-weight: 500;
+          text-transform: uppercase; letter-spacing: 0.08em;
           color: hsl(var(--muted-foreground)); padding: 8px 4px;
         }
         .fc .fc-daygrid-day { background: hsl(var(--card)); }
         .fc .fc-daygrid-day:hover { background: hsl(var(--muted) / 0.4); }
-        .fc .fc-daygrid-day.fc-day-today { background: hsl(var(--primary) / 0.05); }
+        .fc .fc-daygrid-day.fc-day-today { background: hsl(var(--sello) / 0.06); }
         .fc .fc-daygrid-day-number { font-size: 0.78rem; color: hsl(var(--foreground)); font-weight: 500; padding: 4px 6px; }
-        .fc .fc-day-today .fc-daygrid-day-number { color: hsl(var(--primary)); font-weight: 700; }
+        .fc .fc-day-today .fc-daygrid-day-number { background: hsl(var(--sello)); color: hsl(var(--sello-foreground)); font-weight: 700; }
         .fc td, .fc th { border-color: hsl(var(--border) / 0.5) !important; }
         .fc .fc-scrollgrid { border-color: hsl(var(--border) / 0.5) !important; border-radius: var(--radius); overflow: hidden; }
-        .fc-event { border-radius: 5px !important; border-left-width: 3px !important; cursor: pointer !important; }
-        .fc-event:hover { opacity: 0.85; transform: translateY(-1px); transition: all 0.1s; }
+        .fc-event { border-radius: 0 !important; border-left-width: 3px !important; cursor: pointer !important; }
+        .fc-event:hover { opacity: 0.85; transition: opacity 0.1s; }
         .fc .fc-list-event:hover td { background: hsl(var(--muted) / 0.4) !important; cursor: pointer; }
         .fc .fc-list-day-cushion { background: hsl(var(--muted) / 0.6) !important; }
         .fc .fc-list-event-dot { border-radius: 50% !important; }

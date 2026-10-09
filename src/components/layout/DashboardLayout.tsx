@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDropdown';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Logo } from '@/components/brand/Logo';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -80,20 +81,10 @@ function SidebarContent({
 
       {/* Brand header */}
       <div className="relative px-5 pt-6 pb-5">
-        <div className="absolute inset-0 opacity-[0.07]"
-          style={{ background: 'radial-gradient(ellipse at top left, hsl(var(--primary)) 0%, transparent 70%)' }} />
-        <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-sidebar-foreground" />
 
-        <div className="flex items-center gap-3 mb-5 relative">
-          <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center shadow-md shrink-0">
-            <Building2 className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div className="min-w-0">
-            <p className="eyebrow text-[9px] mb-0.5">Compliance Suite</p>
-            <p className="font-heading font-bold text-[15px] text-sidebar-foreground leading-tight tracking-tight">
-              Calendario
-            </p>
-          </div>
+        <div className="mb-5 relative text-sidebar-foreground">
+          <Logo tagline="Folio de cumplimiento" />
         </div>
 
         {(role === 'consultor' || role === 'administrador') && (
@@ -143,8 +134,7 @@ function SidebarContent({
               {isActive && (
                 <motion.span
                   layoutId="sidebar-active-indicator"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full"
-                  style={{ background: 'var(--gradient-hero)' }}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-sello"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
@@ -264,12 +254,7 @@ export default function DashboardLayout({ children, currentPage, onReopenTour }:
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur border-b border-border shadow-sm">
         <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
-              <Building2 className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-heading font-bold text-sm">Compliance</span>
-          </div>
+          <Logo variant="inline" className="text-foreground" />
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <NotificationDropdown />

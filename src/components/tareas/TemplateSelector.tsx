@@ -12,8 +12,8 @@ interface TemplateSelectorProps {
 
 const PRIORITY_STYLES: Record<string, string> = {
   alta: 'bg-destructive/10 text-destructive border-destructive/20',
-  media: 'bg-warning/10 text-warning-foreground border-warning/20',
-  baja: 'bg-success/10 text-success-foreground border-success/20',
+  media: 'bg-warning/10 text-warning border-warning/20',
+  baja: 'bg-success/10 text-success border-success/20',
 };
 
 export function TemplateSelector({ onSelect }: TemplateSelectorProps) {

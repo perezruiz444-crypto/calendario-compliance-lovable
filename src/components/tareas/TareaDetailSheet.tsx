@@ -30,14 +30,14 @@ interface TareaDetailSheetProps {
 
 const PRIORIDADES = [
   { value: 'alta', label: 'Alta', color: 'bg-destructive/15 text-destructive border-destructive/30' },
-  { value: 'media', label: 'Media', color: 'bg-warning/15 text-warning-foreground border-warning/30' },
-  { value: 'baja', label: 'Baja', color: 'bg-success/15 text-success-foreground border-success/30' },
+  { value: 'media', label: 'Media', color: 'bg-warning/15 text-warning border-warning/30' },
+  { value: 'baja', label: 'Baja', color: 'bg-success/15 text-success border-success/30' },
 ];
 
 const ESTADOS = [
   { value: 'pendiente', label: 'Pendiente', color: 'bg-muted text-muted-foreground' },
   { value: 'en_progreso', label: 'En Progreso', color: 'bg-primary/15 text-primary' },
-  { value: 'completada', label: 'Completada', color: 'bg-success/15 text-success-foreground' },
+  { value: 'completada', label: 'Completada', color: 'bg-success/15 text-success' },
   { value: 'cancelada', label: 'Cancelada', color: 'bg-destructive/15 text-destructive' },
 ];
 

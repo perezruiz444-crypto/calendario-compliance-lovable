@@ -135,23 +135,23 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         {/* Header with gradient */}
-        <div className="bg-gradient-to-br from-[hsl(210,100%,20%)] to-[hsl(210,100%,30%)] px-6 pt-7 pb-5 text-white">
+        <div className="bg-primary text-primary-foreground px-6 pt-7 pb-5">
           <div className="flex items-center gap-3 mb-3">
-            <div className="bg-white/15 p-2.5 rounded-xl">
+            <div className="border border-primary-foreground/30 p-2.5 rounded-none">
               <MessageSquareHeart className="w-6 h-6" />
             </div>
             <div>
               <DialogHeader className="space-y-0 text-left">
-                <DialogTitle className="font-heading text-xl font-bold text-white">
+                <DialogTitle className="font-heading text-xl font-bold uppercase text-primary-foreground">
                   Tu opinión vale mucho
                 </DialogTitle>
-                <p className="text-white/75 font-body text-sm mt-0.5">
+                <p className="text-primary-foreground/75 font-body text-sm mt-0.5">
                   5 preguntas rápidas de tu experiencia real
                 </p>
               </DialogHeader>
             </div>
           </div>
-          <DialogDescription className="text-white/80 font-body text-sm flex items-center gap-1.5">
+          <DialogDescription className="text-primary-foreground/80 font-body text-sm flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
             Solo te tomará 1-2 minutos · Tu opinión es 100% confidencial
           </DialogDescription>
@@ -163,7 +163,7 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
                 <div
                   className={cn(
                     'h-1.5 w-full rounded-full transition-all duration-300',
-                    i <= step ? 'bg-white' : 'bg-white/25'
+                    i <= step ? 'bg-primary-foreground' : 'bg-primary-foreground/25'
                   )}
                 />
                 <span className={cn(
@@ -331,7 +331,7 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
                 size="sm"
                 onClick={handleSubmit}
                 disabled={!canProceed() || loading}
-                className="gap-1.5 font-heading bg-gradient-to-r from-primary to-[hsl(210,100%,30%)]"
+                className="gap-1.5 font-heading"
               >
                 {loading ? (
                   <>
