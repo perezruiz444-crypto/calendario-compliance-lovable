@@ -1,6 +1,11 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+/** jspdf-autotable deja la posición de la última tabla en `doc.lastAutoTable`, sin tipar en jsPDF. */
+const finalYDeUltimaTabla = (doc: jsPDF): number =>
+  (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+
+
 // ─── Brand colors (Russell Bedford Navy) ──────────────────────────────
 const C = {
   navy:        [15,  40,  80]  as [number,number,number],
@@ -419,7 +424,7 @@ export async function generateReportPDF(
       });
     }
 
-    y = (doc as any).lastAutoTable.finalY + 8;
+    y = finalYDeUltimaTabla(doc) + 8;
   }
 
   // ── OBLIGACIONES PENDIENTES ────────────────────────────────────────
@@ -448,7 +453,7 @@ export async function generateReportPDF(
       ...tableStyles(C.red),
       alternateRowStyles: { fillColor: C.redLight },
     });
-    y = (doc as any).lastAutoTable.finalY + 8;
+    y = finalYDeUltimaTabla(doc) + 8;
   }
 
   // ── CERTIFICACIONES ────────────────────────────────────────────────
@@ -484,7 +489,7 @@ export async function generateReportPDF(
         }
       },
     });
-    y = (doc as any).lastAutoTable.finalY + 8;
+    y = finalYDeUltimaTabla(doc) + 8;
   }
 
   // ── DETALLE DE TAREAS (landscape) ─────────────────────────────────
@@ -540,7 +545,7 @@ export async function generateReportPDF(
       },
     });
 
-    const finalY = (doc as any).lastAutoTable.finalY;
+    const finalY = finalYDeUltimaTabla(doc);
     doc.setFontSize(7.5);
     doc.setTextColor(...C.gray);
     doc.text(`${tareas.length} tareas en total`, 10, finalY + 5);
@@ -706,7 +711,7 @@ function drawCategoryObligacionesTable(
       }
     },
   });
-  return (doc as any).lastAutoTable.finalY + 8;
+  return finalYDeUltimaTabla(doc) + 8;
 }
 
 function drawVencimientosRoadmap(
@@ -1018,7 +1023,7 @@ export async function generateCumplimientoMensualPDF(data: CumplimientoMensualDa
         }
       },
     });
-    y = (doc as any).lastAutoTable.finalY + 10;
+    y = finalYDeUltimaTabla(doc) + 10;
   }
 
   // ── DETALLE POR CATEGORÍA ─────────────────────────────────────────
@@ -1058,7 +1063,7 @@ export async function generateCumplimientoMensualPDF(data: CumplimientoMensualDa
         }
       },
     });
-    y = (doc as any).lastAutoTable.finalY + 10;
+    y = finalYDeUltimaTabla(doc) + 10;
   }
 
   // ── SECCIÓN DE FIRMAS ─────────────────────────────────────────────
@@ -1225,7 +1230,7 @@ export function generateObligacionesPDF(
     },
   });
 
-  const finalY = (doc as any).lastAutoTable.finalY;
+  const finalY = finalYDeUltimaTabla(doc);
   doc.setFontSize(7.5);
   doc.setTextColor(...C.gray);
   doc.text(

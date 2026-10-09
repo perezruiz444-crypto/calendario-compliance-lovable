@@ -104,11 +104,11 @@ export function UserNotificationPreferences() {
       if (prefsError) throw prefsError;
 
       const prefsMap: Record<string, NotificationPreference> = {};
-      (prefsData || []).forEach((pref: any) => {
+      (prefsData || []).forEach((pref) => {
         prefsMap[pref.notification_key] = {
           notification_key: pref.notification_key,
-          email_enabled: pref.email_enabled,
-          push_enabled: pref.push_enabled
+          email_enabled: pref.email_enabled !== false,
+          push_enabled: pref.push_enabled !== false
         };
       });
       setPreferences(prefsMap);

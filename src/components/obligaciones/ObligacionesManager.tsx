@@ -26,10 +26,10 @@ import {
 import {
   CATEGORIA_LABELS, CATEGORIA_COLORS,
   getCurrentPeriodKey, getPeriodLabel, formatDateShort, getVencimientoInfo, programaToCategoria,
-  isRecurring,
-} from '@/lib/obligaciones';
+  isRecurring, ocurrenciasCumplidas } from '@/lib/obligaciones';
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
 import { logger } from '@/lib/logger';
+import type { Obligacion } from '@/types/domain';
 
 interface Props {
   empresaId: string;
@@ -54,7 +54,7 @@ function getVencimientoBadge(fecha: string | null) {
 
 export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const { user } = useAuth();
-  const [obligaciones, setObligaciones] = useState<any[]>([]);
+  const [obligaciones, setObligaciones] = useState<Obligacion[]>([]);
   const [cumplimientoKeys, setCumplimientoKeys] = useState<Set<string>>(new Set());
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
   // Fase 2: próxima ocurrencia pendiente (o la más próxima) por obligación_id.
@@ -94,7 +94,7 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     setLoading(false);
   };
 
-  const fetchCumplimientos = async (obs: any[]) => {
+  const fetchCumplimientos = async (obs: Obligacion[]) => {
     const obIds = obs.map(ob => ob.id);
     if (obIds.length === 0) { setCumplimientos({}); setProximaOcurrencia({}); return; }
 
@@ -107,20 +107,20 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     const ocs = ocData || [];
 
     // Cumplimientos vigentes -> set de ocurrencias cumplidas.
-    const ocIds = ocs.map((o: any) => o.id);
+    const ocIds = ocs.map((o) => o.id);
     let cumplidas = new Set<string>();
     if (ocIds.length > 0) {
       const { data: cData } = await supabase
         .from('obligacion_cumplimientos')
         .select('ocurrencia_id, completada, vigente')
         .in('ocurrencia_id', ocIds);
-      cumplidas = new Set((cData || []).filter((c: any) => c.vigente && c.completada && c.ocurrencia_id).map((c: any) => c.ocurrencia_id));
+      cumplidas = ocurrenciasCumplidas(cData);
     }
 
     // Map cumplimientos por ocurrencia_id + próxima ocurrencia pendiente por obligación.
     const cMap: Record<string, boolean> = {};
     const proxMap: Record<string, { id: string; periodo_key: string; fecha_vencimiento: string }> = {};
-    ocs.forEach((oc: any) => {
+    ocs.forEach((oc) => {
       cMap[oc.id] = cumplidas.has(oc.id);
       if (!proxMap[oc.obligacion_id]) {
         // primera pendiente; si todas cumplidas, la primera (ya ordenadas por fecha)
@@ -150,7 +150,7 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
         .in('obligacion_id', obIds);
       if (!data || data.length === 0) {
         // Fallback: check legacy responsable_id
-        const legacyIds = obligaciones.filter(o => o.responsable_id).map(o => o.responsable_id);
+        const legacyIds = obligaciones.flatMap(o => (o.responsable_id ? [o.responsable_id] : []));
         if (legacyIds.length > 0) {
           const { data: pData } = await supabase.from('profiles').select('id, nombre_completo').in('id', [...new Set(legacyIds)]);
           if (pData) {
@@ -302,7 +302,7 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     fetchObligaciones();
   };
 
-  const openEdit = (ob: any) => {
+  const openEdit = (ob: Obligacion) => {
     setEditData({
       id: ob.id, categoria: ob.categoria, nombre: ob.nombre,
       descripcion: ob.descripcion || '', articulos: ob.articulos || '',

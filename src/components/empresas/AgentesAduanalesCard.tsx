@@ -7,10 +7,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Hash, Plus, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
+import type { AgenteAduanal } from '@/types/domain';
 
 interface AgentesAduanalesCardProps {
   empresaId: string;
-  agentes: any[];
+  agentes: AgenteAduanal[];
   canEdit: boolean;
   onUpdate: () => void;
 }
@@ -21,7 +22,7 @@ export function AgentesAduanalesCard({ empresaId, agentes, canEdit, onUpdate }: 
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ nombre_agente: '', numero_patente: '', estado: '' });
 
-  const startEdit = (agente: any) => {
+  const startEdit = (agente: AgenteAduanal) => {
     setEditingId(agente.id);
     setForm({ nombre_agente: agente.nombre_agente, numero_patente: agente.numero_patente, estado: agente.estado || '' });
   };

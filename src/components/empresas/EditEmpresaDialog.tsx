@@ -14,6 +14,7 @@ import EmpresaFormPadronImportadores from './EmpresaFormPadronImportadores';
 import EmpresaFormAgentesAduanales from './EmpresaFormAgentesAduanales';
 import { logger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/errors';
+import type { EmpresaFormData } from '@/types/domain';
 interface EditEmpresaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -23,7 +24,7 @@ interface EditEmpresaDialogProps {
 
 export default function EditEmpresaDialog({ open, onOpenChange, onEmpresaUpdated, empresaId }: EditEmpresaDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<EmpresaFormData>({});
   const [activeTab, setActiveTab] = useState('general');
 
   useEffect(() => {

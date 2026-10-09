@@ -109,3 +109,49 @@ export type TareaDependencia = {
   tipo: string | null;
   tareas: TareaResumen | null;
 };
+
+/**
+ * Ocurrencia de una obligación aplanada con los datos de su obligación padre, para listas y tarjetas.
+ * Su `id` es el `ocurrencia_id`; `obligacion_id` apunta a la obligación padre (asignaciones, historial).
+ */
+export interface ObligacionVista {
+  id: string;
+  obligacion_id: string;
+  periodo_key: string;
+  fecha_vencimiento: string;
+  estado_ocurrencia: string;
+  nombre: string;
+  categoria: string;
+  presentacion: string | null;
+  descripcion: string | null;
+  responsable_id: string | null;
+  responsable_tipo: string | null;
+}
+
+/** Estado de tarea según la base (`estado_tarea`). */
+export type EstadoTarea = Database['public']['Enums']['estado_tarea'];
+
+/** Obligación con su empresa (`select('*, empresas(id, razon_social)')`). */
+export type ObligacionDetalle = Obligacion & { empresas?: EmpresaResumen | null };
+
+/** Cumplimiento con el nombre de quien lo registró. */
+export type CumplimientoConPerfil = ObligacionCumplimiento & {
+  profiles?: { nombre_completo: string } | null;
+};
+
+/** Datos del formulario de empresa: la fila de `empresas`, parcial mientras se captura. */
+export type EmpresaFormData = Partial<Empresa>;
+
+/** Campos de `empresas` que guardan una fecha (string | null), p. ej. para los selectores de fecha. */
+export type CampoFecha = { [K in keyof Empresa]: Empresa[K] extends string | null ? K : never }[keyof Empresa];
+
+/** Obligación con la razón social de su empresa (`select('*, empresas(razon_social)')`). */
+export type ObligacionConEmpresa = Obligacion & { empresas?: { razon_social: string } | null };
+
+/** Tarea del listado: fila + joins + perfil del consultor ya unido; adjuntos validados. */
+export type TareaListado = Omit<Tarea, 'archivos_adjuntos'> & {
+  archivos_adjuntos: TareaAdjunto[] | null;
+  empresas?: { razon_social: string } | null;
+  categorias_tareas?: { nombre: string; color: string | null } | null;
+  consultor_profile?: ConsultorResumen | null;
+};

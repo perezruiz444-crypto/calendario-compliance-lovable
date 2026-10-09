@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
+import { getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS, ocurrenciasCumplidas } from '@/lib/obligaciones';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { logger } from '@/lib/logger';
@@ -39,7 +39,7 @@ export function CumplimientoResumenEmpresa({ empresaId }: Props) {
           .select('ocurrencia_id, completada, vigente')
           .eq('empresa_id', empresaId)
           .in('ocurrencia_id', ocs.map(o => o.id));
-        done = new Set((cData || []).filter((c: any) => c.vigente && c.completada && c.ocurrencia_id).map((c: any) => c.ocurrencia_id));
+        done = ocurrenciasCumplidas(cData);
       }
 
       if (active) { setOcurrencias(ocs); setCumplidas(done); setLoading(false); }

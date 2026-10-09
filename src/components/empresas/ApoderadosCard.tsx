@@ -8,10 +8,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Users, Plus, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
+import type { ApoderadoLegal } from '@/types/domain';
 
 interface ApoderadosCardProps {
   empresaId: string;
-  apoderados: any[];
+  apoderados: ApoderadoLegal[];
   canEdit: boolean;
   onUpdate: () => void;
 }
@@ -24,7 +25,7 @@ export function ApoderadosCard({ empresaId, apoderados, canEdit, onUpdate }: Apo
     nombre: '', tipo_apoderado: '', poder_notarial_instrumento: '', poder_notarial_libro: '', poder_notarial_anio: '',
   });
 
-  const startEdit = (a: any) => {
+  const startEdit = (a: ApoderadoLegal) => {
     setEditingId(a.id);
     setForm({
       nombre: a.nombre,

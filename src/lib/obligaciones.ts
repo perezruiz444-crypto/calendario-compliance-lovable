@@ -214,3 +214,15 @@ export function getPeriodKeyForDate(date: Date, presentacion: string | null): st
 export function isRecurring(presentacion: string | null): boolean {
   return !!presentacion && presentacion.toLowerCase() !== 'unica';
 }
+
+
+/** Ids de las ocurrencias con un cumplimiento vigente y completado. */
+export function ocurrenciasCumplidas(
+  cumplimientos: ReadonlyArray<{ ocurrencia_id: string | null; completada: boolean | null; vigente: boolean | null }> | null | undefined,
+): Set<string> {
+  const ids = new Set<string>();
+  for (const c of cumplimientos ?? []) {
+    if (c.vigente && c.completada && c.ocurrencia_id) ids.add(c.ocurrencia_id);
+  }
+  return ids;
+}

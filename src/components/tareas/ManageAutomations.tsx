@@ -282,7 +282,7 @@ export function ManageAutomations() {
                         {rule.acciones && Array.isArray(rule.acciones) && rule.acciones.length > 0 && (
                           <Badge variant="outline" className="font-normal">
                             <Zap className="w-3 h-3 mr-1" />
-                            {rule.acciones.map((a: any) => a.tipo).join(', ')}
+                            {rule.acciones.map((a) => a.tipo).join(', ')}
                           </Badge>
                         )}
                       </div>

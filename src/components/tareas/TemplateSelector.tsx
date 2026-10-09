@@ -44,7 +44,7 @@ export function TemplateSelector({ onSelect }: TemplateSelectorProps) {
     }
   };
 
-  const handleSelect = async (template: any) => {
+  const handleSelect = async (template: TareaTemplate) => {
     setSelectedId(template.id);
     onSelect(template);
 

@@ -8,15 +8,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import type { EmpresaFormData } from '@/types/domain';
 
 interface EmpresaFormPROSECProps {
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: EmpresaFormData;
+  setFormData: (data: EmpresaFormData) => void;
 }
 
 export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaFormPROSECProps) {
   const [newSector, setNewSector] = useState('');
-  const sectores = Array.isArray(formData.prosec_sectores) ? formData.prosec_sectores : [];
+  const sectores: string[] = Array.isArray(formData.prosec_sectores) ? formData.prosec_sectores.map(String) : [];
 
   const addSector = () => {
     if (newSector.trim()) {
@@ -27,7 +28,7 @@ export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaForm
   };
 
   const removeSector = (index: number) => {
-    const updatedSectores = sectores.filter((_: any, i: number) => i !== index);
+    const updatedSectores = sectores.filter((_, i) => i !== index);
     setFormData({ ...formData, prosec_sectores: updatedSectores });
   };
 

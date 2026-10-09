@@ -57,7 +57,7 @@ export default function MisVencimientos({ empresaId, onSubirEvidencia, refreshKe
           .select('obligacion_id, periodo_key')
           .in('obligacion_id', ids);
         const map: Record<string, boolean> = {};
-        (cData || []).forEach((c: any) => {
+        (cData || []).forEach((c) => {
           map[`${c.obligacion_id}:${c.periodo_key}`] = true;
         });
         setCumplimientos(map);

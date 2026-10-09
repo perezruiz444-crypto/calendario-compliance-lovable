@@ -384,11 +384,12 @@ export default function Dashboard() {
         <DashboardCalendar
           height="500px"
           onEventClick={(event) => {
-            if (event.resource.type === 'tarea') {
-              setSelectedTareaId(event.resource.data.id);
+            const { type, data } = event.resource;
+            if (type === 'tarea' && data) {
+              setSelectedTareaId(data.id);
               setDetailSheetOpen(true);
-            } else if (event.resource.type === 'documento') {
-              navigate(`/empresas/${event.resource.data.empresa_id}`);
+            } else if (type === 'documento' && data) {
+              navigate(`/empresas/${data.empresa_id}`);
             }
           }}
         />

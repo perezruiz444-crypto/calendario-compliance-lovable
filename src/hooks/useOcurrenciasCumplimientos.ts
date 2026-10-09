@@ -61,7 +61,7 @@ export function useOcurrenciasCumplimientos(empresaId: string | null) {
         .in('ocurrencia_id', ocIds);
 
       const map: Record<string, boolean> = {};
-      (cData || []).forEach((c: any) => {
+      (cData || []).forEach((c) => {
         if (c.vigente && c.ocurrencia_id) map[c.ocurrencia_id] = c.completada;
       });
       setCumplimientos(map);

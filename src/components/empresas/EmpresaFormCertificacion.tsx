@@ -7,14 +7,16 @@ import { Button } from '@/components/ui/button';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import type { EmpresaFormData } from '@/types/domain';
+import type { CampoFecha } from '@/types/domain';
 
 interface EmpresaFormCertificacionProps {
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: EmpresaFormData;
+  setFormData: (data: EmpresaFormData) => void;
 }
 
 export default function EmpresaFormCertificacion({ formData, setFormData }: EmpresaFormCertificacionProps) {
-  const renderDatePicker = (field: string, label: string) => (
+  const renderDatePicker = (field: CampoFecha, label: string) => (
     <div className="space-y-2">
       <Label className="font-heading">{label}</Label>
       <Popover>

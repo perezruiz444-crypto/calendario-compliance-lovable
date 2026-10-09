@@ -10,12 +10,13 @@ import { Badge } from '@/components/ui/badge';
 import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationItem } from './NotificationItem';
 import { useNavigate } from 'react-router-dom';
+import type { Notification } from '@/hooks/useNotifications';
 
 export function NotificationDropdown() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
   const navigate = useNavigate();
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: Notification) => {
     if (notification.referencia_tipo === 'tarea') {
       navigate('/tareas');
     } else if (notification.referencia_tipo === 'mensaje') {

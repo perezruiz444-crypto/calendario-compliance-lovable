@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Plus, Trash2, BookOpen, Pencil, X, Check, Eye, EyeOff, AlertTriangle, Activity } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CATEGORIA_COLORS, PROGRAMA_LABELS } from '@/lib/obligaciones';
+import type { TablesInsert } from '@/integrations/supabase/types';
 
 const PERIODICIDADES_COMUNES = [
   'mensual', 'bimestral', 'trimestral', 'semestral', 'anual', 'única',
@@ -30,6 +31,11 @@ const FRECUENCIA_OPTIONS: { value: FrecuenciaTipo; label: string; ocurrencias: n
   { value: 'ULTIMO_DIA_MES', label: 'Último día de cada mes',     ocurrencias: 12 },
   { value: 'EVENTUAL',       label: 'Eventual / sin recurrencia', ocurrencias: 0  },
 ];
+
+/** La BD guarda `frecuencia_tipo` como texto libre: solo se aceptan los valores conocidos. */
+const toFrecuencia = (value: string | null): FrecuenciaTipo | null =>
+  FRECUENCIA_OPTIONS.find((opt) => opt.value === value)?.value ?? null;
+
 
 const MESES_NOMBRES = [
   'enero','febrero','marzo','abril','mayo','junio',
@@ -172,14 +178,14 @@ export function CatalogoAdmin() {
       .eq('activa', true)
       .gte('fecha_vencimiento', `${anio}-01-01`)
       .lte('fecha_vencimiento', `${anio}-12-31`);
-    const coverageData: CatalogoCoverage[] = cats.map((cat: any) => {
-      const filas = (obligs || []).filter((o: any) => o.catalogo_id === cat.id);
-      const empresasSet = new Set(filas.map((o: any) => o.empresa_id));
+    const coverageData: CatalogoCoverage[] = cats.map((cat) => {
+      const filas = (obligs || []).filter((o) => o.catalogo_id === cat.id);
+      const empresasSet = new Set(filas.map((o) => o.empresa_id));
       return {
         id: cat.id,
         nombre: cat.nombre,
         programa: cat.programa,
-        frecuencia_tipo: cat.frecuencia_tipo,
+        frecuencia_tipo: toFrecuencia(cat.frecuencia_tipo),
         presentacion: cat.presentacion,
         empresas_activas: empresasSet.size,
         ocurrencias_anio: filas.length,
@@ -222,7 +228,7 @@ export function CatalogoAdmin() {
         'El texto de presentación menciona un mes específico. Considera cambiar la frecuencia a "Anual" para que solo genere una fecha al año.'
       );
     }
-    const payload = {
+    const payload: TablesInsert<'obligaciones_catalogo'> = {
       programa:        form.programa,
       categoria:       form.programa,
       nombre:          form.nombre.trim(),
@@ -237,11 +243,11 @@ export function CatalogoAdmin() {
       mes_vencimiento: form.frecuencia_tipo === 'ANUAL' ? mes : null,
     };
     if (editId) {
-      const { error } = await supabase.from('obligaciones_catalogo').update(payload as any).eq('id', editId);
+      const { error } = await supabase.from('obligaciones_catalogo').update(payload).eq('id', editId);
       if (error) { toast.error('Error al actualizar: ' + error.message); setSaving(false); return; }
       toast.success('Obligación actualizada');
     } else {
-      const { error } = await supabase.from('obligaciones_catalogo').insert(payload as any);
+      const { error } = await supabase.from('obligaciones_catalogo').insert(payload);
       if (error) { toast.error('Error al crear: ' + error.message); setSaving(false); return; }
       toast.success('Obligación agregada al catálogo');
     }
@@ -275,7 +281,7 @@ export function CatalogoAdmin() {
     const nuevoEstado = !item.activo;
     const { error } = await supabase
       .from('obligaciones_catalogo')
-      .update({ activo: nuevoEstado } as any)
+      .update({ activo: nuevoEstado })
       .eq('id', item.id);
     if (error) { toast.error('Error al actualizar estado'); return; }
     toast.success(nuevoEstado ? 'Obligación reactivada' : 'Obligación desactivada');

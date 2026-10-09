@@ -10,8 +10,7 @@ import { ObligacionFormDialog } from '@/components/obligaciones/ObligacionFormDi
 import {
   CATEGORIA_LABELS, CATEGORIA_COLORS,
   getCurrentPeriodKey, getPeriodLabel,
-  formatDateShort, getVencimientoInfo,
-} from '@/lib/obligaciones';
+  formatDateShort, getVencimientoInfo, ocurrenciasCumplidas } from '@/lib/obligaciones';
 import {
   FileText, Pencil, CheckCircle2, Clock, AlertTriangle, ShieldAlert,
   ToggleLeft, ToggleRight, Loader2,
@@ -77,18 +76,18 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
           .in('obligacion_id', obIds)
           .order('fecha_vencimiento', { ascending: true });
         const ocs = ocData || [];
-        const ocIds = ocs.map((o: any) => o.id);
+        const ocIds = ocs.map((o) => o.id);
         let cumplidas = new Set<string>();
         if (ocIds.length > 0) {
           const { data: cData } = await supabase
             .from('obligacion_cumplimientos')
             .select('ocurrencia_id, completada, vigente')
             .in('ocurrencia_id', ocIds);
-          cumplidas = new Set((cData || []).filter((c: any) => c.vigente && c.completada && c.ocurrencia_id).map((c: any) => c.ocurrencia_id));
+          cumplidas = ocurrenciasCumplidas(cData);
         }
         const cMap: Record<string, boolean> = {};
         const proxMap: Record<string, { id: string; periodo_key: string; fecha_vencimiento: string }> = {};
-        ocs.forEach((oc: any) => {
+        ocs.forEach((oc) => {
           cMap[oc.id] = cumplidas.has(oc.id);
           if (!proxMap[oc.obligacion_id]) {
             proxMap[oc.obligacion_id] = { id: oc.id, periodo_key: oc.periodo_key, fecha_vencimiento: oc.fecha_vencimiento };

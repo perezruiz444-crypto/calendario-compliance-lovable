@@ -21,8 +21,8 @@ interface Consultor {
 }
 
 interface ConsultorAsignado extends Consultor {
-  asignado_por: string;
-  created_at: string;
+  asignado_por: string | null;
+  created_at: string | null;
 }
 
 export default function ManageConsultoresDialog({
@@ -72,8 +72,8 @@ export default function ManageConsultoresDialog({
 
       if (asignacionesError) throw asignacionesError;
 
-      const asignados = asignacionesData?.map((a: any) => {
-        const consultor = consultoresList.find((c: any) => c.id === a.consultor_id);
+      const asignados = asignacionesData?.map((a) => {
+        const consultor = consultoresList.find((c) => c.id === a.consultor_id);
         return {
           id: a.consultor_id,
           nombre_completo: consultor?.nombre_completo || 'Desconocido',
@@ -86,7 +86,7 @@ export default function ManageConsultoresDialog({
       
       // Filter out already assigned consultores
       const disponibles = consultoresList.filter(
-        (c: any) => !asignados.some(a => a.id === c.id)
+        (c) => !asignados.some(a => a.id === c.id)
       );
       setConsultores(disponibles);
 
@@ -230,7 +230,7 @@ export default function ManageConsultoresDialog({
                       <div className="flex-1">
                         <p className="font-heading font-medium">{consultor.nombre_completo}</p>
                         <Badge variant="outline" className="mt-1">
-                          Asignado: {new Date(consultor.created_at).toLocaleDateString('es-MX')}
+                          Asignado: {consultor.created_at ? new Date(consultor.created_at).toLocaleDateString('es-MX') : '—'}
                         </Badge>
                       </div>
                       <Button

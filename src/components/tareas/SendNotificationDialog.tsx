@@ -21,10 +21,12 @@ interface SendNotificationDialogProps {
   consultorId?: string;
 }
 
+type NotificationType = 'reminder' | 'assignment' | 'overdue';
+
 export default function SendNotificationDialog({ tareaId, consultorId }: SendNotificationDialogProps) {
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
-  const [notificationType, setNotificationType] = useState<'reminder' | 'assignment' | 'overdue'>('reminder');
+  const [notificationType, setNotificationType] = useState<NotificationType>('reminder');
 
   const handleSendNotification = async () => {
     try {
@@ -75,7 +77,7 @@ export default function SendNotificationDialog({ tareaId, consultorId }: SendNot
             <label className="text-sm font-heading font-medium mb-2 block">
               Tipo de Notificación
             </label>
-            <Select value={notificationType} onValueChange={(value: any) => setNotificationType(value)}>
+            <Select value={notificationType} onValueChange={(value) => setNotificationType(value as NotificationType)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

@@ -15,6 +15,7 @@ import {
   getVencimientoInfo, formatDateShort,
 } from '@/lib/obligaciones';
 import { differenceInDays, isPast, isValid } from 'date-fns';
+import type { ObligacionConEmpresa } from '@/types/domain';
 
 type UrgencyLevel = 'vencida' | 'semana' | 'mes' | 'ok';
 
@@ -95,7 +96,7 @@ function SummaryCard({
   );
 }
 
-function ObRow({ ob, isCumplida, onClick }: { ob: any; isCumplida: boolean; onClick: () => void }) {
+function ObRow({ ob, isCumplida, onClick }: { ob: ObligacionConEmpresa; isCumplida: boolean; onClick: () => void }) {
   const urgency = getUrgency(ob.fecha_vencimiento, isCumplida);
   const accentColor =
     urgency === 'vencida' ? 'hsl(var(--destructive))' :
@@ -159,7 +160,7 @@ export default function DashboardObligaciones() {
   const { user, role } = useAuth();
   const navigate = useNavigate();
   const { selectedEmpresaId } = useEmpresaContext();
-  const [obligaciones, setObligaciones] = useState<any[]>([]);
+  const [obligaciones, setObligaciones] = useState<ObligacionConEmpresa[]>([]);
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
@@ -234,7 +235,7 @@ export default function DashboardObligaciones() {
     return classified;
   })();
 
-  const handleObClick = (ob: any) => {
+  const handleObClick = (ob: ObligacionConEmpresa) => {
     navigate(`/empresas/${ob.empresa_id}`);
   };
 
