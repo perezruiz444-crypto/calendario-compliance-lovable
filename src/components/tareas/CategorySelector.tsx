@@ -28,6 +28,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { BRAND_CATEGORY_COLORS, DEFAULT_CATEGORY_COLOR } from '@/lib/brandColors';
 
 interface CategorySelectorProps {
   value: string;
@@ -49,7 +50,7 @@ export function CategorySelector({ value, onValueChange }: CategorySelectorProps
   const [newCategory, setNewCategory] = useState({
     nombre: '',
     descripcion: '',
-    color: '#6366f1'
+    color: DEFAULT_CATEGORY_COLOR
   });
   const [creating, setCreating] = useState(false);
 
@@ -106,7 +107,7 @@ export function CategorySelector({ value, onValueChange }: CategorySelectorProps
       setCategories([...categories, data]);
       onValueChange(data.id);
       setDialogOpen(false);
-      setNewCategory({ nombre: '', descripcion: '', color: '#6366f1' });
+      setNewCategory({ nombre: '', descripcion: '', color: DEFAULT_CATEGORY_COLOR });
       fetchCategories();
     } catch (error: any) {
       toast.error(error.message || 'Error al crear categoría');
@@ -117,16 +118,7 @@ export function CategorySelector({ value, onValueChange }: CategorySelectorProps
 
   const selectedCategory = categories.find(cat => cat.id === value);
 
-  const colorOptions = [
-    { value: '#6366f1', label: 'Azul' },
-    { value: '#ef4444', label: 'Rojo' },
-    { value: '#f59e0b', label: 'Naranja' },
-    { value: '#10b981', label: 'Verde' },
-    { value: '#8b5cf6', label: 'Morado' },
-    { value: '#ec4899', label: 'Rosa' },
-    { value: '#06b6d4', label: 'Cyan' },
-    { value: '#f97316', label: 'Amber' }
-  ];
+  const colorOptions = BRAND_CATEGORY_COLORS;
 
   if (loading) {
     return (

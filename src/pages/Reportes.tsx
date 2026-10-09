@@ -19,6 +19,7 @@ import { generateReportPDF, generateCategoriaReportPDF, generateCumplimientoMens
 import { buildCategoriaReportData, buildCumplimientoMensualData } from '@/lib/reportDataBuilders';
 import { exportToExcel } from '@/lib/excelExport';
 import { logger } from '@/lib/logger';
+import { CATEGORY_CHART_COLORS } from '@/lib/brandColors';
 
 export default function Reportes() {
   const { user, role, loading } = useAuth();
@@ -671,7 +672,7 @@ export default function Reportes() {
     );
   }
 
-  const CATEGORY_COLORS = ['#003366', '#D52B1E', '#2B8B4F', '#E8A800', '#004080', '#7B4F9E', '#C2660D', '#0F7B8A'];
+  const CATEGORY_COLORS = CATEGORY_CHART_COLORS;
 
   const ESTADO_COLORS = {
     'Pendiente': 'hsl(var(--warning))',
@@ -955,7 +956,7 @@ export default function Reportes() {
               </div>
               <div className="mt-4 h-3 bg-muted rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-primary to-success transition-all duration-500" 
+                  className="h-full bg-success transition-all duration-500" 
                   style={{ width: `${reporteData.resumen.tasaCompletitud}%` }}
                 />
               </div>
@@ -1122,7 +1123,7 @@ export default function Reportes() {
                     <YAxis dataKey="name" type="category" style={{ fontSize: '11px' }} width={150} />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="value" name="Tareas" fill="hsl(var(--success))" radius={[0, 8, 8, 0]} />
+                    <Bar dataKey="value" name="Tareas" fill="hsl(var(--success))" radius={[0, 0, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -1274,22 +1275,22 @@ export default function Reportes() {
               return (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {([
-                    { key: 'immex',            label: 'IMMEX',              color: '#00529a', bg: '#e0edff' },
-                    { key: 'prosec',           label: 'PROSEC',             color: '#2e7d32', bg: '#dcf2dc' },
-                    { key: 'cert_iva_ieps',    label: 'Cert. IVA/IEPS',     color: '#7b1fa2', bg: '#f3e5f5' },
-                    { key: 'padron_general',   label: 'Padrón General',     color: '#e65100', bg: '#fff3e0' },
-                    { key: 'padron_sectorial', label: 'Padrón Sectorial',   color: '#00838f', bg: '#e0f7fa' },
-                    { key: 'general',          label: 'OEA / General',      color: '#003366', bg: '#e6eef8' },
-                    { key: 'otro',             label: 'Otras Obligaciones', color: '#37474f', bg: '#eceff1' },
+                    { key: 'immex',            label: 'IMMEX',              color: '#2F6FA8' },
+                    { key: 'prosec',           label: 'PROSEC',             color: '#1F6B45' },
+                    { key: 'cert_iva_ieps',    label: 'Cert. IVA/IEPS',     color: '#7A4A8C' },
+                    { key: 'padron_general',   label: 'Padrón General',     color: '#B87400' },
+                    { key: 'padron_sectorial', label: 'Padrón Sectorial',   color: '#0F7B8A' },
+                    { key: 'general',          label: 'OEA / General',      color: '#8A5A2B' },
+                    { key: 'otro',             label: 'Otras Obligaciones', color: '#5B616B' },
                   ] as const).map(cat => (
                     <div
                       key={cat.key}
-                      className="border rounded-xl p-4 flex flex-col gap-3"
-                      style={{ borderColor: cat.color + '44', background: cat.bg }}
+                      className="border bg-card rounded-xl p-4 flex flex-col gap-3"
+                      style={{ borderColor: cat.color, borderLeftWidth: 4 }}
                     >
                       <div>
                         <span
-                          className="inline-block text-xs font-heading font-bold px-2 py-0.5 rounded-full mb-1"
+                          className="inline-block text-xs font-heading font-bold uppercase tracking-[0.04em] px-2 py-0.5 rounded-none mb-1"
                           style={{ background: cat.color, color: '#fff' }}
                         >
                           {cat.label}

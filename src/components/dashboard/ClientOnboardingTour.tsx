@@ -38,7 +38,7 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
       subtitle: 'Todo listo desde el primer día',
       desc: 'Tu consultor de Russell Bedford ya configuró los programas de tu empresa (IMMEX, PROSEC, IVA/IEPS) y cargó las fechas de vencimiento oficiales. No necesitas configurar nada más.',
       illustration: (
-        <div className="relative w-full h-44 bg-gradient-to-br from-primary/10 to-indigo-500/5 rounded-2xl flex items-center justify-center border border-primary/20 overflow-hidden shadow-inner">
+        <div className="relative w-full h-44 bg-muted rounded-lg flex items-center justify-center border border-primary/20 overflow-hidden shadow-inner">
           <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px]" />
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}
@@ -67,7 +67,7 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
       subtitle: 'Tu estado de cumplimiento de un vistazo',
       desc: 'En lugar de hojas de cálculo, tienes un semáforo. Rojo: actúa hoy. Amarillo: actúa esta semana. Verde: estás al corriente. Así de claro.',
       illustration: (
-        <div className="relative w-full h-44 bg-gradient-to-br from-background to-muted rounded-2xl flex items-center justify-center border border-border/40 overflow-hidden">
+        <div className="relative w-full h-44 bg-muted rounded-lg flex items-center justify-center border border-border/40 overflow-hidden">
           <div className="flex items-center gap-6 relative z-10">
             {/* Rojo */}
             <motion.div 
@@ -115,7 +115,7 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
       subtitle: 'Registrar cumplimiento toma segundos',
       desc: '¿Ya presentaste la obligación? Ábrela en tu lista o calendario y marca el check. Tu cumplimiento queda registrado al instante — sin necesidad de subir archivos.',
       illustration: (
-        <div className="relative w-full h-44 bg-gradient-to-br from-primary/5 to-indigo-500/5 rounded-2xl flex items-center justify-center border border-border/40 overflow-hidden">
+        <div className="relative w-full h-44 bg-muted rounded-lg flex items-center justify-center border border-border/40 overflow-hidden">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -140,7 +140,7 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
       subtitle: 'Tu historial seguro y exportable',
       desc: 'Ante una auditoría del SAT o una revisión interna, tu historial de cumplimiento está listo para exportar. En la sección "Reportes" descarga en PDF o Excel cada obligación registrada con fecha, responsable y estado.',
       illustration: (
-        <div className="relative w-full h-44 bg-gradient-to-br from-background to-muted rounded-2xl flex items-center justify-center border border-border/40 overflow-hidden">
+        <div className="relative w-full h-44 bg-muted rounded-lg flex items-center justify-center border border-border/40 overflow-hidden">
           <div className="flex items-center gap-3 relative z-10">
             <div className="px-4 py-3 rounded-xl bg-card border border-border shadow-sm flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">

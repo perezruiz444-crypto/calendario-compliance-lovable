@@ -91,7 +91,7 @@ function ProgramBadge({ p }: { p: ProgramStatus }) {
 function ComplianceScore({ score, total, pendientes, vencidas }: {
   score: number; total: number; pendientes: number; vencidas: number;
 }) {
-  const color = score >= 80 ? '#16a34a' : score >= 50 ? '#d97706' : '#dc2626';
+  const color = score >= 80 ? 'hsl(var(--success))' : score >= 50 ? 'hsl(var(--warning))' : 'hsl(var(--destructive))';
   const r = 28;
   const circ = 2 * Math.PI * r;
   const dash = (score / 100) * circ;
@@ -286,7 +286,7 @@ export default function EmpresaDetail() {
                   {programs.length > 0 && (
                     <div className="flex gap-1.5 flex-wrap mt-0.5">
                       {programs.map(p => (
-                        <span key={p.label} className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-white/15 text-white/80 border border-white/20">
+                        <span key={p.label} className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-none bg-white/15 text-white/80 border border-white/20">
                           {p.label}
                         </span>
                       ))}

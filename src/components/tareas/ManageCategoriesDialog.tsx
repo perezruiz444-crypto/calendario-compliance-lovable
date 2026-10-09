@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Palette, Tag } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { logger } from '@/lib/logger';
+import { BRAND_CATEGORY_COLORS, DEFAULT_CATEGORY_COLOR } from '@/lib/brandColors';
 
 interface Category {
   id: string;
@@ -32,19 +33,10 @@ export default function ManageCategoriesDialog({ open, onOpenChange, onCategoryC
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
-    color: '#6366f1'
+    color: DEFAULT_CATEGORY_COLOR
   });
 
-  const colorOptions = [
-    { value: '#6366f1', label: 'Índigo' },
-    { value: '#8b5cf6', label: 'Violeta' },
-    { value: '#ec4899', label: 'Rosa' },
-    { value: '#f59e0b', label: 'Ámbar' },
-    { value: '#10b981', label: 'Verde' },
-    { value: '#3b82f6', label: 'Azul' },
-    { value: '#ef4444', label: 'Rojo' },
-    { value: '#14b8a6', label: 'Turquesa' }
-  ];
+  const colorOptions = BRAND_CATEGORY_COLORS;
 
   useEffect(() => {
     if (open) {
@@ -71,7 +63,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange, onCategoryC
     setFormData({
       nombre: '',
       descripcion: '',
-      color: '#6366f1'
+      color: DEFAULT_CATEGORY_COLOR
     });
     setEditingCategory(null);
   };
@@ -81,7 +73,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange, onCategoryC
     setFormData({
       nombre: category.nombre,
       descripcion: category.descripcion || '',
-      color: category.color ?? '#6366f1'
+      color: category.color ?? DEFAULT_CATEGORY_COLOR
     });
   };
 

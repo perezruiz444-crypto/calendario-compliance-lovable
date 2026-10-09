@@ -35,8 +35,8 @@ interface CreateTareaSheetProps {
 
 const PRIORIDADES = [
   { value: 'alta', label: 'Alta', color: 'bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/25' },
-  { value: 'media', label: 'Media', color: 'bg-warning/15 text-warning-foreground border-warning/30 hover:bg-warning/25' },
-  { value: 'baja', label: 'Baja', color: 'bg-success/15 text-success-foreground border-success/30 hover:bg-success/25' },
+  { value: 'media', label: 'Media', color: 'bg-warning/15 text-warning border-warning/30 hover:bg-warning/25' },
+  { value: 'baja', label: 'Baja', color: 'bg-success/15 text-success border-success/30 hover:bg-success/25' },
 ] as const;
 
 const RECURRENCE_PRESETS = [
@@ -494,7 +494,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                   {PRIORIDADES.map(p => (
                     <button key={p.value} type="button"
                       onClick={() => setFormData(prev => ({ ...prev, prioridad: p.value }))}
-                      className={cn('px-3 py-1 rounded-full text-xs font-medium border transition-all',
+                      className={cn('px-3 py-1 rounded-none font-heading uppercase tracking-[0.04em] text-xs font-semibold border transition-colors',
                         formData.prioridad === p.value
                           ? cn(p.color, 'ring-1 ring-offset-1 ring-primary/30')
                           : 'bg-muted/50 text-muted-foreground border-transparent hover:bg-muted'

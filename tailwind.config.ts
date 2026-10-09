@@ -1,6 +1,29 @@
 import type { Config } from "tailwindcss";
 import tailwindAnimate from "tailwindcss-animate";
 
+
+// ── Escalas de la marca ─────────────────────────────────────────────────────
+// Dirección A: el código legado usa la paleta cruda de Tailwind (amber-500, blue-100, purple-600…).
+// En vez de editar cada componente, esas escalas se redefinen aquí a partir de cuatro tonos de marca,
+// conservando su semántica (ámbar = atención, verde = vigente, rojo = vencido, azul = informativo).
+// OJO: `amber-500`, `blue-100`, etc. NO son los valores por defecto de Tailwind.
+const mix = (hex: string, target: number, t: number) => {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => Math.round(c + (target - c) * t));
+  return `#${ch.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+};
+const brandScale = (base: string) => ({
+  50: mix(base, 255, 0.92), 100: mix(base, 255, 0.84), 200: mix(base, 255, 0.68),
+  300: mix(base, 255, 0.5), 400: mix(base, 255, 0.25), 500: base,
+  600: mix(base, 0, 0.12), 700: mix(base, 0, 0.28), 800: mix(base, 0, 0.45),
+  900: mix(base, 0, 0.6), 950: mix(base, 0, 0.75),
+});
+const OCRE = brandScale("#B87400");
+const VIGENTE = brandScale("#1F6B45");
+const SELLO = brandScale("#C8361D");
+const ACERO = brandScale("#2F6FA8");
+const CIRUELA = brandScale("#7A4A8C");
+
 export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
@@ -20,6 +43,11 @@ export default {
         mono: ['IBM Plex Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
+        amber: OCRE, orange: OCRE, yellow: OCRE,
+        green: VIGENTE, emerald: VIGENTE, lime: VIGENTE,
+        red: SELLO, rose: SELLO, pink: SELLO,
+        blue: ACERO, sky: ACERO, cyan: ACERO, teal: ACERO, indigo: ACERO,
+        purple: CIRUELA, violet: CIRUELA, fuchsia: CIRUELA,
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
