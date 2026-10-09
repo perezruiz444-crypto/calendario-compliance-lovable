@@ -26,10 +26,10 @@ export default function DashboardMensajes({ mensajes, totalNoLeidos }: Dashboard
           <p className="eyebrow-primary mb-1.5 flex items-center gap-1.5">
             <Mail className="w-3 h-3" /> Bandeja · Sin leer
           </p>
-          <h3 className="font-heading text-xl font-bold tracking-tight flex items-center gap-2">
+          <h3 className="font-heading text-xl font-bold flex items-center gap-2">
             Mensajes
             {totalNoLeidos > 0 && (
-              <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-warning text-warning-foreground text-[11px] font-bold font-mono">
+              <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-none bg-warning text-warning-foreground text-[11px] font-bold font-mono">
                 {totalNoLeidos}
               </span>
             )}

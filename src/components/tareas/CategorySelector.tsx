@@ -268,7 +268,7 @@ export function CategorySelector({ value, onValueChange }: CategorySelectorProps
                     type="button"
                     onClick={() => setNewCategory({ ...newCategory, color: color.value })}
                     className={cn(
-                      'h-10 rounded-md border-2 transition-all hover:scale-105',
+                      'h-10 rounded-md border-2 transition-colors hover:opacity-80',
                       newCategory.color === color.value
                         ? 'border-foreground ring-2 ring-primary ring-offset-2'
                         : 'border-transparent'

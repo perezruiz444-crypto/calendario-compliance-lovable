@@ -43,7 +43,7 @@ export function PushNotificationPrompt() {
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-none bg-primary/10">
                 <Bell className="h-5 w-5 text-primary" />
               </div>
             </div>

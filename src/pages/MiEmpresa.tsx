@@ -267,18 +267,16 @@ export default function MiEmpresa() {
       <div className="space-y-6">
         
         {/* HERO BANNER */}
-        <div className="relative overflow-hidden rounded-2xl bg-primary text-primary-foreground shadow-elegant">
-          {/* Radial gradient background */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent"></div>
+        <div className="relative overflow-hidden rounded-lg bg-band text-band-foreground">
           
           <div className="relative p-6 sm:p-8 flex flex-col md:flex-row gap-6 items-start md:items-center">
             {/* Avatar */}
-            <div className="flex-shrink-0 w-20 h-20 bg-white/15 rounded-xl flex items-center justify-center text-3xl font-heading font-bold shadow-inner">
+            <div className="flex-shrink-0 w-20 h-20 bg-white/15 flex items-center justify-center text-3xl font-heading font-bold border border-white/30">
               {empresa.razon_social?.substring(0, 2).toUpperCase() || 'EM'}
             </div>
             
             <div className="flex-1 space-y-2">
-              <h1 className="text-3xl sm:text-4xl font-heading font-bold text-white tracking-tight">
+              <h1 className="text-3xl sm:text-4xl font-heading font-bold uppercase text-white">
                 {empresa.razon_social}
               </h1>
               <div className="flex flex-wrap gap-4 text-white/70 font-body text-sm">
@@ -288,10 +286,10 @@ export default function MiEmpresa() {
               
               {/* Program Badges */}
               <div className="flex flex-wrap gap-2 mt-3">
-                {empresa.immex_numero && <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-medium border border-white/10">IMMEX: {empresa.immex_numero}</span>}
-                {empresa.prosec_numero && <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-medium border border-white/10">PROSEC: {empresa.prosec_numero}</span>}
-                {empresa.padron_general_numero && <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-medium border border-white/10">Padrón: {empresa.padron_general_numero}</span>}
-                {empresa.cert_iva_ieps_oficio && <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-medium border border-white/10">Cert IVA/IEPS</span>}
+                {empresa.immex_numero && <span className="px-2.5 py-0.5 rounded-none bg-white/20 text-xs font-medium border border-white/10">IMMEX: {empresa.immex_numero}</span>}
+                {empresa.prosec_numero && <span className="px-2.5 py-0.5 rounded-none bg-white/20 text-xs font-medium border border-white/10">PROSEC: {empresa.prosec_numero}</span>}
+                {empresa.padron_general_numero && <span className="px-2.5 py-0.5 rounded-none bg-white/20 text-xs font-medium border border-white/10">Padrón: {empresa.padron_general_numero}</span>}
+                {empresa.cert_iva_ieps_oficio && <span className="px-2.5 py-0.5 rounded-none bg-white/20 text-xs font-medium border border-white/10">Cert IVA/IEPS</span>}
               </div>
             </div>
           </div>
@@ -307,7 +305,7 @@ export default function MiEmpresa() {
               <span className="text-xs text-white/70 uppercase tracking-wider font-medium mt-1">Pendientes</span>
             </div>
             <div className="p-4 flex flex-col items-center justify-center">
-              <span className="text-3xl font-heading font-bold text-destructive-foreground">{porVencer}</span>
+              <span className={`text-3xl font-heading font-bold ${porVencer > 0 ? 'text-sello' : ''}`}>{porVencer}</span>
               <span className="text-xs text-white/70 uppercase tracking-wider font-medium mt-1">Por Vencer</span>
             </div>
             <div className="p-4 flex flex-col items-center justify-center">

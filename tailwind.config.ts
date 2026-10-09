@@ -84,6 +84,10 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        band: {
+          DEFAULT: "hsl(var(--band))",
+          foreground: "hsl(var(--band-foreground))",
+        },
         sello: {
           DEFAULT: "hsl(var(--sello))",
           foreground: "hsl(var(--sello-foreground))",

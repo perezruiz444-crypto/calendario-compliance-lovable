@@ -147,8 +147,8 @@ export default function EmpresaComplianceSemaforo() {
                   )}
                   <p className="text-xs text-muted-foreground">{e.total - e.pendientes}/{e.total} cumplidas</p>
                 </div>
-                <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden hidden md:block">
-                  <div className={`h-full rounded-full transition-all ${progressColor(e.nivel)}`} style={{ width: `${e.pct}%` }} />
+                <div className="w-20 h-1.5 rounded-none bg-muted overflow-hidden hidden md:block">
+                  <div className={`h-full rounded-none transition-all ${progressColor(e.nivel)}`} style={{ width: `${e.pct}%` }} />
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
               </div>

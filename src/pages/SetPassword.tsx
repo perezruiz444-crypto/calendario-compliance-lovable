@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Lock, ArrowRight, CheckCircle2, Bell, Shield, BarChart3 } from 'lucide-react';
+import { Lock, ArrowRight, CheckCircle2, Bell, Shield, BarChart3 } from 'lucide-react';
 import { z } from 'zod';
+import { Logo } from '@/components/brand/Logo';
 
 const passwordSchema = z.object({
   password: z.string()
@@ -87,44 +88,35 @@ export default function SetPassword() {
 
       {/* Left panel */}
       <div className="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-12"
-        style={{ background: 'hsl(var(--primary))' }}>
-        <div className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: 'radial-gradient(circle at 20% 80%, white 0%, transparent 50%), radial-gradient(circle at 80% 20%, white 0%, transparent 50%)' }} />
-        <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full opacity-5"
-          style={{ background: 'white', transform: 'translate(30%, 30%)' }} />
-        <div className="absolute top-0 left-0 w-48 h-48 rounded-full opacity-5"
-          style={{ background: 'white', transform: 'translate(-30%, -30%)' }} />
+        style={{ background: '#111418' }}>
 
-        <div className="relative flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center border border-white/20">
-            <Building2 className="w-6 h-6 text-white" />
-          </div>
-          <p className="text-white font-bold text-lg font-heading">Calendario Compliance</p>
+        <div className="relative border-t-[3px] border-white pt-5 text-white">
+          <Logo tagline="Folio de cumplimiento · MX" />
         </div>
 
         <div className="relative space-y-6">
           <div>
-            <h1 className="text-4xl font-bold text-white leading-tight font-heading">
-              Cumplimiento de<br />Comercio Exterior<br />
-              <span className="text-white/60">sin complicaciones.</span>
+            <h1 className="display-1 text-white">
+              Todo en su folio.<br />
+              <span className="text-white/70">Todo a tiempo.</span>
             </h1>
-            <p className="text-white/60 text-sm mt-4 leading-relaxed max-w-xs">
+            <p className="text-white/80 text-sm mt-4 leading-relaxed max-w-xs">
               Gestiona todas las obligaciones regulatorias de tus empresas desde un solo lugar.
             </p>
           </div>
           <div className="space-y-3">
             {FEATURES.map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 border border-white/30 flex items-center justify-center shrink-0">
                   <Icon className="w-3.5 h-3.5 text-white/70" />
                 </div>
-                <span className="text-sm text-white/70">{text}</span>
+                <span className="text-sm text-white/85">{text}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="relative text-white/30 text-xs">© {new Date().getFullYear()} Calendario Compliance</p>
+        <p className="relative font-mono text-[11px] uppercase tracking-[0.06em] text-white/50">© {new Date().getFullYear()} Calendario Compliance</p>
       </div>
 
       {/* Right panel */}
@@ -132,27 +124,24 @@ export default function SetPassword() {
         <div className="w-full max-w-sm">
 
           {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2.5 mb-10">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-heading font-bold text-foreground">Calendario Compliance</span>
+          <div className="lg:hidden mb-10 text-foreground">
+            <Logo />
           </div>
 
           {done ? (
             <div className="text-center space-y-5">
-              <div className="w-16 h-16 rounded-full bg-success/15 flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 rounded-none bg-success/15 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-8 h-8 text-success" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-foreground font-heading mb-1">¡Contraseña establecida!</h2>
+                <h2 className="text-3xl font-bold uppercase text-foreground font-heading mb-1">¡Contraseña establecida!</h2>
                 <p className="text-sm text-muted-foreground">Redirigiendo al inicio de sesión…</p>
               </div>
             </div>
           ) : (
             <>
               <div className="mb-8">
-                <h2 className="text-2xl font-bold text-foreground font-heading mb-1">
+                <h2 className="text-3xl font-bold uppercase text-foreground font-heading mb-1">
                   {isInvite ? '¡Bienvenido!' : 'Nueva contraseña'}
                 </h2>
                 <p className="text-sm text-muted-foreground">

@@ -190,7 +190,7 @@ export function TareasTimeline({ tareas, onTareaClick }: TareasTimelineProps) {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div
-                            className="absolute top-1.5 h-5 rounded-full cursor-pointer transition-all hover:scale-y-125 hover:shadow-md"
+                            className="absolute top-1.5 h-5 rounded-none cursor-pointer transition-opacity hover:opacity-80"
                             style={{
                               left: tarea.startOffset * dayWidth + 4,
                               width: Math.max(dayWidth - 8, tarea.duration * dayWidth - 8),

@@ -192,7 +192,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange, onCategoryC
                           key={option.value}
                           type="button"
                           onClick={() => setFormData({ ...formData, color: option.value })}
-                          className={`h-10 rounded-lg border-2 transition-all hover:scale-105 ${
+                          className={`h-10 rounded-lg border-2 transition-colors hover:opacity-80 ${
                             formData.color === option.value
                               ? 'border-foreground ring-2 ring-offset-2 ring-foreground'
                               : 'border-border'
@@ -253,7 +253,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange, onCategoryC
                 <ScrollArea className="h-[400px] pr-4">
                   {categories.length === 0 ? (
                     <div className="text-center py-8">
-                      <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+                      <div className="mx-auto w-12 h-12 bg-muted rounded-none flex items-center justify-center mb-3">
                         <Tag className="w-6 h-6 text-muted-foreground" />
                       </div>
                       <p className="text-sm text-muted-foreground font-body">

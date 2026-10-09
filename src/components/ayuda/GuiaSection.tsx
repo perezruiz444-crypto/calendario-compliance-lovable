@@ -22,7 +22,7 @@ export function GuiaSection({ section }: Props) {
         <ol className="space-y-4">
           {section.steps.map((step, idx) => (
             <li key={idx} className="flex gap-3">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0 mt-0.5">
+              <span className="flex items-center justify-center w-6 h-6 rounded-none bg-primary/10 text-primary text-xs font-bold shrink-0 mt-0.5">
                 {idx + 1}
               </span>
               <div className="space-y-1.5 min-w-0">

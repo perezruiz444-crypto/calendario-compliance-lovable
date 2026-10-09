@@ -197,13 +197,11 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
       <DialogContent className="sm:max-w-[620px] p-0 overflow-hidden border-border/80 shadow-2xl rounded-2xl bg-background">
         
         {/* Encabezado Editorial Moderno */}
-        <div className="bg-primary px-8 py-6 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: 'radial-gradient(circle at 10% 20%, white 0%, transparent 60%)' }} />
+        <div className="bg-band text-band-foreground px-8 py-6 relative overflow-hidden">
           <div className="relative">
-            <span className="text-[10px] font-mono tracking-widest text-primary-foreground/60 uppercase">ONBOARDING DE EMPRESA</span>
-            <h2 className="text-xl font-bold text-white font-heading mt-1">Configura tu Entorno de Cumplimiento</h2>
-            <p className="text-xs text-primary-foreground/75 mt-1">Registra la empresa para activar automáticamente su calendario de obligaciones.</p>
+            <span className="text-[10px] font-mono tracking-widest text-band-foreground/70 uppercase">ONBOARDING DE EMPRESA</span>
+            <h2 className="text-xl font-bold text-band-foreground font-heading mt-1">Configura tu Entorno de Cumplimiento</h2>
+            <p className="text-xs text-band-foreground/80 mt-1">Registra la empresa para activar automáticamente su calendario de obligaciones.</p>
           </div>
         </div>
 
@@ -216,7 +214,7 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
               const isCompleted = step > stepNum;
               return (
                 <div key={idx} className="flex flex-col items-center z-10 flex-1 relative">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-mono text-xs font-bold transition-all duration-300 ${
+                  <div className={`w-8 h-8 rounded-none flex items-center justify-center font-mono text-xs font-bold transition-all duration-300 ${
                     isActive 
                       ? 'bg-primary text-primary-foreground ring-4 ring-primary/20 scale-110 shadow-md' 
                       : isCompleted 
@@ -359,7 +357,7 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
                             <div className="flex items-center justify-between">
                               <span className="font-bold text-foreground text-xs leading-none">{p.label}</span>
                               {isSelected && (
-                                <div className="w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center text-white scale-90">
+                                <div className="w-3.5 h-3.5 rounded-none bg-primary flex items-center justify-center text-primary-foreground scale-90">
                                   <Check className="w-2.5 h-2.5 stroke-[3px]" />
                                 </div>
                               )}

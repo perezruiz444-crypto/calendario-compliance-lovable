@@ -134,17 +134,17 @@ export default function AgendaHoy() {
         <span className="text-sm font-semibold font-heading">Agenda del día</span>
         <div className="flex gap-1.5 ml-auto">
           {vencidas.length > 0 && (
-            <span className="text-xs font-semibold bg-destructive/15 text-destructive rounded-full px-2 py-0.5">
+            <span className="text-xs font-semibold bg-destructive/15 text-destructive rounded-none px-2 py-0.5">
               {vencidas.length} vencida{vencidas.length > 1 ? 's' : ''}
             </span>
           )}
           {hoy.length > 0 && (
-            <span className="text-xs font-semibold bg-orange-100 text-orange-700 rounded-full px-2 py-0.5">
+            <span className="text-xs font-semibold bg-orange-100 text-orange-700 rounded-none px-2 py-0.5">
               {hoy.length} hoy
             </span>
           )}
           {manana.length > 0 && (
-            <span className="text-xs font-semibold bg-warning/15 text-warning rounded-full px-2 py-0.5">
+            <span className="text-xs font-semibold bg-warning/15 text-warning rounded-none px-2 py-0.5">
               {manana.length} mañana
             </span>
           )}

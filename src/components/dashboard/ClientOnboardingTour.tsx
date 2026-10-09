@@ -38,8 +38,7 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
       subtitle: 'Todo listo desde el primer día',
       desc: 'Tu consultor de Russell Bedford ya configuró los programas de tu empresa (IMMEX, PROSEC, IVA/IEPS) y cargó las fechas de vencimiento oficiales. No necesitas configurar nada más.',
       illustration: (
-        <div className="relative w-full h-44 bg-muted rounded-lg flex items-center justify-center border border-primary/20 overflow-hidden shadow-inner">
-          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px]" />
+        <div className="relative w-full h-44 bg-muted rounded-lg flex items-center justify-center border border-border overflow-hidden">
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -49,12 +48,10 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
             <div className="w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-lg mb-3">
               <Building2 className="w-8 h-8" />
             </div>
-            <div className="flex items-center gap-2 px-3 py-1 bg-background border border-border/80 rounded-full shadow-sm text-xs font-semibold text-primary">
+            <div className="flex items-center gap-2 px-3 py-1 bg-background border border-border/80 rounded-none shadow-sm text-xs font-semibold text-primary">
               <Sparkles className="w-3.5 h-3.5" /> Entorno Configurado
             </div>
           </motion.div>
-          <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-primary/5 rounded-full blur-xl" />
-          <div className="absolute -top-6 -right-6 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl" />
         </div>
       ),
       bulletPoints: [
@@ -121,10 +118,10 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
             animate={{ scale: 1, opacity: 1 }}
             className="flex flex-col items-center gap-3"
           >
-            <div className="w-14 h-14 rounded-full bg-success/15 border border-success/30 text-success flex items-center justify-center shadow-md">
+            <div className="w-14 h-14 rounded-none bg-success/15 border border-success/30 text-success flex items-center justify-center shadow-md">
               <Check className="w-8 h-8 stroke-[3px]" />
             </div>
-            <div className="flex items-center gap-1.5 bg-success/10 border border-success/20 text-success text-[10px] font-bold px-3 py-1 rounded-full">
+            <div className="flex items-center gap-1.5 bg-success/10 border border-success/20 text-success text-[10px] font-bold px-3 py-1 rounded-none">
               ¿Presentaste? → Marca el check
             </div>
           </motion.div>
@@ -191,7 +188,7 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
           <div className="space-y-2.5 pt-1.5">
             {currentSlide.bulletPoints.map((bp, i) => (
               <div key={i} className="flex items-start gap-2.5 bg-muted/30 p-2.5 rounded-lg border border-border/30">
-                <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-5 h-5 rounded-none bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
                   <CheckSquare className="w-3 h-3 stroke-[2.5px]" />
                 </div>
                 <p className="text-xs text-foreground leading-relaxed">
@@ -209,7 +206,7 @@ export default function ClientOnboardingTour({ isOpen, onClose }: Props) {
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div 
                 key={i} 
-                className={`h-1.5 rounded-full transition-all duration-300 ${
+                className={`h-1.5 rounded-none transition-all duration-300 ${
                   step === i + 1 
                     ? 'w-6 bg-primary' 
                     : 'w-1.5 bg-muted-foreground/30'
