@@ -273,7 +273,7 @@ export default function Dashboard() {
               const Icon = kpi.icon;
               const t = toneClass[kpi.tone];
               const numericValue = typeof kpi.value === 'number' ? kpi.value : parseInt(String(kpi.value)) || 0;
-              const suffix = (kpi as any).suffix || '';
+              const suffix = 'suffix' in kpi ? kpi.suffix : '';
               return (
                 <motion.div
                   key={kpi.title}

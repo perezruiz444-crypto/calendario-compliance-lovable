@@ -155,3 +155,13 @@ export type TareaListado = Omit<Tarea, 'archivos_adjuntos'> & {
   categorias_tareas?: { nombre: string; color: string | null } | null;
   consultor_profile?: ConsultorResumen | null;
 };
+
+export type Documento = Tables['documentos']['Row'];
+export type SolicitudServicio = Tables['solicitudes_servicio']['Row'];
+
+/** Mensaje con remitente, destinatario y empresa (`select` con `profiles!mensajes_*_fkey(...)`). */
+export type MensajeConJoins = Tables['mensajes']['Row'] & {
+  remitente?: { nombre_completo: string } | null;
+  destinatario?: { nombre_completo: string } | null;
+  empresas?: { razon_social: string } | null;
+};

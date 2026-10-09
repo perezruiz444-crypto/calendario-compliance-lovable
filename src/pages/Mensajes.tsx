@@ -16,11 +16,13 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { logger } from '@/lib/logger';
+import { conRemitenteYDestinatario } from '@/lib/mensajes';
+import type { MensajeConJoins } from '@/types/domain';
 
 export default function Mensajes() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [mensajes, setMensajes] = useState<any[]>([]);
+  const [mensajes, setMensajes] = useState<MensajeConJoins[]>([]);
   const [loadingMensajes, setLoadingMensajes] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -44,13 +46,11 @@ export default function Mensajes() {
     try {
       const { data, error } = await supabase.from('mensajes').select(`
         *,
-        remitente:profiles!mensajes_remitente_id_fkey(nombre_completo),
-        destinatario:profiles!mensajes_destinatario_id_fkey(nombre_completo),
         empresas(razon_social)
       `).or(`remitente_id.eq.${user?.id},destinatario_id.eq.${user?.id}`)
        .order('created_at', { ascending: false });
       if (error) throw error;
-      setMensajes(data || []);
+      setMensajes(await conRemitenteYDestinatario(data || []));
     } catch (error) {
       logger.error('Error fetching mensajes:', error);
       toast.error('Error al cargar mensajes');
@@ -179,8 +179,8 @@ export default function Mensajes() {
                               ? <MailOpen className="w-3.5 h-3.5 text-muted-foreground/60" />
                               : <Mail className="w-3.5 h-3.5 text-primary" />)
                           : <Send className="w-3.5 h-3.5 text-muted-foreground/60" />}
-                        <span className="text-[11px] font-mono text-muted-foreground" title={format(new Date(mensaje.created_at), 'dd/MM/yyyy HH:mm')}>
-                          {formatDistanceToNow(new Date(mensaje.created_at), { addSuffix: true, locale: es })}
+                        <span className="text-[11px] font-mono text-muted-foreground" title={format(new Date(mensaje.created_at ?? Date.now()), 'dd/MM/yyyy HH:mm')}>
+                          {formatDistanceToNow(new Date(mensaje.created_at ?? Date.now()), { addSuffix: true, locale: es })}
                         </span>
                       </div>
                     </div>

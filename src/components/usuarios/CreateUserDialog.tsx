@@ -195,7 +195,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
               <Label className="font-heading">Rol</Label>
               <RadioGroup
                 value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value as any })}
+                onValueChange={(value) => setFormData({ ...formData, role: value as typeof formData.role })}
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="administrador" id="administrador" />

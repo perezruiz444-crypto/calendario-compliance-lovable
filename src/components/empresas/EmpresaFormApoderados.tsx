@@ -81,7 +81,7 @@ export default function EmpresaFormApoderados({ empresaId }: EmpresaFormApoderad
     setApoderados(apoderados.filter((_, i) => i !== index));
   };
 
-  const updateApoderado = (index: number, field: keyof Apoderado, value: any) => {
+  const updateApoderado = <K extends keyof Apoderado>(index: number, field: K, value: Apoderado[K]) => {
     const updated = [...apoderados];
     updated[index] = { ...updated[index], [field]: value };
     setApoderados(updated);

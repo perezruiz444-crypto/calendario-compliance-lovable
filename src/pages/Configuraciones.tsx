@@ -31,7 +31,7 @@ interface NotificationSetting {
   category: string;
 }
 
-const categoryIcons: Record<string, any> = {
+const categoryIcons: Record<string, string> = {
   tareas: '📋', certificaciones: '🏆', documentos: '📄',
   solicitudes: '🔔', usuarios: '👥', mensajes: '💬', reportes: '📊'
 };

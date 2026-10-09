@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { Mail, Clock, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { logger } from '@/lib/logger';
+import { conRemitenteYDestinatario } from '@/lib/mensajes';
+import type { MensajeConJoins } from '@/types/domain';
 
 interface MensajeDetailDialogProps {
   open: boolean;
@@ -18,7 +20,7 @@ interface MensajeDetailDialogProps {
 
 export function MensajeDetailDialog({ open, onOpenChange, mensajeId, onUpdate }: MensajeDetailDialogProps) {
   const { user } = useAuth();
-  const [mensaje, setMensaje] = useState<any>(null);
+  const [mensaje, setMensaje] = useState<MensajeConJoins | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,8 +36,6 @@ export function MensajeDetailDialog({ open, onOpenChange, mensajeId, onUpdate }:
         .from('mensajes')
         .select(`
           *,
-          remitente:profiles!mensajes_remitente_id_fkey(nombre_completo),
-          destinatario:profiles!mensajes_destinatario_id_fkey(nombre_completo),
           empresas(razon_social)
         `)
         .eq('id', mensajeId)
@@ -47,7 +47,8 @@ export function MensajeDetailDialog({ open, onOpenChange, mensajeId, onUpdate }:
         onOpenChange(false);
         return;
       }
-      setMensaje(data);
+      const [conPerfiles] = await conRemitenteYDestinatario([data]);
+      setMensaje(conPerfiles);
 
       // Mark as read if user is recipient and message is unread
       if (data.destinatario_id === user?.id && !data.leido) {
@@ -136,7 +137,7 @@ export function MensajeDetailDialog({ open, onOpenChange, mensajeId, onUpdate }:
               <div className="flex items-center gap-4 text-sm text-muted-foreground font-body">
                 <span className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  {format(new Date(mensaje.created_at), 'dd/MM/yyyy HH:mm')}
+                  {format(new Date(mensaje.created_at ?? Date.now()), 'dd/MM/yyyy HH:mm')}
                 </span>
               </div>
             </div>

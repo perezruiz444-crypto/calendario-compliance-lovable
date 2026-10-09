@@ -15,6 +15,7 @@ import { FileText, Upload, Download, Trash2, Calendar, User, Eye } from 'lucide-
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getErrorMessage } from '@/lib/errors';
+import type { Documento } from '@/types/domain';
 
 interface DocumentosManagerProps {
   empresaId: string;
@@ -23,7 +24,7 @@ interface DocumentosManagerProps {
 
 export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManagerProps) {
   const { user, role } = useAuth();
-  const [documentos, setDocumentos] = useState<any[]>([]);
+  const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -375,14 +376,14 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {format(new Date(doc.created_at), 'dd/MM/yyyy', { locale: es })}
+                          {format(new Date(doc.created_at ?? Date.now()), 'dd/MM/yyyy', { locale: es })}
                         </span>
                         {doc.fecha_vencimiento && (
                           <span className="flex items-center gap-1">
                             Vence: {format(new Date(doc.fecha_vencimiento), 'dd/MM/yyyy', { locale: es })}
                           </span>
                         )}
-                        <span>{(doc.archivo_tamano / 1024).toFixed(0)} KB</span>
+                        <span>{((doc.archivo_tamano ?? 0) / 1024).toFixed(0)} KB</span>
                       </div>
                     </div>
                   </div>

@@ -1,3 +1,5 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
 import { format, differenceInDays, isPast, isValid, getISOWeek, addWeeks, addMonths, addYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -62,7 +64,7 @@ export type ProgramaKey = typeof PROGRAMAS_ORDEN[number];
  * Útil cuando solo necesitas saber qué cumplimientos existen (no el estado de `completada`).
  */
 export async function fetchCumplimientoKeys(
-  supabaseClient: { from: (t: string) => any },
+  supabaseClient: SupabaseClient<Database>,
   obligacionIds: string[]
 ): Promise<Set<string>> {
   if (obligacionIds.length === 0) return new Set();
@@ -70,7 +72,7 @@ export async function fetchCumplimientoKeys(
     .from('obligacion_cumplimientos')
     .select('obligacion_id, periodo_key')
     .in('obligacion_id', obligacionIds);
-  return new Set((data || []).map((c: { obligacion_id: string; periodo_key: string }) => `${c.obligacion_id}:${c.periodo_key}`));
+  return new Set((data || []).map((c) => `${c.obligacion_id}:${c.periodo_key}`));
 }
 
 // ─── Period key helpers ───────────────────────────────────────────────

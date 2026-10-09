@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 export function useInlineEdit(
   recordId: string | undefined,
-  tableName: string,
+  // Hoy solo se usa para `empresas`; ampliar la unión si otra tabla lo necesita.
+  tableName: 'empresas',
   onLocalUpdate: (field: string, value: string) => void,
   canEdit: boolean
 ) {
@@ -34,8 +36,9 @@ export function useInlineEdit(
     if (!editingField || !recordId) return;
     try {
       const { error } = await supabase
-        .from(tableName as any)
-        .update({ [editingField]: editValue })
+        .from(tableName)
+        // editingField es un nombre de columna dinámico: TS no puede verificarlo, la base sí.
+        .update({ [editingField]: editValue } as TablesUpdate<'empresas'>)
         .eq('id', recordId);
       if (error) throw error;
       onLocalUpdate(editingField, editValue);

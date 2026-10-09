@@ -15,6 +15,9 @@ import { MessageSquarePlus, Clock, CheckCircle2, AlertCircle } from 'lucide-reac
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getErrorMessage } from '@/lib/errors';
+import type { SolicitudServicio } from '@/types/domain';
+import { cn } from '@/lib/utils';
+import { badgeTone } from '@/lib/badgeTone';
 
 interface SolicitudesServicioProps {
   empresaId: string;
@@ -22,7 +25,7 @@ interface SolicitudesServicioProps {
 
 export function SolicitudesServicio({ empresaId }: SolicitudesServicioProps) {
   const { user, role } = useAuth();
-  const [solicitudes, setSolicitudes] = useState<any[]>([]);
+  const [solicitudes, setSolicitudes] = useState<SolicitudServicio[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -254,16 +257,16 @@ export function SolicitudesServicio({ empresaId }: SolicitudesServicioProps) {
                   <div className="flex-1">
                     <CardTitle className="text-base">{solicitud.asunto}</CardTitle>
                     <CardDescription className="mt-1">
-                      {format(new Date(solicitud.created_at), "dd 'de' MMMM, yyyy", { locale: es })}
+                      {format(new Date(solicitud.created_at ?? Date.now()), "dd 'de' MMMM, yyyy", { locale: es })}
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={getPrioridadColor(solicitud.prioridad) as any}>
+                    <Badge {...badgeTone(getPrioridadColor(solicitud.prioridad ?? ''))}>
                       {solicitud.prioridad}
                     </Badge>
-                    <Badge variant={getEstadoColor(solicitud.estado) as any} className="gap-1">
-                      {getEstadoIcon(solicitud.estado)}
-                      {getEstadoLabel(solicitud.estado)}
+                    <Badge {...badgeTone(getEstadoColor(solicitud.estado ?? ''))} className={cn(badgeTone(getEstadoColor(solicitud.estado ?? '')).className, 'gap-1')}>
+                      {getEstadoIcon(solicitud.estado ?? '')}
+                      {getEstadoLabel(solicitud.estado ?? '')}
                     </Badge>
                   </div>
                 </div>

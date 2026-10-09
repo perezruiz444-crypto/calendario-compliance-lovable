@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import type { EmpresaResumen } from '@/types/domain';
 
 interface EmpresaSelectorProps {
   onEmpresaSelect?: (empresaId: string | null) => void;
@@ -40,7 +41,7 @@ export function EmpresaSelectorDropdown({
   const selectedEmpresaId = externalSelectedId ?? empresaContext.selectedEmpresaId;
   const onEmpresaSelect   = externalOnSelect   ?? empresaContext.setSelectedEmpresaId;
 
-  const [empresas, setEmpresas] = useState<any[]>([]);
+  const [empresas, setEmpresas] = useState<EmpresaResumen[]>([]);
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
@@ -51,7 +52,7 @@ export function EmpresaSelectorDropdown({
     if (!user) return;
     setLoading(true);
     try {
-      let data: any[] = [];
+      let data: EmpresaResumen[] = [];
       if (role === 'administrador') {
         const { data: d } = await supabase
           .from('empresas').select('id, razon_social').order('razon_social');

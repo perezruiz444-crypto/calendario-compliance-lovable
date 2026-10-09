@@ -7,9 +7,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { format, differenceInDays, startOfDay, addDays, isBefore, isAfter, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AlertCircle, CheckCircle2, Clock, Circle } from 'lucide-react';
+import type { Tarea } from '@/types/domain';
+
+type TareaTimeline = Pick<Tarea, 'id' | 'titulo' | 'estado' | 'prioridad' | 'fecha_vencimiento' | 'created_at'>;
 
 interface TareasTimelineProps {
-  tareas: any[];
+  tareas: TareaTimeline[];
   onTareaClick: (tareaId: string) => void;
 }
 
@@ -28,7 +31,11 @@ const PRIORIDAD_COLORS: Record<string, string> = {
 
 export function TareasTimeline({ tareas, onTareaClick }: TareasTimelineProps) {
   const { timelineTareas, dateRange, dayWidth, totalDays } = useMemo(() => {
-    const tareasWithDates = tareas.filter(t => t.fecha_vencimiento || t.created_at);
+    // Sin created_at se usa el vencimiento como inicio (antes caía en new Date(null) = 1970 y estiraba la escala).
+    const tareasWithDates = tareas.flatMap(t => {
+      const inicio = t.created_at ?? t.fecha_vencimiento;
+      return inicio ? [{ ...t, created_at: inicio }] : [];
+    });
     if (tareasWithDates.length === 0) {
       return { timelineTareas: [], dateRange: [], dayWidth: 40, totalDays: 0 };
     }
@@ -142,9 +149,9 @@ export function TareasTimeline({ tareas, onTareaClick }: TareasTimelineProps) {
 
             {/* Rows */}
             {timelineTareas.map((tarea) => {
-              const config = ESTADO_CONFIG[tarea.estado] || ESTADO_CONFIG.pendiente;
+              const config = ESTADO_CONFIG[tarea.estado ?? ''] || ESTADO_CONFIG.pendiente;
               const Icon = config.icon;
-              const barColor = PRIORIDAD_COLORS[tarea.prioridad] || PRIORIDAD_COLORS.media;
+              const barColor = PRIORIDAD_COLORS[tarea.prioridad ?? ''] || PRIORIDAD_COLORS.media;
 
               return (
                 <div key={tarea.id} className="flex border-b hover:bg-accent/30 transition-colors group">

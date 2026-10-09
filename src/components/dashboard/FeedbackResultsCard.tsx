@@ -121,7 +121,7 @@ export default function FeedbackResultsCard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-heading font-medium text-sm truncate">
-                          {(row.profiles as any)?.nombre_completo || 'Usuario'}
+                          {row.profiles?.nombre_completo || 'Usuario'}
                         </span>
                         <Badge variant="outline" className="text-[10px]">
                           {row.q1_razon_login}
