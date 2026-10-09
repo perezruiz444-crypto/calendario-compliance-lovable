@@ -85,7 +85,7 @@ export function EmpresaPadronSectorialCard({ empresaId, canEdit }: EmpresaPadron
   };
 
   return (
-    <Card className="gradient-card shadow-card">
+    <Card className="shadow-card">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="font-heading flex items-center gap-2">
           <Tags className="w-5 h-5" />

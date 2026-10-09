@@ -114,7 +114,7 @@ export default function EmpresaComplianceSemaforo() {
   if (loading || empresas.length === 0) return null;
 
   return (
-    <Card className="gradient-card shadow-card">
+    <Card className="shadow-card">
       <CardHeader className="pb-3">
         <CardTitle className="font-heading flex items-center gap-2 text-base">
           <Building2 className="w-4 h-4 text-primary" />

@@ -128,7 +128,7 @@ export function DomiciliosProgramaSection({
                   <Button type="button" variant="ghost" size="icon" onClick={cancel} disabled={saving}>
                     <X className="w-4 h-4" />
                   </Button>
-                  <Button type="button" size="icon" onClick={handleSave} disabled={saving} className="gradient-primary">
+                  <Button type="button" size="icon" onClick={handleSave} disabled={saving}>
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   </Button>
                 </div>
@@ -169,7 +169,7 @@ export function DomiciliosProgramaSection({
                 <Button type="button" variant="ghost" size="icon" onClick={cancel} disabled={saving}>
                   <X className="w-4 h-4" />
                 </Button>
-                <Button type="button" size="icon" onClick={handleSave} disabled={saving} className="gradient-primary">
+                <Button type="button" size="icon" onClick={handleSave} disabled={saving}>
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 </Button>
               </div>

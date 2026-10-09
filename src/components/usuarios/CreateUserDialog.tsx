@@ -237,7 +237,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-heading">
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="gradient-primary shadow-elegant font-heading">
+            <Button type="submit" disabled={loading} className="shadow-elegant font-heading">
               {loading ? 'Creando...' : usePassword ? 'Crear Usuario' : 'Enviar Invitación'}
             </Button>
           </DialogFooter>

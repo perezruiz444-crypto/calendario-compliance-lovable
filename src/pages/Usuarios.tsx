@@ -153,14 +153,14 @@ export default function Usuarios() {
           </div>
           <Button 
             onClick={() => setDialogOpen(true)}
-            className="gradient-primary shadow-elegant hover:shadow-lg transition-smooth font-heading"
+            className="shadow-elegant hover:shadow-lg transition-smooth font-heading"
           >
             <Plus className="w-4 h-4 mr-2" />
             Nuevo Usuario
           </Button>
         </div>
 
-        <Card className="gradient-card shadow-card">
+        <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="font-heading">Usuarios del Sistema</CardTitle>
             <CardDescription className="font-body">
@@ -178,7 +178,7 @@ export default function Usuarios() {
                 </p>
                 <Button 
                   onClick={() => setDialogOpen(true)}
-                  className="gradient-primary shadow-elegant font-heading"
+                  className="shadow-elegant font-heading"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Crear Primer Usuario

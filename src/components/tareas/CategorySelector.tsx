@@ -292,7 +292,7 @@ export function CategorySelector({ value, onValueChange }: CategorySelectorProps
             <Button
               onClick={handleCreateCategory}
               disabled={creating || !newCategory.nombre.trim()}
-              className="gradient-primary shadow-elegant font-heading"
+              className="shadow-elegant font-heading"
             >
               {creating ? 'Creando...' : 'Crear Categoría'}
             </Button>

@@ -240,7 +240,7 @@ export default function DashboardObligaciones() {
 
   if (loading) {
     return (
-      <Card className="gradient-card shadow-card">
+      <Card className="shadow-card">
         <CardContent className="py-8 flex justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </CardContent>
@@ -251,7 +251,7 @@ export default function DashboardObligaciones() {
   if (obligaciones.length === 0) return null;
 
   return (
-    <Card className="gradient-card shadow-card">
+    <Card className="shadow-card">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>

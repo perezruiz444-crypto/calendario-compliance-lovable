@@ -74,7 +74,7 @@ export default function ClienteAnalytics({ data }: ClienteAnalyticsProps) {
       </div>
 
       {/* Donut + Progress */}
-      <Card className="gradient-card shadow-card">
+      <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckSquare className="w-5 h-5" />
@@ -135,7 +135,7 @@ export default function ClienteAnalytics({ data }: ClienteAnalyticsProps) {
 
       {/* Obligaciones pendientes from proximasTareas */}
       {data.proximasTareas && data.proximasTareas.length > 0 && (
-        <Card className="gradient-card shadow-card">
+        <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckSquare className="w-5 h-5" />
@@ -174,7 +174,7 @@ export default function ClienteAnalytics({ data }: ClienteAnalyticsProps) {
       )}
 
       {data.proximasTareas.length === 0 && data.tareasPendientes === 0 && (
-        <Card className="gradient-card shadow-card border-success/20">
+        <Card className="shadow-card border-success/20">
           <CardContent className="py-8 text-center">
             <CheckCircle2 className="w-12 h-12 text-success mx-auto mb-3" />
             <p className="font-heading font-semibold text-lg">¡Todo al día!</p>
@@ -185,7 +185,7 @@ export default function ClienteAnalytics({ data }: ClienteAnalyticsProps) {
 
       {/* Próximos vencimientos de programas */}
       {data.proximosVencimientos && data.proximosVencimientos.length > 0 && (
-        <Card className="gradient-card shadow-card border-warning/20">
+        <Card className="shadow-card border-warning/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-warning" />
@@ -215,7 +215,7 @@ export default function ClienteAnalytics({ data }: ClienteAnalyticsProps) {
 
       {/* Documentos próximos a vencer */}
       {data.documentosVencimiento && data.documentosVencimiento.length > 0 && (
-        <Card className="gradient-card shadow-card">
+        <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />

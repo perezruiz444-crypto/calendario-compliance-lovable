@@ -686,7 +686,7 @@ export default function MiEmpresa() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* IMMEX */}
               {empresa.immex_numero && (
-                <Card className="gradient-card shadow-sm border-primary/10">
+                <Card className="shadow-sm border-primary/10">
                   <CardHeader className="pb-3"><CardTitle className="font-heading text-base flex items-center gap-2"><Shield className="w-4 h-4 text-primary"/>Programa IMMEX</CardTitle></CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 gap-y-3 gap-x-2">
@@ -699,7 +699,7 @@ export default function MiEmpresa() {
               )}
               {/* PROSEC */}
               {empresa.prosec_numero && (
-                <Card className="gradient-card shadow-sm border-primary/10">
+                <Card className="shadow-sm border-primary/10">
                   <CardHeader className="pb-3"><CardTitle className="font-heading text-base flex items-center gap-2"><Shield className="w-4 h-4 text-primary"/>Programa PROSEC</CardTitle></CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 gap-y-3 gap-x-2">
@@ -713,7 +713,7 @@ export default function MiEmpresa() {
               )}
               {/* Padrón */}
               {empresa.padron_general_numero && (
-                <Card className="gradient-card shadow-sm border-primary/10">
+                <Card className="shadow-sm border-primary/10">
                   <CardHeader className="pb-3"><CardTitle className="font-heading text-base flex items-center gap-2"><Shield className="w-4 h-4 text-primary"/>Padrón de Importadores</CardTitle></CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 gap-y-3 gap-x-2">
@@ -725,7 +725,7 @@ export default function MiEmpresa() {
               )}
               {/* Certificación IVA/IEPS */}
               {empresa.cert_iva_ieps_oficio && (
-                <Card className="gradient-card shadow-sm border-primary/10">
+                <Card className="shadow-sm border-primary/10">
                   <CardHeader className="pb-3">
                     <CardTitle className="font-heading text-base flex items-center gap-2"><Shield className="w-4 h-4 text-primary" />Certificación IVA/IEPS</CardTitle>
                   </CardHeader>
@@ -772,7 +772,7 @@ export default function MiEmpresa() {
               <h3 className="text-lg font-heading font-medium flex items-center gap-2"><Building2 className="w-5 h-5" /> Domicilios</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {domicilios.length > 0 ? domicilios.map(d => (
-                  <Card key={d.id} className="gradient-card shadow-sm border-primary/5">
+                  <Card key={d.id} className="shadow-sm border-primary/5">
                     <CardHeader className="pb-2"><CardTitle className="font-heading text-base">{d.tipo || 'Domicilio de Operación'}</CardTitle></CardHeader>
                     <CardContent><p className="text-sm font-body text-muted-foreground">{d.domicilio}</p></CardContent>
                   </Card>

@@ -62,7 +62,7 @@ export default function FeedbackResultsCard() {
 
   if (loading) {
     return (
-      <Card className="gradient-card shadow-card">
+      <Card className="shadow-card">
         <CardHeader>
           <Skeleton className="h-6 w-48" />
         </CardHeader>
@@ -80,7 +80,7 @@ export default function FeedbackResultsCard() {
   const pctMuyDecepcionado = Math.round((muyDecepcionado / data.length) * 100);
 
   return (
-    <Card className="gradient-card shadow-card">
+    <Card className="shadow-card">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>

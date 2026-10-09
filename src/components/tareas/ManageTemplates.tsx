@@ -278,7 +278,7 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
               <>
                 <Button
                   onClick={() => setShowForm(true)}
-                  className="w-full gradient-primary shadow-elegant font-heading gap-2"
+                  className="w-full shadow-elegant font-heading gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   Nuevo Template
@@ -625,7 +625,7 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
                   <Button type="button" variant="outline" onClick={resetForm} className="flex-1 font-heading">
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={loading} className="flex-1 gradient-primary shadow-elegant font-heading">
+                  <Button type="submit" disabled={loading} className="flex-1 shadow-elegant font-heading">
                     {loading ? 'Guardando...' : editingTemplate ? 'Actualizar' : 'Crear'}
                   </Button>
                 </div>

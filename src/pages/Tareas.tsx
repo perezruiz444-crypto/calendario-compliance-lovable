@@ -256,7 +256,7 @@ function EmptyState({ hasActiveFilters, onClearFilters, onCreateTarea, canCreate
           </Button>
         )}
         {canCreate && (
-          <Button size="sm" onClick={onCreateTarea} className="gradient-primary">
+          <Button size="sm" onClick={onCreateTarea}>
             <Plus className="w-4 h-4 mr-1.5" /> Nueva Tarea
           </Button>
         )}
@@ -899,7 +899,7 @@ export default function Tareas() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Button onClick={() => setDialogOpen(true)} className="font-heading gradient-primary h-11 sm:h-9">
+                <Button onClick={() => setDialogOpen(true)} className="font-heading h-11 sm:h-9">
                   <Plus className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Nueva Tarea</span>
                 </Button>
@@ -909,7 +909,7 @@ export default function Tareas() {
         </div>
 
         {/* Search and Filters */}
-        <Card className="gradient-card shadow-card">
+        <Card className="shadow-card">
           <CardContent className="pt-6">
             <div className="space-y-4">
               {/* Search Bar */}
@@ -1017,7 +1017,7 @@ export default function Tareas() {
 
         {/* Bulk notification section for admins/consultores */}
         {(role === 'administrador' || role === 'consultor') && (
-          <Card className="gradient-card shadow-card">
+          <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="font-heading flex items-center gap-2">
                 <Bell className="w-5 h-5" />
@@ -1061,7 +1061,7 @@ export default function Tareas() {
         {/* Stats Cards */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Card 
-            className="gradient-card shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            className="shadow-card hover:shadow-lg transition-all cursor-pointer group"
             onClick={() => setFilterEstado('pendiente')}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1079,7 +1079,7 @@ export default function Tareas() {
           </Card>
 
           <Card 
-            className="gradient-card shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            className="shadow-card hover:shadow-lg transition-all cursor-pointer group"
             onClick={() => setFilterEstado('en_progreso')}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1097,7 +1097,7 @@ export default function Tareas() {
           </Card>
 
           <Card 
-            className="gradient-card shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            className="shadow-card hover:shadow-lg transition-all cursor-pointer group"
             onClick={() => setFilterEstado('completada')}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1115,7 +1115,7 @@ export default function Tareas() {
           </Card>
 
           <Card 
-            className="gradient-card shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            className="shadow-card hover:shadow-lg transition-all cursor-pointer group"
             onClick={() => setFilterEstado('cancelada')}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1141,7 +1141,7 @@ export default function Tareas() {
             onTareaClick={(id) => { setSelectedTareaId(id); setDetailDialogOpen(true); }}
           />
         ) : viewMode === 'obligaciones' ? (
-          <Card className="gradient-card shadow-card">
+          <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="font-heading flex items-center gap-2">
                 <ClipboardList className="w-5 h-5" />
@@ -1156,7 +1156,7 @@ export default function Tareas() {
             </CardContent>
           </Card>
         ) : viewMode === 'list' ? (
-          <Card className="gradient-card shadow-card">
+          <Card className="shadow-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -1251,7 +1251,7 @@ export default function Tareas() {
             </CardContent>
           </Card>
         ) : viewMode === 'calendar' ? (
-          <Card className="gradient-card shadow-card">
+          <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="font-heading">Calendario de Tareas</CardTitle>
               <CardDescription className="font-body">
@@ -1291,7 +1291,7 @@ export default function Tareas() {
           </Card>
         ) : isMobile ? (
           /* Kanban en móvil → lista simple para evitar problemas con dnd-kit touch */
-          <Card className="gradient-card shadow-card">
+          <Card className="shadow-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>

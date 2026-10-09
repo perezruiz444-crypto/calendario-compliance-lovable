@@ -218,7 +218,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange, onCategoryC
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 gradient-primary shadow-elegant font-heading"
+                      className="flex-1 shadow-elegant font-heading"
                     >
                       {editingCategory ? (
                         <>

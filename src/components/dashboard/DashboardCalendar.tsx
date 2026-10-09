@@ -281,7 +281,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
 
   return (
     <>
-      <Card className="gradient-card shadow-card">
+      <Card className="shadow-card">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>

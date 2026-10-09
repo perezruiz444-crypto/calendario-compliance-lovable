@@ -211,7 +211,7 @@ export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user
             <Button
               type="submit"
               disabled={loading}
-              className="gradient-primary shadow-elegant font-heading"
+              className="shadow-elegant font-heading"
             >
               {loading ? (
                 <>

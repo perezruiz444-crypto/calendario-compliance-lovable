@@ -203,7 +203,7 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
             <Button
               type="submit"
               disabled={loading}
-              className="gradient-primary shadow-elegant font-heading"
+              className="shadow-elegant font-heading"
             >
               <Send className="w-4 h-4 mr-2" />
               {loading ? 'Enviando...' : 'Enviar Mensaje'}

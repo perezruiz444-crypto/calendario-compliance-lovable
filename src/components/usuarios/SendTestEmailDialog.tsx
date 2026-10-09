@@ -139,7 +139,7 @@ export default function SendTestEmailDialog({
           <Button 
             onClick={handleSendEmail}
             disabled={loading}
-            className="gradient-primary font-heading"
+            className="font-heading"
           >
             {loading ? (
               <>

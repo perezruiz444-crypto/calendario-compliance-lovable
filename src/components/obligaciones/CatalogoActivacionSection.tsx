@@ -121,7 +121,7 @@ export function CatalogoActivacionSection({ empresaId, canEdit, onActivated }: P
 
   return (
     <>
-      <Card className="gradient-card shadow-card">
+      <Card className="shadow-card">
         <CardHeader className="pb-3">
           <div
             className="flex items-center justify-between cursor-pointer select-none"

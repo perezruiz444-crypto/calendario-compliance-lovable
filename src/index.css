@@ -85,13 +85,6 @@
     --shadow-xl:        0 0 0 1px hsl(var(--border)), 0 16px 32px -20px hsl(214 17% 8% / 0.30);
     --shadow-editorial: 0 0 0 1px hsl(var(--border));
     --shadow-float:     0 0 0 1px hsl(var(--foreground)), 0 16px 32px -20px hsl(214 17% 8% / 0.30);
-
-    /* "Gradientes" heredados: ahora planos. Se conservan los nombres para no romper usos */
-    --gradient-primary: hsl(var(--primary));
-    --gradient-hero:    hsl(var(--primary));
-    --gradient-card:    hsl(var(--card));
-    --gradient-subtle:  hsl(var(--background));
-    --gradient-mesh:    none;
   }
 
   .dark {
@@ -230,13 +223,6 @@
   .hover\:shadow-card:hover      { box-shadow: var(--shadow-md); }
   .hover\:shadow-editorial:hover { box-shadow: var(--shadow-editorial); }
   .hover\:shadow-float:hover     { box-shadow: var(--shadow-float); }
-
-  /* Gradients */
-  .gradient-primary { background: var(--gradient-primary); }
-  .gradient-hero    { background: var(--gradient-hero); }
-  .gradient-card    { background: var(--gradient-card); }
-  .gradient-subtle  { background: var(--gradient-subtle); }
-  .surface-mesh     { background: var(--gradient-mesh); }
 
   /* Typography */
   .font-heading { font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', system-ui, sans-serif; }

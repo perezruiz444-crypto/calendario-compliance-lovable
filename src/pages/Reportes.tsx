@@ -768,7 +768,7 @@ export default function Reportes() {
         </div>
 
         {/* Filtros */}
-        <Card className="gradient-card shadow-card">
+        <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="font-heading flex items-center gap-2">
               <Filter className="w-5 h-5" />
@@ -875,7 +875,7 @@ export default function Reportes() {
         {/* Resumen Cards */}
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <Card className="gradient-card shadow-elegant hover-scale">
+            <Card className="shadow-elegant hover-scale">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-heading">Total Empresas</CardTitle>
               </CardHeader>
@@ -887,7 +887,7 @@ export default function Reportes() {
               </CardContent>
             </Card>
 
-            <Card className="gradient-card shadow-elegant hover-scale">
+            <Card className="shadow-elegant hover-scale">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-heading">Total Tareas</CardTitle>
               </CardHeader>
@@ -899,7 +899,7 @@ export default function Reportes() {
               </CardContent>
             </Card>
 
-            <Card className="gradient-card shadow-elegant hover-scale">
+            <Card className="shadow-elegant hover-scale">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-heading">Completadas</CardTitle>
               </CardHeader>
@@ -911,7 +911,7 @@ export default function Reportes() {
               </CardContent>
             </Card>
 
-            <Card className="gradient-card shadow-elegant hover-scale">
+            <Card className="shadow-elegant hover-scale">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-heading">Pendientes</CardTitle>
               </CardHeader>
@@ -923,7 +923,7 @@ export default function Reportes() {
               </CardContent>
             </Card>
 
-            <Card className="gradient-card shadow-elegant hover-scale">
+            <Card className="shadow-elegant hover-scale">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-heading">Por Vencer</CardTitle>
               </CardHeader>
@@ -936,7 +936,7 @@ export default function Reportes() {
             </Card>
           </div>
 
-          <Card className="gradient-card shadow-elegant">
+          <Card className="shadow-elegant">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -1007,7 +1007,7 @@ export default function Reportes() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Donut chart for status */}
-              <Card className="gradient-card shadow-card">
+              <Card className="shadow-card">
                 <CardHeader>
                   <CardTitle className="font-heading">Distribución por Estado</CardTitle>
                   <CardDescription className="font-body">Vista general de tareas y obligaciones</CardDescription>
@@ -1041,7 +1041,7 @@ export default function Reportes() {
               </Card>
 
               {/* Donut chart for priority */}
-              <Card className="gradient-card shadow-card">
+              <Card className="shadow-card">
                 <CardHeader>
                   <CardTitle className="font-heading">Distribución por Prioridad</CardTitle>
                   <CardDescription className="font-body">Nivel de urgencia de las tareas</CardDescription>
@@ -1074,7 +1074,7 @@ export default function Reportes() {
 
             {/* Obligaciones pendientes table */}
             {reporteData.obligacionesPendientesDetalle.length > 0 && (
-              <Card className="gradient-card shadow-card border-warning/20">
+              <Card className="shadow-card border-warning/20">
                 <CardHeader>
                   <CardTitle className="font-heading flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-warning" />
@@ -1110,7 +1110,7 @@ export default function Reportes() {
           </TabsContent>
 
           <TabsContent value="empresa" className="space-y-6">
-            <Card className="gradient-card shadow-card">
+            <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="font-heading">Top 10 Empresas por Tareas</CardTitle>
                 <CardDescription className="font-body">Empresas con más tareas registradas</CardDescription>
@@ -1132,7 +1132,7 @@ export default function Reportes() {
 
           <TabsContent value="categoria" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="gradient-card shadow-card">
+              <Card className="shadow-card">
                 <CardHeader>
                   <CardTitle className="font-heading">Tareas por Categoría</CardTitle>
                   <CardDescription className="font-body">Distribución por categorías</CardDescription>
@@ -1162,7 +1162,7 @@ export default function Reportes() {
                 </CardContent>
               </Card>
 
-              <Card className="gradient-card shadow-card">
+              <Card className="shadow-card">
                 <CardHeader>
                   <CardTitle className="font-heading">Timeline de Tareas</CardTitle>
                   <CardDescription className="font-body">Creadas vs Completadas (12 meses)</CardDescription>
@@ -1187,7 +1187,7 @@ export default function Reportes() {
         </Tabs>
 
         {/* Reportes Especializados por Categoría */}
-        <Card className="gradient-card shadow-card">
+        <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="font-heading flex items-center gap-2">
               <FileText className="w-5 h-5" />
@@ -1365,7 +1365,7 @@ export default function Reportes() {
 
         {/* Certificaciones por Vencer */}
         {reporteData.certificacionesVencimiento.length > 0 && (
-          <Card className="gradient-card shadow-card">
+          <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="font-heading flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-destructive" />

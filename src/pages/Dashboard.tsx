@@ -227,7 +227,7 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="relative overflow-hidden rounded-[var(--radius)] border border-border-subtle surface-mesh px-6 md:px-10 py-8 md:py-10"
+          className="relative overflow-hidden rounded-[var(--radius)] border border-border-subtle px-6 md:px-10 py-8 md:py-10"
         >
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 relative">
             <div className="space-y-3 max-w-2xl">

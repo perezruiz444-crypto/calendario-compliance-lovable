@@ -86,7 +86,7 @@ export function AgentesAduanalesCard({ empresaId, agentes, canEdit, onUpdate }: 
       </div>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" size="sm" onClick={cancel} disabled={saving}><X className="w-4 h-4" /></Button>
-        <Button size="sm" onClick={handleSave} disabled={saving} className="gradient-primary">
+        <Button size="sm" onClick={handleSave} disabled={saving}>
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
         </Button>
       </div>
@@ -94,7 +94,7 @@ export function AgentesAduanalesCard({ empresaId, agentes, canEdit, onUpdate }: 
   );
 
   return (
-    <Card className="gradient-card shadow-card">
+    <Card className="shadow-card">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div>
           <CardTitle className="font-heading flex items-center gap-2">

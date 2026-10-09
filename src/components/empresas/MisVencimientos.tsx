@@ -71,7 +71,7 @@ export default function MisVencimientos({ empresaId, onSubirEvidencia, refreshKe
 
   if (loading) {
     return (
-      <Card className="gradient-card shadow-card">
+      <Card className="shadow-card">
         <CardHeader className="pb-3">
           <CardTitle className="font-heading flex items-center gap-2">
             <CalendarClock className="w-5 h-5" /> Mis próximos vencimientos
@@ -84,7 +84,7 @@ export default function MisVencimientos({ empresaId, onSubirEvidencia, refreshKe
 
   if (obs.length === 0) {
     return (
-      <Card className="gradient-card shadow-card">
+      <Card className="shadow-card">
         <CardHeader className="pb-3">
           <CardTitle className="font-heading flex items-center gap-2">
             <CalendarClock className="w-5 h-5" /> Mis próximos vencimientos
@@ -107,7 +107,7 @@ export default function MisVencimientos({ empresaId, onSubirEvidencia, refreshKe
   }, {});
 
   return (
-    <Card className="gradient-card shadow-card">
+    <Card className="shadow-card">
       <CardHeader className="pb-3">
         <CardTitle className="font-heading flex items-center gap-2">
           <CalendarClock className="w-5 h-5" /> Mis próximos vencimientos

@@ -387,7 +387,7 @@ export function EmpresaObligacionesCard({ empresa, canEdit, onUpdate }: EmpresaO
   }, 0);
 
   return (
-    <Card className="gradient-card shadow-card col-span-1 lg:col-span-2">
+    <Card className="shadow-card col-span-1 lg:col-span-2">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="font-heading flex items-center gap-2">

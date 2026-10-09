@@ -426,7 +426,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
                 <Button 
                   onClick={handleSubmitComentario}
                   disabled={loading || !nuevoComentario.trim()}
-                  className="gradient-primary shadow-elegant font-heading"
+                  className="shadow-elegant font-heading"
                   size="sm"
                 >
                   <Send className="w-4 h-4 mr-2" />

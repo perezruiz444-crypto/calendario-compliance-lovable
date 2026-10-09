@@ -128,7 +128,7 @@ Sin tracking negativo en ningún nivel. Los botones van en mayúsculas condensad
 | `shadow-md/lg/xl` de Tailwind | Capas flotantes únicamente |
 
 ### Degradados
-**No se usan.** Las clases `.gradient-primary`, `.gradient-hero`, `.gradient-card`, `.gradient-subtle` y `.surface-mesh` se conservan por compatibilidad, pero **resuelven a color plano**. No las uses en código nuevo: usa `bg-primary`, `bg-card`, `bg-background`. No agregues `bg-gradient-*` ni capas `radial-gradient`.
+**No se usan**, y ya no existen las clases `.gradient-primary`, `.gradient-hero`, `.gradient-card`, `.gradient-subtle` ni `.surface-mesh`, ni las variables `--gradient-*`. Usa `bg-primary`, `bg-card` o `bg-background`. No agregues `bg-gradient-*` ni capas `radial-gradient`. (Lo único con degradado es la animación de carga `.animate-shimmer`.)
 
 ---
 
@@ -262,8 +262,7 @@ Los estados completados/cumplidos van aparte, colapsados detrás de un toggle
 
 ---
 
-## Pendientes conocidos
+## Fuera del sistema de la plataforma
 
-- Las clases `gradient-*` (≈100 usos) siguen en el código aunque resuelven a color plano; renombrarlas es una limpieza aparte.
-- Reportes PDF/Excel (`src/lib/pdfGenerator.ts`) y plantillas de correo (`supabase/functions/_shared/email-templates.ts`) conservan colores anteriores; decidir si llevan la marca de la plataforma o la del despacho.
-- `src/components/configuraciones/ThemeEditor.tsx` no se usa y todavía ofrece temas «Azul Marino».
+- **Reportes PDF** (`src/lib/pdfGenerator.ts`, paleta «Russell Bedford Navy») y **correos** (`supabase/functions/_shared/email-templates.ts`, firmados por «El Equipo de Compliance de Russell Bedford») llevan la **marca del despacho**, no la de la plataforma. Es intencional: no los alinees con esta guía sin confirmarlo con el despacho. El Excel (`src/lib/excelExport.ts`) no define colores ni marca.
+- **`ThemeEditor.tsx`** (Configuraciones) permite personalizar los tokens y guardarlos en `app_settings`. Hoy **no está montado** en ninguna pantalla. Sus presets son variantes de Expediente (cambian el Sello; Papel y Tinta se conservan). Si se llega a montar, ojo: lo que guarde se aplica a **todos** los usuarios y, al ir en línea sobre `<html>`, también pisa el modo oscuro.

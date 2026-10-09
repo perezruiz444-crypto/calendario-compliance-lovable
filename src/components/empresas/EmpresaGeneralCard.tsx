@@ -62,7 +62,7 @@ export function EmpresaGeneralCard({ empresa, canEdit, onUpdate }: EmpresaGenera
   };
 
   return (
-    <Card className="gradient-card shadow-card">
+    <Card className="shadow-card">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="font-heading flex items-center gap-2">
           <FileText className="w-5 h-5" />
@@ -75,7 +75,7 @@ export function EmpresaGeneralCard({ empresa, canEdit, onUpdate }: EmpresaGenera
                 <Button variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving}>
                   <X className="w-4 h-4" />
                 </Button>
-                <Button size="sm" onClick={handleSave} disabled={isSaving} className="gradient-primary">
+                <Button size="sm" onClick={handleSave} disabled={isSaving}>
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 </Button>
               </>
