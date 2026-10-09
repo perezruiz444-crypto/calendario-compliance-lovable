@@ -38,7 +38,7 @@ export function KpiCard({ title, value, suffix, icon: Icon, tone = 'primary', su
         </div>
       </div>
       <div className="flex items-baseline gap-1">
-        <AnimatedNumber value={value} className={`font-heading text-4xl font-bold tracking-tight ${t.num}`} />
+        <AnimatedNumber value={value} className={`font-heading text-4xl font-bold ${t.num}`} />
         {suffix && <span className={`font-heading text-2xl font-bold ${t.num}`}>{suffix}</span>}
       </div>
       {sub && <p className="text-[11px] text-muted-foreground mt-2">{sub}</p>}

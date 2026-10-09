@@ -37,7 +37,7 @@ export function ObligacionesActivasTab() {
   if (!empresaId) {
     return (
       <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-none bg-muted mb-4">
           <Building2 className="w-8 h-8 text-muted-foreground" />
         </div>
         <h3 className="font-heading font-semibold text-lg mb-2">Selecciona una empresa</h3>
@@ -59,7 +59,7 @@ export function ObligacionesActivasTab() {
   if (ocurrencias.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-none bg-muted mb-4">
           <ClipboardList className="w-8 h-8 text-muted-foreground" />
         </div>
         <h3 className="font-heading font-semibold text-lg mb-2">Sin obligaciones activas</h3>

@@ -25,7 +25,7 @@ export function EmptyState({ icon: Icon, eyebrow, title, description, action, cl
         </div>
       )}
       {eyebrow && <p className="eyebrow-primary mb-2">{eyebrow}</p>}
-      <h3 className="font-heading text-lg font-semibold text-foreground mb-1.5 tracking-tight">{title}</h3>
+      <h3 className="font-heading text-lg font-semibold text-foreground mb-1.5">{title}</h3>
       {description && (
         <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-5">{description}</p>
       )}

@@ -267,9 +267,7 @@ export default function EmpresaDetail() {
         {/* ── HERO ── */}
         <div className="relative overflow-hidden rounded-2xl border border-border shadow-lg">
           {/* Background */}
-          <div className="absolute inset-0" style={{ background: 'hsl(var(--primary))' }} />
-          <div className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 0%, transparent 60%)' }} />
+          <div className="absolute inset-0" style={{ background: 'hsl(var(--band))' }} />
           <div className="absolute top-0 left-0 w-1 h-full bg-red-500 opacity-80" />
 
           <div className="relative px-6 py-5">
@@ -403,8 +401,8 @@ export default function EmpresaDetail() {
                       <span className="text-sm text-muted-foreground">{s.label}</span>
                     </div>
                     <span className="text-sm font-bold">{s.value}</span>
-                    <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className={`h-full rounded-full ${s.color}`}
+                    <div className="w-20 h-1.5 rounded-none bg-muted overflow-hidden">
+                      <div className={`h-full rounded-none ${s.color}`}
                         style={{ width: `${tareas.length ? (s.value / tareas.length) * 100 : 0}%` }} />
                     </div>
                   </div>

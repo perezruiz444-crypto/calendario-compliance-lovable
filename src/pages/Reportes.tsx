@@ -954,7 +954,7 @@ export default function Reportes() {
                   <p className="text-4xl font-heading font-bold text-primary">{reporteData.resumen.tasaCompletitud}%</p>
                 </div>
               </div>
-              <div className="mt-4 h-3 bg-muted rounded-full overflow-hidden">
+              <div className="mt-4 h-3 bg-muted rounded-none overflow-hidden">
                 <div 
                   className="h-full bg-success transition-all duration-500" 
                   style={{ width: `${reporteData.resumen.tasaCompletitud}%` }}
@@ -995,8 +995,8 @@ export default function Reportes() {
                           <p className={`text-2xl font-heading font-bold ${item.color}`}>{item.count}</p>
                         </div>
                       </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className={`h-full ${item.bg} rounded-full transition-all duration-500`} style={{ width: `${pct}%`, backgroundColor: `var(--${item.label === 'Pendiente' ? 'warning' : item.label === 'En Progreso' ? 'primary' : item.label === 'Completada' ? 'success' : 'muted-foreground'})`, opacity: 0.6 }} />
+                      <div className="h-1.5 bg-muted rounded-none overflow-hidden">
+                        <div className={`h-full ${item.bg} rounded-none transition-all duration-500`} style={{ width: `${pct}%`, backgroundColor: `var(--${item.label === 'Pendiente' ? 'warning' : item.label === 'En Progreso' ? 'primary' : item.label === 'Completada' ? 'success' : 'muted-foreground'})`, opacity: 0.6 }} />
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">{pct}% del total</p>
                     </CardContent>

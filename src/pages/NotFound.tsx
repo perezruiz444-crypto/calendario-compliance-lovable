@@ -22,7 +22,7 @@ const NotFound = () => {
         className="max-w-lg w-full text-center"
       >
         <p className="eyebrow-primary mb-4">Error 404 · Ruta no encontrada</p>
-        <h1 className="font-heading font-bold text-[clamp(6rem,18vw,11rem)] leading-none tracking-tight text-primary">
+        <h1 className="font-heading font-bold text-[clamp(6rem,18vw,11rem)] leading-none text-primary">
           404
         </h1>
         <p className="mt-4 text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">

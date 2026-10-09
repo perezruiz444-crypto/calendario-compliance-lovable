@@ -67,7 +67,7 @@ export function NotificationDropdown() {
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-8 text-center">
-            <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+            <div className="mx-auto w-12 h-12 bg-muted rounded-none flex items-center justify-center mb-3">
               <Bell className="w-6 h-6 text-muted-foreground" />
             </div>
             <p className="text-sm font-heading font-medium text-muted-foreground">

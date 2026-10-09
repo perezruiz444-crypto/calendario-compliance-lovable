@@ -37,6 +37,10 @@
     --accent: 60 8% 88%;
     --accent-foreground: 214 17% 8%;
 
+    /* Banda = encabezados oscuros de marca (héroes). No se invierte en modo oscuro */
+    --band: 214 17% 8%;
+    --band-foreground: 60 14% 95%;
+
     /* Sello = acento de marca. Escaso a propósito: atención o cumplido */
     --sello: 9 75% 45%;                 /* #C8361D */
     --sello-foreground: 0 0% 100%;
@@ -115,6 +119,9 @@
 
     --accent: 214 12% 17%;
     --accent-foreground: 60 14% 95%;
+
+    --band: 214 12% 17%;
+    --band-foreground: 60 14% 95%;
 
     --sello: 9 75% 56%;                 /* #E2553A */
     --sello-foreground: 214 17% 8%;
@@ -268,10 +275,10 @@
   /* Heading scale — systematic, ratio 1.25. Use by hierarchy, not by desired size.
      h1 48 / h2 32 / h3 24 / h4 20. Fixed weight per level. */
   .h1 {
-    @apply font-heading text-5xl font-bold leading-tight;
+    @apply font-heading text-5xl font-bold uppercase leading-tight;
   }
   .h2 {
-    @apply font-heading text-3xl font-bold leading-tight;
+    @apply font-heading text-3xl font-bold uppercase leading-tight;
   }
   .h3 {
     @apply font-heading text-2xl font-semibold leading-snug;

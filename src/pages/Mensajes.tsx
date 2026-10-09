@@ -113,7 +113,7 @@ export default function Mensajes() {
                 <span className="capitalize">{t}</span>
                 <span className="text-xs font-mono text-muted-foreground/70">({count})</span>
                 {t === 'recibidos' && mensajesNoLeidos > 0 && (
-                  <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-warning text-warning-foreground text-[10px] font-bold">
+                  <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-none bg-warning text-warning-foreground text-[10px] font-bold">
                     {mensajesNoLeidos}
                   </span>
                 )}

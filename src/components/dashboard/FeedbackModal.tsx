@@ -162,7 +162,7 @@ export default function FeedbackModal({ userId }: FeedbackModalProps) {
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
                 <div
                   className={cn(
-                    'h-1.5 w-full rounded-full transition-all duration-300',
+                    'h-1.5 w-full rounded-none transition-all duration-300',
                     i <= step ? 'bg-primary-foreground' : 'bg-primary-foreground/25'
                   )}
                 />

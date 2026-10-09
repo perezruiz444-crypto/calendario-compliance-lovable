@@ -128,7 +128,7 @@ export default function SecurityAuditSection() {
               {topTables.map(([table, count]) => (
                 <Badge key={table} variant="secondary" className="gap-1.5 py-1 px-2.5">
                   {table}
-                  <span className="text-[10px] bg-primary/10 text-primary rounded-full px-1.5">{count}</span>
+                  <span className="text-[10px] bg-primary/10 text-primary rounded-none px-1.5">{count}</span>
                 </Badge>
               ))}
             </div>

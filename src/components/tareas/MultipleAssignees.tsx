@@ -139,7 +139,7 @@ export function MultipleAssignees({ tareaId, empresaId, canEdit = true }: Multip
             return (
               <div
                 key={a.id}
-                className="flex items-center gap-1.5 bg-muted rounded-full pl-1 pr-2 py-0.5"
+                className="flex items-center gap-1.5 bg-muted rounded-none pl-1 pr-2 py-0.5"
               >
                 <Avatar className="w-5 h-5">
                   <AvatarFallback className={`text-[10px] ${u?.tipo === 'cliente' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>

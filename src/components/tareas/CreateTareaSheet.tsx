@@ -396,7 +396,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
             {successAnim && (
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80">
                 <div className="flex flex-col items-center gap-2 animate-in zoom-in-95">
-                  <div className="h-14 w-14 rounded-full bg-success/20 flex items-center justify-center">
+                  <div className="h-14 w-14 rounded-none bg-success/20 flex items-center justify-center">
                     <Check className="h-7 w-7 text-success" />
                   </div>
                   <p className="font-heading font-semibold text-success text-sm">¡Tarea creada!</p>
@@ -529,13 +529,13 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                         { t: 'nextWeek' as const, l: 'Próx. semana' },
                       ].map(({ t, l }) => (
                         <button key={t} type="button" onClick={() => setQuickDate(t)}
-                          className="px-2.5 py-1 rounded-full text-xs font-medium bg-muted/50 text-muted-foreground hover:bg-muted transition-all border border-transparent">
+                          className="px-2.5 py-1 rounded-none text-xs font-medium bg-muted/50 text-muted-foreground hover:bg-muted transition-all border border-transparent">
                           {l}
                         </button>
                       ))}
                       <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                         <PopoverTrigger asChild>
-                          <button type="button" className="px-2.5 py-1 rounded-full text-xs font-medium bg-muted/50 text-muted-foreground hover:bg-muted transition-all flex items-center gap-1">
+                          <button type="button" className="px-2.5 py-1 rounded-none text-xs font-medium bg-muted/50 text-muted-foreground hover:bg-muted transition-all flex items-center gap-1">
                             <CalendarIcon className="h-3 w-3" />
                             {formData.fecha_vencimiento ? format(new Date(formData.fecha_vencimiento + 'T12:00:00'), 'dd MMM', { locale: es }) : 'Elegir'}
                           </button>
@@ -575,7 +575,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                             <button key={preset.label} type="button"
                               onClick={() => handlePresetSelect(preset)}
                               className={cn(
-                                'px-2.5 py-1 rounded-full text-xs font-medium border transition-all',
+                                'px-2.5 py-1 rounded-none text-xs font-medium border transition-all',
                                 !customRecurrence && activePreset?.label === preset.label
                                   ? 'bg-primary/15 text-primary border-primary/30 ring-1 ring-primary/20'
                                   : 'bg-background text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground'
@@ -586,7 +586,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                           <button type="button"
                             onClick={() => setCustomRecurrence(true)}
                             className={cn(
-                              'px-2.5 py-1 rounded-full text-xs font-medium border transition-all',
+                              'px-2.5 py-1 rounded-none text-xs font-medium border transition-all',
                               customRecurrence
                                 ? 'bg-primary/15 text-primary border-primary/30 ring-1 ring-primary/20'
                                 : 'bg-background text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground'

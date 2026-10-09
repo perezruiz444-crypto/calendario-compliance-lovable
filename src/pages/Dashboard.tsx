@@ -284,14 +284,14 @@ export default function Dashboard() {
                 >
                   <div className="flex items-start justify-between mb-4">
                     <p className="eyebrow text-[10px]">{kpi.title}</p>
-                    <div className={`${t.chip} transition-transform group-hover:scale-110`}>
+                    <div className={`${t.chip} `}>
                       <Icon className="w-4 h-4" />
                     </div>
                   </div>
                   <div className="flex items-baseline gap-1">
                     <AnimatedNumber
                       value={numericValue}
-                      className={`font-heading text-4xl font-bold tracking-tight ${t.num}`}
+                      className={`font-heading text-4xl font-bold ${t.num}`}
                     />
                     {suffix && <span className={`font-heading text-2xl font-bold ${t.num}`}>{suffix}</span>}
                   </div>

@@ -215,7 +215,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                 type="button"
                 onClick={() => updateField('estado', e.value)}
                 className={cn(
-                  'px-3 py-1 rounded-full text-xs font-medium border transition-all',
+                  'px-3 py-1 rounded-none text-xs font-medium border transition-all',
                   tarea.estado === e.value
                     ? cn(e.color, 'ring-1 ring-offset-1 ring-primary/20')
                     : 'bg-muted/30 text-muted-foreground border-transparent hover:bg-muted/60'
@@ -241,7 +241,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                     type="button"
                     onClick={() => updateField('prioridad', p.value)}
                     className={cn(
-                      'px-3 py-1 rounded-full text-xs font-medium border transition-all',
+                      'px-3 py-1 rounded-none text-xs font-medium border transition-all',
                       tarea.prioridad === p.value
                         ? cn(p.color, 'ring-1 ring-offset-1 ring-primary/20')
                         : 'bg-muted/30 text-muted-foreground border-transparent hover:bg-muted/60'

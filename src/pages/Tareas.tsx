@@ -77,7 +77,7 @@ function TareaCard({
     <div
       onClick={onClick}
       className={cn(
-        'group relative p-5 border rounded-lg hover:shadow-md hover:scale-[1.01] cursor-pointer transition-all bg-card',
+        'group relative p-5 border rounded-lg hover:border-foreground/40 cursor-pointer transition-colors bg-card',
         'transition-all duration-150',
         isDragging && 'scale-[0.98] shadow-lg rotate-1 opacity-75 cursor-grabbing',
         isSelected && 'ring-2 ring-primary'
