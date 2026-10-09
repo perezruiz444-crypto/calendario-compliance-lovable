@@ -92,6 +92,11 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        // Dirección A: esquinas casi rectas. Los xl/2xl/3xl heredados se normalizan aquí
+        // en lugar de editar cada componente; `full` se conserva para avatares, puntos y switches.
+        xl: "var(--radius)",
+        "2xl": "var(--radius)",
+        "3xl": "var(--radius)",
       },
       keyframes: {
         "accordion-down": {

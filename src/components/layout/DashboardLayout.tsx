@@ -84,7 +84,7 @@ function SidebarContent({
         <div className="absolute top-0 left-0 right-0 h-[3px] bg-sidebar-foreground" />
 
         <div className="mb-5 relative text-sidebar-foreground">
-          <Logo tagline="Folio de cumplimiento · MX" />
+          <Logo tagline="Folio de cumplimiento" />
         </div>
 
         {(role === 'consultor' || role === 'administrador') && (
