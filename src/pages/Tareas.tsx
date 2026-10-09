@@ -38,6 +38,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { DndContext, DragEndEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { getErrorMessage } from '@/lib/errors';
 
 // Helper Components
 interface TareaCardProps {
@@ -545,8 +546,8 @@ export default function Tareas() {
       if (error) throw error;
 
       toast.success(data?.message || "Las notificaciones han sido enviadas exitosamente");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     }
   };
 

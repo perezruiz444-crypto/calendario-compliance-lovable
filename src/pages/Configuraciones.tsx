@@ -87,7 +87,7 @@ export default function Configuraciones() {
 
   const fetchSettings = async () => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('notification_settings')
         .select('*')
         .order('category', { ascending: true })
@@ -104,7 +104,7 @@ export default function Configuraciones() {
   const handleToggle = async (id: string, currentValue: boolean) => {
     setUpdating(id);
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('notification_settings')
         .update({ enabled: !currentValue })
         .eq('id', id);

@@ -12,6 +12,7 @@ import {
   Building2, Percent, Shield, Globe, Package, FileCheck,
   ArrowRight, ArrowLeft, Check, MapPin, Phone, Briefcase
 } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 interface Props {
   open: boolean;
@@ -173,8 +174,8 @@ export default function OnboardingEmpresaWizard({ open, onOpenChange, onEmpresaC
       
       onOpenChange(false);
       onEmpresaCreated(data.id);
-    } catch (e: any) {
-      toast.error(e.message || 'Error al registrar la empresa');
+    } catch (e) {
+      toast.error(getErrorMessage(e) || 'Error al registrar la empresa');
     } finally {
       setLoading(false);
     }

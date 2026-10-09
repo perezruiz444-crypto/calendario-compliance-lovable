@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Users, Plus, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 interface ApoderadosCardProps {
   empresaId: string;
@@ -63,8 +64,8 @@ export function ApoderadosCard({ empresaId, apoderados, canEdit, onUpdate }: Apo
       }
       cancel();
       onUpdate();
-    } catch (e: any) {
-      toast.error(e.message || 'Error');
+    } catch (e) {
+      toast.error(getErrorMessage(e) || 'Error');
     } finally {
       setSaving(false);
     }
@@ -76,8 +77,8 @@ export function ApoderadosCard({ empresaId, apoderados, canEdit, onUpdate }: Apo
       if (error) throw error;
       toast.success('Apoderado eliminado');
       onUpdate();
-    } catch (e: any) {
-      toast.error(e.message || 'Error al eliminar');
+    } catch (e) {
+      toast.error(getErrorMessage(e) || 'Error al eliminar');
     }
   };
 

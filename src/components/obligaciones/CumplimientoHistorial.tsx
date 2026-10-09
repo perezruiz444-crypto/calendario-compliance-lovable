@@ -37,7 +37,7 @@ export function CumplimientoHistorial({ open, onOpenChange, obligacionId, obliga
         .createSignedUrl(path, 60);
       if (error || !signed?.signedUrl) throw error || new Error('No se pudo generar el enlace');
       window.open(signed.signedUrl, '_blank', 'noopener,noreferrer');
-    } catch (err: any) {
+    } catch (err) {
       toast.error('No se pudo abrir la evidencia');
     } finally {
       setDescargando(null);

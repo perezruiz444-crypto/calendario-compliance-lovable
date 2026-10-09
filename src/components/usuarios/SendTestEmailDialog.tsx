@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Mail } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 interface SendTestEmailDialogProps {
   open: boolean;
@@ -66,9 +67,9 @@ export default function SendTestEmailDialog({
       // Reset form
       setSubject('Correo de Prueba');
       setMessage('Este es un mensaje de prueba del sistema.\n\nSi recibes este correo, la configuración de email está funcionando correctamente.');
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error sending test email:', error);
-      toast.error(error.message || 'Error al enviar correo de prueba');
+      toast.error(getErrorMessage(error) || 'Error al enviar correo de prueba');
     } finally {
       setLoading(false);
     }

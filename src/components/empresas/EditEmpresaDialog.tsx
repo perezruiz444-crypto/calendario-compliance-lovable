@@ -13,6 +13,7 @@ import EmpresaFormMatrizSeguridad from './EmpresaFormMatrizSeguridad';
 import EmpresaFormPadronImportadores from './EmpresaFormPadronImportadores';
 import EmpresaFormAgentesAduanales from './EmpresaFormAgentesAduanales';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 interface EditEmpresaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -86,8 +87,8 @@ export default function EditEmpresaDialog({ open, onOpenChange, onEmpresaUpdated
       toast.success('Empresa actualizada exitosamente');
       onOpenChange(false);
       onEmpresaUpdated();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al actualizar empresa');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al actualizar empresa');
     } finally {
       setLoading(false);
     }

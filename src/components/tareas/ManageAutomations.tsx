@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Zap, Plus, Trash2, Edit, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 interface AutomationRule {
   id: string;
@@ -136,8 +137,8 @@ export function ManageAutomations() {
       resetForm();
       setDialogOpen(false);
       fetchRules();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -151,8 +152,8 @@ export function ManageAutomations() {
       if (error) throw error;
       fetchRules();
       toast.success('Regla eliminada');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -166,8 +167,8 @@ export function ManageAutomations() {
       if (error) throw error;
       fetchRules();
       toast.success(rule.activa ? 'Regla desactivada' : 'Regla activada');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 

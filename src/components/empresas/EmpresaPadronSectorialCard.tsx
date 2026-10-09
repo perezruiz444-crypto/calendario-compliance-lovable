@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DomiciliosProgramaSection } from './DomiciliosProgramaSection';
+import { getErrorMessage } from '@/lib/errors';
 
 interface Registro {
   id: string;
@@ -60,8 +61,8 @@ export function EmpresaPadronSectorialCard({ empresaId, canEdit }: EmpresaPadron
       setNewSector('');
       setNewFecha('');
       fetchRegistros();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     } finally {
       setIsSaving(false);
     }
@@ -77,8 +78,8 @@ export function EmpresaPadronSectorialCard({ empresaId, canEdit }: EmpresaPadron
       if (error) throw error;
       toast.success('Sector eliminado');
       fetchRegistros();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     } finally {
       setIsSaving(false);
     }

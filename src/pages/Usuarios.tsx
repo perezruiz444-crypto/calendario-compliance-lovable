@@ -14,6 +14,7 @@ import EditUserDialog from '@/components/usuarios/EditUserDialog';
 import SendTestEmailDialog from '@/components/usuarios/SendTestEmailDialog';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 interface UserWithRole {
   id: string;
@@ -54,7 +55,7 @@ export default function Usuarios() {
       if (error) throw error;
 
       setUsuarios(data?.users || []);
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Error al cargar usuarios');
       logger.error('Error al cargar usuarios', error);
     } finally {
@@ -123,9 +124,9 @@ export default function Usuarios() {
       setDeleteDialogOpen(false);
       setUserToDelete(null);
       fetchUsuarios();
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error deleting user:', error);
-      toast.error(error.message || 'Error al eliminar usuario');
+      toast.error(getErrorMessage(error) || 'Error al eliminar usuario');
     } finally {
       setDeleting(false);
     }

@@ -57,7 +57,7 @@ export function MensajeDetailDialog({ open, onOpenChange, mensajeId, onUpdate }:
           .eq('id', mensajeId);
         onUpdate();
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Error al cargar mensaje');
       logger.error('Error al cargar mensaje', error);
     } finally {

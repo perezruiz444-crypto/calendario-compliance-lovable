@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { Bell, Send } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 interface SendNotificationDialogProps {
   tareaId?: string;
@@ -42,9 +43,9 @@ export default function SendNotificationDialog({ tareaId, consultorId }: SendNot
       toast.success(data?.message || "La notificación ha sido enviada exitosamente");
 
       setOpen(false);
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Error sending notification', err);
-      toast.error(err.message || "No se pudo enviar la notificación");
+      toast.error(getErrorMessage(err) || "No se pudo enviar la notificación");
     } finally {
       setSending(false);
     }

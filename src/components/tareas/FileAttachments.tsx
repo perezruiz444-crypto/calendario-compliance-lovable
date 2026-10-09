@@ -5,12 +5,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Upload, File, X, Download, FileText, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { getErrorMessage } from '@/lib/errors';
+import type { TareaAdjunto } from '@/types/domain';
 
 interface FileAttachmentsProps {
   empresaId?: string;
   tareaId?: string;
-  attachments: any[];
-  onAttachmentsChange: (attachments: any[]) => void;
+  attachments: TareaAdjunto[];
+  onAttachmentsChange: (attachments: TareaAdjunto[]) => void;
   readonly?: boolean;
 }
 
@@ -92,8 +94,8 @@ export function FileAttachments({ empresaId, tareaId, attachments, onAttachments
 
       onAttachmentsChange([...attachments, ...uploadedFiles]);
       toast.success(`${uploadedFiles.length} archivo(s) cargado(s) exitosamente`);
-    } catch (error: any) {
-      toast.error('Error al cargar archivos: ' + error.message);
+    } catch (error) {
+      toast.error('Error al cargar archivos: ' + getErrorMessage(error));
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -116,12 +118,12 @@ export function FileAttachments({ empresaId, tareaId, attachments, onAttachments
       const newAttachments = attachments.filter((_, i) => i !== index);
       onAttachmentsChange(newAttachments);
       toast.success('Archivo eliminado');
-    } catch (error: any) {
-      toast.error('Error al eliminar archivo: ' + error.message);
+    } catch (error) {
+      toast.error('Error al eliminar archivo: ' + getErrorMessage(error));
     }
   };
 
-  const handleDownload = async (file: any) => {
+  const handleDownload = async (file: TareaAdjunto) => {
     try {
       const { data, error } = await supabase.storage
         .from('task-attachments')
@@ -138,8 +140,8 @@ export function FileAttachments({ empresaId, tareaId, attachments, onAttachments
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (error: any) {
-      toast.error('Error al descargar archivo: ' + error.message);
+    } catch (error) {
+      toast.error('Error al descargar archivo: ' + getErrorMessage(error));
     }
   };
 

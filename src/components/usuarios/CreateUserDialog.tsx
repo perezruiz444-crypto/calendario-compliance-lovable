@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useEmpresasList } from '@/hooks/useEmpresasList';
+import { getErrorMessage } from '@/lib/errors';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -108,8 +109,8 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
         resetAndClose();
         onUserCreated();
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Error al crear usuario');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al crear usuario');
     } finally {
       setLoading(false);
     }

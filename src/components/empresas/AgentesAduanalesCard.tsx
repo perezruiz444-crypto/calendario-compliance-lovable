@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Hash, Plus, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 interface AgentesAduanalesCardProps {
   empresaId: string;
@@ -59,8 +60,8 @@ export function AgentesAduanalesCard({ empresaId, agentes, canEdit, onUpdate }: 
       }
       cancel();
       onUpdate();
-    } catch (e: any) {
-      toast.error(e.message || 'Error');
+    } catch (e) {
+      toast.error(getErrorMessage(e) || 'Error');
     } finally {
       setSaving(false);
     }
@@ -72,8 +73,8 @@ export function AgentesAduanalesCard({ empresaId, agentes, canEdit, onUpdate }: 
       if (error) throw error;
       toast.success('Agente eliminado');
       onUpdate();
-    } catch (e: any) {
-      toast.error(e.message || 'Error al eliminar');
+    } catch (e) {
+      toast.error(getErrorMessage(e) || 'Error al eliminar');
     }
   };
 

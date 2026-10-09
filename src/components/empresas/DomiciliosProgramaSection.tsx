@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { MapPin, Plus, Trash2, Check, X, Loader2, Pencil } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 export type ProgramaDomicilio =
   | 'immex'
@@ -83,8 +84,8 @@ export function DomiciliosProgramaSection({
       }
       cancel();
       fetchRows();
-    } catch (e: any) {
-      toast.error(e.message || 'Error al guardar');
+    } catch (e) {
+      toast.error(getErrorMessage(e) || 'Error al guardar');
     } finally {
       setSaving(false);
     }

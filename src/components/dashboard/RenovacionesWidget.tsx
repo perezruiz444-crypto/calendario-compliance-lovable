@@ -36,7 +36,7 @@ export default function RenovacionesWidget() {
     setLoading(true);
     try {
       // Get configurable dias_antes per program type from reminder_rules
-      const { data: rules } = await (supabase as any)
+      const { data: rules } = await supabase
         .from('reminder_rules')
         .select('tipo, dias_antes')
         .eq('activa', true);
@@ -52,7 +52,7 @@ export default function RenovacionesWidget() {
       const getDias = (tipo: string) => diasAntesByTipo[tipo] ?? DEFAULT_DIAS_ANTES;
 
       // Fetch all empresas with program date fields
-      const { data: empresas } = await (supabase as any)
+      const { data: empresas } = await supabase
         .from('empresas')
         .select(`
           id,

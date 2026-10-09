@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger';
 import { FileText, Upload, Download, Trash2, Calendar, User, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getErrorMessage } from '@/lib/errors';
 
 interface DocumentosManagerProps {
   empresaId: string;
@@ -137,9 +138,9 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
       });
       setSelectedFile(null);
       fetchDocumentos();
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error uploading document', error);
-      toast.error(error.message || 'No se pudo subir el documento');
+      toast.error(getErrorMessage(error) || 'No se pudo subir el documento');
     } finally {
       setUploading(false);
     }
@@ -168,7 +169,7 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
       toast.success('Documento eliminado correctamente');
 
       fetchDocumentos();
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error deleting document', error);
       toast.error('No se pudo eliminar el documento');
     }

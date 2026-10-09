@@ -219,7 +219,7 @@ export default function ThemeEditor() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('app_settings')
         .upsert(
           { key: 'theme_colors', value: colors, updated_at: new Date().toISOString() },
@@ -245,7 +245,7 @@ export default function ThemeEditor() {
 
     setSaving(true);
     try {
-      await (supabase as any)
+      await supabase
         .from('app_settings')
         .delete()
         .eq('key', 'theme_colors');

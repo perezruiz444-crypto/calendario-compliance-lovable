@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger';
 import { MessageSquarePlus, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getErrorMessage } from '@/lib/errors';
 
 interface SolicitudesServicioProps {
   empresaId: string;
@@ -88,9 +89,9 @@ export function SolicitudesServicio({ empresaId }: SolicitudesServicioProps) {
         prioridad: 'media'
       });
       fetchSolicitudes();
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error creating solicitud', error);
-      toast.error(error.message || 'No se pudo crear la solicitud');
+      toast.error(getErrorMessage(error) || 'No se pudo crear la solicitud');
     } finally {
       setSubmitting(false);
     }

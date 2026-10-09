@@ -5,9 +5,11 @@ import { cn } from '@/lib/utils';
 import { FileText, Repeat, Clock, Check, ChevronRight } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { logger } from '@/lib/logger';
+import type { TareaTemplate } from '@/types/domain';
+import { getCamposTemplate, getSubtareasTemplate } from '@/lib/templates';
 
 interface TemplateSelectorProps {
-  onSelect: (template: any) => void;
+  onSelect: (template: TareaTemplate) => void;
 }
 
 const PRIORITY_STYLES: Record<string, string> = {
@@ -17,7 +19,7 @@ const PRIORITY_STYLES: Record<string, string> = {
 };
 
 export function TemplateSelector({ onSelect }: TemplateSelectorProps) {
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<TareaTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -96,8 +98,8 @@ export function TemplateSelector({ onSelect }: TemplateSelectorProps) {
         <div className="grid gap-1.5 max-h-[200px] overflow-y-auto pr-1">
           {templates.map((template) => {
             const isSelected = selectedId === template.id;
-            const hasRecurrence = template.campos_personalizados?.es_recurrente;
-            const subtareasCount = (template.subtareas_template as any[])?.length || 0;
+            const hasRecurrence = getCamposTemplate(template.campos_personalizados).es_recurrente;
+            const subtareasCount = getSubtareasTemplate(template.subtareas_template).length;
 
             return (
               <button
@@ -132,7 +134,7 @@ export function TemplateSelector({ onSelect }: TemplateSelectorProps) {
                     <div className="flex items-center gap-1 mt-1.5 ml-5 flex-wrap">
                       <Badge
                         variant="outline"
-                        className={cn("text-[10px] px-1.5 py-0 border", PRIORITY_STYLES[template.prioridad] || '')}
+                        className={cn("text-[10px] px-1.5 py-0 border", PRIORITY_STYLES[template.prioridad ?? ''] || '')}
                       >
                         {template.prioridad === 'alta' ? 'Alta' : template.prioridad === 'media' ? 'Media' : 'Baja'}
                       </Badge>

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { MapPin, Plus, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 interface DomiciliosCardProps {
   empresaId: string;
@@ -45,8 +46,8 @@ export function DomiciliosCard({ empresaId, domicilios, canEdit, onUpdate }: Dom
       }
       cancel();
       onUpdate();
-    } catch (e: any) {
-      toast.error(e.message || 'Error');
+    } catch (e) {
+      toast.error(getErrorMessage(e) || 'Error');
     } finally {
       setSaving(false);
     }
@@ -58,8 +59,8 @@ export function DomiciliosCard({ empresaId, domicilios, canEdit, onUpdate }: Dom
       if (error) throw error;
       toast.success('Domicilio eliminado');
       onUpdate();
-    } catch (e: any) {
-      toast.error(e.message || 'Error al eliminar');
+    } catch (e) {
+      toast.error(getErrorMessage(e) || 'Error al eliminar');
     }
   };
 

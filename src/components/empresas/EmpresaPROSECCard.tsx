@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { EditableInfoCard } from './EditableInfoCard';
 import { DomiciliosProgramaSection } from './DomiciliosProgramaSection';
 import type { Empresa } from '@/types/domain';
+import { getErrorMessage } from '@/lib/errors';
 
 interface EmpresaPROSECCardProps {
   empresa: Empresa;
@@ -54,8 +55,8 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
       toast.success('PROSEC actualizado');
       setIsEditing(false);
       onUpdate();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al actualizar');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al actualizar');
     } finally {
       setIsSaving(false);
     }

@@ -25,6 +25,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { getErrorMessage } from '@/lib/errors';
 
 type EmpresaListRow = {
   id: string;
@@ -118,8 +119,8 @@ export default function Empresas() {
       toast.success('Empresa duplicada exitosamente');
       invalidateEmpresas();
       navigate(`/empresas/${newEmpresa.id}`);
-    } catch (error: any) {
-      toast.error(error.message || 'Error al duplicar empresa');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al duplicar empresa');
     }
   };
 
@@ -150,8 +151,8 @@ export default function Empresas() {
       toast.success('Empresa eliminada exitosamente');
       setDeleteEmpresaId(null);
       invalidateEmpresas();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al eliminar empresa');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al eliminar empresa');
     }
   };
 

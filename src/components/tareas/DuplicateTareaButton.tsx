@@ -1,18 +1,36 @@
 import { Button } from '@/components/ui/button';
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Tarea } from '@/types/domain';
+import type { TareaPrioridad } from '@/types';
+
+/** Datos de formulario que se precargan al duplicar una tarea. */
+export interface TareaDuplicada {
+  titulo: string;
+  descripcion: string;
+  prioridad: TareaPrioridad;
+  empresa_id: string;
+  consultor_asignado_id: string;
+  categoria_id: string;
+  fecha_vencimiento: string;
+  es_recurrente: boolean;
+  frecuencia_recurrencia: string;
+  intervalo_recurrencia: number;
+  fecha_inicio_recurrencia: string;
+  fecha_fin_recurrencia: string;
+}
 
 interface DuplicateTareaButtonProps {
-  tarea: any;
-  onDuplicate: (data: any) => void;
+  tarea: Pick<Tarea, 'titulo' | 'descripcion' | 'prioridad' | 'empresa_id' | 'consultor_asignado_id' | 'categoria_id'>;
+  onDuplicate: (data: TareaDuplicada) => void;
 }
 
 export function DuplicateTareaButton({ tarea, onDuplicate }: DuplicateTareaButtonProps) {
   const handleDuplicate = () => {
-    const duplicateData = {
+    const duplicateData: TareaDuplicada = {
       titulo: `${tarea.titulo} (Copia)`,
       descripcion: tarea.descripcion || '',
-      prioridad: tarea.prioridad,
+      prioridad: tarea.prioridad ?? 'media',
       empresa_id: tarea.empresa_id,
       consultor_asignado_id: tarea.consultor_asignado_id || '',
       categoria_id: tarea.categoria_id || '',

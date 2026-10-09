@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { Send } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 interface CreateMensajeDialogProps {
   open: boolean;
@@ -110,8 +111,8 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
       });
       onOpenChange(false);
       onMensajeCreated();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al enviar mensaje');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al enviar mensaje');
     } finally {
       setLoading(false);
     }

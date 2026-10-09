@@ -10,14 +10,17 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
+import type { TimeEntry } from '@/types/domain';
+import { conPerfiles } from '@/lib/perfiles';
 
 interface TimeTrackerProps {
   tareaId: string;
 }
 
 export function TimeTracker({ tareaId }: TimeTrackerProps) {
-  const [entries, setEntries] = useState<any[]>([]);
-  const [activeEntry, setActiveEntry] = useState<any>(null);
+  const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [activeEntry, setActiveEntry] = useState<TimeEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
@@ -27,7 +30,7 @@ export function TimeTracker({ tareaId }: TimeTrackerProps) {
   }, [tareaId]);
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (activeEntry) {
       interval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - new Date(activeEntry.inicio).getTime()) / 1000);
@@ -41,13 +44,13 @@ export function TimeTracker({ tareaId }: TimeTrackerProps) {
     try {
       const { data, error } = await supabase
         .from('time_entries')
-        .select('*, profiles:user_id(nombre_completo)')
+        .select('*')
         .eq('tarea_id', tareaId)
         .order('inicio', { ascending: false });
 
       if (error) throw error;
       
-      const entries = data || [];
+      const entries: TimeEntry[] = await conPerfiles(data ?? [], 'user_id');
       setEntries(entries);
       
       // Check for active entry
@@ -83,8 +86,8 @@ export function TimeTracker({ tareaId }: TimeTrackerProps) {
       
       fetchEntries();
       toast.success('Timer iniciado');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -105,8 +108,8 @@ export function TimeTracker({ tareaId }: TimeTrackerProps) {
       setElapsedTime(0);
       fetchEntries();
       toast.success('Timer detenido');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -120,8 +123,8 @@ export function TimeTracker({ tareaId }: TimeTrackerProps) {
       if (error) throw error;
       fetchEntries();
       toast.success('Registro eliminado');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 

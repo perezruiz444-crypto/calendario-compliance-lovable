@@ -21,11 +21,11 @@ interface ReminderRule {
   nombre: string;
   tipo: string;
   dias_antes: number;
-  activa: boolean;
+  activa: boolean | null;
   empresa_id: string | null;
-  empresa_nombre?: string;
+  empresa_nombre?: string | null;
   ultima_ejecucion: string | null;
-  created_at: string;
+  created_at: string | null;
 }
 
 interface Empresa {
@@ -69,7 +69,7 @@ export function ReminderRulesManager() {
   const loadData = async () => {
     try {
       // Load rules
-      const { data: rulesData, error: rulesError } = await (supabase as any)
+      const { data: rulesData, error: rulesError } = await supabase
         .from('reminder_rules')
         .select('*')
         .order('tipo', { ascending: true })
@@ -87,7 +87,7 @@ export function ReminderRulesManager() {
 
       // Map empresa names to rules
       const empresaMap = new Map(empresasData?.map(e => [e.id, e.razon_social]) || []);
-      const rulesWithEmpresas = (rulesData || []).map((rule: ReminderRule) => ({
+      const rulesWithEmpresas = (rulesData || []).map((rule) => ({
         ...rule,
         empresa_nombre: rule.empresa_id ? empresaMap.get(rule.empresa_id) : null
       }));
@@ -109,7 +109,7 @@ export function ReminderRulesManager() {
         nombre: rule.nombre,
         tipo: rule.tipo,
         dias_antes: rule.dias_antes,
-        activa: rule.activa,
+        activa: !!rule.activa,
         empresa_id: rule.empresa_id || ''
       });
     } else {
@@ -140,7 +140,7 @@ export function ReminderRulesManager() {
       };
 
       if (editingRule) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('reminder_rules')
           .update(payload)
           .eq('id', editingRule.id);
@@ -148,7 +148,7 @@ export function ReminderRulesManager() {
         if (error) throw error;
         toast.success('Regla actualizada');
       } else {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('reminder_rules')
           .insert(payload);
 
@@ -168,7 +168,7 @@ export function ReminderRulesManager() {
 
   const handleToggleActive = async (rule: ReminderRule) => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('reminder_rules')
         .update({ activa: !rule.activa })
         .eq('id', rule.id);
@@ -188,7 +188,7 @@ export function ReminderRulesManager() {
 
   const handleDelete = async (rule: ReminderRule) => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('reminder_rules')
         .delete()
         .eq('id', rule.id);
@@ -417,7 +417,7 @@ export function ReminderRulesManager() {
 
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         <Switch
-                          checked={rule.activa}
+                          checked={!!rule.activa}
                           onCheckedChange={() => handleToggleActive(rule)}
                         />
                         <Button

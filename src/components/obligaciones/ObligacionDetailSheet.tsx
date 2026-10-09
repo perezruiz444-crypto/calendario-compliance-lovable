@@ -15,6 +15,7 @@ import {
   getVencimientoInfo, formatDateShort,
 } from '@/lib/obligaciones';
 import { useNavigate } from 'react-router-dom';
+import { getErrorMessage } from '@/lib/errors';
 
 interface Props {
   open: boolean;
@@ -163,8 +164,8 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
       }
       onCumplimientoChange?.();
       await fetchData();
-    } catch (e: any) {
-      toast.error('Error al guardar: ' + e.message);
+    } catch (e) {
+      toast.error('Error al guardar: ' + getErrorMessage(e));
     } finally {
       setSaving(false);
     }

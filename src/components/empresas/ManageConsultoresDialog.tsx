@@ -90,7 +90,7 @@ export default function ManageConsultoresDialog({
       );
       setConsultores(disponibles);
 
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error fetching data:', error);
       toast.error('Error al cargar consultores');
     } finally {
@@ -121,7 +121,7 @@ export default function ManageConsultoresDialog({
       toast.success('Consultor asignado correctamente');
       setSelectedConsultor('');
       fetchData();
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error assigning consultor:', error);
       toast.error('Error al asignar consultor');
     } finally {
@@ -142,7 +142,7 @@ export default function ManageConsultoresDialog({
 
       toast.success('Consultor desasignado correctamente');
       fetchData();
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error unassigning consultor:', error);
       toast.error('Error al desasignar consultor');
     } finally {
