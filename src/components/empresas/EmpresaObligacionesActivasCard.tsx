@@ -10,10 +10,11 @@ import { ObligacionFormDialog } from '@/components/obligaciones/ObligacionFormDi
 import {
   CATEGORIA_LABELS, CATEGORIA_COLORS,
   getCurrentPeriodKey, getPeriodLabel,
-  formatDateShort, getVencimientoInfo, ocurrenciasCumplidas } from '@/lib/obligaciones';
+  formatDateShort, getVencimientoInfo, ocurrenciasCumplidas, estadoPorOcurrencias,
+  type OcurrenciaRef } from '@/lib/obligaciones';
 import {
   FileText, Pencil, CheckCircle2, Clock, AlertTriangle, ShieldAlert,
-  ToggleLeft, ToggleRight, Loader2,
+  ToggleLeft, ToggleRight, Loader2, ChevronDown,
 } from 'lucide-react';
 
 interface Props {
@@ -50,8 +51,11 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
   const [editObl, setEditObl] = useState<Obligacion | null>(null);
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
   const [toggling, setToggling] = useState<string | null>(null);
-  // Fase 2: próxima ocurrencia pendiente por obligación_id.
-  const [proximaOcurrencia, setProximaOcurrencia] = useState<Record<string, { id: string; periodo_key: string; fecha_vencimiento: string }>>({});
+  // Ocurrencia del periodo en curso por obligación_id (cada periodo es independiente).
+  const [proximaOcurrencia, setProximaOcurrencia] = useState<Record<string, OcurrenciaRef>>({});
+  const [atrasadas, setAtrasadas] = useState<Record<string, number>>({});
+  const [ocurrenciasPorObl, setOcurrenciasPorObl] = useState<Record<string, OcurrenciaRef[]>>({});
+  const [expandida, setExpandida] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -86,20 +90,26 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
           cumplidas = ocurrenciasCumplidas(cData);
         }
         const cMap: Record<string, boolean> = {};
-        const proxMap: Record<string, { id: string; periodo_key: string; fecha_vencimiento: string }> = {};
+        const porObl: Record<string, OcurrenciaRef[]> = {};
         ocs.forEach((oc) => {
           cMap[oc.id] = cumplidas.has(oc.id);
-          if (!proxMap[oc.obligacion_id]) {
-            proxMap[oc.obligacion_id] = { id: oc.id, periodo_key: oc.periodo_key, fecha_vencimiento: oc.fecha_vencimiento };
-          } else if (!cumplidas.has(oc.id) && cumplidas.has(proxMap[oc.obligacion_id].id)) {
-            proxMap[oc.obligacion_id] = { id: oc.id, periodo_key: oc.periodo_key, fecha_vencimiento: oc.fecha_vencimiento };
-          }
+          (porObl[oc.obligacion_id] ||= []).push(oc);
+        });
+        const proxMap: Record<string, OcurrenciaRef> = {};
+        const atrasMap: Record<string, number> = {};
+        estadoPorOcurrencias(ocs, cumplidas).forEach((e, oblId) => {
+          proxMap[oblId] = e.actual;
+          atrasMap[oblId] = e.atrasadas;
         });
         setCumplimientos(cMap);
         setProximaOcurrencia(proxMap);
+        setAtrasadas(atrasMap);
+        setOcurrenciasPorObl(porObl);
       } else {
         setCumplimientos({});
         setProximaOcurrencia({});
+        setAtrasadas({});
+        setOcurrenciasPorObl({});
       }
     } catch {
       toast.error('Error al cargar obligaciones');
@@ -108,13 +118,18 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
     }
   };
 
-  // Toggle append-only sobre la próxima ocurrencia de la obligación.
+  // Toggle append-only sobre la ocurrencia del periodo en curso.
   const toggleCumplimiento = async (obl: Obligacion) => {
-    if (!user) return;
     const oc = proximaOcurrencia[obl.id];
     if (!oc) { toast.error('Esta obligación no tiene ocurrencias para cumplir'); return; }
+    await toggleOcurrencia(oc);
+  };
+
+  // Toggle append-only de una ocurrencia concreta (cada periodo es independiente).
+  const toggleOcurrencia = async (oc: OcurrenciaRef) => {
+    if (!user) return;
     const isCompleted = cumplimientos[oc.id];
-    setToggling(obl.id);
+    setToggling(oc.id);
     try {
       if (isCompleted) {
         const { data: existing } = await supabase
@@ -133,7 +148,7 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
         toast.success('Cumplimiento desmarcado');
       } else {
         const { error } = await supabase.from('obligacion_cumplimientos').insert({
-          obligacion_id: obl.id,
+          obligacion_id: oc.obligacion_id,
           ocurrencia_id: oc.id,
           empresa_id: empresaId,
           periodo_key: oc.periodo_key,
@@ -144,6 +159,8 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
         setCumplimientos((prev) => ({ ...prev, [oc.id]: true }));
         toast.success('Cumplimiento marcado');
       }
+      // Recalcula ocurrencia actual y atrasadas
+      fetchData();
     } catch {
       toast.error('No tienes permiso o hubo un error');
     } finally {
@@ -187,7 +204,11 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
     );
   };
 
-  const completadas = Object.values(cumplimientos).filter(Boolean).length;
+  // Por obligación, según su periodo en curso (no por ocurrencias sueltas)
+  const completadas = obligaciones.filter((o) => {
+    const oc = proximaOcurrencia[o.id];
+    return oc ? !!cumplimientos[oc.id] : false;
+  }).length;
   const pendientes = obligaciones.length - completadas;
 
   if (loading) {
@@ -231,9 +252,12 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
                 const periodLabel = getPeriodLabel(obl.presentacion, periodKey);
                 const fechaVenc = oc?.fecha_vencimiento ?? obl.fecha_vencimiento;
 
+                const nAtrasadas = atrasadas[obl.id] ?? 0;
+                const ocsObl = ocurrenciasPorObl[obl.id] ?? [];
+
                 return (
+                  <div key={obl.id}>
                   <div
-                    key={obl.id}
                     className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${
                       isCompleted ? 'bg-success/5 border-success/20' : 'hover:bg-accent/10'
                     }`}
@@ -262,8 +286,26 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
                         {fechaVenc && (
                           <span className="text-xs text-muted-foreground">Vence: {formatDateShort(fechaVenc)}</span>
                         )}
+                        {nAtrasadas > 0 && (
+                          <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">
+                            {nAtrasadas} periodo(s) atrasado(s)
+                          </Badge>
+                        )}
                       </div>
                     </div>
+
+                    {ocsObl.length > 1 && (
+                      <Button
+                        aria-label="Ver periodos"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => setExpandida(expandida === obl.id ? null : obl.id)}
+                        title="Ver todos los periodos"
+                      >
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandida === obl.id ? 'rotate-180' : ''}`} />
+                      </Button>
+                    )}
 
                     {/* Status */}
                     {getStatusBadge(obl)}
@@ -298,6 +340,30 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
                         </Button>
                       </div>
                     )}
+                  </div>
+                  {expandida === obl.id && (
+                    <div className="mt-1 mb-2 ml-3 grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                      {ocsObl.map((o) => {
+                        const hecha = !!cumplimientos[o.id];
+                        const vencida = !hecha && getVencimientoInfo(o.fecha_vencimiento)?.status === 'vencido';
+                        return (
+                          <label
+                            key={o.id}
+                            className={`flex items-center gap-2 px-2 py-1.5 border rounded-md text-xs ${
+                              hecha ? 'bg-success/5 border-success/20' : vencida ? 'border-destructive/30 text-destructive' : ''
+                            }`}
+                          >
+                            <Checkbox
+                              checked={hecha}
+                              disabled={!canEdit || toggling === o.id}
+                              onCheckedChange={() => toggleOcurrencia(o)}
+                            />
+                            {getPeriodLabel(obl.presentacion, o.periodo_key)}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                   </div>
                 );
               })}

@@ -11,7 +11,7 @@ import {
   FileText, User, RefreshCw, ExternalLink, RotateCcw,
 } from 'lucide-react';
 import {
-  getCurrentPeriodKey, getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS,
+  getCurrentPeriodKey, getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS, estadoPorOcurrencias,
   getVencimientoInfo, formatDateShort,
 } from '@/lib/obligaciones';
 import { useNavigate } from 'react-router-dom';
@@ -87,13 +87,14 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
         .maybeSingle();
       if (error || !data) { setLoading(false); return; }
 
-      const { data: oc } = await supabase
+      // Ocurrencia del periodo en curso (cada periodo es independiente), no la primera del año
+      const { data: ocsObl } = await supabase
         .from('obligacion_ocurrencias')
         .select('*')
         .eq('obligacion_id', obligacionId!)
-        .order('fecha_vencimiento', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .order('fecha_vencimiento', { ascending: true });
+      const actual = estadoPorOcurrencias(ocsObl ?? [], new Set()).get(obligacionId!)?.actual;
+      const oc = (ocsObl ?? []).find((o) => o.id === actual?.id) ?? null;
 
       targetOcurrencia = oc;
       setOb({ ...data, fecha_vencimiento: oc?.fecha_vencimiento ?? data.fecha_vencimiento });
