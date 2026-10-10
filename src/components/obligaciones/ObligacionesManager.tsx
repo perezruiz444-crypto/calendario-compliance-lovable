@@ -29,6 +29,7 @@ import {
   isRecurring, ocurrenciasCumplidas } from '@/lib/obligaciones';
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
 import { logger } from '@/lib/logger';
+import { nombresPerfiles } from '@/lib/perfiles';
 import type { Obligacion } from '@/types/domain';
 
 interface Props {
@@ -152,19 +153,16 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
         // Fallback: check legacy responsable_id
         const legacyIds = obligaciones.flatMap(o => (o.responsable_id ? [o.responsable_id] : []));
         if (legacyIds.length > 0) {
-          const { data: pData } = await supabase.from('profiles').select('id, nombre_completo').in('id', [...new Set(legacyIds)]);
-          if (pData) {
-            const map: Record<string, string> = {};
-            pData.forEach(p => { map[p.id] = p.nombre_completo; });
-            setProfiles(map);
-          }
+          const pData = await nombresPerfiles(legacyIds);
+          const map: Record<string, string> = {};
+          pData.forEach(p => { map[p.id] = p.nombre_completo; });
+          setProfiles(map);
         }
         return;
       }
-      const userIds = [...new Set(data.map(r => r.user_id))];
-      const { data: pData } = await supabase.from('profiles').select('id, nombre_completo').in('id', userIds);
+      const pData = await nombresPerfiles(data.map(r => r.user_id));
       const profileMap: Record<string, string> = {};
-      if (pData) pData.forEach(p => { profileMap[p.id] = p.nombre_completo; });
+      pData.forEach(p => { profileMap[p.id] = p.nombre_completo; });
       setProfiles(profileMap);
       
       const rMap: Record<string, { id: string; nombre: string; tipo: string }[]> = {};

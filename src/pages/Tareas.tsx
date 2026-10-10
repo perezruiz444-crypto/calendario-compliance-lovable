@@ -41,6 +41,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { getErrorMessage } from '@/lib/errors';
 import type { TareaListado, ConsultorResumen, EmpresaResumen } from '@/types/domain';
 import { getAdjuntos } from '@/lib/adjuntos';
+import { nombresPerfiles } from '@/lib/perfiles';
 
 // Helper Components
 interface TareaCardProps {
@@ -472,15 +473,14 @@ export default function Tareas() {
 
       // El consultor se une aparte: `tareas.consultor_asignado_id` no tiene FK a `profiles`.
       const filas = tareasData ?? [];
-      const consultorIds = [...new Set(filas.map(t => t.consultor_asignado_id).filter((id): id is string => !!id))];
-      const { data: profilesData } = consultorIds.length > 0
-        ? await supabase.from('profiles').select('id, nombre_completo').in('id', consultorIds)
-        : { data: [] as ConsultorResumen[] };
+      const profilesData = await nombresPerfiles(
+        filas.map(t => t.consultor_asignado_id).filter((id): id is string => !!id),
+      );
 
       setTareas(filas.map(tarea => ({
         ...tarea,
         archivos_adjuntos: getAdjuntos(tarea.archivos_adjuntos),
-        consultor_profile: profilesData?.find(p => p.id === tarea.consultor_asignado_id),
+        consultor_profile: profilesData.find(p => p.id === tarea.consultor_asignado_id),
       })));
     } catch (error) {
       logger.error('Error fetching tareas', error);
