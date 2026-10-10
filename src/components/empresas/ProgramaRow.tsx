@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PROGRAMA_LABELS, PROGRAMA_DESCRIPTIONS } from '@/lib/obligaciones';
 import { EmpresaPrograma } from './EmpresaProgramasTab';
+import { getErrorMessage } from '@/lib/errors';
 
 interface ProgramaRowProps {
   programa: string;
@@ -51,8 +52,8 @@ export function ProgramaRow({ programa, registros, empresaId, canEdit, onUpdate 
         toast.success(`${PROGRAMA_LABELS[programa]} reactivado — obligaciones generadas`);
       }
       onUpdate();
-    } catch (err: any) {
-      toast.error(`Error: ${err.message}`);
+    } catch (err) {
+      toast.error(`Error: ${getErrorMessage(err)}`);
     } finally {
       setLoading(false);
     }

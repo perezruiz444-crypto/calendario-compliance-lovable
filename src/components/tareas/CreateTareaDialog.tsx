@@ -18,22 +18,26 @@ import { TareaPreview } from './TareaPreview';
 import { Repeat, Save, Eye, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
+import type { EmpresaResumen, ConsultorResumen, CategoriaTarea, TareaAdjunto } from '@/types/domain';
+import type { TareaPrioridad } from '@/types';
+import type { TareaDuplicada } from './DuplicateTareaButton';
 
 interface CreateTareaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTareaCreated: () => void;
   defaultEmpresaId?: string;
-  duplicateData?: any;
+  duplicateData?: TareaDuplicada;
 }
 
 export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, defaultEmpresaId, duplicateData }: CreateTareaDialogProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
-  const [empresas, setEmpresas] = useState<any[]>([]);
-  const [consultores, setConsultores] = useState<any[]>([]);
-  const [categorias, setCategorias] = useState<any[]>([]);
+  const [empresas, setEmpresas] = useState<EmpresaResumen[]>([]);
+  const [consultores, setConsultores] = useState<ConsultorResumen[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaTarea[]>([]);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     titulo: '',
@@ -53,7 +57,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
     ultimo_dia_habil: false
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [attachments, setAttachments] = useState<any[]>([]);
+  const [attachments, setAttachments] = useState<TareaAdjunto[]>([]);
   const [selectedEmpresaIds, setSelectedEmpresaIds] = useState<string[]>(defaultEmpresaId ? [defaultEmpresaId] : []);
 
   useEffect(() => {
@@ -67,7 +71,8 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
       }
       // Apply duplicate data if provided
       if (duplicateData) {
-        setFormData(duplicateData);
+        // Fusionar: la copia no trae los campos de recurrencia avanzada (dia_semana, dia_mes, ultimo_dia_habil)
+        setFormData(prev => ({ ...prev, ...duplicateData }));
       }
     }
   }, [open, defaultEmpresaId, duplicateData]);
@@ -366,8 +371,8 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
       setAttachments([]);
       setSelectedEmpresaIds([]);
       onTareaCreated();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al crear tarea');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al crear tarea');
     } finally {
       setLoading(false);
     }
@@ -436,7 +441,7 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
                 <Label htmlFor="prioridad" className="font-heading">Prioridad *</Label>
                 <Select
                   value={formData.prioridad}
-                  onValueChange={(value: any) => setFormData({ ...formData, prioridad: value })}
+                  onValueChange={(value) => setFormData({ ...formData, prioridad: value as TareaPrioridad })}
                 >
                   <SelectTrigger className="font-body">
                     <SelectValue />

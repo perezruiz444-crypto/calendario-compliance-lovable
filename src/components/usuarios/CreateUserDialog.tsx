@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useEmpresasList } from '@/hooks/useEmpresasList';
+import { getErrorMessage } from '@/lib/errors';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -108,8 +109,8 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
         resetAndClose();
         onUserCreated();
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Error al crear usuario');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al crear usuario');
     } finally {
       setLoading(false);
     }
@@ -194,7 +195,7 @@ export default function CreateUserDialog({ open, onOpenChange, onUserCreated }: 
               <Label className="font-heading">Rol</Label>
               <RadioGroup
                 value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value as any })}
+                onValueChange={(value) => setFormData({ ...formData, role: value as typeof formData.role })}
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="administrador" id="administrador" />

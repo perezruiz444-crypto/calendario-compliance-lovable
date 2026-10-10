@@ -29,6 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { BRAND_CATEGORY_COLORS, DEFAULT_CATEGORY_COLOR } from '@/lib/brandColors';
+import { getErrorMessage } from '@/lib/errors';
 
 interface CategorySelectorProps {
   value: string;
@@ -109,8 +110,8 @@ export function CategorySelector({ value, onValueChange }: CategorySelectorProps
       setDialogOpen(false);
       setNewCategory({ nombre: '', descripcion: '', color: DEFAULT_CATEGORY_COLOR });
       fetchCategories();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al crear categoría');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al crear categoría');
     } finally {
       setCreating(false);
     }

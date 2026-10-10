@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { empresaSchema } from '@/lib/validation';
 import { z } from 'zod';
 import EmpresaFormGeneral from './EmpresaFormGeneral';
+import { getErrorMessage } from '@/lib/errors';
 
 interface CreateEmpresaDialogProps {
   open: boolean;
@@ -67,8 +68,8 @@ export default function CreateEmpresaDialog({ open, onOpenChange, onEmpresaCreat
       setFormData({ razon_social: '', rfc: '', domicilio_fiscal: '', telefono: '', actividad_economica: '' });
       onOpenChange(false);
       onEmpresaCreated();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al crear empresa');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al crear empresa');
     } finally {
       setLoading(false);
     }

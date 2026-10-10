@@ -13,6 +13,8 @@ import { format } from 'date-fns';
 import { FileAttachments } from './FileAttachments';
 import SendNotificationDialog from './SendNotificationDialog';
 import { logger } from '@/lib/logger';
+import type { TareaDetalle, Comentario } from '@/types/domain';
+import { getAdjuntos } from '@/lib/adjuntos';
 
 interface TareaDetailDialogProps {
   open: boolean;
@@ -22,8 +24,8 @@ interface TareaDetailDialogProps {
 
 export default function TareaDetailDialog({ open, onOpenChange, tareaId }: TareaDetailDialogProps) {
   const { user } = useAuth();
-  const [tarea, setTarea] = useState<any>(null);
-  const [comentarios, setComentarios] = useState<any[]>([]);
+  const [tarea, setTarea] = useState<TareaDetalle | null>(null);
+  const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -79,7 +81,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
         creador = creadorProfile;
       }
 
-      setTarea({ ...tareaData, profiles, creador });
+      setTarea({ ...tareaData, archivos_adjuntos: getAdjuntos(tareaData.archivos_adjuntos), profiles, creador });
 
       // Fetch comentarios
       const { data: comentariosData, error: comentariosError } = await supabase
@@ -107,7 +109,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
       } else {
         setComentarios([]);
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Error al cargar la tarea');
       logger.error('Error al cargar la tarea', error);
     } finally {
@@ -140,7 +142,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
       toast.success('Comentario agregado');
       setNuevoComentario('');
       fetchTareaData();
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Error al agregar comentario');
       logger.error('Error al agregar comentario', error);
     } finally {
@@ -159,7 +161,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
 
       toast.success('Estado actualizado');
       fetchTareaData();
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Error al actualizar estado');
       logger.error('Error al actualizar estado', error);
     }
@@ -227,20 +229,20 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
                     <Badge
                       variant="outline"
                       className="gap-1"
-                      style={{ borderColor: tarea.categorias_tareas.color }}
+                      style={{ borderColor: tarea.categorias_tareas.color ?? undefined }}
                     >
                       <div
                         className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: tarea.categorias_tareas.color }}
+                        style={{ backgroundColor: tarea.categorias_tareas.color ?? undefined }}
                       />
                       {tarea.categorias_tareas.nombre}
                     </Badge>
                   )}
-                  <Badge className={getPrioridadColor(tarea.prioridad)}>
+                  <Badge className={getPrioridadColor(tarea.prioridad ?? 'media')}>
                     {tarea.prioridad}
                   </Badge>
-                  <Badge className={getEstadoColor(tarea.estado)}>
-                    {estadoLabels[tarea.estado]}
+                  <Badge className={getEstadoColor(tarea.estado ?? 'pendiente')}>
+                    {estadoLabels[tarea.estado ?? 'pendiente']}
                   </Badge>
                   <span className="text-muted-foreground">•</span>
                   <span>{tarea.empresas?.razon_social}</span>
@@ -260,7 +262,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
           <label className="text-sm font-heading font-medium mb-2 block">
             Estado de la Tarea
           </label>
-          <Select value={tarea.estado} onValueChange={handleEstadoChange}>
+          <Select value={tarea.estado ?? undefined} onValueChange={handleEstadoChange}>
             <SelectTrigger className="font-body">
               <SelectValue />
             </SelectTrigger>
@@ -366,7 +368,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
                   toast.error('No se pudo guardar la evidencia: ' + error.message);
                   return;
                 }
-                setTarea((prev: any) => ({ ...prev, archivos_adjuntos: next }));
+                setTarea(prev => prev && { ...prev, archivos_adjuntos: next });
               }}
             />
           </div>
@@ -397,7 +399,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
                           {comentario.profiles?.nombre_completo}
                         </span>
                         <span className="text-xs text-muted-foreground font-body">
-                          {format(new Date(comentario.created_at), 'dd/MM/yyyy HH:mm')}
+                          {comentario.created_at ? format(new Date(comentario.created_at), 'dd/MM/yyyy HH:mm') : ''}
                         </span>
                       </div>
                       <p className="font-body text-sm text-foreground whitespace-pre-wrap">

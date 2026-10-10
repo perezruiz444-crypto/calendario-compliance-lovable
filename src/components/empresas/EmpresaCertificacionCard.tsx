@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { EditableInfoCard } from './EditableInfoCard';
 import { DomiciliosProgramaSection } from './DomiciliosProgramaSection';
 import type { Empresa } from '@/types/domain';
+import { getErrorMessage } from '@/lib/errors';
 
 interface EmpresaCertificacionCardProps {
   empresa: Empresa;
@@ -51,8 +52,8 @@ export function EmpresaCertificacionCard({ empresa, canEdit, onUpdate }: Empresa
       toast.success('Certificación actualizada');
       setIsEditing(false);
       onUpdate();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al actualizar');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al actualizar');
     } finally {
       setIsSaving(false);
     }

@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { EditableInfoCard } from './EditableInfoCard';
 import { DomiciliosProgramaSection } from './DomiciliosProgramaSection';
+import { getErrorMessage } from '@/lib/errors';
 
 interface EmpresaPadronGeneralCardProps {
   empresaId: string;
@@ -64,8 +65,8 @@ export function EmpresaPadronGeneralCard({ empresaId, canEdit }: EmpresaPadronGe
       toast.success('Padrón General actualizado');
       setIsEditing(false);
       fetchRegistro();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     } finally {
       setIsSaving(false);
     }

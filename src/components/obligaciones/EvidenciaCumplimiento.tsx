@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Upload } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 interface Props {
   open: boolean;
@@ -66,8 +67,8 @@ export function EvidenciaCumplimiento({ open, onOpenChange, empresaId, obligacio
       toast.success('Cumplimiento registrado');
       onCompleted();
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err.message || 'Error al registrar cumplimiento');
+    } catch (err) {
+      toast.error(getErrorMessage(err) || 'Error al registrar cumplimiento');
     } finally {
       setUploading(false);
     }

@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon, BookOpen, Repeat, Sparkles } from 'lucide-react';
 import { CATEGORIA_COLORS, PROGRAMA_LABELS } from '@/lib/obligaciones';
+import { getErrorMessage } from '@/lib/errors';
 
 type FrecuenciaTipo = 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | 'EVENTUAL';
 
@@ -189,8 +190,8 @@ export function ActivarObligacionDialog({ open, onOpenChange, item, empresaId, o
 
       onOpenChange(false);
       onActivated();
-    } catch (e: any) {
-      toast.error('Error al activar: ' + e.message);
+    } catch (e) {
+      toast.error('Error al activar: ' + getErrorMessage(e));
     } finally {
       setSaving(false);
     }

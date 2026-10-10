@@ -24,13 +24,18 @@ import {
   CalendarIcon, ChevronDown, Repeat, Paperclip, Tag, Search, Check, X,
   Sparkles, Building2, User, FileText, Clock
 } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
+import type { EmpresaResumen, ConsultorResumen, TareaAdjunto, TareaTemplate } from '@/types/domain';
+import type { TareaDuplicada } from './DuplicateTareaButton';
+import { getCamposTemplate, getSubtareasTemplate } from '@/lib/templates';
+import { toPrioridad } from '@/lib/prioridad';
 
 interface CreateTareaSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTareaCreated: () => void;
   defaultEmpresaId?: string;
-  duplicateData?: any;
+  duplicateData?: TareaDuplicada;
 }
 
 const PRIORIDADES = [
@@ -129,10 +134,10 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [pendingSubtareas, setPendingSubtareas] = useState<{ titulo: string; descripcion?: string }[]>([]);
-  const [empresas, setEmpresas] = useState<any[]>([]);
-  const [consultores, setConsultores] = useState<any[]>([]);
+  const [empresas, setEmpresas] = useState<EmpresaResumen[]>([]);
+  const [consultores, setConsultores] = useState<ConsultorResumen[]>([]);
   const [empresaSearch, setEmpresaSearch] = useState('');
-  const [attachments, setAttachments] = useState<any[]>([]);
+  const [attachments, setAttachments] = useState<TareaAdjunto[]>([]);
   const [selectedEmpresaIds, setSelectedEmpresaIds] = useState<string[]>(defaultEmpresaId ? [defaultEmpresaId] : []);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [recStartPickerOpen, setRecStartPickerOpen] = useState(false);
@@ -258,28 +263,29 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
     setFormData(prev => ({ ...prev, fecha_vencimiento: format(date, 'yyyy-MM-dd') }));
   };
 
-  const handleTemplateSelect = (template: any) => {
+  const handleTemplateSelect = (template: TareaTemplate) => {
+    const campos = getCamposTemplate(template.campos_personalizados);
     setFormData(prev => ({
       ...prev,
       titulo: template.titulo_template.replace('[EMPRESA]', empresas.find(e => e.id === prev.empresa_id)?.razon_social || ''),
       descripcion: template.descripcion_template || '',
-      prioridad: template.prioridad || 'media',
+      prioridad: toPrioridad(template.prioridad),
       categoria_id: template.categoria_id || '',
       // Apply recurrence from template
-      es_recurrente: template.campos_personalizados?.es_recurrente || false,
-      frecuencia_recurrencia: template.campos_personalizados?.frecuencia_recurrencia || 'mensual',
-      intervalo_recurrencia: template.campos_personalizados?.intervalo_recurrencia || 1,
+      es_recurrente: campos.es_recurrente || false,
+      frecuencia_recurrencia: campos.frecuencia_recurrencia || 'mensual',
+      intervalo_recurrencia: campos.intervalo_recurrencia || 1,
     }));
     if (template.duracion_dias && !formData.fecha_vencimiento) {
-      setFormData(prev => ({ ...prev, fecha_vencimiento: format(addDays(new Date(), template.duracion_dias), 'yyyy-MM-dd') }));
+      setFormData(prev => ({ ...prev, fecha_vencimiento: format(addDays(new Date(), template.duracion_dias ?? 0), 'yyyy-MM-dd') }));
     }
     // Apply subtareas from template
-    const subtareas = (template.subtareas_template as { titulo: string; descripcion?: string }[]) || [];
+    const subtareas = getSubtareasTemplate(template.subtareas_template);
     if (subtareas.length > 0) {
       setPendingSubtareas(subtareas);
     }
     // Open scheduling section if recurrence was applied
-    if (template.campos_personalizados?.es_recurrente) {
+    if (campos.es_recurrente) {
       setSchedulingOpen(true);
     }
   };
@@ -368,8 +374,8 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
           onOpenChange(false);
         }
       }, 500);
-    } catch (error: any) {
-      toast.error(error.message || 'Error al crear tarea');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al crear tarea');
     } finally {
       setLoading(false);
     }

@@ -14,16 +14,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { Bell, Send } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 interface SendNotificationDialogProps {
   tareaId?: string;
   consultorId?: string;
 }
 
+type NotificationType = 'reminder' | 'assignment' | 'overdue';
+
 export default function SendNotificationDialog({ tareaId, consultorId }: SendNotificationDialogProps) {
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
-  const [notificationType, setNotificationType] = useState<'reminder' | 'assignment' | 'overdue'>('reminder');
+  const [notificationType, setNotificationType] = useState<NotificationType>('reminder');
 
   const handleSendNotification = async () => {
     try {
@@ -42,9 +45,9 @@ export default function SendNotificationDialog({ tareaId, consultorId }: SendNot
       toast.success(data?.message || "La notificación ha sido enviada exitosamente");
 
       setOpen(false);
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Error sending notification', err);
-      toast.error(err.message || "No se pudo enviar la notificación");
+      toast.error(getErrorMessage(err) || "No se pudo enviar la notificación");
     } finally {
       setSending(false);
     }
@@ -74,7 +77,7 @@ export default function SendNotificationDialog({ tareaId, consultorId }: SendNot
             <label className="text-sm font-heading font-medium mb-2 block">
               Tipo de Notificación
             </label>
-            <Select value={notificationType} onValueChange={(value: any) => setNotificationType(value)}>
+            <Select value={notificationType} onValueChange={(value) => setNotificationType(value as NotificationType)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

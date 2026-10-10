@@ -4,20 +4,24 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Trash2 } from 'lucide-react';
+import type { EmpresaFormData } from '@/types/domain';
 
-interface Sector {
+type Sector = {
   numero_sector: string;
   descripcion_sector: string;
-}
+};
 
 interface EmpresaFormPadronImportadoresProps {
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: EmpresaFormData;
+  setFormData: (data: EmpresaFormData) => void;
 }
 
 export default function EmpresaFormPadronImportadores({ formData, setFormData }: EmpresaFormPadronImportadoresProps) {
-  const sectores: Sector[] = Array.isArray(formData.padron_importadores_sectores) 
-    ? formData.padron_importadores_sectores 
+  const sectores: Sector[] = Array.isArray(formData.padron_importadores_sectores)
+    ? formData.padron_importadores_sectores.flatMap((item) =>
+        typeof item === 'object' && item !== null && !Array.isArray(item)
+          ? [{ numero_sector: String(item.numero_sector ?? ''), descripcion_sector: String(item.descripcion_sector ?? '') }]
+          : [])
     : [];
 
   const addSector = () => {

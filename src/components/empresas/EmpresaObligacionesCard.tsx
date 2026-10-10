@@ -14,9 +14,10 @@ import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import type { Empresa } from '@/types/domain';
 
 interface EmpresaObligacionesCardProps {
-  empresa: any;
+  empresa: Empresa;
   canEdit?: boolean;
   onUpdate?: () => void;
 }

@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { useEmpresasList } from '@/hooks/useEmpresasList';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
 
 interface EditUserDialogProps {
   open: boolean;
@@ -62,7 +63,7 @@ export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user
       if (data?.empresa_id) {
         setFormData(prev => ({ ...prev, empresaId: data.empresa_id || '' }));
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error al cargar empresa del usuario:', error);
     }
   };
@@ -102,9 +103,9 @@ export default function EditUserDialog({ open, onOpenChange, onUserUpdated, user
       toast.success('Usuario actualizado correctamente');
       onUserUpdated();
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error updating user:', error);
-      toast.error(error.message || 'Error al actualizar usuario');
+      toast.error(getErrorMessage(error) || 'Error al actualizar usuario');
     } finally {
       setLoading(false);
     }

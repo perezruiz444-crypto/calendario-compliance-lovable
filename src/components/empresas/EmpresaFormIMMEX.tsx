@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import type { EmpresaFormData } from '@/types/domain';
 
 interface EmpresaFormIMMEXProps {
-  formData: any;
-  setFormData: (data: any) => void;
+  formData: EmpresaFormData;
+  setFormData: (data: EmpresaFormData) => void;
 }
 
 export default function EmpresaFormIMMEX({ formData, setFormData }: EmpresaFormIMMEXProps) {

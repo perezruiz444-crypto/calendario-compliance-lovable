@@ -6,6 +6,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, X, Users, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/errors';
+import type { TareaAsignacion } from '@/types/domain';
+import { conPerfiles } from '@/lib/perfiles';
 
 interface MultipleAssigneesProps {
   tareaId: string;
@@ -14,7 +17,7 @@ interface MultipleAssigneesProps {
 }
 
 export function MultipleAssignees({ tareaId, empresaId, canEdit = true }: MultipleAssigneesProps) {
-  const [asignaciones, setAsignaciones] = useState<any[]>([]);
+  const [asignaciones, setAsignaciones] = useState<TareaAsignacion[]>([]);
   const [usuarios, setUsuarios] = useState<{ id: string; nombre: string; tipo: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -29,9 +32,9 @@ export function MultipleAssignees({ tareaId, empresaId, canEdit = true }: Multip
     setLoading(true);
     const { data } = await supabase
       .from('tarea_asignaciones')
-      .select('*, profiles:consultor_id(nombre_completo)')
+      .select('*')
       .eq('tarea_id', tareaId);
-    setAsignaciones(data || []);
+    setAsignaciones(await conPerfiles(data ?? [], 'consultor_id'));
     setLoading(false);
   };
 
@@ -94,8 +97,8 @@ export function MultipleAssignees({ tareaId, empresaId, canEdit = true }: Multip
         toast.success('Persona asignada');
       }
       await fetchAsignaciones();
-    } catch (e: any) {
-      toast.error('Error: ' + e.message);
+    } catch (e) {
+      toast.error('Error: ' + getErrorMessage(e));
     } finally {
       setSaving(false);
     }

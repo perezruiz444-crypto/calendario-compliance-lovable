@@ -38,10 +38,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { DndContext, DragEndEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { getErrorMessage } from '@/lib/errors';
+import type { TareaListado, ConsultorResumen, EmpresaResumen } from '@/types/domain';
+import { getAdjuntos } from '@/lib/adjuntos';
+import { nombresPerfiles } from '@/lib/perfiles';
 
 // Helper Components
 interface TareaCardProps {
-  tarea: any;
+  tarea: TareaListado;
   onClick: () => void;
   getPrioridadColor: (prioridad: string) => string;
   getEstadoColor: (estado: string) => string;
@@ -84,7 +88,6 @@ function TareaCard({
       )}
       style={{
         borderLeft: `3px solid ${
-          tarea.prioridad === 'urgente' ? 'hsl(var(--destructive))' :
           tarea.prioridad === 'alta' ? 'hsl(25, 95%, 53%)' :
           tarea.prioridad === 'media' ? 'hsl(var(--warning))' :
           'hsl(var(--success))'
@@ -130,8 +133,8 @@ function TareaCard({
             <h3 className="font-heading font-semibold text-lg text-foreground line-clamp-1">
               {tarea.titulo}
             </h3>
-            <Badge className={`${getPrioridadColor(tarea.prioridad)} flex-shrink-0`}>
-              {prioridadLabels[tarea.prioridad]}
+            <Badge className={`${getPrioridadColor(tarea.prioridad ?? 'media')} flex-shrink-0`}>
+              {prioridadLabels[tarea.prioridad ?? 'media']}
             </Badge>
           </div>
 
@@ -148,17 +151,17 @@ function TareaCard({
               <Badge
                 variant="outline"
                 className="text-xs gap-1.5"
-                style={{ borderColor: tarea.categorias_tareas.color }}
+                style={{ borderColor: tarea.categorias_tareas.color ?? undefined }}
               >
                 <div
                   className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: tarea.categorias_tareas.color }}
+                  style={{ backgroundColor: tarea.categorias_tareas.color ?? undefined }}
                 />
                 {tarea.categorias_tareas.nombre}
               </Badge>
             )}
-            <Badge className={`text-xs ${getEstadoColor(tarea.estado)}`}>
-              {estadoLabels[tarea.estado]}
+            <Badge className={`text-xs ${getEstadoColor(tarea.estado ?? 'pendiente')}`}>
+              {estadoLabels[tarea.estado ?? 'pendiente']}
             </Badge>
             {tarea.es_recurrente && (
               <Badge variant="outline" className="text-xs">
@@ -267,7 +270,7 @@ function EmptyState({ hasActiveFilters, onClearFilters, onCreateTarea, canCreate
 
 interface KanbanColumnProps {
   estado: 'pendiente' | 'en_progreso' | 'completada' | 'cancelada';
-  tareas: any[];
+  tareas: TareaListado[];
   estadoLabels: { [key: string]: string };
   getEstadoColor: (estado: string) => string;
   onTareaClick: (tareaId: string) => void;
@@ -354,7 +357,7 @@ export default function Tareas() {
     onKanbanView: () => setViewMode('kanban'),
     onCalendarView: () => setViewMode('calendar')
   });
-  const [tareas, setTareas] = useState<any[]>([]);
+  const [tareas, setTareas] = useState<TareaListado[]>([]);
   const [loadingTareas, setLoadingTareas] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -366,8 +369,8 @@ export default function Tareas() {
   const [automationsDialogOpen, setAutomationsDialogOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
   const [selectedConsultor, setSelectedConsultor] = useState<string>('');
-  const [consultores, setConsultores] = useState<any[]>([]);
-  const [empresas, setEmpresas] = useState<any[]>([]);
+  const [consultores, setConsultores] = useState<ConsultorResumen[]>([]);
+  const [empresas, setEmpresas] = useState<EmpresaResumen[]>([]);
   
   // Filtros
   const [searchQuery, setSearchQuery] = useState('');
@@ -468,31 +471,17 @@ export default function Tareas() {
 
       if (error) throw error;
 
-      // Fetch consultant profiles separately
-      if (tareasData && tareasData.length > 0) {
-        const consultorIds = tareasData
-          .map(t => t.consultor_asignado_id)
-          .filter(id => id != null);
+      // El consultor se une aparte: `tareas.consultor_asignado_id` no tiene FK a `profiles`.
+      const filas = tareasData ?? [];
+      const profilesData = await nombresPerfiles(
+        filas.map(t => t.consultor_asignado_id).filter((id): id is string => !!id),
+      );
 
-        if (consultorIds.length > 0) {
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('id, nombre_completo')
-            .in('id', consultorIds);
-
-          // Map profiles to tareas
-          const tareasWithProfiles = tareasData.map(tarea => ({
-            ...tarea,
-            consultor_profile: profilesData?.find(p => p.id === tarea.consultor_asignado_id)
-          }));
-
-          setTareas(tareasWithProfiles);
-        } else {
-          setTareas(tareasData);
-        }
-      } else {
-        setTareas([]);
-      }
+      setTareas(filas.map(tarea => ({
+        ...tarea,
+        archivos_adjuntos: getAdjuntos(tarea.archivos_adjuntos),
+        consultor_profile: profilesData.find(p => p.id === tarea.consultor_asignado_id),
+      })));
     } catch (error) {
       logger.error('Error fetching tareas', error);
       setFetchError(true);
@@ -545,8 +534,8 @@ export default function Tareas() {
       if (error) throw error;
 
       toast.success(data?.message || "Las notificaciones han sido enviadas exitosamente");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -823,17 +812,19 @@ export default function Tareas() {
   };
 
   // Calendar events
-  const calendarEvents = filteredTareas
-    .filter(t => t.fecha_vencimiento)
-    .map(t => ({
-      id: t.id,
-      title: t.titulo,
-      start: new Date(t.fecha_vencimiento),
-      end: new Date(t.fecha_vencimiento),
-      resource: t
-    }));
+  const calendarEvents = filteredTareas.flatMap(t =>
+    t.fecha_vencimiento
+      ? [{
+          id: t.id,
+          title: t.titulo,
+          start: new Date(t.fecha_vencimiento),
+          end: new Date(t.fecha_vencimiento),
+          resource: t,
+        }]
+      : []
+  );
 
-  const handleSelectEvent = (event: any) => {
+  const handleSelectEvent = (event: { id: string }) => {
     setSelectedTareaId(event.id);
     setDetailDialogOpen(true);
   };
@@ -1277,8 +1268,8 @@ export default function Tareas() {
                     extendedProps: { resource: e.resource },
                   }))}
                   eventClick={(info) => {
-                    const tarea = info.event.extendedProps?.resource;
-                    if (tarea) handleSelectEvent({ resource: tarea });
+                    const tarea = info.event.extendedProps?.resource as TareaListado | undefined;
+                    if (tarea) handleSelectEvent({ id: tarea.id });
                   }}
                   height="100%"
                   dayMaxEvents={3}

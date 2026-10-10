@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { Send } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
+import type { ConsultorResumen, EmpresaResumen } from '@/types/domain';
 
 interface CreateMensajeDialogProps {
   open: boolean;
@@ -20,8 +22,8 @@ interface CreateMensajeDialogProps {
 export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: CreateMensajeDialogProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [usuarios, setUsuarios] = useState<any[]>([]);
-  const [empresas, setEmpresas] = useState<any[]>([]);
+  const [usuarios, setUsuarios] = useState<ConsultorResumen[]>([]);
+  const [empresas, setEmpresas] = useState<EmpresaResumen[]>([]);
   const [formData, setFormData] = useState({
     destinatario_id: '',
     empresa_id: '',
@@ -110,8 +112,8 @@ export function CreateMensajeDialog({ open, onOpenChange, onMensajeCreated }: Cr
       });
       onOpenChange(false);
       onMensajeCreated();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al enviar mensaje');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al enviar mensaje');
     } finally {
       setLoading(false);
     }

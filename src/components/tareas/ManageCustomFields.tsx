@@ -12,22 +12,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, GripVertical } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
+import type { CustomField } from '@/types/domain';
 
 interface ManageCustomFieldsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+type CustomFieldTipo = 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'currency';
+
 export default function ManageCustomFields({ open, onOpenChange }: ManageCustomFieldsProps) {
-  const [fields, setFields] = useState<any[]>([]);
+  const [fields, setFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(false);
-  const [editingField, setEditingField] = useState<any>(null);
+  const [editingField, setEditingField] = useState<CustomField | null>(null);
   const [showForm, setShowForm] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
-    tipo: 'text' as 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'currency',
+    tipo: 'text' as CustomFieldTipo,
     opciones: '',
     requerido: false,
     activo: true
@@ -67,15 +71,15 @@ export default function ManageCustomFields({ open, onOpenChange }: ManageCustomF
     setShowForm(false);
   };
 
-  const handleEdit = (field: any) => {
+  const handleEdit = (field: CustomField) => {
     setEditingField(field);
     setFormData({
       nombre: field.nombre,
       descripcion: field.descripcion || '',
-      tipo: field.tipo,
+      tipo: field.tipo as CustomFieldTipo,
       opciones: Array.isArray(field.opciones) ? field.opciones.join(', ') : '',
-      requerido: field.requerido,
-      activo: field.activo
+      requerido: !!field.requerido,
+      activo: field.activo !== false
     });
     setShowForm(true);
   };
@@ -123,8 +127,8 @@ export default function ManageCustomFields({ open, onOpenChange }: ManageCustomF
 
       resetForm();
       fetchFields();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al guardar campo');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al guardar campo');
     } finally {
       setLoading(false);
     }
@@ -144,8 +148,8 @@ export default function ManageCustomFields({ open, onOpenChange }: ManageCustomF
       if (error) throw error;
       toast.success('Campo eliminado exitosamente');
       fetchFields();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al eliminar campo');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al eliminar campo');
     }
   };
 
@@ -271,7 +275,7 @@ export default function ManageCustomFields({ open, onOpenChange }: ManageCustomF
                 <Label htmlFor="tipo" className="font-heading">Tipo de Campo *</Label>
                 <Select
                   value={formData.tipo}
-                  onValueChange={(value: any) => setFormData({ ...formData, tipo: value })}
+                  onValueChange={(value) => setFormData({ ...formData, tipo: value as CustomFieldTipo })}
                 >
                   <SelectTrigger className="font-body">
                     <SelectValue />

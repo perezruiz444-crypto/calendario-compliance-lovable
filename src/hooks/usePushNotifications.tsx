@@ -30,7 +30,7 @@ export function usePushNotifications() {
       });
       // Check if already subscribed
       if ('pushManager' in registration) {
-        const subscription = await (registration as any).pushManager.getSubscription();
+        const subscription = await registration.pushManager.getSubscription();
         setIsSubscribed(!!subscription);
       }
     } catch (error) {
@@ -88,7 +88,7 @@ export function usePushNotifications() {
   const unsubscribe = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = 'pushManager' in registration ? await (registration as any).pushManager.getSubscription() : null;
+      const subscription = 'pushManager' in registration ? await registration.pushManager.getSubscription() : null;
       
       if (subscription) {
         await subscription.unsubscribe();

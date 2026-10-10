@@ -71,7 +71,10 @@ Deno.serve(async (req) => {
     }
 
     // Update profile (nombre_completo and empresa_id for clientes)
-    const profileUpdate: any = { nombre_completo: nombreCompleto }
+    const profileUpdate: { nombre_completo: string; empresa_id: string | null } = {
+      nombre_completo: nombreCompleto,
+      empresa_id: null,
+    }
     
     // Set empresa_id for clientes, null for other roles
     if (role === 'cliente' && empresaId) {
@@ -132,7 +135,7 @@ Deno.serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in update-user:', error)
     return new Response(JSON.stringify({ error: 'An unexpected error occurred. Please try again.' }), {
       status: 500,

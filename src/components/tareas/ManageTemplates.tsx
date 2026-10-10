@@ -18,6 +18,10 @@ import {
   Plus, Edit, Trash2, FileText, Users, Repeat, ChevronDown,
   Tag, Clock, ListChecks, Sparkles, GripVertical, X, ArrowLeft
 } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
+import type { TareaTemplate, CategoriaTarea } from '@/types/domain';
+import { getCamposTemplate, getSubtareasTemplate } from '@/lib/templates';
+import { toPrioridad } from '@/lib/prioridad';
 
 interface ManageTemplatesProps {
   open: boolean;
@@ -76,10 +80,10 @@ function SectionHeader({ icon: Icon, title, isOpen, onToggle, badge }: {
 }
 
 export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesProps) {
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [categorias, setCategorias] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<TareaTemplate[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaTarea[]>([]);
   const [loading, setLoading] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [editingTemplate, setEditingTemplate] = useState<TareaTemplate | null>(null);
   const [showForm, setShowForm] = useState(false);
 
   // Section states
@@ -157,22 +161,23 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
     setSubtareasOpen(false);
   };
 
-  const handleEdit = (template: any) => {
+  const handleEdit = (template: TareaTemplate) => {
     setEditingTemplate(template);
+    const campos = getCamposTemplate(template.campos_personalizados);
     setFormData({
       nombre: template.nombre,
       descripcion: template.descripcion || '',
       titulo_template: template.titulo_template,
       descripcion_template: template.descripcion_template || '',
-      prioridad: template.prioridad || 'media',
+      prioridad: toPrioridad(template.prioridad),
       categoria_id: template.categoria_id || '',
       duracion_dias: template.duracion_dias?.toString() || '',
       es_publico: template.es_publico || false,
-      es_recurrente: template.campos_personalizados?.es_recurrente || false,
-      frecuencia_recurrencia: template.campos_personalizados?.frecuencia_recurrencia || 'mensual',
-      intervalo_recurrencia: template.campos_personalizados?.intervalo_recurrencia || 1,
+      es_recurrente: campos.es_recurrente || false,
+      frecuencia_recurrencia: campos.frecuencia_recurrencia || 'mensual',
+      intervalo_recurrencia: campos.intervalo_recurrencia || 1,
     });
-    setSubtareasTemplate((template.subtareas_template as SubtareaTemplate[]) || []);
+    setSubtareasTemplate(getSubtareasTemplate(template.subtareas_template));
     setShowForm(true);
     setIdentityOpen(true);
     setContentOpen(true);
@@ -221,8 +226,8 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
 
       resetForm();
       fetchTemplates();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al guardar template');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al guardar template');
     } finally {
       setLoading(false);
     }
@@ -235,8 +240,8 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
       if (error) throw error;
       toast.success('Template eliminado');
       fetchTemplates();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al eliminar');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al eliminar');
     }
   };
 
@@ -286,7 +291,7 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
 
                 <div className="space-y-1.5">
                   {templates.map((template) => {
-                    const subtareasCount = (template.subtareas_template as any[])?.length || 0;
+                    const subtareasCount = getSubtareasTemplate(template.subtareas_template).length;
                     return (
                       <Card key={template.id} className="p-3 hover:shadow-sm transition-shadow">
                         <div className="flex items-start justify-between gap-2">
@@ -308,7 +313,7 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
                                 </CardDescription>
                               )}
                               <div className="flex gap-1 mt-1.5 flex-wrap">
-                                <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", PRIORITY_STYLES[template.prioridad] || '')}>
+                                <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", PRIORITY_STYLES[template.prioridad ?? ''] || '')}>
                                   {template.prioridad === 'alta' ? 'Alta' : template.prioridad === 'media' ? 'Media' : 'Baja'}
                                 </Badge>
                                 {template.duracion_dias && (
@@ -321,7 +326,7 @@ export default function ManageTemplates({ open, onOpenChange }: ManageTemplatesP
                                     {template.categorias_tareas.nombre}
                                   </Badge>
                                 )}
-                                {template.campos_personalizados?.es_recurrente && (
+                                {getCamposTemplate(template.campos_personalizados).es_recurrente && (
                                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
                                     <Repeat className="w-2.5 h-2.5" />Recurrente
                                   </Badge>

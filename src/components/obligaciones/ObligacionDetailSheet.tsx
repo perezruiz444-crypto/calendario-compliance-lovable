@@ -15,6 +15,9 @@ import {
   getVencimientoInfo, formatDateShort,
 } from '@/lib/obligaciones';
 import { useNavigate } from 'react-router-dom';
+import { getErrorMessage } from '@/lib/errors';
+import type { ObligacionDetalle, ObligacionOcurrencia, CumplimientoConPerfil } from '@/types/domain';
+import { conPerfiles } from '@/lib/perfiles';
 
 interface Props {
   open: boolean;
@@ -28,18 +31,26 @@ interface Props {
 export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId, ocurrenciaId = null, onCumplimientoChange }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [ob, setOb] = useState<any>(null);
+  const [ob, setOb] = useState<ObligacionDetalle | null>(null);
   const [isCumplida, setIsCumplida] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [evidencia, setEvidencia] = useState('');
   const [periodKey, setPeriodKey] = useState('');
   const [activeOcurrenciaId, setActiveOcurrenciaId] = useState<string | null>(null);
-  const [historial, setHistorial] = useState<any[]>([]);
+  const [historial, setHistorial] = useState<CumplimientoConPerfil[]>([]);
+  const [responsableNombre, setResponsableNombre] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && (obligacionId || ocurrenciaId)) fetchData();
   }, [open, obligacionId, ocurrenciaId]);
+
+  // `obligaciones` solo guarda `responsable_id`: el nombre se resuelve aparte.
+  const cargarResponsable = async (responsableId: string | null) => {
+    if (!responsableId) { setResponsableNombre(null); return; }
+    const { data } = await supabase.from('profiles').select('nombre_completo').eq('id', responsableId).maybeSingle();
+    setResponsableNombre(data?.nombre_completo ?? null);
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -47,7 +58,7 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
 
     // Resolver la obligación + la ocurrencia objetivo.
     let resolvedObligacionId = obligacionId;
-    let targetOcurrencia: any = null;
+    let targetOcurrencia: ObligacionOcurrencia | null = null;
 
     if (ocurrenciaId) {
       // Vía calendario: cargar la ocurrencia concreta y su obligación.
@@ -58,12 +69,15 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
         .maybeSingle();
       if (!oc) { setLoading(false); return; }
       targetOcurrencia = oc;
-      resolvedObligacionId = (oc as any).obligacion_id;
-      const obl = (oc as any).obligaciones;
+      resolvedObligacionId = oc.obligacion_id;
+      const obl = oc.obligaciones;
       // Merge: datos de la obligación + fecha/periodo de la ocurrencia.
-      setOb({ ...obl, id: (oc as any).obligacion_id, fecha_vencimiento: (oc as any).fecha_vencimiento });
-      setPeriodKey((oc as any).periodo_key);
-      setActiveOcurrenciaId((oc as any).id);
+      if (obl) {
+        setOb({ ...obl, id: oc.obligacion_id, fecha_vencimiento: oc.fecha_vencimiento });
+        void cargarResponsable(obl.responsable_id);
+      }
+      setPeriodKey(oc.periodo_key);
+      setActiveOcurrenciaId(oc.id);
     } else {
       // Vía legacy: obligación + próxima ocurrencia pendiente (o la más próxima).
       const { data, error } = await supabase
@@ -82,9 +96,10 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
         .maybeSingle();
 
       targetOcurrencia = oc;
-      setOb({ ...data, fecha_vencimiento: (oc as any)?.fecha_vencimiento ?? data.fecha_vencimiento });
-      setPeriodKey((oc as any)?.periodo_key ?? getCurrentPeriodKey(data.presentacion));
-      setActiveOcurrenciaId((oc as any)?.id ?? null);
+      setOb({ ...data, fecha_vencimiento: oc?.fecha_vencimiento ?? data.fecha_vencimiento });
+      void cargarResponsable(data.responsable_id);
+      setPeriodKey(oc?.periodo_key ?? getCurrentPeriodKey(data.presentacion));
+      setActiveOcurrenciaId(oc?.id ?? null);
     }
 
     // Estado de cumplimiento vigente para la ocurrencia objetivo.
@@ -105,11 +120,11 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
     if (resolvedObligacionId) {
       const { data: hist } = await supabase
         .from('obligacion_cumplimientos')
-        .select('*, profiles(nombre_completo)')
+        .select('*')
         .eq('obligacion_id', resolvedObligacionId)
         .order('created_at', { ascending: false })
         .limit(5);
-      setHistorial(hist || []);
+      setHistorial(await conPerfiles(hist ?? [], 'completada_por'));
     }
     setLoading(false);
   };
@@ -163,8 +178,8 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
       }
       onCumplimientoChange?.();
       await fetchData();
-    } catch (e: any) {
-      toast.error('Error al guardar: ' + e.message);
+    } catch (e) {
+      toast.error('Error al guardar: ' + getErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -220,7 +235,7 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
                 {[
                   { icon: Building2, label: 'Empresa',         value: ob.empresas?.razon_social },
                   { icon: Calendar,  label: 'Vencimiento',     value: formatDateShort(ob.fecha_vencimiento) },
-                  { icon: User,      label: 'Responsable',     value: ob.responsable || '—' },
+                  { icon: User,      label: 'Responsable',     value: responsableNombre || '—' },
                   { icon: FileText,  label: 'Fundamento legal', value: ob.articulos || '—' },
                 ].map(({ icon: Icon, label, value }) => value ? (
                   <div key={label} className="flex items-start gap-3 text-sm">

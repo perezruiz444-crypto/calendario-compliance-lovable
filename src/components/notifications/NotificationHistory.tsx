@@ -19,12 +19,12 @@ interface NotificationLog {
   tipo: string;
   titulo: string;
   contenido: string | null;
-  canal: 'email' | 'push' | 'in_app';
-  estado: 'enviada' | 'fallida' | 'pendiente';
+  canal: string;
+  estado: string;
   error_mensaje: string | null;
   referencia_id: string | null;
   referencia_tipo: string | null;
-  created_at: string;
+  created_at: string | null;
 }
 
 const CANALES = [
@@ -56,7 +56,7 @@ export function NotificationHistory() {
   const loadLogs = async () => {
     setLoading(true);
     try {
-      const query = (supabase as any)
+      const query = supabase
         .from('notification_logs')
         .select('*')
         .order('created_at', { ascending: false })
@@ -265,10 +265,10 @@ export function NotificationHistory() {
                       <TableCell className="whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className="text-sm">
-                            {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                            {log.created_at ? format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: es }) : '—'}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: es })}
+                            {log.created_at ? formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: es }) : ''}
                           </span>
                         </div>
                       </TableCell>

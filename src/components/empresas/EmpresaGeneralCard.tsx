@@ -6,6 +6,7 @@ import { FileText, Pencil, X, Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Empresa } from '@/types/domain';
+import { getErrorMessage } from '@/lib/errors';
 
 interface EmpresaGeneralCardProps {
   empresa: Empresa;
@@ -43,8 +44,8 @@ export function EmpresaGeneralCard({ empresa, canEdit, onUpdate }: EmpresaGenera
       toast.success('Información actualizada');
       setIsEditing(false);
       onUpdate();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al actualizar');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al actualizar');
     } finally {
       setIsSaving(false);
     }

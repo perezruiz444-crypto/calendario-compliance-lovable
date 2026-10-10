@@ -2,13 +2,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
-interface EmpresaFormGeneralProps {
-  formData: any;
-  setFormData: (data: any) => void;
+/** Campos que edita este formulario; lo usan tanto «Crear» (strings) como «Editar» (fila completa). */
+interface CamposGenerales {
+  razon_social?: string | null;
+  rfc?: string | null;
+  domicilio_fiscal?: string | null;
+  telefono?: string | null;
+  actividad_economica?: string | null;
+}
+
+interface EmpresaFormGeneralProps<T extends CamposGenerales> {
+  formData: T;
+  setFormData: (data: T) => void;
   errors?: Record<string, string>;
 }
 
-export default function EmpresaFormGeneral({ formData, setFormData, errors = {} }: EmpresaFormGeneralProps) {
+export default function EmpresaFormGeneral<T extends CamposGenerales>({ formData, setFormData, errors = {} }: EmpresaFormGeneralProps<T>) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-heading font-semibold">Información General de la Empresa</h3>

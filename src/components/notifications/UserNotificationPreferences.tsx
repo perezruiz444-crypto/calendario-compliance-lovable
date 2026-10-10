@@ -92,30 +92,32 @@ export function UserNotificationPreferences() {
   }, [user]);
 
   const loadPreferences = async () => {
+    const userId = user?.id;
+    if (!userId) return;
     try {
       // Load user notification preferences
-      const { data: prefsData, error: prefsError } = await (supabase as any)
+      const { data: prefsData, error: prefsError } = await supabase
         .from('user_notification_preferences')
         .select('*')
-        .eq('user_id', user?.id);
+        .eq('user_id', userId);
 
       if (prefsError) throw prefsError;
 
       const prefsMap: Record<string, NotificationPreference> = {};
-      (prefsData || []).forEach((pref: any) => {
+      (prefsData || []).forEach((pref) => {
         prefsMap[pref.notification_key] = {
           notification_key: pref.notification_key,
-          email_enabled: pref.email_enabled,
-          push_enabled: pref.push_enabled
+          email_enabled: pref.email_enabled !== false,
+          push_enabled: pref.push_enabled !== false
         };
       });
       setPreferences(prefsMap);
 
       // Load profile settings
-      const { data: profileData, error: profileError } = await (supabase as any)
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('resumen_frecuencia, resumen_hora, notificaciones_activas')
-        .eq('id', user?.id)
+        .eq('id', userId)
         .maybeSingle();
 
       if (profileError) throw profileError;
@@ -144,6 +146,8 @@ export function UserNotificationPreferences() {
   };
 
   const handleToggle = async (key: string, field: 'email_enabled' | 'push_enabled', value: boolean) => {
+    const userId = user?.id;
+    if (!userId) return;
     const currentPref = getPreference(key);
     const updatedPref = { ...currentPref, [field]: value };
 
@@ -151,10 +155,10 @@ export function UserNotificationPreferences() {
     setPreferences(prev => ({ ...prev, [key]: updatedPref }));
 
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('user_notification_preferences')
         .upsert({
-          user_id: user?.id,
+          user_id: userId,
           notification_key: key,
           email_enabled: updatedPref.email_enabled,
           push_enabled: updatedPref.push_enabled
@@ -171,15 +175,17 @@ export function UserNotificationPreferences() {
     }
   };
 
-  const handleProfileSettingChange = async (field: keyof ProfileSettings, value: any) => {
+  const handleProfileSettingChange = async (field: keyof ProfileSettings, value: ProfileSettings[keyof ProfileSettings]) => {
+    const userId = user?.id;
+    if (!userId) return;
     const oldValue = profileSettings[field];
     setProfileSettings(prev => ({ ...prev, [field]: value }));
 
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('profiles')
         .update({ [field]: value })
-        .eq('id', user?.id);
+        .eq('id', userId);
 
       if (error) throw error;
       toast.success('Preferencia actualizada');
@@ -191,25 +197,27 @@ export function UserNotificationPreferences() {
   };
 
   const handleResetDefaults = async () => {
+    const userId = user?.id;
+    if (!userId) return;
     setSaving(true);
     try {
       // Delete all user preferences to reset to defaults
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('user_notification_preferences')
         .delete()
-        .eq('user_id', user?.id);
+        .eq('user_id', userId);
 
       if (error) throw error;
 
       // Reset profile settings
-      await (supabase as any)
+      await supabase
         .from('profiles')
         .update({
           resumen_frecuencia: 'diario',
           resumen_hora: 8,
           notificaciones_activas: true
         })
-        .eq('id', user?.id);
+        .eq('id', userId);
 
       setPreferences({});
       setProfileSettings({

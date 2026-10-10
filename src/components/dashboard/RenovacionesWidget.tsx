@@ -36,7 +36,7 @@ export default function RenovacionesWidget() {
     setLoading(true);
     try {
       // Get configurable dias_antes per program type from reminder_rules
-      const { data: rules } = await (supabase as any)
+      const { data: rules } = await supabase
         .from('reminder_rules')
         .select('tipo, dias_antes')
         .eq('activa', true);
@@ -52,7 +52,7 @@ export default function RenovacionesWidget() {
       const getDias = (tipo: string) => diasAntesByTipo[tipo] ?? DEFAULT_DIAS_ANTES;
 
       // Fetch all empresas with program date fields
-      const { data: empresas } = await (supabase as any)
+      const { data: empresas } = await supabase
         .from('empresas')
         .select(`
           id,
@@ -72,13 +72,13 @@ export default function RenovacionesWidget() {
         const checks: { tipo: string; fecha: string | null }[] = [
           { tipo: 'certificacion', fecha: e.cert_iva_ieps_fecha_renovar },
           { tipo: 'matriz_seguridad', fecha: e.matriz_seguridad_fecha_renovar },
-          { tipo: 'prosec', fecha: (e as any).prosec_fecha_siguiente_renovacion },
+          { tipo: 'prosec', fecha: e.prosec_fecha_siguiente_renovacion },
         ];
 
         // IMMEX: calculate next renewal from autorización date + period
-        if (e.immex_fecha_autorizacion && (e as any).immex_periodo_renovacion_meses) {
+        if (e.immex_fecha_autorizacion && e.immex_periodo_renovacion_meses) {
           const autorizacion = new Date(e.immex_fecha_autorizacion + 'T12:00:00');
-          const meses = (e as any).immex_periodo_renovacion_meses as number;
+          const meses = e.immex_periodo_renovacion_meses;
           // Find the next renewal after today
           let nextRenewal = new Date(autorizacion);
           while (nextRenewal <= now) {

@@ -18,6 +18,7 @@ import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailShe
 import { ObligacionesPorUrgencia } from '@/components/obligaciones/ObligacionesPorUrgencia';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
+import { ocurrenciasCumplidas } from '@/lib/obligaciones';
 
 interface FcEvent {
   id: string;
@@ -35,8 +36,18 @@ interface FcEvent {
     ocurrenciaId?: string;
     empresaId?: string;
     isRecurrente?: boolean;
-    data: any;
+    /** Fila de origen (tarea o documento); los consumidores solo leen `id` y `empresa_id`. */
+    data?: { id: string; empresa_id: string };
   };
+}
+
+/** Lo que recibe `onEventClick`. */
+export interface CalendarEventClick {
+  id: string;
+  title: string;
+  start: Date | null;
+  end: Date | null;
+  resource: FcEvent['extendedProps'];
 }
 
 type EventType = 'tarea' | 'documento' | 'obligacion';
@@ -57,7 +68,7 @@ const TYPE_COLORS: Record<EventType, string> = {
 };
 
 interface DashboardCalendarProps {
-  onEventClick?: (event: any) => void;
+  onEventClick?: (event: CalendarEventClick) => void;
   height?: string;
   filterEmpresaId?: string | null;
 }
@@ -155,19 +166,17 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     const { data: obs } = await obsQuery;
 
     // Cumplimientos vigentes de esas ocurrencias -> set de ocurrencias cumplidas.
-    const ocIds = (obs || []).map((o: any) => o.id);
+    const ocIds = (obs || []).map((o) => o.id);
     let cumplidasSet = new Set<string>();
     if (ocIds.length > 0) {
       const { data: cData } = await supabase
         .from('obligacion_cumplimientos')
         .select('ocurrencia_id, completada, vigente')
         .in('ocurrencia_id', ocIds);
-      cumplidasSet = new Set(
-        (cData || []).filter((c: any) => c.vigente && c.completada && c.ocurrencia_id).map((c: any) => c.ocurrencia_id)
-      );
+      cumplidasSet = ocurrenciasCumplidas(cData);
     }
 
-    (obs || []).forEach((ob: any) => {
+    (obs || []).forEach((ob) => {
       if (!ob.fecha_vencimiento) return;
       const d = new Date(ob.fecha_vencimiento + 'T12:00:00');
       const isDone = cumplidasSet.has(ob.id) || ob.estado === 'cumplida';
@@ -263,10 +272,10 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
   }, [fetchEvents]);
 
   const handleEventClick = useCallback((arg: EventClickArg) => {
-    const { extendedProps } = arg.event;
+    const extendedProps = arg.event.extendedProps as FcEvent['extendedProps'];
     if (extendedProps.type === 'obligacion' && extendedProps.rawId) {
       setSelectedObId(extendedProps.rawId);
-      setSelectedOcurrenciaId((extendedProps as any).ocurrenciaId ?? null);
+      setSelectedOcurrenciaId(extendedProps.ocurrenciaId ?? null);
       setSheetOpen(true);
       return;
     }

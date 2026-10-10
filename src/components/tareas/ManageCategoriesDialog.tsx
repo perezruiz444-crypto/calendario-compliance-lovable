@@ -11,6 +11,7 @@ import { Plus, Pencil, Palette, Tag } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { logger } from '@/lib/logger';
 import { BRAND_CATEGORY_COLORS, DEFAULT_CATEGORY_COLOR } from '@/lib/brandColors';
+import { getErrorMessage } from '@/lib/errors';
 
 interface Category {
   id: string;
@@ -118,9 +119,9 @@ export default function ManageCategoriesDialog({ open, onOpenChange, onCategoryC
       resetForm();
       fetchCategories();
       onCategoryChange?.();
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error saving category:', error);
-      toast.error(error.message || 'Error al guardar categoría');
+      toast.error(getErrorMessage(error) || 'Error al guardar categoría');
     } finally {
       setLoading(false);
     }

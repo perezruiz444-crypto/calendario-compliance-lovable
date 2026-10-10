@@ -340,7 +340,7 @@ export function dailySummaryTemplate(userName: string, stats: DailySummaryStats)
 
 // ── Report Email ────────────────────────────────────────────────────────
 
-interface ReportResumen {
+export interface ReportResumen {
   totalTareas: number;
   tareasCompletadas: number;
   tareasPendientes: number;

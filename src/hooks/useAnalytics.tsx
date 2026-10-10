@@ -4,6 +4,7 @@ import { logger } from '@/lib/logger';
 import { useAuth } from './useAuth';
 import { differenceInDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { getCurrentPeriodKey } from '@/lib/obligaciones';
+import type { Tarea } from '@/types/domain';
 
 export interface ProximaTarea {
   id: string;
@@ -135,12 +136,15 @@ export function useAnalytics(empresaId?: string | null) {
     };
   };
 
-  const fetchProximasTareas = async (tareas: any[]) => {
+  const fetchProximasTareas = async (
+    tareas: Pick<Tarea, 'id' | 'titulo' | 'estado' | 'prioridad' | 'fecha_vencimiento' | 'empresa_id'>[],
+  ): Promise<ProximaTarea[]> => {
     const today = new Date();
     const proximas = tareas
-      .filter(t => {
-        if (!t.fecha_vencimiento || t.estado === 'completada' || t.estado === 'cancelada') return false;
-        return differenceInDays(new Date(t.fecha_vencimiento), today) >= 0;
+      .flatMap(t => {
+        const fecha = t.fecha_vencimiento;
+        if (!fecha || t.estado === 'completada' || t.estado === 'cancelada') return [];
+        return differenceInDays(new Date(fecha), today) >= 0 ? [{ ...t, fecha_vencimiento: fecha }] : [];
       })
       .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
       .slice(0, 10);
@@ -157,7 +161,7 @@ export function useAnalytics(empresaId?: string | null) {
     return proximas.map(t => ({
       id: t.id,
       titulo: t.titulo,
-      estado: t.estado,
+      estado: t.estado ?? 'pendiente',
       prioridad: t.prioridad || 'media',
       fecha_vencimiento: t.fecha_vencimiento,
       empresa_nombre: empMap[t.empresa_id] || 'N/A',

@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in send-test-email function:', error)
     return new Response(JSON.stringify({ error: 'Error interno del servidor' }), {
       status: 500,

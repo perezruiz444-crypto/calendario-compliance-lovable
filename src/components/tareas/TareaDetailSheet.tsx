@@ -20,6 +20,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { MultipleAssignees } from './MultipleAssignees';
 import { logger } from '@/lib/logger';
+import type { TareaDetalle, Comentario, ConsultorResumen, CategoriaTarea } from '@/types/domain';
+import type { TablesUpdate } from '@/integrations/supabase/types';
+import { getAdjuntos } from '@/lib/adjuntos';
+import { fetchComentariosConPerfiles } from '@/lib/comentarios';
+
+type TareaUpdate = TablesUpdate<'tareas'>;
+type EditableField = 'titulo' | 'descripcion';
 
 interface TareaDetailSheetProps {
   open: boolean;
@@ -43,15 +50,15 @@ const ESTADOS = [
 
 export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate }: TareaDetailSheetProps) {
   const { user } = useAuth();
-  const [tarea, setTarea] = useState<any>(null);
-  const [comentarios, setComentarios] = useState<any[]>([]);
+  const [tarea, setTarea] = useState<TareaDetalle | null>(null);
+  const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
-  const [consultores, setConsultores] = useState<any[]>([]);
-  const [categorias, setCategorias] = useState<any[]>([]);
+  const [consultores, setConsultores] = useState<ConsultorResumen[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaTarea[]>([]);
 
-  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<EditableField | null>(null);
   const [editValue, setEditValue] = useState('');
   const [saveIndicator, setSaveIndicator] = useState<string | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -82,14 +89,9 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
         consultorData = data;
       }
 
-      setTarea({ ...tareaData, consultor_profile: consultorData });
+      setTarea({ ...tareaData, archivos_adjuntos: getAdjuntos(tareaData.archivos_adjuntos), consultor_profile: consultorData });
 
-      const { data: comentariosData } = await supabase
-        .from('comentarios')
-        .select('*, profiles(nombre_completo)')
-        .eq('tarea_id', tareaId)
-        .order('created_at', { ascending: true });
-      setComentarios(comentariosData || []);
+      setComentarios(await fetchComentariosConPerfiles(tareaId));
     } catch (error) {
       logger.error('Error fetching tarea:', error);
       toast.error('Error al cargar la tarea');
@@ -117,11 +119,12 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
     saveTimeoutRef.current = setTimeout(() => setSaveIndicator(null), 1500);
   };
 
-  const updateField = useCallback(async (field: string, value: any) => {
+  const updateField = useCallback(async (field: keyof TareaUpdate & keyof TareaDetalle, value: TareaUpdate[keyof TareaUpdate]) => {
     try {
-      const { error } = await supabase.from('tareas').update({ [field]: value }).eq('id', tareaId);
+      const patch: TareaUpdate = { [field]: value };
+      const { error } = await supabase.from('tareas').update(patch).eq('id', tareaId);
       if (error) throw error;
-      setTarea((prev: any) => ({ ...prev, [field]: value }));
+      setTarea(prev => prev && { ...prev, [field]: value });
       showSaveIndicator(field);
       onUpdate?.();
     } catch (error) {
@@ -130,12 +133,12 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
     }
   }, [tareaId, onUpdate]);
 
-  const startEditing = (field: string, currentValue: string) => {
+  const startEditing = (field: EditableField, currentValue: string) => {
     setEditingField(field);
     setEditValue(currentValue || '');
   };
 
-  const finishEditing = (field: string) => {
+  const finishEditing = (field: EditableField) => {
     if (editValue !== (tarea?.[field] || '')) {
       updateField(field, editValue.trim() || null);
     }
@@ -304,7 +307,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                   onValueChange={(v) => {
                     updateField('consultor_asignado_id', v || null);
                     const c = consultores.find(c => c.id === v);
-                    setTarea((prev: any) => ({ ...prev, consultor_profile: c || null }));
+                    setTarea(prev => prev && { ...prev, consultor_profile: c || null });
                   }}
                 >
                   <SelectTrigger className="w-[200px] h-9 text-sm">
@@ -338,7 +341,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                   onValueChange={(v) => {
                     updateField('categoria_id', v || null);
                     const cat = categorias.find(c => c.id === v);
-                    setTarea((prev: any) => ({ ...prev, categorias_tareas: cat || null }));
+                    setTarea(prev => prev && { ...prev, categorias_tareas: cat || null });
                   }}
                 >
                   <SelectTrigger className="w-[200px] h-9 text-sm">
@@ -348,7 +351,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                     {categorias.map(c => (
                       <SelectItem key={c.id} value={c.id}>
                         <div className="flex items-center gap-2">
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }} />
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color ?? undefined }} />
                           {c.nombre}
                         </div>
                       </SelectItem>
@@ -408,7 +411,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
               <FileAttachments
                 empresaId={tarea.empresa_id}
                 tareaId={tarea.id}
-                attachments={tarea.archivos_adjuntos || []}
+                attachments={tarea.archivos_adjuntos ?? []}
                 onAttachmentsChange={async (next) => {
                   const { error } = await supabase
                     .from('tareas')
@@ -418,7 +421,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                     toast.error('No se pudo guardar la evidencia: ' + error.message);
                     return;
                   }
-                  setTarea((prev: any) => ({ ...prev, archivos_adjuntos: next }));
+                  setTarea(prev => prev && { ...prev, archivos_adjuntos: next });
                   onUpdate?.();
                 }}
               />
@@ -444,7 +447,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-xs">{c.profiles?.nombre_completo}</span>
                           <span className="text-[10px] text-muted-foreground">
-                            {format(new Date(c.created_at), 'dd/MM/yyyy HH:mm')}
+                            {c.created_at ? format(new Date(c.created_at), 'dd/MM/yyyy HH:mm') : ''}
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground whitespace-pre-wrap">{c.contenido}</p>

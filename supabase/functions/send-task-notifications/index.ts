@@ -3,6 +3,18 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail } from '../_shared/smtp.ts'
 import { taskNotificationTemplate } from '../_shared/email-templates.ts'
 
+interface TareaNotificacion {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  fecha_vencimiento: string | null;
+  prioridad: string | null;
+  estado: string | null;
+  consultor_asignado_id: string | null;
+  empresa_id: string;
+  empresas: { razon_social: string } | { razon_social: string }[] | null;
+}
+
 interface TaskNotificationRequest {
   tareaId?: string;
   consultorId?: string;
@@ -53,7 +65,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    let tareas: any[] = [];
+    let tareas: TareaNotificacion[] = [];
 
     if (tareaId) {
       const { data, error } = await supabaseClient
@@ -108,7 +120,7 @@ Deno.serve(async (req) => {
     }
 
     // Group tasks by consultor
-    const tareasPorConsultor: { [key: string]: any[] } = {};
+    const tareasPorConsultor: { [key: string]: TareaNotificacion[] } = {};
     for (const tarea of tareas) {
       if (tarea.consultor_asignado_id) {
         if (!tareasPorConsultor[tarea.consultor_asignado_id]) {
@@ -165,7 +177,7 @@ Deno.serve(async (req) => {
 
           const tareasData = consultorTareas.map(t => ({
             titulo: t.titulo,
-            empresa: (t.empresas as any)?.razon_social || '-',
+            empresa: (Array.isArray(t.empresas) ? t.empresas[0] : t.empresas)?.razon_social || '-',
             prioridad: t.prioridad || '-',
             fechaVencimiento: t.fecha_vencimiento ? new Date(t.fecha_vencimiento).toLocaleDateString('es-MX') : 'Sin fecha',
           }));
@@ -175,7 +187,7 @@ Deno.serve(async (req) => {
           emailsEnviados++;
           console.log(`Email sent to ${consultorUser.email}`);
         }
-      } catch (emailError: any) {
+      } catch (emailError) {
         console.error(`Error sending email to consultor ${cId}:`, emailError);
       }
     }
@@ -192,7 +204,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in send-task-notifications function:', error);
     return new Response(
       JSON.stringify({ error: 'Error interno del servidor' }),

@@ -3,6 +3,21 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail } from '../_shared/smtp.ts'
 import { weeklySummaryTemplate } from '../_shared/email-templates.ts'
 
+type EmpresaEmbed = { razon_social: string } | { razon_social: string }[] | null
+
+interface ObligacionResumen {
+  nombre: string
+  fecha_vencimiento: string
+  categoria: string | null
+  empresas: EmpresaEmbed
+}
+
+/** PostgREST puede devolver el embed como objeto o como arreglo según la relación. */
+function razonSocial(empresas: EmpresaEmbed | undefined): string {
+  const empresa = Array.isArray(empresas) ? empresas[0] : empresas
+  return empresa?.razon_social ?? ''
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -88,9 +103,9 @@ Deno.serve(async (req) => {
           .limit(10)
 
         // ── Obligaciones ─────────────────────────────────────────────
-        let obligacionesVencidas: any[] = []
-        let obligacionesSemana: any[] = []
-        let obligacionesMes: any[] = []
+        let obligacionesVencidas: ObligacionResumen[] = []
+        let obligacionesSemana: ObligacionResumen[] = []
+        let obligacionesMes: ObligacionResumen[] = []
         const certificacionesVencer: { empresa: string; tipo: string; fecha: string }[] = []
         const renovacionesProximas: { empresa: string; programa: string; fecha: string; diasRestantes: number }[] = []
 
@@ -102,14 +117,14 @@ Deno.serve(async (req) => {
               .from('consultor_empresa_asignacion')
               .select('empresa_id')
               .eq('consultor_id', profile.id)
-            empresaIdFilter = (asignaciones || []).map((a: any) => a.empresa_id)
+            empresaIdFilter = (asignaciones || []).map((a: { empresa_id: string }) => a.empresa_id)
             if (empresaIdFilter.length === 0) {
               // Consultor sin empresas asignadas — no hay nada que reportar
               continue
             }
           }
 
-          const buildObligQuery = (query: any) =>
+          const buildObligQuery = <Q extends { in(column: string, values: string[]): Q }>(query: Q): Q =>
             empresaIdFilter ? query.in('empresa_id', empresaIdFilter) : query
 
           const { data: obsVencidas } = await buildObligQuery(supabaseAdmin
@@ -269,32 +284,32 @@ Deno.serve(async (req) => {
         const html = weeklySummaryTemplate(profile.nombre_completo, {
           tareasVencidas: (tareasVencidas || []).map(t => ({
             nombre: t.titulo,
-            empresa: (t.empresas as any)?.razon_social || '',
+            empresa: razonSocial(t.empresas) || '',
             fecha: t.fecha_vencimiento,
           })),
           tareasSemana: (tareasSemana || []).map(t => ({
             nombre: t.titulo,
-            empresa: (t.empresas as any)?.razon_social || '',
+            empresa: razonSocial(t.empresas) || '',
             fecha: t.fecha_vencimiento,
             prioridad: t.prioridad,
           })),
           obligacionesVencidas: obligacionesVencidas.map(o => ({
             nombre: o.nombre,
-            empresa: (o.empresas as any)?.razon_social || '',
+            empresa: razonSocial(o.empresas) || '',
             fecha: o.fecha_vencimiento,
-            categoria: o.categoria,
+            categoria: o.categoria ?? undefined,
           })),
           obligacionesSemana: obligacionesSemana.map(o => ({
             nombre: o.nombre,
-            empresa: (o.empresas as any)?.razon_social || '',
+            empresa: razonSocial(o.empresas) || '',
             fecha: o.fecha_vencimiento,
-            categoria: o.categoria,
+            categoria: o.categoria ?? undefined,
           })),
           obligacionesMes: obligacionesMes.map(o => ({
             nombre: o.nombre,
-            empresa: (o.empresas as any)?.razon_social || '',
+            empresa: razonSocial(o.empresas) || '',
             fecha: o.fecha_vencimiento,
-            categoria: o.categoria,
+            categoria: o.categoria ?? undefined,
           })),
           certificacionesVencer,
           renovacionesProximas,
@@ -343,7 +358,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in send-daily-summary:', error)
     return new Response(JSON.stringify({ error: 'Error interno del servidor' }), {
       status: 500,

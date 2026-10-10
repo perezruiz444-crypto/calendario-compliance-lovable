@@ -26,14 +26,17 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
+import type { Subtarea, ConsultorResumen } from '@/types/domain';
+import { conPerfiles } from '@/lib/perfiles';
 
 interface SubtareasManagerProps {
   tareaId: string;
 }
 
 interface SortableSubtareaProps {
-  subtarea: any;
-  consultores: any[];
+  subtarea: Subtarea;
+  consultores: ConsultorResumen[];
   onToggle: (id: string, completada: boolean) => void;
   onDelete: (id: string) => void;
   onAssign: (id: string, consultorId: string) => void;
@@ -54,7 +57,7 @@ function SortableSubtarea({ subtarea, consultores, onToggle, onDelete, onAssign,
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : 'auto' as any,
+    zIndex: isDragging ? 50 : ('auto' as const),
   };
 
   return (
@@ -73,8 +76,8 @@ function SortableSubtarea({ subtarea, consultores, onToggle, onDelete, onAssign,
       </button>
 
       <Checkbox
-        checked={subtarea.completada}
-        onCheckedChange={() => onToggle(subtarea.id, subtarea.completada)}
+        checked={!!subtarea.completada}
+        onCheckedChange={() => onToggle(subtarea.id, !!subtarea.completada)}
       />
 
       <span className={`flex-1 text-sm ${subtarea.completada ? 'line-through text-muted-foreground' : ''}`}>
@@ -124,10 +127,10 @@ function SortableSubtarea({ subtarea, consultores, onToggle, onDelete, onAssign,
 }
 
 export function SubtareasManager({ tareaId }: SubtareasManagerProps) {
-  const [subtareas, setSubtareas] = useState<any[]>([]);
+  const [subtareas, setSubtareas] = useState<Subtarea[]>([]);
   const [loading, setLoading] = useState(true);
   const [newSubtarea, setNewSubtarea] = useState('');
-  const [consultores, setConsultores] = useState<any[]>([]);
+  const [consultores, setConsultores] = useState<ConsultorResumen[]>([]);
   const [progress, setProgress] = useState({ total: 0, completadas: 0, progreso: 0 });
 
   const sensors = useSensors(
@@ -144,15 +147,18 @@ export function SubtareasManager({ tareaId }: SubtareasManagerProps) {
     try {
       const { data, error } = await supabase
         .from('subtareas')
-        .select('*, profiles:asignado_a(nombre_completo)')
+        .select('*')
         .eq('tarea_id', tareaId)
         .order('orden');
 
       if (error) throw error;
-      setSubtareas(data || []);
 
-      const total = data?.length || 0;
-      const completadas = data?.filter(s => s.completada).length || 0;
+      // `subtareas` no tiene FK a `profiles`: se unen aparte (ver `conPerfiles`).
+      const conPerfil: Subtarea[] = await conPerfiles(data ?? [], 'asignado_a');
+      setSubtareas(conPerfil);
+
+      const total = conPerfil.length;
+      const completadas = conPerfil.filter(s => s.completada).length;
       const progreso = total > 0 ? Math.round((completadas / total) * 100) : 0;
       setProgress({ total, completadas, progreso });
     } catch (error) {
@@ -192,8 +198,8 @@ export function SubtareasManager({ tareaId }: SubtareasManagerProps) {
       setNewSubtarea('');
       fetchSubtareas();
       toast.success('Subtarea agregada');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -209,8 +215,8 @@ export function SubtareasManager({ tareaId }: SubtareasManagerProps) {
         .eq('id', id);
       if (error) throw error;
       fetchSubtareas();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -220,8 +226,8 @@ export function SubtareasManager({ tareaId }: SubtareasManagerProps) {
       if (error) throw error;
       fetchSubtareas();
       toast.success('Subtarea eliminada');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -234,8 +240,8 @@ export function SubtareasManager({ tareaId }: SubtareasManagerProps) {
       if (error) throw error;
       fetchSubtareas();
       toast.success('Asignación actualizada');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 

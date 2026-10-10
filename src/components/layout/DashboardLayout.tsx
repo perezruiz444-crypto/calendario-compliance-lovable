@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDropdown';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/brand/Logo';
+import type { UserRole } from '@/types';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -62,7 +63,7 @@ interface SidebarProps {
   onSignOut: () => void;
   actualRole: string | null;
   simulatedRole: string | null;
-  setSimulatedRole: (role: any) => void;
+  setSimulatedRole: (role: UserRole | null) => void;
   onReopenTour?: () => void;
 }
 

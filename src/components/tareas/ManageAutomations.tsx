@@ -12,14 +12,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Zap, Plus, Trash2, Edit, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
+import type { ConsultorResumen } from '@/types/domain';
+
+interface AutomationAccion {
+  tipo: string;
+  valor: string;
+}
 
 interface AutomationRule {
   id: string;
   nombre: string;
   descripcion: string | null;
   trigger_type: string;
-  condiciones: any;
-  acciones: any;
+  condiciones: Record<string, string> | null;
+  acciones: AutomationAccion[] | null;
   activa: boolean;
   prioridad: number;
 }
@@ -45,7 +52,7 @@ export function ManageAutomations() {
   const [accionTipo, setAccionTipo] = useState('asignar_consultor');
   const [accionValor, setAccionValor] = useState('');
 
-  const [consultores, setConsultores] = useState<any[]>([]);
+  const [consultores, setConsultores] = useState<ConsultorResumen[]>([]);
 
   useEffect(() => {
     fetchRules();
@@ -136,8 +143,8 @@ export function ManageAutomations() {
       resetForm();
       setDialogOpen(false);
       fetchRules();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -151,8 +158,8 @@ export function ManageAutomations() {
       if (error) throw error;
       fetchRules();
       toast.success('Regla eliminada');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -166,8 +173,8 @@ export function ManageAutomations() {
       if (error) throw error;
       fetchRules();
       toast.success(rule.activa ? 'Regla desactivada' : 'Regla activada');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -183,7 +190,7 @@ export function ManageAutomations() {
     const firstCondition = Object.entries(rule.condiciones || {})[0];
     if (firstCondition) {
       setCondicionCampo(firstCondition[0]);
-      setCondicionValor(firstCondition[1] as string);
+      setCondicionValor(firstCondition[1]);
     }
 
     // Load first action if exists
@@ -281,7 +288,7 @@ export function ManageAutomations() {
                         {rule.acciones && Array.isArray(rule.acciones) && rule.acciones.length > 0 && (
                           <Badge variant="outline" className="font-normal">
                             <Zap className="w-3 h-3 mr-1" />
-                            {rule.acciones.map((a: any) => a.tipo).join(', ')}
+                            {rule.acciones.map((a) => a.tipo).join(', ')}
                           </Badge>
                         )}
                       </div>

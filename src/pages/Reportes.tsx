@@ -20,6 +20,35 @@ import { buildCategoriaReportData, buildCumplimientoMensualData } from '@/lib/re
 import { exportToExcel } from '@/lib/excelExport';
 import { logger } from '@/lib/logger';
 import { CATEGORY_CHART_COLORS } from '@/lib/brandColors';
+import type { ReporteData, PuntoTimeline, ObligacionPendienteDetalle, VencimientoCertificacion } from '@/types/reportes';
+import type { EstadoTarea } from '@/types/domain';
+
+const REPORTE_VACIO: ReporteData = {
+  tareasPorEstado: [],
+  tareasPorPrioridad: [],
+  tareasPorConsultor: [],
+  tareasPorEmpresa: [],
+  tareasPorCategoria: [],
+  tareasTimeline: [],
+  empresasConVencimientos: [],
+  certificacionesVencimiento: [],
+  rendimientoConsultores: [],
+  tiempoPorConsultor: [],
+  tiempoPorEmpresa: [],
+  tiempoPorTarea: [],
+  tareasDetalle: [],
+  obligacionesPendientesDetalle: [],
+  resumen: {
+    totalEmpresas: 0,
+    totalTareas: 0,
+    tareasCompletadas: 0,
+    tareasPendientes: 0,
+    certificacionesVencer: 0,
+    tasaCompletitud: 0,
+    totalHorasTrabajadas: 0,
+    horasFacturables: 0
+  }
+};
 
 export default function Reportes() {
   const { user, role, loading } = useAuth();
@@ -37,32 +66,7 @@ export default function Reportes() {
   const [consultores, setConsultores] = useState<{ id: string; nombre_completo: string }[]>([]);
   const [categorias, setCategorias] = useState<{ id: string; nombre: string }[]>([]);
   
-  const [reporteData, setReporteData] = useState({
-    tareasPorEstado: [] as any[],
-    tareasPorPrioridad: [] as any[],
-    tareasPorConsultor: [] as any[],
-    tareasPorEmpresa: [] as any[],
-    tareasPorCategoria: [] as any[],
-    tareasTimeline: [] as any[],
-    empresasConVencimientos: [] as any[],
-    certificacionesVencimiento: [] as any[],
-    rendimientoConsultores: [] as any[],
-    tiempoPorConsultor: [] as any[],
-    tiempoPorEmpresa: [] as any[],
-    tiempoPorTarea: [] as any[],
-    tareasDetalle: [] as any[],
-    obligacionesPendientesDetalle: [] as any[],
-    resumen: {
-      totalEmpresas: 0,
-      totalTareas: 0,
-      tareasCompletadas: 0,
-      tareasPendientes: 0,
-      certificacionesVencer: 0,
-      tasaCompletitud: 0,
-      totalHorasTrabajadas: 0,
-      horasFacturables: 0
-    }
-  });
+  const [reporteData, setReporteData] = useState<ReporteData>(REPORTE_VACIO);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -206,7 +210,7 @@ export default function Reportes() {
       let tareasPendientesQuery = supabase
         .from('tareas')
         .select('*, empresa_id, consultor_asignado_id, categoria_id')
-        .in('estado', ['pendiente', 'en_progreso'] as any);
+        .in('estado', ['pendiente', 'en_progreso']);
 
       // Aplicar filtros compartidos a ambas queries
       if (selectedEmpresa !== 'todas') {
@@ -225,8 +229,8 @@ export default function Reportes() {
       }
 
       if (selectedEstado !== 'todos') {
-        tareasDelPeriodoQuery = tareasDelPeriodoQuery.eq('estado', selectedEstado as any);
-        tareasPendientesQuery = tareasPendientesQuery.eq('estado', selectedEstado as any);
+        tareasDelPeriodoQuery = tareasDelPeriodoQuery.eq('estado', selectedEstado as EstadoTarea);
+        tareasPendientesQuery = tareasPendientesQuery.eq('estado', selectedEstado as EstadoTarea);
       }
 
       const [{ data: tareasDelPeriodo, error: tareasError }, { data: tareasPendientesData, error: pendientesError }] = await Promise.all([
@@ -328,25 +332,24 @@ export default function Reportes() {
       const in30Days = new Date();
       in30Days.setDate(today.getDate() + 30);
 
-      const certificacionesVencimiento = empresasData?.filter(emp => {
-        if (!emp.cert_iva_ieps_fecha_vencimiento) return false;
-        const vencimiento = new Date(emp.cert_iva_ieps_fecha_vencimiento);
+      // Empresas cuya certificación vence dentro de la ventana de 30 días (solo las que tienen fecha).
+      const vencenPronto = (fecha: string | null) => {
+        if (!fecha) return false;
+        const vencimiento = new Date(fecha);
         return vencimiento >= today && vencimiento <= in30Days;
-      }).map(emp => ({
-        razon_social: emp.razon_social,
-        fecha_vencimiento: emp.cert_iva_ieps_fecha_vencimiento,
-        tipo: 'IVA e IEPS'
-      })) || [];
+      };
 
-      const matrizVencimientos = empresasData?.filter(emp => {
-        if (!emp.matriz_seguridad_fecha_vencimiento) return false;
-        const vencimiento = new Date(emp.matriz_seguridad_fecha_vencimiento);
-        return vencimiento >= today && vencimiento <= in30Days;
-      }).map(emp => ({
-        razon_social: emp.razon_social,
-        fecha_vencimiento: emp.matriz_seguridad_fecha_vencimiento,
-        tipo: 'Matriz de Seguridad'
-      })) || [];
+      const certificacionesVencimiento: VencimientoCertificacion[] = (empresasData ?? []).flatMap(emp =>
+        emp.cert_iva_ieps_fecha_vencimiento && vencenPronto(emp.cert_iva_ieps_fecha_vencimiento)
+          ? [{ razon_social: emp.razon_social, fecha_vencimiento: emp.cert_iva_ieps_fecha_vencimiento, tipo: 'IVA e IEPS' }]
+          : []
+      );
+
+      const matrizVencimientos: VencimientoCertificacion[] = (empresasData ?? []).flatMap(emp =>
+        emp.matriz_seguridad_fecha_vencimiento && vencenPronto(emp.matriz_seguridad_fecha_vencimiento)
+          ? [{ razon_social: emp.razon_social, fecha_vencimiento: emp.matriz_seguridad_fecha_vencimiento, tipo: 'Matriz de Seguridad' }]
+          : []
+      );
 
       const allVencimientos = [...certificacionesVencimiento, ...matrizVencimientos];
 
@@ -410,7 +413,7 @@ export default function Reportes() {
       });
 
       // Timeline de tareas (últimos 12 meses)
-      const tareasTimeline: Record<string, any> = {};
+      const tareasTimeline: Record<string, PuntoTimeline> = {};
       for (let i = 11; i >= 0; i--) {
         const date = subMonths(new Date(), i);
         const monthKey = format(date, 'MMM yyyy', { locale: es });
@@ -524,26 +527,26 @@ export default function Reportes() {
       }
       const { data: ocurrenciasActivas } = await ocQuery;
 
-      let obligacionesPendientesDetalle: Array<{ nombre: string; empresa: string; categoria: string; fecha_vencimiento: string | null }> = [];
+      let obligacionesPendientesDetalle: ObligacionPendienteDetalle[] = [];
       let obPendientesCount = 0;
 
       if (ocurrenciasActivas && ocurrenciasActivas.length > 0) {
-        const ocIds = (ocurrenciasActivas as any[]).map(o => o.id);
+        const ocIds = ocurrenciasActivas.map(o => o.id);
         const { data: cumplimientos } = await supabase
           .from('obligacion_cumplimientos')
           .select('ocurrencia_id, completada, vigente')
           .in('ocurrencia_id', ocIds);
 
         const cumplidasSet = new Set(
-          (cumplimientos || []).filter((c: any) => c.vigente && c.completada && c.ocurrencia_id).map((c: any) => c.ocurrencia_id)
+          (cumplimientos || []).filter((c) => c.vigente && c.completada && c.ocurrencia_id).map((c) => c.ocurrencia_id)
         );
 
-        obligacionesPendientesDetalle = (ocurrenciasActivas as any[])
+        obligacionesPendientesDetalle = ocurrenciasActivas
           .filter(oc => !cumplidasSet.has(oc.id))
           .map(oc => ({
             nombre: oc.obligaciones?.nombre ?? 'Obligación',
             empresa: empresaMap[oc.empresa_id] || empresasData?.find(e => e.id === oc.empresa_id)?.razon_social || '-',
-            categoria: CATEGORIA_LABELS[oc.obligaciones?.categoria] || oc.obligaciones?.categoria || '-',
+            categoria: CATEGORIA_LABELS[oc.obligaciones?.categoria ?? ''] || oc.obligaciones?.categoria || '-',
             fecha_vencimiento: oc.fecha_vencimiento,
           }));
         obPendientesCount = obligacionesPendientesDetalle.length;

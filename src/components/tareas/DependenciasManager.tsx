@@ -7,15 +7,17 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, AlertCircle, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/errors';
+import type { TareaDependencia, TareaResumen } from '@/types/domain';
 
 interface DependenciasManagerProps {
   tareaId: string;
 }
 
 export function DependenciasManager({ tareaId }: DependenciasManagerProps) {
-  const [dependencias, setDependencias] = useState<any[]>([]);
-  const [bloqueadoPor, setBloqueadoPor] = useState<any[]>([]);
-  const [disponiblesTareas, setDisponiblesTareas] = useState<any[]>([]);
+  const [dependencias, setDependencias] = useState<TareaDependencia[]>([]);
+  const [bloqueadoPor, setBloqueadoPor] = useState<TareaDependencia[]>([]);
+  const [disponiblesTareas, setDisponiblesTareas] = useState<TareaResumen[]>([]);
   const [selectedTarea, setSelectedTarea] = useState('');
   const [loading, setLoading] = useState(true);
   const [isBlocked, setIsBlocked] = useState(false);
@@ -34,7 +36,7 @@ export function DependenciasManager({ tareaId }: DependenciasManagerProps) {
         .select(`
           id,
           tipo,
-          tareas:tarea_id(id, titulo, estado)
+          tareas:tareas!tarea_dependencias_tarea_id_fkey(id, titulo, estado)
         `)
         .eq('depende_de_tarea_id', tareaId);
 
@@ -47,7 +49,7 @@ export function DependenciasManager({ tareaId }: DependenciasManagerProps) {
         .select(`
           id,
           tipo,
-          tareas:depende_de_tarea_id(id, titulo, estado)
+          tareas:tareas!tarea_dependencias_depende_de_tarea_id_fkey(id, titulo, estado)
         `)
         .eq('tarea_id', tareaId);
 
@@ -105,8 +107,8 @@ export function DependenciasManager({ tareaId }: DependenciasManagerProps) {
       fetchDependencias();
       checkIfBlocked();
       toast.success('Dependencia agregada');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -121,8 +123,8 @@ export function DependenciasManager({ tareaId }: DependenciasManagerProps) {
       fetchDependencias();
       checkIfBlocked();
       toast.success('Dependencia eliminada');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -179,7 +181,7 @@ export function DependenciasManager({ tareaId }: DependenciasManagerProps) {
                 <div className="flex items-center gap-2 flex-1">
                   <Link2 className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm">{dep.tareas?.titulo}</span>
-                  <Badge variant={getEstadoColor(dep.tareas?.estado)}>
+                  <Badge variant={getEstadoColor(dep.tareas?.estado ?? '')}>
                     {dep.tareas?.estado}
                   </Badge>
                 </div>

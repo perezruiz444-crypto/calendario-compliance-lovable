@@ -4,6 +4,8 @@ import { Calendar, Building2, User, AlertCircle, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import type { CategoriaTarea, ConsultorResumen, EmpresaResumen } from '@/types/domain';
+
 interface TareaPreviewProps {
   formData: {
     titulo: string;
@@ -14,9 +16,9 @@ interface TareaPreviewProps {
     consultor_asignado_id: string;
     categoria_id: string;
   };
-  empresas: any[];
-  consultores: any[];
-  categorias?: any[];
+  empresas: EmpresaResumen[];
+  consultores: ConsultorResumen[];
+  categorias?: Pick<CategoriaTarea, 'id' | 'nombre'>[];
 }
 
 export function TareaPreview({ formData, empresas, consultores, categorias = [] }: TareaPreviewProps) {

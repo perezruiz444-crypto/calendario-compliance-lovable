@@ -25,6 +25,8 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { getErrorMessage } from '@/lib/errors';
+import type { Empresa } from '@/types/domain';
 
 type EmpresaListRow = {
   id: string;
@@ -118,8 +120,8 @@ export default function Empresas() {
       toast.success('Empresa duplicada exitosamente');
       invalidateEmpresas();
       navigate(`/empresas/${newEmpresa.id}`);
-    } catch (error: any) {
-      toast.error(error.message || 'Error al duplicar empresa');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al duplicar empresa');
     }
   };
 
@@ -150,8 +152,8 @@ export default function Empresas() {
       toast.success('Empresa eliminada exitosamente');
       setDeleteEmpresaId(null);
       invalidateEmpresas();
-    } catch (error: any) {
-      toast.error(error.message || 'Error al eliminar empresa');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al eliminar empresa');
     }
   };
 
@@ -164,7 +166,7 @@ export default function Empresas() {
     );
   }, [empresas, search]);
 
-  const getStatusBadges = (empresa: any) => {
+  const getStatusBadges = (empresa: Pick<Empresa, 'immex_numero' | 'prosec_numero' | 'cert_iva_ieps_oficio' | 'padron_general_numero'>) => {
     const badges: { label: string; variant: 'default' | 'secondary' | 'outline' }[] = [];
     if (empresa.immex_numero) badges.push({ label: 'IMMEX', variant: 'default' });
     if (empresa.prosec_numero) badges.push({ label: 'PROSEC', variant: 'secondary' });

@@ -72,12 +72,11 @@ export default function Calendario() {
           height="700px"
           filterEmpresaId={selectedEmpresaId}
           onEventClick={(event) => {
-            if (event.resource.type === 'tarea') {
+            const { type, data } = event.resource;
+            if (type === 'tarea') {
               navigate('/tareas');
-            } else if (event.resource.type === 'documento') {
-              navigate(`/empresas/${event.resource.data.empresa_id}`);
-            } else if (event.resource.type === 'programa') {
-              navigate(`/empresas/${event.resource.data.empresa.id}`);
+            } else if (type === 'documento' && data) {
+              navigate(`/empresas/${data.empresa_id}`);
             }
           }}
         />

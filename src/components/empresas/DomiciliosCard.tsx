@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { MapPin, Plus, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
+import type { DomicilioOperacion } from '@/types/domain';
 
 interface DomiciliosCardProps {
   empresaId: string;
-  domicilios: any[];
+  domicilios: DomicilioOperacion[];
   canEdit: boolean;
   onUpdate: () => void;
 }
@@ -21,7 +23,7 @@ export function DomiciliosCard({ empresaId, domicilios, canEdit, onUpdate }: Dom
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ domicilio: '', tipo: '' });
 
-  const startEdit = (d: any) => {
+  const startEdit = (d: DomicilioOperacion) => {
     setEditingId(d.id);
     setForm({ domicilio: d.domicilio, tipo: d.tipo || '' });
   };
@@ -45,8 +47,8 @@ export function DomiciliosCard({ empresaId, domicilios, canEdit, onUpdate }: Dom
       }
       cancel();
       onUpdate();
-    } catch (e: any) {
-      toast.error(e.message || 'Error');
+    } catch (e) {
+      toast.error(getErrorMessage(e) || 'Error');
     } finally {
       setSaving(false);
     }
@@ -58,8 +60,8 @@ export function DomiciliosCard({ empresaId, domicilios, canEdit, onUpdate }: Dom
       if (error) throw error;
       toast.success('Domicilio eliminado');
       onUpdate();
-    } catch (e: any) {
-      toast.error(e.message || 'Error al eliminar');
+    } catch (e) {
+      toast.error(getErrorMessage(e) || 'Error al eliminar');
     }
   };
 

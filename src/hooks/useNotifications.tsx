@@ -136,7 +136,7 @@ export function useNotifications() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'notificaciones', filter: `user_id=eq.${user.id}` },
-        (payload: any) => {
+        (payload) => {
           if (payload.eventType === 'INSERT') {
             const n = payload.new as Notification;
             setNotifications(prev => [n, ...prev]);

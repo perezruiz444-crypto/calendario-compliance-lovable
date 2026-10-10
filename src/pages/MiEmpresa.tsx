@@ -27,19 +27,29 @@ import { ExportarCumplimientoButton } from '@/components/obligaciones/ExportarCu
 import MisVencimientos from '@/components/empresas/MisVencimientos';
 import MisDocumentos from '@/components/empresas/MisDocumentos';
 import { logger } from '@/lib/logger';
+import type { Empresa, ApoderadoLegal, DomicilioOperacion, AgenteAduanal, Tarea, ObligacionVista } from '@/types/domain';
+
+/** Obligación elegida para subir evidencia de cumplimiento. */
+interface EvidenciaSeleccionada {
+  id: string; // obligación padre
+  ocurrenciaId: string;
+  presentacion: string | null;
+  periodoKey: string;
+  nombre: string;
+}
 
 export default function MiEmpresa() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const [empresa, setEmpresa] = useState<any>(null);
-  const [apoderados, setApoderados] = useState<any[]>([]);
-  const [domicilios, setDomicilios] = useState<any[]>([]);
-  const [agentesAduanales, setAgentesAduanales] = useState<any[]>([]);
-  const [obligaciones, setObligaciones] = useState<any[]>([]);
+  const [empresa, setEmpresa] = useState<Empresa | null>(null);
+  const [apoderados, setApoderados] = useState<ApoderadoLegal[]>([]);
+  const [domicilios, setDomicilios] = useState<DomicilioOperacion[]>([]);
+  const [agentesAduanales, setAgentesAduanales] = useState<AgenteAduanal[]>([]);
+  const [obligaciones, setObligaciones] = useState<ObligacionVista[]>([]);
   const [misAsignaciones, setMisAsignaciones] = useState<Set<string>>(new Set());
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
   const [responsables, setResponsables] = useState<Record<string, { nombre: string; tipo: string }>>({});
-  const [tareas, setTareas] = useState<any[]>([]);
+  const [tareas, setTareas] = useState<Tarea[]>([]);
   const [completingTarea, setCompletingTarea] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState(true);
 
@@ -51,8 +61,8 @@ export default function MiEmpresa() {
 
 
   // Dialogs
-  const [historialObl, setHistorialObl] = useState<any | null>(null);
-  const [evidenciaObl, setEvidenciaObl] = useState<any | null>(null);
+  const [historialObl, setHistorialObl] = useState<ObligacionVista | null>(null);
+  const [evidenciaObl, setEvidenciaObl] = useState<EvidenciaSeleccionada | null>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth');
@@ -96,7 +106,7 @@ export default function MiEmpresa() {
       // "ob" es en realidad una ocurrencia: su `id` es el ocurrencia_id, y
       // `obligacion_id` apunta a la obligación padre (para asignaciones/historial).
       const ocs = obligacionesRes.data || [];
-      const obs = ocs.map((oc: any) => ({
+      const obs: ObligacionVista[] = ocs.map((oc) => ({
         // Identidad de la ocurrencia (para cumplimiento y key de lista)
         id: oc.id,                       // ocurrencia_id
         obligacion_id: oc.obligacion_id, // obligación padre
@@ -114,10 +124,10 @@ export default function MiEmpresa() {
       setObligaciones(obs);
 
       // Las asignaciones son por OBLIGACIÓN padre.
-      const asignSet = new Set<string>((misAsigRes.data || []).map((r: any) => r.obligacion_id));
+      const asignSet = new Set<string>((misAsigRes.data || []).map((r) => r.obligacion_id));
       setMisAsignaciones(asignSet);
 
-      const responsableIds = [...new Set(obs.filter((o: any) => o.responsable_id).map((o: any) => o.responsable_id))];
+      const responsableIds = [...new Set(obs.map((o) => o.responsable_id).filter((id): id is string => !!id))];
       if (responsableIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
@@ -125,8 +135,8 @@ export default function MiEmpresa() {
           .in('id', responsableIds);
         if (profilesData) {
           const rMap: Record<string, { nombre: string; tipo: string }> = {};
-          profilesData.forEach((p: any) => {
-            const ob = obs.find((o: any) => o.responsable_id === p.id);
+          profilesData.forEach((p) => {
+            const ob = obs.find((o) => o.responsable_id === p.id);
             rMap[p.id] = { nombre: p.nombre_completo, tipo: ob?.responsable_tipo || 'consultor' };
           });
           setResponsables(rMap);
@@ -135,7 +145,7 @@ export default function MiEmpresa() {
 
       // Cumplimientos vigentes ligados a estas ocurrencias -> map por ocurrencia_id.
       if (obs.length > 0) {
-        const ocIds = obs.map((o: any) => o.id);
+        const ocIds = obs.map((o) => o.id);
         const { data: cData } = await supabase
           .from('obligacion_cumplimientos')
           .select('ocurrencia_id, completada, vigente')
@@ -143,7 +153,7 @@ export default function MiEmpresa() {
           .in('ocurrencia_id', ocIds);
         if (cData) {
           const map: Record<string, boolean> = {};
-          cData.forEach((c: any) => { if (c.vigente && c.ocurrencia_id) map[c.ocurrencia_id] = c.completada; });
+          cData.forEach((c) => { if (c.vigente && c.ocurrencia_id) map[c.ocurrencia_id] = !!c.completada; });
           setCumplimientos(map);
         }
       }
@@ -155,7 +165,7 @@ export default function MiEmpresa() {
   };
 
   // Fase 2: `ob` es una ocurrencia aplanada (id = ocurrencia_id, obligacion_id = padre).
-  const toggleCumplimiento = async (ob: any) => {
+  const toggleCumplimiento = async (ob: ObligacionVista) => {
     if (!user) return;
     if (!misAsignaciones.has(ob.obligacion_id)) {
       toast.error('Solo puedes marcar las obligaciones asignadas a ti');
@@ -201,17 +211,18 @@ export default function MiEmpresa() {
     }
   };
 
-  const getVencimientoAlert = (fecha: string | null) => {
+  // `Badge` solo tiene las variantes default | secondary | destructive | outline: warning y success se resuelven con clases.
+  const getVencimientoAlert = (fecha: string | null): { variant: 'default' | 'destructive' | 'outline'; className: string; icon: typeof AlertCircle; text: string } | null => {
     if (!fecha) return null;
     const dias = differenceInDays(parseISO(fecha), new Date());
-    if (dias < 0) return { color: 'destructive', icon: AlertCircle, text: 'Vencido' };
-    if (dias <= 30) return { color: 'warning', icon: AlertCircle, text: `${dias} días` };
-    if (dias <= 90) return { color: 'default', icon: Calendar, text: `${dias} días` };
-    return { color: 'success', icon: CheckCircle, text: `${dias} días` };
+    if (dias < 0) return { variant: 'destructive', className: '', icon: AlertCircle, text: 'Vencido' };
+    if (dias <= 30) return { variant: 'outline', className: 'border-warning text-warning', icon: AlertCircle, text: `${dias} días` };
+    if (dias <= 90) return { variant: 'default', className: '', icon: Calendar, text: `${dias} días` };
+    return { variant: 'outline', className: 'border-success text-success', icon: CheckCircle, text: `${dias} días` };
   };
 
   // Filtered obligations
-  const filteredObligaciones = obligaciones.filter((ob: any) => {
+  const filteredObligaciones = obligaciones.filter((ob) => {
     if (filterAsignacion === 'mias' && !misAsignaciones.has(ob.id)) return false;
     if (searchTerm && !ob.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     if (filterCategoria !== 'todas' && ob.categoria !== filterCategoria) return false;
@@ -224,7 +235,7 @@ export default function MiEmpresa() {
   });
 
 
-  const categorias = [...new Set(obligaciones.map((o: any) => o.categoria))];
+  const categorias = [...new Set(obligaciones.map((o) => o.categoria))];
 
   if (loading || loadingData) {
     return (
@@ -247,10 +258,10 @@ export default function MiEmpresa() {
     );
   }
 
-  const completadas = obligaciones.filter((ob: any) => cumplimientos[ob.id]).length;
+  const completadas = obligaciones.filter((ob) => cumplimientos[ob.id]).length;
   const total = obligaciones.length;
   const pendientes = total - completadas;
-  const porVencer = obligaciones.filter((ob: any) => {
+  const porVencer = obligaciones.filter((ob) => {
     if (!ob.fecha_vencimiento) return false;
     const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
     return dias >= 0 && dias <= 30 && !cumplimientos[ob.id];
@@ -360,7 +371,7 @@ export default function MiEmpresa() {
                     <div key={i} className="flex flex-col gap-1 p-3 border rounded-lg bg-card hover:bg-muted/30 transition-colors">
                       <div className="flex justify-between items-start">
                         <span className="font-medium text-sm">{prog.label}</span>
-                        {prog.fecha && <Badge variant={alert?.color as any} className="text-[10px] h-4 px-1"><Icon className="w-3 h-3 mr-1" />{alert?.text}</Badge>}
+                        {prog.fecha && <Badge variant={alert?.variant} className={`text-[10px] h-4 px-1 ${alert?.className ?? ''}`}><Icon className="w-3 h-3 mr-1" />{alert?.text}</Badge>}
                       </div>
                       {prog.fecha && <span className="text-xs text-muted-foreground">Vence: {format(parseISO(prog.fecha), 'dd/MM/yyyy', { locale: es })}</span>}
                     </div>
@@ -535,7 +546,7 @@ export default function MiEmpresa() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={filterAsignacion} onValueChange={(v: any) => setFilterAsignacion(v)}>
+                  <Select value={filterAsignacion} onValueChange={(v) => setFilterAsignacion(v as 'todas' | 'mias')}>
                     <SelectTrigger className="w-full sm:w-[170px]">
                       <SelectValue placeholder="Asignación" />
                     </SelectTrigger>
@@ -570,7 +581,7 @@ export default function MiEmpresa() {
                     {obligaciones.length === 0 ? 'Tu empresa aún no tiene obligaciones activas' : 'No se encontraron obligaciones con los filtros aplicados'}
                   </p>
                 ) : (() => {
-                  const grouped = filteredObligaciones.reduce((acc: Record<string, any[]>, ob: any) => {
+                  const grouped = filteredObligaciones.reduce((acc: Record<string, ObligacionVista[]>, ob) => {
                     const cat = ob.categoria || 'otro';
                     if (!acc[cat]) acc[cat] = [];
                     acc[cat].push(ob);
@@ -586,10 +597,10 @@ export default function MiEmpresa() {
                             <Badge variant="outline" className={`text-xs ${CATEGORIA_COLORS[cat] || ''}`}>
                               {CATEGORIA_LABELS[cat] || cat}
                             </Badge>
-                            <span className="text-xs text-muted-foreground">({(obs as any[]).length})</span>
+                            <span className="text-xs text-muted-foreground">({obs.length})</span>
                           </CollapsibleTrigger>
                           <CollapsibleContent className="pl-6 space-y-2 mt-1">
-                            {(obs as any[]).map((ob: any) => {
+                            {obs.map((ob) => {
                               const periodKey = ob.periodo_key;
                               const isCompleted = cumplimientos[ob.id] || false;
                               const resp = ob.responsable_id ? responsables[ob.responsable_id] : null;

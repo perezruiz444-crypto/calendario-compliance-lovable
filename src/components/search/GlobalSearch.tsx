@@ -14,16 +14,21 @@ import {
 import { Search, Building2, CheckSquare, MessageSquare, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { logger } from '@/lib/logger';
+import type { Empresa, Tarea } from '@/types/domain';
+
+interface ResultadosBusqueda {
+  empresas: Pick<Empresa, 'id' | 'razon_social' | 'rfc'>[];
+  tareas: Pick<Tarea, 'id' | 'titulo' | 'descripcion' | 'empresa_id'>[];
+  mensajes: { id: string; asunto: string; contenido: string }[];
+  documentos: { id: string; nombre: string; descripcion: string | null; empresa_id: string }[];
+}
+
+const SIN_RESULTADOS: ResultadosBusqueda = { empresas: [], tareas: [], mensajes: [], documentos: [] };
 
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [results, setResults] = useState<any>({
-    empresas: [],
-    tareas: [],
-    mensajes: [],
-    documentos: []
-  });
+  const [results, setResults] = useState<ResultadosBusqueda>(SIN_RESULTADOS);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { role } = useAuth();
@@ -42,7 +47,7 @@ export function GlobalSearch() {
 
   useEffect(() => {
     if (searchQuery.length < 2) {
-      setResults({ empresas: [], tareas: [], mensajes: [], documentos: [] });
+      setResults(SIN_RESULTADOS);
       return;
     }
 
@@ -167,7 +172,7 @@ export function GlobalSearch() {
             <>
               {results.empresas.length > 0 && (role === 'administrador' || role === 'consultor') && (
                 <CommandGroup heading="Empresas">
-                  {results.empresas.map((empresa: any) => (
+                  {results.empresas.map((empresa) => (
                     <CommandItem
                       key={empresa.id}
                       onSelect={() => handleSelect('empresa', empresa.id)}
@@ -185,7 +190,7 @@ export function GlobalSearch() {
 
               {results.tareas.length > 0 && (
                 <CommandGroup heading="Tareas">
-                  {results.tareas.map((tarea: any) => (
+                  {results.tareas.map((tarea) => (
                     <CommandItem
                       key={tarea.id}
                       onSelect={() => handleSelect('tarea', tarea.id, tarea.empresa_id)}
@@ -207,7 +212,7 @@ export function GlobalSearch() {
 
               {results.mensajes.length > 0 && (
                 <CommandGroup heading="Mensajes">
-                  {results.mensajes.map((mensaje: any) => (
+                  {results.mensajes.map((mensaje) => (
                     <CommandItem
                       key={mensaje.id}
                       onSelect={() => handleSelect('mensaje', mensaje.id)}
@@ -229,7 +234,7 @@ export function GlobalSearch() {
 
               {results.documentos.length > 0 && (
                 <CommandGroup heading="Documentos">
-                  {results.documentos.map((doc: any) => (
+                  {results.documentos.map((doc) => (
                     <CommandItem
                       key={doc.id}
                       onSelect={() => handleSelect('documento', doc.id, doc.empresa_id)}

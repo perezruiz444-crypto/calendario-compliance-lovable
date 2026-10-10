@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Plus } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 interface QuickCreateEmpresaProps {
   open: boolean;
@@ -58,8 +59,8 @@ export default function QuickCreateEmpresa({ open, onOpenChange, onEmpresaCreate
         onOpenChange(false);
         onEmpresaCreated(data.id);
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Error al crear empresa');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Error al crear empresa');
     } finally {
       setLoading(false);
     }
