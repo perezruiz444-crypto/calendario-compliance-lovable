@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
-  getCurrentPeriodKey, CATEGORIA_LABELS, CATEGORIA_COLORS,
+  getCurrentPeriodKey, fetchCumplidasPorOcurrencias, CATEGORIA_LABELS, CATEGORIA_COLORS,
   getVencimientoInfo, formatDateShort,
 } from '@/lib/obligaciones';
 import { differenceInDays, isPast, isValid } from 'date-fns';
@@ -162,6 +162,7 @@ export default function DashboardObligaciones() {
   const { selectedEmpresaId } = useEmpresaContext();
   const [obligaciones, setObligaciones] = useState<ObligacionConEmpresa[]>([]);
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
+  const [cumplidasOc, setCumplidasOc] = useState<Map<string, boolean>>(new Map());
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
 
@@ -211,13 +212,14 @@ export default function DashboardObligaciones() {
         cData.forEach(c => { map[`${c.obligacion_id}:${c.periodo_key}`] = true; });
         setCumplimientos(map);
       }
+      setCumplidasOc(await fetchCumplidasPorOcurrencias(supabase, obs.map(o => o.id)));
     }
     setLoading(false);
   };
 
   const classified = obligaciones.map(ob => {
     const pk = getCurrentPeriodKey(ob.presentacion);
-    const isCumplida = !!cumplimientos[`${ob.id}:${pk}`];
+    const isCumplida = cumplidasOc.get(ob.id) ?? !!cumplimientos[`${ob.id}:${pk}`];
     const urgency = getUrgency(ob.fecha_vencimiento, isCumplida);
     return { ob, isCumplida, urgency };
   });

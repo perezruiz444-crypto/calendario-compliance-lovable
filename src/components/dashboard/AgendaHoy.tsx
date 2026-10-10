@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresaContext } from '@/hooks/useEmpresaContext';
-import { getCurrentPeriodKey, formatDateShort, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
+import { getCurrentPeriodKey, fetchCumplidasPorOcurrencias, formatDateShort, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
 import { differenceInDays, isToday, isTomorrow, isPast, isValid, startOfDay, endOfDay, addDays } from 'date-fns';
 import { AlertCircle, CheckCircle2, Clock, Building2, ChevronRight, Sun } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -56,11 +56,12 @@ export default function AgendaHoy() {
         .in('obligacion_id', obs.map(o => o.id));
       const cumplMap: Record<string, boolean> = {};
       (cumplData || []).forEach(c => { cumplMap[`${c.obligacion_id}:${c.periodo_key}`] = true; });
+      const cumplidasOc = await fetchCumplidasPorOcurrencias(supabase, obs.map(o => o.id));
 
       obs.forEach(ob => {
         if (!ob.fecha_vencimiento) return;
         const pk = getCurrentPeriodKey(ob.presentacion);
-        if (cumplMap[`${ob.id}:${pk}`]) return;
+        if (cumplidasOc.get(ob.id) ?? cumplMap[`${ob.id}:${pk}`]) return;
         const d = new Date(ob.fecha_vencimiento);
         if (!isValid(d)) return;
         const urgency = isPast(startOfDay(d)) && !isToday(d) ? 'vencida' : isToday(d) ? 'hoy' : 'manana';

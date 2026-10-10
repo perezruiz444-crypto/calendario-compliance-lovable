@@ -228,3 +228,36 @@ export function ocurrenciasCumplidas(
   }
   return ids;
 }
+
+/**
+ * Obligaciones cumplidas según el modelo de ocurrencias, con la misma regla que
+ * EmpresaObligacionesActivasCard: cuenta la ocurrencia pendiente más antigua, así que una
+ * obligación está cumplida solo si todas sus ocurrencias lo están.
+ * Devuelve null para las obligaciones sin ocurrencias (legado): ahí sigue valiendo
+ * la clave `${obligacion_id}:${getCurrentPeriodKey(presentacion)}`.
+ * Necesario porque `presentacion` es texto libre ("Anualmente en marzo"), y getCurrentPeriodKey
+ * le asigna el mes actual aunque la ocurrencia se haya guardado con periodo "2026".
+ */
+export async function fetchCumplidasPorOcurrencias(
+  supabaseClient: SupabaseClient<Database>,
+  obligacionIds: string[]
+): Promise<Map<string, boolean>> {
+  const estado = new Map<string, boolean>();
+  if (obligacionIds.length === 0) return estado;
+  const [{ data: ocs }, { data: cumpl }] = await Promise.all([
+    supabaseClient
+      .from('obligacion_ocurrencias')
+      .select('id, obligacion_id')
+      .in('obligacion_id', obligacionIds),
+    supabaseClient
+      .from('obligacion_cumplimientos')
+      .select('ocurrencia_id, completada, vigente')
+      .in('obligacion_id', obligacionIds)
+      .eq('vigente', true),
+  ]);
+  const hechas = ocurrenciasCumplidas(cumpl);
+  for (const oc of ocs ?? []) {
+    estado.set(oc.obligacion_id, (estado.get(oc.obligacion_id) ?? true) && hechas.has(oc.id));
+  }
+  return estado;
+}

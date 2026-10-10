@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { useAuth } from './useAuth';
 import { differenceInDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { getCurrentPeriodKey } from '@/lib/obligaciones';
+import { getCurrentPeriodKey, fetchCumplidasPorOcurrencias } from '@/lib/obligaciones';
 import type { Tarea } from '@/types/domain';
 
 export interface ProximaTarea {
@@ -186,6 +186,7 @@ export function useAnalytics(empresaId?: string | null) {
       .eq('completada', true);
 
     const cumplSet = new Set((cumplimientos || []).map(c => `${c.obligacion_id}:${c.periodo_key}`));
+    const cumplidasOc = await fetchCumplidasPorOcurrencias(supabase, obIds);
     
     const today = new Date();
     let pendientes = 0;
@@ -198,7 +199,7 @@ export function useAnalytics(empresaId?: string | null) {
 
     for (const ob of obligaciones) {
       const pk = getCurrentPeriodKey(ob.presentacion);
-      const isCumplida = cumplSet.has(`${ob.id}:${pk}`);
+      const isCumplida = cumplidasOc.get(ob.id) ?? cumplSet.has(`${ob.id}:${pk}`);
       if (!isCumplida) {
         pendientes++;
         if (ob.fecha_vencimiento) {
