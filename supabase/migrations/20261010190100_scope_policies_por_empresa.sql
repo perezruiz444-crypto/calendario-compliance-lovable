@@ -1,3 +1,5 @@
+-- Aplicada en producción el 2026-10-10 (vía MCP con ALTER POLICY / CREATE OR REPLACE; mismo estado final).
+-- Re-ejecutable: cada DROP IF EXISTS cubre el nombre viejo y el nuevo.
 -- Hallazgos de auditoría: políticas FOR ALL que solo revisaban el rol (consultor podía
 -- tocar responsables, dependencias y asignaciones de cualquier empresa), INSERT de
 -- cumplimientos sin amarrar obligacion_id y corregir_cumplimiento sin validar al llamador.
@@ -24,6 +26,7 @@ GRANT EXECUTE ON FUNCTION public.puede_gestionar_empresa(uuid) TO authenticated;
 
 -- obligacion_responsables
 DROP POLICY IF EXISTS "Admins and consultores can manage responsables" ON public.obligacion_responsables;
+DROP POLICY IF EXISTS obligacion_responsables_manage_scoped ON public.obligacion_responsables;
 CREATE POLICY obligacion_responsables_manage_scoped ON public.obligacion_responsables
   FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM obligaciones o
@@ -35,6 +38,7 @@ CREATE POLICY obligacion_responsables_manage_scoped ON public.obligacion_respons
 
 -- tarea_dependencias: ambas tareas deben ser gestionables
 DROP POLICY IF EXISTS "Admins and consultores can manage dependencias" ON public.tarea_dependencias;
+DROP POLICY IF EXISTS tarea_dependencias_manage_scoped ON public.tarea_dependencias;
 CREATE POLICY tarea_dependencias_manage_scoped ON public.tarea_dependencias
   FOR ALL TO authenticated
   USING (
@@ -48,6 +52,7 @@ CREATE POLICY tarea_dependencias_manage_scoped ON public.tarea_dependencias
 
 -- tarea_asignaciones
 DROP POLICY IF EXISTS "Admins and consultores can manage asignaciones" ON public.tarea_asignaciones;
+DROP POLICY IF EXISTS tarea_asignaciones_manage_scoped ON public.tarea_asignaciones;
 CREATE POLICY tarea_asignaciones_manage_scoped ON public.tarea_asignaciones
   FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM tareas t WHERE t.id = tarea_asignaciones.tarea_id AND puede_gestionar_empresa(t.empresa_id)))
@@ -55,6 +60,7 @@ CREATE POLICY tarea_asignaciones_manage_scoped ON public.tarea_asignaciones
 
 -- obligaciones DELETE: acotar (hoy safeupdate lo mitiga, pero la política era solo por rol)
 DROP POLICY IF EXISTS "Admins and consultores can delete obligaciones" ON public.obligaciones;
+DROP POLICY IF EXISTS obligaciones_delete_scoped ON public.obligaciones;
 CREATE POLICY obligaciones_delete_scoped ON public.obligaciones
   FOR DELETE TO authenticated
   USING (puede_gestionar_empresa(empresa_id));

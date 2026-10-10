@@ -1,3 +1,5 @@
+-- Aplicada en producción el 2026-10-10 (vía MCP con ALTER POLICY / CREATE OR REPLACE; mismo estado final).
+-- Re-ejecutable: cada DROP IF EXISTS cubre el nombre viejo y el nuevo.
 -- Hallazgos de auditoría: tareas.consultor_asignado_id / creado_por sin amarrar (notificaciones
 -- y correos a usuarios de otras empresas), mensajes a cualquier usuario (relay de correo
 -- corporativo), comentarios y time_entries en tareas de otra empresa.
