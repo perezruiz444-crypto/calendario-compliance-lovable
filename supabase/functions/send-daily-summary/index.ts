@@ -69,6 +69,8 @@ Deno.serve(async (req) => {
       .from('profiles')
       .select('id, nombre_completo, notificaciones_activas')
       .eq('notificaciones_activas', true)
+      // Respeta "Frecuencia de resumen: Nunca" de Preferencias; null cuenta como el default (diario).
+      .or('resumen_frecuencia.is.null,resumen_frecuencia.neq.nunca')
 
     let emailsSent = 0
     let emailsFailed = 0
