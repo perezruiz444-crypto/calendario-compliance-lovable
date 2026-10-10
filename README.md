@@ -20,4 +20,4 @@ npm run dev
 
 ## Deploy
 
-El proyecto se despliega en Vercel conectado al branch `main` del repositorio.
+El proyecto se despliega en xxxx conectado al branch `main` del repositorio.
