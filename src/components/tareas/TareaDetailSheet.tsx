@@ -66,10 +66,14 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
   useEffect(() => {
     if (open && tareaId) {
       fetchTareaData();
-      fetchConsultores();
       fetchCategorias();
     }
   }, [open, tareaId]);
+
+  // Solo consultores asignados a la empresa de la tarea (la BD rechaza otros)
+  useEffect(() => {
+    if (open && tarea?.empresa_id) fetchConsultores(tarea.empresa_id);
+  }, [open, tarea?.empresa_id]);
 
   const fetchTareaData = async () => {
     setLoadingData(true);
@@ -100,10 +104,10 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
     }
   };
 
-  const fetchConsultores = async () => {
-    const { data: rolesData } = await supabase.from('user_roles').select('user_id').eq('role', 'consultor');
-    const ids = rolesData?.map(r => r.user_id) || [];
-    if (ids.length === 0) return;
+  const fetchConsultores = async (empresaId: string) => {
+    const { data: asig } = await supabase.from('consultor_empresa_asignacion').select('consultor_id').eq('empresa_id', empresaId);
+    const ids = asig?.map(a => a.consultor_id) || [];
+    if (ids.length === 0) { setConsultores([]); return; }
     const { data } = await supabase.from('profiles').select('id, nombre_completo').in('id', ids).order('nombre_completo');
     setConsultores(data || []);
   };

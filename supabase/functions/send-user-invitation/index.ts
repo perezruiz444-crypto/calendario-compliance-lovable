@@ -111,23 +111,20 @@ serve(async (req: Request) => {
 
     console.log('Invitation created:', invitation.id);
 
-    // Create user metadata
-    const userMetadata: { nombre_completo: string; role: string; invitation_token: string; empresa_id?: string } = {
-      nombre_completo: nombreCompleto,
-      role: role,
-      invitation_token: token
-    };
-
-    // Add empresa_id to metadata if provided (for clientes)
+    // role + empresa_id van en app_metadata (solo el service role lo escribe);
+    // handle_new_user ya no confía en user_metadata para eso. Se duplica en user_metadata solo para
+    // que funcione igual antes y después de aplicar la migración 20261010190000 (el trigger nuevo lo ignora).
+    const appMetadata: { role: string; empresa_id?: string } = { role };
     if (empresaId) {
-      userMetadata.empresa_id = empresaId;
+      appMetadata.empresa_id = empresaId;
     }
 
     // Create user directly without sending email
     const { data: userData, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
       email,
       email_confirm: false, // User needs to confirm via password setup link
-      user_metadata: userMetadata
+      user_metadata: { nombre_completo: nombreCompleto, invitation_token: token, ...appMetadata },
+      app_metadata: appMetadata
     });
 
     if (createUserError) {

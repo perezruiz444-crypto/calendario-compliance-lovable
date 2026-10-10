@@ -96,39 +96,32 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Update or insert role in user_roles
+    // Replace role: add the new one first, then revoke every other role
+    // (upsert alone left the previous role in place, so a demoted user kept its permissions)
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .upsert({
-        user_id: userId,
-        role: role
-      }, {
-        onConflict: 'user_id,role'
-      })
+      .upsert({ user_id: userId, role }, { onConflict: 'user_id,role', ignoreDuplicates: true })
 
-    // If upsert failed, try delete and insert
     if (roleError) {
-      // First delete existing role
-      await supabaseAdmin
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId)
+      console.error('Error updating role:', roleError)
+      return new Response(JSON.stringify({ error: 'Failed to update user role.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
-      // Then insert new role
-      const { error: insertError } = await supabaseAdmin
-        .from('user_roles')
-        .insert({
-          user_id: userId,
-          role: role
-        })
+    const { error: revokeError } = await supabaseAdmin
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId)
+      .neq('role', role)
 
-      if (insertError) {
-        console.error('Error updating role:', insertError)
-        return new Response(JSON.stringify({ error: 'Failed to update user role.' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
+    if (revokeError) {
+      console.error('Error revoking previous roles:', revokeError)
+      return new Response(JSON.stringify({ error: 'Failed to update user role.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     return new Response(JSON.stringify({ success: true }), {
