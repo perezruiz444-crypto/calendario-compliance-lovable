@@ -261,7 +261,7 @@ export default function DashboardLayout({ children, currentPage, onReopenTour }:
             <NotificationDropdown />
             <Sheet>
               <SheetTrigger asChild>
-                <Button aria-label="Abrir menú" variant="ghost" size="icon" className="h-8 w-8">
+                <Button aria-label="Abrir menú" variant="ghost" size="icon" className="h-11 w-11">
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>

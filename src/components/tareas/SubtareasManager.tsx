@@ -117,8 +117,9 @@ function SortableSubtarea({ subtarea, consultores, onToggle, onDelete, onAssign,
       <Button
         variant="ghost"
         size="sm"
+        aria-label={`Eliminar subtarea: ${subtarea.titulo}`}
         onClick={() => onDelete(subtarea.id)}
-        className="opacity-0 group-hover:opacity-100"
+        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
       >
         <Trash2 className="w-4 h-4 text-destructive" />
       </Button>

@@ -8,6 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "test:ui": "tsc src/lib/reportPeriod.ts src/lib/pagination.ts --target ES2022 --module NodeNext --outDir .test-build --skipLibCheck && node --test tests/ui-data.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

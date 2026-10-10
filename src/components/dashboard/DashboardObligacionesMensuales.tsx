@@ -274,14 +274,14 @@ export default function DashboardObligacionesMensuales() {
             aria-label={`Marcar ${obl.nombre} como cumplida`}
             className="shrink-0"
           />
-          <div
-            className="flex-1 min-w-0 cursor-pointer hover:underline decoration-muted-foreground/30"
+          <button
+            type="button"
+            className="min-h-11 sm:min-h-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 flex-1 min-w-0 cursor-pointer hover:underline decoration-muted-foreground/30"
             onClick={() => {
               setSelectedObId(obl.obligacion_id);
               setSelectedOcurrenciaId(obl.id);
               setSheetOpen(true);
             }}
-            role="button"
           >
             <p className={`font-medium text-sm truncate font-heading ${
               isCompleted ? 'line-through text-muted-foreground' : ''
@@ -301,7 +301,7 @@ export default function DashboardObligacionesMensuales() {
                 <span className="hidden sm:inline">{formatDateShort(obl.fecha_vencimiento)}</span>
               )}
             </div>
-          </div>
+          </button>
         </div>
         <div className="self-end sm:self-auto pl-7 sm:pl-0 shrink-0">
           <SemaforoBadge fecha={obl.fecha_vencimiento} cumplida={isCompleted} />

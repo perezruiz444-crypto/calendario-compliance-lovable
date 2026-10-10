@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Mail, MailOpen, Plus, Send, Inbox } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { CreateMensajeDialog } from '@/components/mensajes/CreateMensajeDialog';
 import { MensajeDetailDialog } from '@/components/mensajes/MensajeDetailDialog';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -22,6 +22,7 @@ import type { MensajeConJoins } from '@/types/domain';
 export default function Mensajes() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const reducedMotion = useReducedMotion();
   const [mensajes, setMensajes] = useState<MensajeConJoins[]>([]);
   const [loadingMensajes, setLoadingMensajes] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -150,13 +151,14 @@ export default function Mensajes() {
                 ? mensaje.remitente?.nombre_completo || 'Usuario'
                 : mensaje.destinatario?.nombre_completo || 'Usuario';
               return (
-                <motion.div
+                <motion.button
+                  type="button"
                   key={mensaje.id}
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={reducedMotion ? false : { opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: Math.min(idx * 0.02, 0.3) }}
+                  transition={{ duration: reducedMotion ? 0 : 0.25, delay: reducedMotion ? 0 : Math.min(idx * 0.02, 0.3) }}
                   onClick={() => { setSelectedMensajeId(mensaje.id); setDetailDialogOpen(true); }}
-                  className={`group card-editorial cursor-pointer px-5 py-4 flex items-start gap-4 hover-lift ${
+                  className={`w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 group card-editorial cursor-pointer px-5 py-4 flex items-start gap-4 hover-lift ${
                     unread ? 'border-l-4 border-l-primary' : ''
                   }`}
                 >
@@ -196,7 +198,7 @@ export default function Mensajes() {
                       </Badge>
                     )}
                   </div>
-                </motion.div>
+                </motion.button>
               );
             })}
           </div>

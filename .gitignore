@@ -27,3 +27,6 @@ dist-ssr
 supabase/.temp/
 
 .gstack/
+
+# Compiled UI regression test helpers
+.test-build/

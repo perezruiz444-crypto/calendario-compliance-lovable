@@ -238,6 +238,7 @@ export default function Usuarios() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              aria-label={`Eliminar usuario: ${usuario.nombre_completo}`}
                               onClick={() => handleDeleteClick(usuario)}
                               disabled={usuario.id === user?.id}
                               className="hover:bg-destructive hover:text-destructive-foreground transition-smooth"

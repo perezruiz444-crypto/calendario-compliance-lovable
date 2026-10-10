@@ -123,8 +123,10 @@ export function CatalogoActivacionSection({ empresaId, canEdit, onActivated }: P
     <>
       <Card className="shadow-card">
         <CardHeader className="pb-3">
-          <div
-            className="flex items-center justify-between cursor-pointer select-none"
+          <button
+            type="button"
+            aria-expanded={sectionOpen}
+            className="min-h-11 w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 flex items-center justify-between cursor-pointer select-none"
             onClick={() => setSectionOpen(v => !v)}
           >
             <div className="flex items-center gap-2">
@@ -139,7 +141,7 @@ export function CatalogoActivacionSection({ empresaId, canEdit, onActivated }: P
             {sectionOpen
               ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
               : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-          </div>
+          </button>
         </CardHeader>
 
         {sectionOpen && (

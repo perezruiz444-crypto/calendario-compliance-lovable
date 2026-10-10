@@ -156,8 +156,9 @@ export function TareasTimeline({ tareas, onTareaClick }: TareasTimelineProps) {
               return (
                 <div key={tarea.id} className="flex border-b hover:bg-accent/30 transition-colors group">
                   {/* Task label */}
-                  <div
-                    className="w-[220px] min-w-[220px] border-r px-3 py-2 flex items-center gap-2 cursor-pointer"
+                  <button
+                    type="button"
+                    className="min-h-11 sm:min-h-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 w-[220px] min-w-[220px] border-r px-3 py-2 flex items-center gap-2 cursor-pointer"
                     onClick={() => onTareaClick(tarea.id)}
                   >
                     <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${config.color}`} />
@@ -165,7 +166,7 @@ export function TareasTimeline({ tareas, onTareaClick }: TareasTimelineProps) {
                     {tarea.isOverdue && (
                       <AlertCircle className="w-3 h-3 text-destructive flex-shrink-0" />
                     )}
-                  </div>
+                  </button>
 
                   {/* Timeline bar */}
                   <div className="flex relative" style={{ minHeight: 36 }}>
@@ -196,8 +197,10 @@ export function TareasTimeline({ tareas, onTareaClick }: TareasTimelineProps) {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div
-                            className="absolute top-1.5 h-5 rounded-none cursor-pointer transition-opacity hover:opacity-80"
+                          <button
+                            type="button"
+                            aria-label={`Abrir tarea: ${tarea.titulo}`}
+                            className="absolute top-0 h-11 sm:top-1.5 sm:h-5 rounded-none cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             style={{
                               left: tarea.startOffset * dayWidth + 4,
                               width: Math.max(dayWidth - 8, tarea.duration * dayWidth - 8),
@@ -211,7 +214,7 @@ export function TareasTimeline({ tareas, onTareaClick }: TareasTimelineProps) {
                                 {tarea.titulo}
                               </span>
                             )}
-                          </div>
+                          </button>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-[250px]">
                           <div className="space-y-1">
