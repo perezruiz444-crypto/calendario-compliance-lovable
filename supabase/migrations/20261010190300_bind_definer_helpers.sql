@@ -1,3 +1,5 @@
+-- Aplicada en producción el 2026-10-10 (vía MCP con ALTER POLICY / CREATE OR REPLACE; mismo estado final).
+-- Re-ejecutable: cada DROP IF EXISTS cubre el nombre viejo y el nuevo.
 -- Hallazgo de auditoría: funciones SECURITY DEFINER que respondían sobre cualquier usuario
 -- (oráculos de rol y de pertenencia a empresas).
 -- Verificado en producción (2026-10-10): ninguna política ni función las llama con un uid
