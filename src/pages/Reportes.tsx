@@ -21,6 +21,7 @@ import { exportToExcel } from '@/lib/excelExport';
 import { logger } from '@/lib/logger';
 import { CATEGORY_CHART_COLORS } from '@/lib/brandColors';
 import { getReportDateRange } from '@/lib/reportPeriod';
+import { buildTaskReportSummary } from '@/lib/reportSummary';
 import type { ReporteData, PuntoTimeline, ObligacionPendienteDetalle, VencimientoCertificacion } from '@/types/reportes';
 import type { EstadoTarea } from '@/types/domain';
 
@@ -424,9 +425,7 @@ export default function Reportes() {
         }
       });
 
-      const completadas = tareas?.filter(t => t.estado === 'completada').length || 0;
-      const total = tareas?.length || 0;
-      const tasaCompletitud = total > 0 ? Math.round((completadas / total) * 100) : 0;
+      const taskSummary = buildTaskReportSummary(tareas);
 
       // Fetch time entries for time tracking reports
       const { data: timeEntries, error: timeError } = await supabase
@@ -519,7 +518,6 @@ export default function Reportes() {
       if (occurrencesError) throw occurrencesError;
 
       let obligacionesPendientesDetalle: ObligacionPendienteDetalle[] = [];
-      let obPendientesCount = 0;
 
       if (ocurrenciasActivas && ocurrenciasActivas.length > 0) {
         const ocIds = ocurrenciasActivas.map(o => o.id);
@@ -541,11 +539,7 @@ export default function Reportes() {
             categoria: CATEGORIA_LABELS[oc.obligaciones?.categoria ?? ''] || oc.obligaciones?.categoria || '-',
             fecha_vencimiento: oc.fecha_vencimiento,
           }));
-        obPendientesCount = obligacionesPendientesDetalle.length;
       }
-      const obligacionesActivas = ocurrenciasActivas;
-
-      const tareasPendientesCount = tareas?.filter(t => t.estado === 'pendiente' || t.estado === 'en_progreso').length || 0;
 
       if (requestId !== reportRequestId.current) return;
       setReporteData({
@@ -565,11 +559,8 @@ export default function Reportes() {
         obligacionesPendientesDetalle,
         resumen: {
           totalEmpresas: empresasData?.length || 0,
-          totalTareas: total + (obligacionesActivas?.length || 0),
-          tareasCompletadas: completadas,
-          tareasPendientes: tareasPendientesCount + obPendientesCount,
+          ...taskSummary,
           certificacionesVencer: allVencimientos.length,
-          tasaCompletitud,
           totalHorasTrabajadas,
           horasFacturables
         }
@@ -597,6 +588,7 @@ export default function Reportes() {
       ['Tareas Completadas', reporteData.resumen.tareasCompletadas],
       ['Tareas Pendientes', reporteData.resumen.tareasPendientes],
       ['Tasa de Completitud', reporteData.resumen.tasaCompletitud + '%'],
+      ['Obligaciones Pendientes', reporteData.obligacionesPendientesDetalle.length],
       ['Certificaciones por Vencer', reporteData.resumen.certificacionesVencer],
       [''],
       ['Tareas por Estado'],
@@ -962,9 +954,12 @@ export default function Reportes() {
                     <CheckSquare className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-heading font-medium text-muted-foreground">Tasa de Completitud</p>
+                    <p className="text-sm font-heading font-medium text-muted-foreground">Tasa de Completitud de Tareas</p>
                     <p className="text-xs text-muted-foreground font-body mt-1">
                       {reporteData.resumen.tareasCompletadas} de {reporteData.resumen.totalTareas} tareas completadas
+                    </p>
+                    <p className="text-xs text-muted-foreground font-body mt-1">
+                      Las obligaciones se muestran por separado. Porcentaje redondeado al entero más cercano.
                     </p>
                   </div>
                 </div>
@@ -1028,7 +1023,7 @@ export default function Reportes() {
               <Card className="shadow-card">
                 <CardHeader>
                   <CardTitle className="font-heading">Distribución por Estado</CardTitle>
-                  <CardDescription className="font-body">Vista general de tareas y obligaciones</CardDescription>
+                  <CardDescription className="font-body">Tareas incluidas en el reporte</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -1096,7 +1091,7 @@ export default function Reportes() {
                 <CardHeader>
                   <CardTitle className="font-heading flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-warning" />
-                    Obligaciones Pendientes de Cumplimiento
+                    Obligaciones Pendientes de Cumplimiento ({reporteData.obligacionesPendientesDetalle.length})
                   </CardTitle>
                   <CardDescription className="font-body">Obligaciones activas sin cumplir en el periodo actual</CardDescription>
                 </CardHeader>
