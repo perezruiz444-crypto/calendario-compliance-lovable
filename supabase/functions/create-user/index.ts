@@ -45,13 +45,15 @@ Deno.serve(async (req) => {
 
     const { email, password, nombre_completo, role, empresa_id } = await req.json()
 
-    // Create the user with role + empresa_id in metadata so handle_new_user trigger asigna el rol correcto
+    // role + empresa_id van en app_metadata (solo el service role lo escribe);
+    // handle_new_user ya no confía en user_metadata para eso. Se duplica en user_metadata solo para
+    // que funcione igual antes y después de aplicar la migración 20261010190000 (el trigger nuevo lo ignora).
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: {
-        nombre_completo,
+      user_metadata: { nombre_completo, role, ...(empresa_id ? { empresa_id } : {}) },
+      app_metadata: {
         role,
         ...(empresa_id ? { empresa_id } : {})
       }
