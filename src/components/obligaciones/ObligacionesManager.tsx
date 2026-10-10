@@ -26,7 +26,7 @@ import {
 import {
   CATEGORIA_LABELS, CATEGORIA_COLORS,
   getCurrentPeriodKey, getPeriodLabel, formatDateShort, getVencimientoInfo, programaToCategoria,
-  isRecurring, ocurrenciasCumplidas } from '@/lib/obligaciones';
+  isRecurring, ocurrenciasCumplidas, estadoPorOcurrencias } from '@/lib/obligaciones';
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
 import { logger } from '@/lib/logger';
 import { nombresPerfiles } from '@/lib/perfiles';
@@ -121,15 +121,9 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     // Map cumplimientos por ocurrencia_id + próxima ocurrencia pendiente por obligación.
     const cMap: Record<string, boolean> = {};
     const proxMap: Record<string, { id: string; periodo_key: string; fecha_vencimiento: string }> = {};
-    ocs.forEach((oc) => {
-      cMap[oc.id] = cumplidas.has(oc.id);
-      if (!proxMap[oc.obligacion_id]) {
-        // primera pendiente; si todas cumplidas, la primera (ya ordenadas por fecha)
-        proxMap[oc.obligacion_id] = { id: oc.id, periodo_key: oc.periodo_key, fecha_vencimiento: oc.fecha_vencimiento };
-      } else if (!cumplidas.has(oc.id) && cumplidas.has(proxMap[oc.obligacion_id].id)) {
-        proxMap[oc.obligacion_id] = { id: oc.id, periodo_key: oc.periodo_key, fecha_vencimiento: oc.fecha_vencimiento };
-      }
-    });
+    ocs.forEach((oc) => { cMap[oc.id] = cumplidas.has(oc.id); });
+    // Ocurrencia del periodo en curso (cada periodo es independiente)
+    estadoPorOcurrencias(ocs, cumplidas).forEach((e, oblId) => { proxMap[oblId] = e.actual; });
 
     setCumplimientos(cMap);
     setProximaOcurrencia(proxMap);

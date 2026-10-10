@@ -229,35 +229,102 @@ export function ocurrenciasCumplidas(
   return ids;
 }
 
+export interface OcurrenciaRef {
+  id: string;
+  obligacion_id: string;
+  periodo_key: string;
+  fecha_vencimiento: string;
+}
+
+export interface EstadoObligacionOc {
+  /** Ocurrencia del periodo en curso (la que define si la obligación está cumplida hoy). */
+  actual: OcurrenciaRef;
+  cumplida: boolean;
+  /** Ocurrencias anteriores a la actual, ya vencidas y sin cumplimiento. */
+  atrasadas: number;
+}
+
+/** Clave de periodo de `fecha` con el mismo formato que `periodoKey` ("2026", "2026-10", "2026-T3"…). */
+function periodoKeyComo(periodoKey: string, fecha: Date): string | null {
+  const formato: [RegExp, string][] = [
+    [/^\d{4}$/, 'anual'],
+    [/^\d{4}-\d{2}$/, 'mensual'],
+    [/^\d{4}-\d{2}-Q[12]$/, 'quincenal'],
+    [/^\d{4}-W\d{2}$/, 'semanal'],
+    [/^\d{4}-B\d$/, 'bimestral'],
+    [/^\d{4}-T\d$/, 'trimestral'],
+    [/^\d{4}-S\d$/, 'semestral'],
+  ];
+  const match = formato.find(([re]) => re.test(periodoKey));
+  return match ? getPeriodKeyForDate(fecha, match[1]) : null;
+}
+
 /**
- * Obligaciones cumplidas según el modelo de ocurrencias, con la misma regla que
- * EmpresaObligacionesActivasCard: cuenta la ocurrencia pendiente más antigua, así que una
- * obligación está cumplida solo si todas sus ocurrencias lo están.
- * Devuelve null para las obligaciones sin ocurrencias (legado): ahí sigue valiendo
- * la clave `${obligacion_id}:${getCurrentPeriodKey(presentacion)}`.
- * Necesario porque `presentacion` es texto libre ("Anualmente en marzo"), y getCurrentPeriodKey
+ * Cada ocurrencia (mes, año…) es independiente. La obligación se evalúa por la ocurrencia del
+ * periodo en curso (p. ej. octubre 2026 para una mensual, aunque ya haya vencido el día 17); si
+ * ninguna corresponde al periodo actual, la próxima por vencer, o la última. Las anteriores sin
+ * cumplir se cuentan aparte como atrasadas, sin cambiar el estado de la actual.
+ * `ocs` debe venir ordenado por fecha_vencimiento ascendente.
+ */
+export function estadoPorOcurrencias(
+  ocs: readonly OcurrenciaRef[],
+  hechas: ReadonlySet<string>,
+  hoy: Date = new Date(),
+): Map<string, EstadoObligacionOc> {
+  const porObligacion = new Map<string, OcurrenciaRef[]>();
+  for (const oc of ocs) {
+    const lista = porObligacion.get(oc.obligacion_id) ?? [];
+    lista.push(oc);
+    porObligacion.set(oc.obligacion_id, lista);
+  }
+  const hoyStr = format(hoy, 'yyyy-MM-dd');
+  const estado = new Map<string, EstadoObligacionOc>();
+  for (const [obligacionId, lista] of porObligacion) {
+    const actual =
+      lista.find((oc) => periodoKeyComo(oc.periodo_key, hoy) === oc.periodo_key) ??
+      lista.find((oc) => oc.fecha_vencimiento >= hoyStr) ??
+      lista[lista.length - 1];
+    const atrasadas = lista.filter(
+      (oc) => oc.id !== actual.id && oc.fecha_vencimiento < hoyStr
+        && oc.fecha_vencimiento <= actual.fecha_vencimiento && !hechas.has(oc.id),
+    ).length;
+    estado.set(obligacionId, { actual, cumplida: hechas.has(actual.id), atrasadas });
+  }
+  return estado;
+}
+
+/**
+ * Estado por ocurrencias (ver estadoPorOcurrencias) de varias obligaciones.
+ * Las obligaciones sin ocurrencias (legado) no aparecen: ahí sigue valiendo la clave
+ * `${obligacion_id}:${getCurrentPeriodKey(presentacion)}`. No sirve para las que tienen
+ * ocurrencias porque `presentacion` es texto libre ("Anualmente en marzo") y getCurrentPeriodKey
  * le asigna el mes actual aunque la ocurrencia se haya guardado con periodo "2026".
  */
-export async function fetchCumplidasPorOcurrencias(
+export async function fetchEstadoOcurrencias(
   supabaseClient: SupabaseClient<Database>,
   obligacionIds: string[]
-): Promise<Map<string, boolean>> {
-  const estado = new Map<string, boolean>();
-  if (obligacionIds.length === 0) return estado;
+): Promise<Map<string, EstadoObligacionOc>> {
+  if (obligacionIds.length === 0) return new Map();
   const [{ data: ocs }, { data: cumpl }] = await Promise.all([
     supabaseClient
       .from('obligacion_ocurrencias')
-      .select('id, obligacion_id')
-      .in('obligacion_id', obligacionIds),
+      .select('id, obligacion_id, periodo_key, fecha_vencimiento')
+      .in('obligacion_id', obligacionIds)
+      .order('fecha_vencimiento', { ascending: true }),
     supabaseClient
       .from('obligacion_cumplimientos')
       .select('ocurrencia_id, completada, vigente')
       .in('obligacion_id', obligacionIds)
       .eq('vigente', true),
   ]);
-  const hechas = ocurrenciasCumplidas(cumpl);
-  for (const oc of ocs ?? []) {
-    estado.set(oc.obligacion_id, (estado.get(oc.obligacion_id) ?? true) && hechas.has(oc.id));
-  }
-  return estado;
+  return estadoPorOcurrencias(ocs ?? [], ocurrenciasCumplidas(cumpl));
+}
+
+/** Atajo de fetchEstadoOcurrencias: solo si la ocurrencia actual está cumplida. */
+export async function fetchCumplidasPorOcurrencias(
+  supabaseClient: SupabaseClient<Database>,
+  obligacionIds: string[]
+): Promise<Map<string, boolean>> {
+  const estado = await fetchEstadoOcurrencias(supabaseClient, obligacionIds);
+  return new Map([...estado].map(([id, e]) => [id, e.cumplida]));
 }
