@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentPeriodKey } from '@/lib/obligaciones';
+import { getCurrentPeriodKey, fetchCumplidasPorOcurrencias } from '@/lib/obligaciones';
 import { Building2, ChevronRight } from 'lucide-react';
 import { isPast, isValid } from 'date-fns';
 
@@ -78,6 +78,7 @@ export default function EmpresaComplianceSemaforo() {
         cumplMap[`${c.obligacion_id}:${c.periodo_key}`] = true;
       });
     }
+    const cumplidasOc = await fetchCumplidasPorOcurrencias(supabase, obsIds);
 
     const stats: EmpresaStats[] = empData.map(emp => {
       const empObs = obs.filter(o => o.empresa_id === emp.id);
@@ -86,7 +87,7 @@ export default function EmpresaComplianceSemaforo() {
 
       empObs.forEach(ob => {
         const pk = getCurrentPeriodKey(ob.presentacion);
-        if (cumplMap[`${ob.id}:${pk}`]) return;
+        if (cumplidasOc.get(ob.id) ?? cumplMap[`${ob.id}:${pk}`]) return;
         pendientes++;
         if (ob.fecha_vencimiento) {
           const d = new Date(ob.fecha_vencimiento);

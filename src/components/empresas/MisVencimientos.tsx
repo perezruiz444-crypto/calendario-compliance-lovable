@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CalendarClock, CheckCircle2, Upload, AlertCircle } from 'lucide-react';
 import { format, parseISO, differenceInDays, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { getCurrentPeriodKey } from '@/lib/obligaciones';
+import { getCurrentPeriodKey, fetchCumplidasPorOcurrencias } from '@/lib/obligaciones';
 
 interface Obligacion {
   id: string;
@@ -28,6 +28,7 @@ interface Props {
 export default function MisVencimientos({ empresaId, onSubirEvidencia, refreshKey = 0 }: Props) {
   const [obs, setObs] = useState<Obligacion[]>([]);
   const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
+  const [cumplidasOc, setCumplidasOc] = useState<Map<string, boolean>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,8 +62,10 @@ export default function MisVencimientos({ empresaId, onSubirEvidencia, refreshKe
           map[`${c.obligacion_id}:${c.periodo_key}`] = true;
         });
         setCumplimientos(map);
+        setCumplidasOc(await fetchCumplidasPorOcurrencias(supabase, ids));
       } else {
         setCumplimientos({});
+        setCumplidasOc(new Map());
       }
       setLoading(false);
     })();
@@ -127,7 +130,7 @@ export default function MisVencimientos({ empresaId, onSubirEvidencia, refreshKe
                 const fecha = parseISO(ob.fecha_vencimiento!);
                 const dias = differenceInDays(fecha, new Date());
                 const periodKey = getCurrentPeriodKey(ob.presentacion);
-                const cumplida = !!cumplimientos[`${ob.id}:${periodKey}`];
+                const cumplida = cumplidasOc.get(ob.id) ?? !!cumplimientos[`${ob.id}:${periodKey}`];
                 const isUrgente = dias <= 7 && !cumplida;
                 const isRecurrente = !!ob.catalogo_id;
 
