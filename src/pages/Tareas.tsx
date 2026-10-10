@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresaContext } from '@/hooks/useEmpresaContext';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList, GanttChart, ChevronDown, RefreshCw } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList, GanttChart, ChevronDown, RefreshCw, GripVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
 
@@ -35,13 +35,14 @@ import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { DndContext, DragEndEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { DndContext, DragEndEvent, DragOverlay, closestCorners, PointerSensor, KeyboardSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getErrorMessage } from '@/lib/errors';
 import type { TareaListado, ConsultorResumen, EmpresaResumen } from '@/types/domain';
 import { getAdjuntos } from '@/lib/adjuntos';
 import { nombresPerfiles } from '@/lib/perfiles';
+import { loadAllPages } from '@/lib/pagination';
 
 // Helper Components
 interface TareaCardProps {
@@ -59,6 +60,7 @@ interface TareaCardProps {
   showCheckbox?: boolean;
   isSelected?: boolean;
   onSelect?: (id: string) => void;
+  dragHandle?: ReactNode;
 }
 
 function TareaCard({ 
@@ -75,7 +77,8 @@ function TareaCard({
   isDragging = false,
   showCheckbox = false,
   isSelected = false,
-  onSelect
+  onSelect,
+  dragHandle
 }: TareaCardProps) {
   return (
     <div
@@ -131,8 +134,11 @@ function TareaCard({
           {/* Title and Priority */}
           <div className="flex items-start justify-between gap-2 mb-2">
             <h3 className="font-heading font-semibold text-lg text-foreground line-clamp-1">
-              {tarea.titulo}
+              <button type="button" className="min-h-11 sm:min-h-0 text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" onClick={event => { event.stopPropagation(); onClick(); }}>
+                {tarea.titulo}
+              </button>
             </h3>
+            {dragHandle}
             <Badge className={`${getPrioridadColor(tarea.prioridad ?? 'media')} flex-shrink-0`}>
               {prioridadLabels[tarea.prioridad ?? 'media']}
             </Badge>
@@ -211,6 +217,7 @@ function SortableTareaCard(props: TareaCardProps) {
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
     isDragging,
@@ -222,8 +229,13 @@ function SortableTareaCard(props: TareaCardProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TareaCard {...props} isDragging={isDragging} />
+    <div ref={setNodeRef} style={style}>
+      <TareaCard {...props} isDragging={isDragging} dragHandle={
+        <Button ref={setActivatorNodeRef} variant="ghost" size="icon" className="shrink-0 touch-none" {...attributes} {...listeners}
+          aria-label={`Mover tarea: ${props.tarea.titulo}`} onClick={event => event.stopPropagation()}>
+          <GripVertical aria-hidden="true" className="h-4 w-4" />
+        </Button>
+      } />
     </div>
   );
 }
@@ -360,6 +372,7 @@ export default function Tareas() {
   const [tareas, setTareas] = useState<TareaListado[]>([]);
   const [loadingTareas, setLoadingTareas] = useState(true);
   const [fetchError, setFetchError] = useState(false);
+  const tareasRequestId = useRef(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -381,6 +394,12 @@ export default function Tareas() {
   
   // View mode
   const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'calendar' | 'timeline' | 'obligaciones'>('list');
+  const [listPage, setListPage] = useState(0);
+  const listPageSize = 50;
+
+  useEffect(() => {
+    setListPage(0);
+  }, [searchQuery, filterEstado, filterPrioridad, filterEmpresa, filterConsultor, tareas]);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   
   // Bulk selection
@@ -393,7 +412,8 @@ export default function Tareas() {
       activationConstraint: {
         distance: 8,
       },
-    })
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   useEffect(() => {
@@ -450,44 +470,42 @@ export default function Tareas() {
   };
 
   const fetchTareas = async () => {
+    const requestId = ++tareasRequestId.current;
     setLoadingTareas(true);
     setFetchError(false);
     try {
-      let query = supabase
-        .from('tareas')
-        .select(`
-          *,
-          empresas(razon_social),
-          categorias_tareas(nombre, color)
-        `)
-        .order('created_at', { ascending: false });
+      // Consultas acotadas: no depender del límite implícito de filas de PostgREST.
+      const filas = await loadAllPages((offset, pageSize) => {
+        let query = supabase
+          .from('tareas')
+          .select('*, empresas(razon_social), categorias_tareas(nombre, color)')
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false });
+        if (selectedEmpresaId && selectedEmpresaId !== 'all') {
+          query = query.eq('empresa_id', selectedEmpresaId);
+        }
+        return query.range(offset, offset + pageSize - 1);
+      });
 
-      // Filter by selected empresa from context
-      if (selectedEmpresaId && selectedEmpresaId !== 'all') {
-        query = query.eq('empresa_id', selectedEmpresaId);
-      }
-
-      const { data: tareasData, error } = await query;
-
-      if (error) throw error;
-
-      // El consultor se une aparte: `tareas.consultor_asignado_id` no tiene FK a `profiles`.
-      const filas = tareasData ?? [];
+      // Los nombres se unen aparte porque no existe FK a profiles.
       const profilesData = await nombresPerfiles(
         filas.map(t => t.consultor_asignado_id).filter((id): id is string => !!id),
       );
 
+      if (requestId !== tareasRequestId.current) return;
+      const profilesById = new Map(profilesData.map(profile => [profile.id, profile]));
       setTareas(filas.map(tarea => ({
         ...tarea,
         archivos_adjuntos: getAdjuntos(tarea.archivos_adjuntos),
-        consultor_profile: profilesData.find(p => p.id === tarea.consultor_asignado_id),
+        consultor_profile: tarea.consultor_asignado_id ? profilesById.get(tarea.consultor_asignado_id) : undefined,
       })));
     } catch (error) {
+      if (requestId !== tareasRequestId.current) return;
       logger.error('Error fetching tareas', error);
       setFetchError(true);
       toast.error('No se pudieron cargar las tareas. Verifica tu conexión.');
     } finally {
-      setLoadingTareas(false);
+      if (requestId === tareasRequestId.current) setLoadingTareas(false);
     }
   };
 
@@ -495,6 +513,7 @@ export default function Tareas() {
     if (user) {
       fetchTareas();
     }
+    return () => { tareasRequestId.current += 1; };
   }, [user, selectedEmpresaId]);
 
   const handleDialogClose = (open: boolean) => {
@@ -573,15 +592,15 @@ export default function Tareas() {
     urgente: 'Urgente'
   };
 
-  // Función para obtener tareas filtradas
-  const getFilteredTareas = () => {
+  const filteredTareas = useMemo(() => {
+    const normalizedSearch = searchQuery.toLowerCase();
     return tareas.filter(tarea => {
       // Filtro de búsqueda
       const matchesSearch = searchQuery === '' || 
-        tarea.titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tarea.descripcion?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tarea.empresas?.razon_social.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tarea.consultor_profile?.nombre_completo.toLowerCase().includes(searchQuery.toLowerCase());
+        tarea.titulo.toLowerCase().includes(normalizedSearch) ||
+        tarea.descripcion?.toLowerCase().includes(normalizedSearch) ||
+        tarea.empresas?.razon_social.toLowerCase().includes(normalizedSearch) ||
+        tarea.consultor_profile?.nombre_completo.toLowerCase().includes(normalizedSearch);
 
       // Filtro de estado
       const matchesEstado = filterEstado === 'all' || tarea.estado === filterEstado;
@@ -599,7 +618,7 @@ export default function Tareas() {
 
       return matchesSearch && matchesEstado && matchesPrioridad && matchesEmpresa && matchesConsultor;
     });
-  };
+  }, [tareas, searchQuery, filterEstado, filterPrioridad, filterEmpresa, filterConsultor]);
 
   const hasActiveFilters = searchQuery !== '' || filterEstado !== 'all' || 
     filterPrioridad !== 'all' || filterEmpresa !== 'all' || filterConsultor !== 'all';
@@ -703,6 +722,18 @@ export default function Tareas() {
     setActiveDragId(event.active.id as string);
   };
 
+  const { tareasPendientes, tareasEnProgreso, tareasCompletadas, tareasCanceladas } = useMemo(() => {
+    const byState = { pendiente: [] as TareaListado[], en_progreso: [] as TareaListado[], completada: [] as TareaListado[], cancelada: [] as TareaListado[] };
+    for (const tarea of filteredTareas) {
+      if (tarea.estado && tarea.estado in byState) byState[tarea.estado].push(tarea);
+    }
+    return { tareasPendientes: byState.pendiente, tareasEnProgreso: byState.en_progreso, tareasCompletadas: byState.completada, tareasCanceladas: byState.cancelada };
+  }, [filteredTareas]);
+
+  const lastListPage = Math.max(0, Math.ceil(filteredTareas.length / listPageSize) - 1);
+  const currentListPage = Math.min(listPage, lastListPage);
+  const visibleListTareas = filteredTareas.slice(currentListPage * listPageSize, (currentListPage + 1) * listPageSize);
+
   if (loadingTareas) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
@@ -740,12 +771,6 @@ export default function Tareas() {
       </DashboardLayout>
     );
   }
-
-  const filteredTareas = getFilteredTareas();
-  const tareasPendientes = filteredTareas.filter(t => t.estado === 'pendiente');
-  const tareasEnProgreso = filteredTareas.filter(t => t.estado === 'en_progreso');
-  const tareasCompletadas = filteredTareas.filter(t => t.estado === 'completada');
-  const tareasCanceladas = filteredTareas.filter(t => t.estado === 'cancelada');
 
   // Totals for context
   const totalPendientes = tareas.filter(t => t.estado === 'pendiente').length;
@@ -1052,7 +1077,16 @@ export default function Tareas() {
         {/* Stats Cards */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Card 
-            className="shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            className="shadow-card hover:shadow-lg transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            role="button"
+            tabIndex={0}
+            aria-label="Filtrar tareas: pendiente"
+            onKeyDown={event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setFilterEstado('pendiente');
+              }
+            }}
             onClick={() => setFilterEstado('pendiente')}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1070,7 +1104,16 @@ export default function Tareas() {
           </Card>
 
           <Card 
-            className="shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            className="shadow-card hover:shadow-lg transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            role="button"
+            tabIndex={0}
+            aria-label="Filtrar tareas: en progreso"
+            onKeyDown={event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setFilterEstado('en_progreso');
+              }
+            }}
             onClick={() => setFilterEstado('en_progreso')}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1088,7 +1131,16 @@ export default function Tareas() {
           </Card>
 
           <Card 
-            className="shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            className="shadow-card hover:shadow-lg transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            role="button"
+            tabIndex={0}
+            aria-label="Filtrar tareas: completada"
+            onKeyDown={event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setFilterEstado('completada');
+              }
+            }}
             onClick={() => setFilterEstado('completada')}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1106,7 +1158,16 @@ export default function Tareas() {
           </Card>
 
           <Card 
-            className="shadow-card hover:shadow-lg transition-all cursor-pointer group"
+            className="shadow-card hover:shadow-lg transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            role="button"
+            tabIndex={0}
+            aria-label="Filtrar tareas: cancelada"
+            onKeyDown={event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setFilterEstado('cancelada');
+              }
+            }}
             onClick={() => setFilterEstado('cancelada')}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1212,7 +1273,7 @@ export default function Tareas() {
               )}
 
               <div className="space-y-4">
-                {filteredTareas.map((tarea) => (
+                {visibleListTareas.map((tarea) => (
                   <TareaCard
                     key={tarea.id}
                     tarea={tarea}
@@ -1230,6 +1291,15 @@ export default function Tareas() {
                     onSelect={handleSelectTarea}
                   />
                 ))}
+                {filteredTareas.length > listPageSize && (
+                  <nav aria-label="Páginas de tareas" className="flex flex-wrap items-center justify-between gap-3 pt-4">
+                    <span className="text-sm text-muted-foreground">Página {currentListPage + 1} de {lastListPage + 1} · {filteredTareas.length} tareas</span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={currentListPage === 0} onClick={() => setListPage(currentListPage - 1)}>Anterior</Button>
+                      <Button variant="outline" size="sm" disabled={currentListPage === lastListPage} onClick={() => setListPage(currentListPage + 1)}>Siguiente</Button>
+                    </div>
+                  </nav>
+                )}
                 {filteredTareas.length === 0 && (
                   <EmptyState
                     hasActiveFilters={hasActiveFilters}
@@ -1293,7 +1363,7 @@ export default function Tareas() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filteredTareas.map((tarea) => (
+                {visibleListTareas.map((tarea) => (
                   <TareaCard
                     key={tarea.id}
                     tarea={tarea}
@@ -1308,6 +1378,15 @@ export default function Tareas() {
                     estadoLabels={estadoLabels}
                   />
                 ))}
+                {filteredTareas.length > listPageSize && (
+                  <nav aria-label="Páginas de tareas" className="flex flex-wrap items-center justify-between gap-3 pt-4">
+                    <span className="text-sm text-muted-foreground">Página {currentListPage + 1} de {lastListPage + 1} · {filteredTareas.length} tareas</span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={currentListPage === 0} onClick={() => setListPage(currentListPage - 1)}>Anterior</Button>
+                      <Button variant="outline" size="sm" disabled={currentListPage === lastListPage} onClick={() => setListPage(currentListPage + 1)}>Siguiente</Button>
+                    </div>
+                  </nav>
+                )}
                 {filteredTareas.length === 0 && (
                   <EmptyState
                     hasActiveFilters={hasActiveFilters}

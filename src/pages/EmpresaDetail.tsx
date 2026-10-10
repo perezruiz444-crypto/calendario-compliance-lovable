@@ -243,7 +243,15 @@ export default function EmpresaDetail() {
       </div>
     );
     return (
-      <span className={`${className} ${canEdit ? 'cursor-pointer hover:text-primary group/f' : ''}`}
+      <span className={`${className} ${canEdit ? 'cursor-pointer hover:text-primary group/f focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm' : ''}`}
+        role={canEdit ? 'button' : undefined}
+        tabIndex={canEdit ? 0 : undefined}
+        onKeyDown={event => {
+          if (canEdit && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            startEditing(field, value || '');
+          }
+        }}
         onClick={() => canEdit && startEditing(field, value || '')}>
         {value || '—'}
         {canEdit && <Pencil className="w-3 h-3 ml-1 inline opacity-0 group-hover/f:opacity-50 transition-opacity" />}
@@ -268,7 +276,6 @@ export default function EmpresaDetail() {
         <div className="relative overflow-hidden rounded-2xl border border-border shadow-lg">
           {/* Background */}
           <div className="absolute inset-0" style={{ background: 'hsl(var(--band))' }} />
-          <div className="absolute top-0 left-0 w-1 h-full bg-red-500 opacity-80" />
 
           <div className="relative px-6 py-5">
             <div className="flex items-start gap-5">
@@ -482,9 +489,9 @@ export default function EmpresaDetail() {
                     {tareas.slice(0, 8).map(t => {
                       const dT = t.fecha_vencimiento ? differenceInDays(new Date(t.fecha_vencimiento), now) : null;
                       return (
-                        <div key={t.id}
+                        <button type="button" key={t.id}
                           onClick={() => { setSelectedTareaId(t.id); setDetailTareaSheetOpen(true); }}
-                          className="flex items-center gap-3 px-4 py-3 border-b border-border/50 last:border-0 hover:bg-muted/30 cursor-pointer transition-colors group">
+                          className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 flex items-center gap-3 px-4 py-3 border-b border-border/50 last:border-0 hover:bg-muted/30 cursor-pointer transition-colors group">
                           <div className={`w-2 h-2 rounded-full shrink-0 ${
                             t.estado === 'completada' ? 'bg-success' :
                             t.estado === 'en_progreso' ? 'bg-primary' : 'bg-amber-500'
@@ -511,7 +518,7 @@ export default function EmpresaDetail() {
                             </span>
                           )}
                           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-muted-foreground" />
-                        </div>
+                        </button>
                       );
                     })}
                   </div>

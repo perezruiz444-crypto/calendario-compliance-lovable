@@ -220,8 +220,9 @@ export function TimeTracker({ tareaId }: TimeTrackerProps) {
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label={`Eliminar registro de tiempo de ${entry.profiles?.nombre_completo || 'usuario'} del ${new Date(entry.inicio).toLocaleDateString('es-MX')}`}
                   onClick={() => handleDelete(entry.id)}
-                  className="opacity-0 group-hover:opacity-100"
+                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                   disabled={!entry.fin}
                 >
                   <Trash2 className="w-4 h-4 text-destructive" />

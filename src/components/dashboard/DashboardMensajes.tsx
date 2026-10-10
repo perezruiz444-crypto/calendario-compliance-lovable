@@ -49,9 +49,10 @@ export default function DashboardMensajes({ mensajes, totalNoLeidos }: Dashboard
       ) : (
         <div className="space-y-2">
           {mensajes.map((msg) => (
-            <div
+            <button
+              type="button"
               key={msg.id}
-              className="flex items-start gap-3 p-3 border border-border-subtle rounded-lg hover:border-primary/40 hover:bg-muted/30 transition-all cursor-pointer"
+              className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 flex items-start gap-3 p-3 border border-border-subtle rounded-lg hover:border-primary/40 hover:bg-muted/30 transition-all cursor-pointer"
               onClick={() => navigate('/mensajes')}
             >
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -69,7 +70,7 @@ export default function DashboardMensajes({ mensajes, totalNoLeidos }: Dashboard
                   </span>
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}

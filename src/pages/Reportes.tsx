@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, User, Filter, Mail, Send, FileDown, Clock, TrendingUp, CheckCircle2, XCircle } from 'lucide-react';
-import { format, subMonths, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
+import { format, subMonths, differenceInDays } from 'date-fns';
 import { CATEGORIA_LABELS } from '@/lib/obligaciones';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ import { buildCategoriaReportData, buildCumplimientoMensualData } from '@/lib/re
 import { exportToExcel } from '@/lib/excelExport';
 import { logger } from '@/lib/logger';
 import { CATEGORY_CHART_COLORS } from '@/lib/brandColors';
+import { getReportDateRange } from '@/lib/reportPeriod';
 import type { ReporteData, PuntoTimeline, ObligacionPendienteDetalle, VencimientoCertificacion } from '@/types/reportes';
 import type { EstadoTarea } from '@/types/domain';
 
@@ -54,6 +55,10 @@ export default function Reportes() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
   const [loadingData, setLoadingData] = useState(true);
+  const [reportNow] = useState(() => new Date());
+  const reportRequestId = useRef(0);
+  const [reportError, setReportError] = useState<{ key: string; message: string } | null>(null);
+  const [loadedReportKey, setLoadedReportKey] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('mes_actual');
   const [selectedEmpresa, setSelectedEmpresa] = useState<string>('todas');
   const [selectedConsultor, setSelectedConsultor] = useState<string>('todos');
@@ -86,10 +91,11 @@ export default function Reportes() {
   }, [user, role]);
 
   useEffect(() => {
-    if (empresas.length > 0 || selectedEmpresa === 'todas') {
+    if (!loading && user && role && ['administrador', 'consultor'].includes(role)) {
       fetchReportData();
     }
-  }, [selectedPeriod, selectedEmpresa, selectedConsultor, selectedCategoria, selectedEstado, empresas]);
+    return () => { reportRequestId.current += 1; };
+  }, [selectedPeriod, selectedEmpresa, selectedConsultor, selectedCategoria, selectedEstado, empresas, user, role, loading]);
 
   useEffect(() => {
     if (!selectedEmpresa || selectedEmpresa === 'todas') {
@@ -165,37 +171,17 @@ export default function Reportes() {
     }
   };
 
-  const getDateRange = () => {
-    const now = new Date();
-    let startDate, endDate;
-
-    switch (selectedPeriod) {
-      case 'mes_actual':
-        startDate = startOfMonth(now);
-        endDate = endOfMonth(now);
-        break;
-      case 'mes_anterior':
-        startDate = startOfMonth(subMonths(now, 1));
-        endDate = endOfMonth(subMonths(now, 1));
-        break;
-      case 'trimestre':
-        startDate = startOfMonth(subMonths(now, 3));
-        endDate = endOfMonth(now);
-        break;
-      case 'anio':
-        startDate = new Date(now.getFullYear(), 0, 1);
-        endDate = new Date(now.getFullYear(), 11, 31);
-        break;
-      default:
-        startDate = startOfMonth(now);
-        endDate = endOfMonth(now);
-    }
-
-    return { startDate, endDate };
-  };
+  const reportKey = JSON.stringify([user?.id, role, selectedPeriod, selectedEmpresa, selectedConsultor, selectedCategoria, selectedEstado]);
+  const getDateRange = () => getReportDateRange(selectedPeriod, reportNow);
+  const { startDate: periodStart, endDate: periodEnd } = getDateRange();
+  const periodLabel = `${format(periodStart, 'dd/MM/yyyy')} – ${format(periodEnd, 'dd/MM/yyyy')}`;
+  const reportReady = loadedReportKey === reportKey && !loadingData && !reportError;
 
   const fetchReportData = async () => {
+    const requestId = ++reportRequestId.current;
     setLoadingData(true);
+    setReportError(null);
+    setLoadedReportKey(null);
     try {
       const { startDate, endDate } = getDateRange();
 
@@ -259,10 +245,11 @@ export default function Reportes() {
       let consultorMap: Record<string, string> = {};
       
       if (consultorIds.length > 0) {
-        const { data: profiles } = await supabase
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, nombre_completo')
           .in('id', consultorIds);
+        if (profilesError) throw profilesError;
         
         consultorMap = profiles?.reduce((acc, p) => {
           acc[p.id] = p.nombre_completo;
@@ -275,10 +262,11 @@ export default function Reportes() {
       let empresaMap: Record<string, string> = {};
       
       if (empresaIds.length > 0) {
-        const { data: empresas } = await supabase
+        const { data: empresas, error: namesError } = await supabase
           .from('empresas')
           .select('id, razon_social')
           .in('id', empresaIds);
+        if (namesError) throw namesError;
         
         empresaMap = empresas?.reduce((acc, e) => {
           acc[e.id] = e.razon_social;
@@ -291,10 +279,11 @@ export default function Reportes() {
       let categoriaMap: Record<string, string> = {};
       
       if (categoriaIds.length > 0) {
-        const { data: cats } = await supabase
+        const { data: cats, error: categoriesError } = await supabase
           .from('categorias_tareas')
           .select('id, nombre')
           .in('id', categoriaIds);
+        if (categoriesError) throw categoriesError;
         
         categoriaMap = cats?.reduce((acc, c) => {
           acc[c.id] = c.nombre;
@@ -440,11 +429,12 @@ export default function Reportes() {
       const tasaCompletitud = total > 0 ? Math.round((completadas / total) * 100) : 0;
 
       // Fetch time entries for time tracking reports
-      const { data: timeEntries } = await supabase
+      const { data: timeEntries, error: timeError } = await supabase
         .from('time_entries')
         .select('*, user_id, tarea_id')
         .gte('inicio', startDate.toISOString())
         .lte('inicio', endDate.toISOString());
+      if (timeError) throw timeError;
 
       // Calculate time by consultor
       const tiempoPorConsultor: Record<string, { total: number; facturable: number }> = {};
@@ -525,17 +515,19 @@ export default function Reportes() {
       if (selectedEmpresa !== 'todas') {
         ocQuery = ocQuery.eq('empresa_id', selectedEmpresa);
       }
-      const { data: ocurrenciasActivas } = await ocQuery;
+      const { data: ocurrenciasActivas, error: occurrencesError } = await ocQuery;
+      if (occurrencesError) throw occurrencesError;
 
       let obligacionesPendientesDetalle: ObligacionPendienteDetalle[] = [];
       let obPendientesCount = 0;
 
       if (ocurrenciasActivas && ocurrenciasActivas.length > 0) {
         const ocIds = ocurrenciasActivas.map(o => o.id);
-        const { data: cumplimientos } = await supabase
+        const { data: cumplimientos, error: complianceError } = await supabase
           .from('obligacion_cumplimientos')
           .select('ocurrencia_id, completada, vigente')
           .in('ocurrencia_id', ocIds);
+        if (complianceError) throw complianceError;
 
         const cumplidasSet = new Set(
           (cumplimientos || []).filter((c) => c.vigente && c.completada && c.ocurrencia_id).map((c) => c.ocurrencia_id)
@@ -555,6 +547,7 @@ export default function Reportes() {
 
       const tareasPendientesCount = tareas?.filter(t => t.estado === 'pendiente' || t.estado === 'en_progreso').length || 0;
 
+      if (requestId !== reportRequestId.current) return;
       setReporteData({
         tareasPorEstado,
         tareasPorPrioridad,
@@ -581,17 +574,22 @@ export default function Reportes() {
           horasFacturables
         }
       });
+      setLoadedReportKey(reportKey);
     } catch (error) {
+      if (requestId !== reportRequestId.current) return;
       logger.error('Error fetching report data:', error);
+      setReporteData(REPORTE_VACIO);
+      setReportError({ key: reportKey, message: 'No se pudo cargar el reporte. Revisa tu conexión y vuelve a intentarlo.' });
     } finally {
-      setLoadingData(false);
+      if (requestId === reportRequestId.current) setLoadingData(false);
     }
   };
 
   const exportToCSV = () => {
+    if (!reportReady) return;
     const rows = [
       ['Reporte de Gestión - Cumplimiento Regulatorio'],
-      ['Período: ' + selectedPeriod],
+      ['Período: ' + periodLabel],
       [''],
       ['Resumen'],
       ['Total Empresas', reporteData.resumen.totalEmpresas],
@@ -645,11 +643,13 @@ export default function Reportes() {
   };
 
   const exportObligacionesExcel = async () => {
+    if (!reportReady) return;
     if (!reporteData.obligacionesPendientesDetalle?.length) {
       toast.error('No hay obligaciones pendientes para exportar');
       return;
     }
     const rows = reporteData.obligacionesPendientesDetalle.map(o => ({
+      'Período del reporte': periodLabel,
       'Obligación': o.nombre,
       'Empresa': o.empresa,
       'Programa': CATEGORIA_LABELS[o.categoria] || o.categoria,
@@ -662,9 +662,22 @@ export default function Reportes() {
     toast.success('Excel exportado correctamente');
   };
 
-  if (loading || loadingData) {
+  if (reportError?.key === reportKey && !loadingData) {
     return (
-      <div className="p-6 space-y-6">
+      <DashboardLayout currentPage="/reportes">
+        <div role="alert" className="flex min-h-[400px] flex-col items-center justify-center gap-4 p-6 text-center">
+          <AlertTriangle aria-hidden="true" className="h-8 w-8 text-destructive" />
+          <h1 className="font-heading text-xl font-semibold">No se pudo cargar el reporte</h1>
+          <p className="max-w-md text-sm text-muted-foreground">{reportError.message}</p>
+          <Button onClick={() => fetchReportData()}>Reintentar</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (loading || !reportReady) {
+    return (
+      <div role="status" aria-label="Cargando reporte" className="p-6 space-y-6">
         <div className="flex gap-2">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-9 w-28 rounded-[0.625rem]" />)}
         </div>
@@ -730,7 +743,7 @@ export default function Reportes() {
                       if (empresaError) throw empresaError;
                       if (!empresa) throw new Error('Empresa no encontrada');
 
-                      await generateReportPDF(empresa, reporteData, selectedPeriod, 'general');
+                      await generateReportPDF(empresa, reporteData, selectedPeriod, 'general', periodLabel);
 
                       toast.success("PDF generado — el reporte se ha descargado correctamente");
                     } catch (err: unknown) {
@@ -781,28 +794,28 @@ export default function Reportes() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-heading font-medium mb-2 block">
+                <label htmlFor="reporte-periodo" className="text-sm font-heading font-medium mb-2 block">
                   Período
                 </label>
                 <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                  <SelectTrigger>
+                  <SelectTrigger id="reporte-periodo">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mes_actual">Mes Actual</SelectItem>
                     <SelectItem value="mes_anterior">Mes Anterior</SelectItem>
-                    <SelectItem value="trimestre">Último Trimestre</SelectItem>
+                    <SelectItem value="trimestre">Trimestre anterior (completo)</SelectItem>
                     <SelectItem value="anio">Año Actual</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <label className="text-sm font-heading font-medium mb-2 block">
+                <label htmlFor="reporte-empresa" className="text-sm font-heading font-medium mb-2 block">
                   Empresa
                 </label>
                 <Select value={selectedEmpresa} onValueChange={setSelectedEmpresa}>
-                  <SelectTrigger>
+                  <SelectTrigger id="reporte-empresa">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -817,11 +830,11 @@ export default function Reportes() {
               </div>
 
               <div>
-                <label className="text-sm font-heading font-medium mb-2 block">
+                <label htmlFor="reporte-consultor" className="text-sm font-heading font-medium mb-2 block">
                   Consultor
                 </label>
                 <Select value={selectedConsultor} onValueChange={setSelectedConsultor}>
-                  <SelectTrigger>
+                  <SelectTrigger id="reporte-consultor">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -836,11 +849,11 @@ export default function Reportes() {
               </div>
 
               <div>
-                <label className="text-sm font-heading font-medium mb-2 block">
+                <label htmlFor="reporte-categoria" className="text-sm font-heading font-medium mb-2 block">
                   Categoría
                 </label>
                 <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
-                  <SelectTrigger>
+                  <SelectTrigger id="reporte-categoria">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -855,11 +868,11 @@ export default function Reportes() {
               </div>
 
               <div>
-                <label className="text-sm font-heading font-medium mb-2 block">
+                <label htmlFor="reporte-estado" className="text-sm font-heading font-medium mb-2 block">
                   Estado
                 </label>
                 <Select value={selectedEstado} onValueChange={setSelectedEstado}>
-                  <SelectTrigger>
+                  <SelectTrigger id="reporte-estado">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -874,6 +887,8 @@ export default function Reportes() {
             </div>
           </CardContent>
         </Card>
+
+        <p className="text-sm text-muted-foreground">Período del reporte: <span className="font-mono">{periodLabel}</span>. Las tareas y obligaciones pendientes incluyen períodos anteriores.</p>
 
         {/* Resumen Cards */}
         <div className="space-y-4">

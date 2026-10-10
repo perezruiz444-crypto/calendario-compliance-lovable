@@ -384,8 +384,10 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                   </div>
                 </div>
               ) : (
-                <div
-                  className="group cursor-pointer rounded-md p-3 border border-transparent hover:border-border hover:bg-muted/30 transition-all min-h-[60px]"
+                <button
+                  type="button"
+                  aria-label="Editar descripción de la tarea"
+                  className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 group cursor-pointer rounded-md p-3 border border-transparent hover:border-border hover:bg-muted/30 transition-all min-h-[60px]"
                   onClick={() => startEditing('descripcion', tarea.descripcion || '')}
                 >
                   {tarea.descripcion ? (
@@ -393,8 +395,8 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                   ) : (
                     <p className="text-sm text-muted-foreground italic">Click para agregar descripción...</p>
                   )}
-                  <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-40 float-right mt-1 transition-opacity" />
-                </div>
+                  <Pencil className="h-3 w-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-40 sm:group-focus-within:opacity-40 float-right mt-1 transition-opacity" />
+                </button>
               )}
               <SavedIndicator field="descripcion" />
             </div>

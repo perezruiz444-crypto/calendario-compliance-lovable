@@ -341,7 +341,9 @@ export default function Dashboard() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                          <span className="font-heading font-semibold text-sm truncate">{tarea.titulo}</span>
+                          <button type="button" className="min-h-11 sm:min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm font-heading font-semibold text-sm truncate text-left" onClick={(event) => { event.stopPropagation(); setSelectedTareaId(tarea.id); setDetailSheetOpen(true); }}>
+                            {tarea.titulo}
+                          </button>
                           <Badge className={getPrioridadColor(tarea.prioridad)} variant="secondary">
                             {tarea.prioridad}
                           </Badge>
@@ -365,7 +367,7 @@ export default function Dashboard() {
                           aria-label="Marcar como completada"
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-success hover:text-success hover:bg-success/10"
+                          className="h-11 w-11 sm:h-7 sm:w-7 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity text-success hover:text-success hover:bg-success/10"
                           onClick={(e) => handleQuickComplete(e, tarea.id)}
                           title="Marcar como completada"
                         >

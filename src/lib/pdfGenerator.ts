@@ -270,7 +270,8 @@ export async function generateReportPDF(
   empresa: EmpresaData,
   reportData: ReportData,
   period: string,
-  reportType: string  // conservado por compatibilidad, no se usa
+  reportType: string,  // conservado por compatibilidad, no se usa
+  dateRangeLabel?: string,
 ) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pw = doc.internal.pageSize.getWidth();
@@ -313,6 +314,10 @@ export async function generateReportPDF(
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(180, 205, 230);
   doc.text('Comercio Exterior · Cumplimiento Regulatorio', 18, 50);
+  if (dateRangeLabel) {
+    doc.setFontSize(10);
+    doc.text(`Período: ${dateRangeLabel}`, 18, 62);
+  }
 
   // Empresa card blanca debajo (sombra simulada)
   doc.setFillColor(220, 223, 230);
