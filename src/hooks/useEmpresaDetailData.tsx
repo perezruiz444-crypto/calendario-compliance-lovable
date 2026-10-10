@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { fetchCumplimientoKeys } from '@/lib/obligaciones';
+import { conPerfiles } from '@/lib/perfiles';
 import type {
   Empresa, Obligacion, TareaConJoins,
   DomicilioOperacion, AgenteAduanal, ApoderadoLegal,
@@ -50,7 +51,7 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
       const [tarRes, obsRes] = await Promise.all([
         supabase
           .from('tareas')
-          .select('*, profiles:consultor_asignado_id(nombre_completo), categorias_tareas(nombre, color)')
+          .select('*, categorias_tareas(nombre, color)')
           .eq('empresa_id', empresaId)
           .order('created_at', { ascending: false })
           .limit(10),
@@ -62,10 +63,13 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
           .order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
       ]);
 
-      // El tipo inferido por Supabase para los joins (profiles, categorias_tareas)
-      // no se solapa estructuralmente con TareaConJoins, por lo que el cast directo
-      // falla bajo noImplicitAny. Cast vía unknown: la forma en runtime sí coincide.
-      setTareas((tarRes.data || []) as unknown as TareaConJoins[]);
+      // consultor_asignado_id no tiene FK a profiles: el embed `profiles:consultor_asignado_id(...)`
+      // devolvía 400 y la lista quedaba vacía. El nombre se une aparte con conPerfiles.
+      if (tarRes.error) toast.error('No se pudieron cargar las tareas.');
+      const tareasConPerfil = await conPerfiles(tarRes.data || [], 'consultor_asignado_id');
+      // El tipo inferido por Supabase para el join de categorias_tareas no se solapa
+      // estructuralmente con TareaConJoins; cast vía unknown: la forma en runtime sí coincide.
+      setTareas(tareasConPerfil as unknown as TareaConJoins[]);
       setObligaciones(obsRes.data || []);
 
       const obsIds = (obsRes.data || []).map(o => o.id);
