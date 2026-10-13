@@ -95,7 +95,8 @@ export async function buildCategoriaReportData(
     .from('obligacion_cumplimientos')
     .select('obligacion_id, periodo_key, completada')
     .in('obligacion_id', ids)
-    .eq('completada', true);
+    .eq('completada', true)
+    .eq('vigente', true);
 
   // Build a set keyed by "obligacion_id:periodo_key" to filter by the correct period
   const completadasSet = new Set(
@@ -185,7 +186,8 @@ export async function buildCumplimientoMensualData(
     .from('obligacion_cumplimientos')
     .select('obligacion_id, periodo_key, completada, completada_en, notas')
     .in('obligacion_id', ids)
-    .eq('periodo_key', periodoKey);
+    .eq('periodo_key', periodoKey)
+    .eq('vigente', true);
 
   // Mapa: obligacion_id → cumplimiento
   const cumplimientoMap = new Map<string, { completada: boolean; completada_en: string | null; notas: string | null }>();

@@ -56,6 +56,8 @@ export default function MisVencimientos({ empresaId, onSubirEvidencia, refreshKe
         const { data: cData } = await supabase
           .from('obligacion_cumplimientos')
           .select('obligacion_id, periodo_key')
+          .eq('vigente', true)
+          .eq('completada', true)
           .in('obligacion_id', ids);
         const map: Record<string, boolean> = {};
         (cData || []).forEach((c) => {

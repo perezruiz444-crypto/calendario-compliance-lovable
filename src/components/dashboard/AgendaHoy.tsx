@@ -53,6 +53,8 @@ export default function AgendaHoy() {
       const { data: cumplData } = await supabase
         .from('obligacion_cumplimientos')
         .select('obligacion_id, periodo_key')
+        .eq('vigente', true)
+        .eq('completada', true)
         .in('obligacion_id', obs.map(o => o.id));
       const cumplMap: Record<string, boolean> = {};
       (cumplData || []).forEach(c => { cumplMap[`${c.obligacion_id}:${c.periodo_key}`] = true; });

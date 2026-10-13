@@ -51,6 +51,7 @@ export function CumplimientoHistorial({ open, onOpenChange, obligacionId, obliga
       .from('obligacion_cumplimientos')
       .select('periodo_key, completada, completada_en, evidencia_url')
       .eq('obligacion_id', obligacionId)
+      .eq('vigente', true)
       .order('periodo_key', { ascending: false })
       .limit(12)
       .then(({ data: rows }) => {

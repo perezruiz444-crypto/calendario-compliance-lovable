@@ -187,6 +187,12 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
   };
 
   const getStatusBadge = (obl: Obligacion) => {
+    // Sin ocurrencias = eventual: no tiene periodo ni vencimiento
+    if (!proximaOcurrencia[obl.id]) {
+      return (
+        <Badge variant="outline" className="text-xs text-muted-foreground">Eventual</Badge>
+      );
+    }
     const fecha = proximaOcurrencia[obl.id]?.fecha_vencimiento ?? obl.fecha_vencimiento;
     const info = getVencimientoInfo(fecha);
     if (!info) return null;
@@ -209,7 +215,8 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
     const oc = proximaOcurrencia[o.id];
     return oc ? !!cumplimientos[oc.id] : false;
   }).length;
-  const pendientes = obligaciones.length - completadas;
+  // Las eventuales (sin ocurrencias) no cuentan como pendientes
+  const pendientes = obligaciones.filter((o) => proximaOcurrencia[o.id]).length - completadas;
 
   if (loading) {
     return (
@@ -262,8 +269,8 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
                       isCompleted ? 'bg-success/5 border-success/20' : 'hover:bg-accent/10'
                     }`}
                   >
-                    {/* Checkbox */}
-                    {canEdit && (
+                    {/* Checkbox (las eventuales no se marcan) */}
+                    {canEdit && proximaOcurrencia[obl.id] && (
                       <Checkbox
                         checked={isCompleted}
                         onCheckedChange={() => toggleCumplimiento(obl)}

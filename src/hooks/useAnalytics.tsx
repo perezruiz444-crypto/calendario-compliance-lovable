@@ -183,7 +183,8 @@ export function useAnalytics(empresaId?: string | null) {
       .from('obligacion_cumplimientos')
       .select('obligacion_id, periodo_key')
       .in('obligacion_id', obIds)
-      .eq('completada', true);
+      .eq('completada', true)
+      .eq('vigente', true);
 
     const cumplSet = new Set((cumplimientos || []).map(c => `${c.obligacion_id}:${c.periodo_key}`));
     const cumplidasOc = await fetchCumplidasPorOcurrencias(supabase, obIds);
@@ -198,6 +199,8 @@ export function useAnalytics(empresaId?: string | null) {
     const empMap = empNames?.reduce((acc, e) => { acc[e.id] = e.razon_social; return acc; }, {} as Record<string, string>) || {};
 
     for (const ob of obligaciones) {
+      // Eventual (sin ocurrencias ni fecha): no cuenta como pendiente
+      if (!cumplidasOc.has(ob.id) && !ob.fecha_vencimiento) continue;
       const pk = getCurrentPeriodKey(ob.presentacion);
       const isCumplida = cumplidasOc.get(ob.id) ?? cumplSet.has(`${ob.id}:${pk}`);
       if (!isCumplida) {

@@ -206,6 +206,8 @@ export default function DashboardObligaciones() {
       const { data: cData } = await supabase
         .from('obligacion_cumplimientos')
         .select('obligacion_id, periodo_key')
+        .eq('vigente', true)
+        .eq('completada', true)
         .in('obligacion_id', obs.map(o => o.id));
       if (cData) {
         const map: Record<string, boolean> = {};

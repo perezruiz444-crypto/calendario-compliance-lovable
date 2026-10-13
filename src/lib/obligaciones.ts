@@ -71,7 +71,9 @@ export async function fetchCumplimientoKeys(
   const { data } = await supabaseClient
     .from('obligacion_cumplimientos')
     .select('obligacion_id, periodo_key')
-    .in('obligacion_id', obligacionIds);
+    .in('obligacion_id', obligacionIds)
+    .eq('vigente', true)
+    .eq('completada', true);
   return new Set((data || []).map((c) => `${c.obligacion_id}:${c.periodo_key}`));
 }
 
