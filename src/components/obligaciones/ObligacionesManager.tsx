@@ -26,7 +26,14 @@ import {
 import {
   CATEGORIA_LABELS, CATEGORIA_COLORS,
   getCurrentPeriodKey, getPeriodLabel, formatDateShort, getVencimientoInfo, programaToCategoria,
-  isRecurring, ocurrenciasCumplidas, estadoPorOcurrencias } from '@/lib/obligaciones';
+  isRecurring, ocurrenciasCumplidas, estadoPorOcurrencias, guardarCumplimiento } from '@/lib/obligaciones';
+
+// Estado del periodo en curso (obligaciones.estado se queda en 'completada' tras la primera marca)
+function estadoPeriodo(tieneOcurrencia: boolean, cumplida: boolean, fecha: string | null): string {
+  if (!tieneOcurrencia) return 'Eventual';
+  if (cumplida) return 'Cumplida';
+  return getVencimientoInfo(fecha)?.status === 'vencido' ? 'Vencida' : 'Pendiente';
+}
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
 import { logger } from '@/lib/logger';
 import { nombresPerfiles } from '@/lib/perfiles';
@@ -174,37 +181,14 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     const oc = proximaOcurrencia[obligacionId];
     if (!oc) { toast.error('Esta obligación no tiene ocurrencias para cumplir'); return; }
     const isCompleted = cumplimientos[oc.id];
-
-    if (isCompleted) {
-      // Desmarcar = corrección append-only (nunca DELETE).
-      const { data: existing } = await supabase
-        .from('obligacion_cumplimientos')
-        .select('id')
-        .eq('ocurrencia_id', oc.id)
-        .eq('vigente', true)
-        .maybeSingle();
-      if (!existing?.id) { toast.error('No se encontró el cumplimiento'); return; }
-      const { error } = await supabase.rpc('corregir_cumplimiento', {
-        p_cumplimiento_id: existing.id, p_completada: false,
-      });
-      if (error) { toast.error('Error al desmarcar'); return; }
-      setCumplimientos(prev => ({ ...prev, [oc.id]: false }));
-      toast.success('Cumplimiento desmarcado');
-    } else {
-      const { error } = await supabase
-        .from('obligacion_cumplimientos')
-        .insert({
-          obligacion_id: obligacionId,
-          ocurrencia_id: oc.id,
-          empresa_id: empresaId,
-          periodo_key: oc.periodo_key,
-          completada: true,
-          completada_por: user.id,
-        });
-      if (error) { toast.error('Error al marcar cumplimiento'); return; }
-      setCumplimientos(prev => ({ ...prev, [oc.id]: true }));
-      toast.success(`Marcada como completada - ${getPeriodLabel(presentacion, oc.periodo_key)}`);
-    }
+    const { error } = await guardarCumplimiento(supabase, {
+      ocurrencia: { ...oc, obligacion_id: obligacionId }, empresaId, userId: user.id, completada: !isCompleted,
+    });
+    if (error) { toast.error(isCompleted ? 'Error al desmarcar' : 'Error al marcar cumplimiento'); return; }
+    setCumplimientos(prev => ({ ...prev, [oc.id]: !isCompleted }));
+    toast.success(isCompleted
+      ? 'Cumplimiento desmarcado'
+      : `Marcada como completada - ${getPeriodLabel(presentacion, oc.periodo_key)}`);
   };
 
 
@@ -343,8 +327,8 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
         'Presentación': ob.presentacion || '-',
         'Período Actual': ob.presentacion && ob.presentacion !== 'unica' 
           ? getPeriodLabel(ob.presentacion, periodKey) : '-',
-        'Vencimiento': ob.fecha_vencimiento ? formatDateShort(ob.fecha_vencimiento) : '-',
-        'Estado': ob.estado,
+        'Vencimiento': (oc?.fecha_vencimiento ?? ob.fecha_vencimiento) ? formatDateShort((oc?.fecha_vencimiento ?? ob.fecha_vencimiento)!) : '-',
+        'Estado': estadoPeriodo(!!oc, isCompleted, oc?.fecha_vencimiento ?? ob.fecha_vencimiento),
         'Activa': ob.activa ? 'Sí' : 'No',
         'Cumplida': isCompleted ? 'Sí' : 'No',
         'Responsable': ob.responsable_id ? (profiles[ob.responsable_id] || ob.responsable_tipo || '-') : (ob.responsable_tipo || '-'),
@@ -588,10 +572,10 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
                       <td className="p-2">
                         <div className="flex items-center gap-2">
                           <span>{displayDate}</span>
-                          {vencInfo && getVencimientoBadge(fechaVenc)}
+                          {vencInfo && !isCompleted && getVencimientoBadge(fechaVenc)}
                         </div>
                       </td>
-                      <td className="p-2"><Badge variant="outline" className="text-xs capitalize">{ob.estado}</Badge></td>
+                      <td className="p-2"><Badge variant="outline" className="text-xs">{estadoPeriodo(!!oc, isCompleted, fechaVenc)}</Badge></td>
                       {canEdit && (
                         <td className="p-2 text-right">
                           <div className="flex items-center justify-end gap-1">

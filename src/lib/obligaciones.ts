@@ -330,3 +330,43 @@ export async function fetchCumplidasPorOcurrencias(
   const estado = await fetchEstadoOcurrencias(supabaseClient, obligacionIds);
   return new Map([...estado].map(([id, e]) => [id, e.cumplida]));
 }
+
+/**
+ * Marca o desmarca el cumplimiento de una ocurrencia (append-only).
+ * Si ya hay una fila vigente para (obligacion_id, periodo_key) —aunque la UI la creyera ausente,
+ * p. ej. un periodo desmarcado antes— se corrige con la RPC `corregir_cumplimiento`; si no, se inserta.
+ * Insertar a ciegas chocaba con el índice único `obligacion_cumplimientos_vigente_unico`.
+ */
+export async function guardarCumplimiento(
+  supabaseClient: SupabaseClient<Database>,
+  params: { ocurrencia: OcurrenciaRef; empresaId: string; userId: string; completada: boolean },
+): Promise<{ error: Error | null }> {
+  const { ocurrencia, empresaId, userId, completada } = params;
+  const { data: existing, error: readError } = await supabaseClient
+    .from('obligacion_cumplimientos')
+    .select('id, completada')
+    .eq('obligacion_id', ocurrencia.obligacion_id)
+    .eq('periodo_key', ocurrencia.periodo_key)
+    .eq('vigente', true)
+    .maybeSingle();
+  if (readError) return { error: readError };
+
+  if (existing) {
+    if (existing.completada === completada) return { error: null };
+    const { error } = await supabaseClient.rpc('corregir_cumplimiento', {
+      p_cumplimiento_id: existing.id,
+      p_completada: completada,
+    });
+    return { error };
+  }
+
+  const { error } = await supabaseClient.from('obligacion_cumplimientos').insert({
+    obligacion_id: ocurrencia.obligacion_id,
+    ocurrencia_id: ocurrencia.id,
+    empresa_id: empresaId,
+    periodo_key: ocurrencia.periodo_key,
+    completada,
+    completada_por: userId,
+  });
+  return { error };
+}
