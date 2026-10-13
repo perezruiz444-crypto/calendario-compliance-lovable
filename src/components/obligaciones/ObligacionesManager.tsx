@@ -352,10 +352,20 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     return true;
   });
 
-  const vencidosCount = obligaciones.filter(ob => ob.fecha_vencimiento && isPast(new Date(ob.fecha_vencimiento))).length;
+  // Por periodo en curso: un periodo ya cumplido no cuenta como vencido ni por vencer
+  const fechaPendiente = (ob: Obligacion): string | null => {
+    const oc = proximaOcurrencia[ob.id];
+    if (!oc || cumplimientos[oc.id]) return null;
+    return oc.fecha_vencimiento;
+  };
+  const vencidosCount = obligaciones.filter(ob => {
+    const f = fechaPendiente(ob);
+    return !!f && getVencimientoInfo(f)?.status === 'vencido';
+  }).length;
   const porVencerCount = obligaciones.filter(ob => {
-    if (!ob.fecha_vencimiento) return false;
-    const days = differenceInDays(new Date(ob.fecha_vencimiento), new Date());
+    const f = fechaPendiente(ob);
+    if (!f) return false;
+    const days = differenceInDays(new Date(f + 'T12:00:00'), new Date());
     return days >= 0 && days <= 90;
   }).length;
   const huerfanasCount = obligaciones.filter(ob => !ob.catalogo_id).length;

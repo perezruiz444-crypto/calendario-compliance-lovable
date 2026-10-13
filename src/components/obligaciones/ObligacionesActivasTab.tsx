@@ -74,7 +74,8 @@ export function ObligacionesActivasTab() {
     const obl = oc.obligaciones;
     const isCompleted = !!cumplimientos[oc.id];
     const recurring = isRecurring(obl?.presentacion ?? null);
-    const vInfo = getVencimientoInfo(oc.fecha_vencimiento);
+    // Ya cumplida: sin color de vencimiento
+    const vInfo = isCompleted ? null : getVencimientoInfo(oc.fecha_vencimiento);
 
     return (
       <div
