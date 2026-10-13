@@ -515,11 +515,16 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
                     <tr key={ob.id} className={`border-b last:border-0 hover:bg-muted/50 transition-colors ${isCompleted ? 'bg-success/5' : ''}`}>
                       {canEdit && (
                         <td className="p-2 text-center">
-                          <Checkbox
-                            checked={isCompleted}
-                            onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
-                            aria-label="Marcar como completada"
-                          />
+                          {oc ? (
+                            <Checkbox
+                              checked={isCompleted}
+                              onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
+                              aria-label="Marcar como completada"
+                            />
+                          ) : (
+                            // Eventual: sin periodo que marcar
+                            <span className="text-xs text-muted-foreground" title="Eventual: sin periodo">—</span>
+                          )}
                         </td>
                       )}
                       <td className="p-2">

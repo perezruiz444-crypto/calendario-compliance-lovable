@@ -73,6 +73,8 @@ export default function EmpresaComplianceSemaforo() {
       const { data: cumplData } = await supabase
         .from('obligacion_cumplimientos')
         .select('obligacion_id, periodo_key')
+        .eq('vigente', true)
+        .eq('completada', true)
         .in('obligacion_id', obsIds);
       (cumplData || []).forEach(c => {
         cumplMap[`${c.obligacion_id}:${c.periodo_key}`] = true;
@@ -86,6 +88,8 @@ export default function EmpresaComplianceSemaforo() {
       let vencidas = 0;
 
       empObs.forEach(ob => {
+        // Eventual (sin ocurrencias ni fecha): no cuenta como pendiente
+        if (!cumplidasOc.has(ob.id) && !ob.fecha_vencimiento) return;
         const pk = getCurrentPeriodKey(ob.presentacion);
         if (cumplidasOc.get(ob.id) ?? cumplMap[`${ob.id}:${pk}`]) return;
         pendientes++;
@@ -95,7 +99,7 @@ export default function EmpresaComplianceSemaforo() {
         }
       });
 
-      const total = empObs.length;
+      const total = empObs.filter(o => cumplidasOc.has(o.id) || o.fecha_vencimiento).length;
       const pct = total === 0 ? 100 : Math.round(((total - pendientes) / total) * 100);
       const nivel: SemaforoLevel = vencidas > 0 ? 'rojo' : pendientes > 0 ? 'amarillo' : 'verde';
 
