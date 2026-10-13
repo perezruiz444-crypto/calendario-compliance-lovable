@@ -10,7 +10,7 @@ import { ObligacionFormDialog } from '@/components/obligaciones/ObligacionFormDi
 import {
   CATEGORIA_LABELS, CATEGORIA_COLORS,
   getCurrentPeriodKey, getPeriodLabel,
-  formatDateShort, getVencimientoInfo, ocurrenciasCumplidas, estadoPorOcurrencias,
+  formatDateShort, getVencimientoInfo, ocurrenciasCumplidas, estadoPorOcurrencias, guardarCumplimiento,
   type OcurrenciaRef } from '@/lib/obligaciones';
 import {
   FileText, Pencil, CheckCircle2, Clock, AlertTriangle, ShieldAlert,
@@ -131,34 +131,12 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
     const isCompleted = cumplimientos[oc.id];
     setToggling(oc.id);
     try {
-      if (isCompleted) {
-        const { data: existing } = await supabase
-          .from('obligacion_cumplimientos')
-          .select('id')
-          .eq('ocurrencia_id', oc.id)
-          .eq('vigente', true)
-          .maybeSingle();
-        if (existing?.id) {
-          const { error } = await supabase.rpc('corregir_cumplimiento', {
-            p_cumplimiento_id: existing.id, p_completada: false,
-          });
-          if (error) throw error;
-        }
-        setCumplimientos((prev) => ({ ...prev, [oc.id]: false }));
-        toast.success('Cumplimiento desmarcado');
-      } else {
-        const { error } = await supabase.from('obligacion_cumplimientos').insert({
-          obligacion_id: oc.obligacion_id,
-          ocurrencia_id: oc.id,
-          empresa_id: empresaId,
-          periodo_key: oc.periodo_key,
-          completada: true,
-          completada_por: user.id,
-        });
-        if (error) throw error;
-        setCumplimientos((prev) => ({ ...prev, [oc.id]: true }));
-        toast.success('Cumplimiento marcado');
-      }
+      const { error } = await guardarCumplimiento(supabase, {
+        ocurrencia: oc, empresaId, userId: user.id, completada: !isCompleted,
+      });
+      if (error) throw error;
+      setCumplimientos((prev) => ({ ...prev, [oc.id]: !isCompleted }));
+      toast.success(isCompleted ? 'Cumplimiento desmarcado' : 'Cumplimiento marcado');
       // Recalcula ocurrencia actual y atrasadas
       fetchData();
     } catch {
@@ -191,6 +169,14 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
     if (!proximaOcurrencia[obl.id]) {
       return (
         <Badge variant="outline" className="text-xs text-muted-foreground">Eventual</Badge>
+      );
+    }
+    // Periodo en curso ya cumplido: no mostrar "Vencido"
+    if (cumplimientos[proximaOcurrencia[obl.id].id]) {
+      return (
+        <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
+          <CheckCircle2 className="w-3 h-3 mr-1" />Cumplida
+        </Badge>
       );
     }
     const fecha = proximaOcurrencia[obl.id]?.fecha_vencimiento ?? obl.fecha_vencimiento;
