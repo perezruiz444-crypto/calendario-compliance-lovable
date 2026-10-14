@@ -56,6 +56,10 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
   const [atrasadas, setAtrasadas] = useState<Record<string, number>>({});
   const [ocurrenciasPorObl, setOcurrenciasPorObl] = useState<Record<string, OcurrenciaRef[]>>({});
   const [expandida, setExpandida] = useState<string | null>(null);
+  // Selección múltiple de periodos pendientes dentro de la obligación expandida
+  const [seleccionando, setSeleccionando] = useState(false);
+  const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
+  const [guardandoLote, setGuardandoLote] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -144,6 +148,37 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
     } finally {
       setToggling(null);
     }
+  };
+
+  const salirSeleccion = () => { setSeleccionando(false); setSeleccion(new Set()); };
+
+  const alternarSeleccion = (ocId: string) => {
+    setSeleccion((prev) => {
+      const next = new Set(prev);
+      if (next.has(ocId)) next.delete(ocId); else next.add(ocId);
+      return next;
+    });
+  };
+
+  // Marca como cumplidos todos los periodos seleccionados
+  const marcarSeleccionadas = async (ocs: OcurrenciaRef[]) => {
+    if (!user) return;
+    const elegidas = ocs.filter((o) => seleccion.has(o.id) && !cumplimientos[o.id]);
+    if (elegidas.length === 0) return;
+    setGuardandoLote(true);
+    let fallidas = 0;
+    for (const oc of elegidas) {
+      const { error } = await guardarCumplimiento(supabase, {
+        ocurrencia: oc, empresaId, userId: user.id, completada: true,
+      });
+      if (error) fallidas++;
+    }
+    setGuardandoLote(false);
+    const ok = elegidas.length - fallidas;
+    if (ok > 0) toast.success(`${ok} periodo(s) marcado(s) como cumplido(s)`);
+    if (fallidas > 0) toast.error(`${fallidas} periodo(s) no se pudieron marcar`);
+    salirSeleccion();
+    fetchData();
   };
 
   useEffect(() => { fetchData(); }, [empresaId, refreshTrigger]);
@@ -293,7 +328,7 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 shrink-0"
-                        onClick={() => setExpandida(expandida === obl.id ? null : obl.id)}
+                        onClick={() => { setExpandida(expandida === obl.id ? null : obl.id); salirSeleccion(); }}
                         title="Ver todos los periodos"
                       >
                         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandida === obl.id ? 'rotate-180' : ''}`} />
@@ -334,29 +369,95 @@ export function EmpresaObligacionesActivasCard({ empresaId, canEdit, refreshTrig
                       </div>
                     )}
                   </div>
-                  {expandida === obl.id && (
-                    <div className="mt-1 mb-2 ml-3 grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {expandida === obl.id && (() => {
+                    const hoyStr = new Date().toISOString().slice(0, 10);
+                    const pendientesObl = ocsObl.filter((o) => !cumplimientos[o.id]);
+                    const atrasadasObl = pendientesObl.filter((o) => o.fecha_vencimiento < hoyStr);
+                    const nSel = ocsObl.filter((o) => seleccion.has(o.id)).length;
+                    return (
+                    <div className="mt-1 mb-2 ml-3 space-y-2">
+                      {canEdit && pendientesObl.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {seleccionando ? (
+                            <>
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs"
+                                disabled={nSel === 0 || guardandoLote}
+                                onClick={() => marcarSeleccionadas(ocsObl)}
+                              >
+                                {guardandoLote
+                                  ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                  : <CheckCircle2 className="w-3 h-3 mr-1" />}
+                                Marcar {nSel} como cumplida(s)
+                              </Button>
+                              {atrasadasObl.length > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs"
+                                  disabled={guardandoLote}
+                                  onClick={() => setSeleccion(new Set(atrasadasObl.map((o) => o.id)))}
+                                >
+                                  Seleccionar atrasadas ({atrasadasObl.length})
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs"
+                                disabled={guardandoLote}
+                                onClick={salirSeleccion}
+                              >
+                                Cancelar
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              onClick={() => setSeleccionando(true)}
+                            >
+                              Seleccionar varios
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                       {ocsObl.map((o) => {
                         const hecha = !!cumplimientos[o.id];
                         const vencida = !hecha && getVencimientoInfo(o.fecha_vencimiento)?.status === 'vencido';
+                        const elegida = seleccion.has(o.id);
                         return (
                           <label
                             key={o.id}
                             className={`flex items-center gap-2 px-2 py-1.5 border rounded-md text-xs ${
-                              hecha ? 'bg-success/5 border-success/20' : vencida ? 'border-destructive/30 text-destructive' : ''
+                              elegida ? 'bg-primary/10 border-primary/40'
+                                : hecha ? 'bg-success/5 border-success/20' : vencida ? 'border-destructive/30 text-destructive' : ''
                             }`}
                           >
-                            <Checkbox
-                              checked={hecha}
-                              disabled={!canEdit || toggling === o.id}
-                              onCheckedChange={() => toggleOcurrencia(o)}
-                            />
+                            {seleccionando ? (
+                              <Checkbox
+                                checked={hecha || elegida}
+                                disabled={hecha || guardandoLote}
+                                onCheckedChange={() => alternarSeleccion(o.id)}
+                              />
+                            ) : (
+                              <Checkbox
+                                checked={hecha}
+                                disabled={!canEdit || toggling === o.id}
+                                onCheckedChange={() => toggleOcurrencia(o)}
+                              />
+                            )}
                             {getPeriodLabel(obl.presentacion, o.periodo_key)}
                           </label>
                         );
                       })}
+                      </div>
                     </div>
-                  )}
+                    );
+                  })()}
                   </div>
                 );
               })}
