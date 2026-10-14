@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
 import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail } from '../_shared/smtp.ts'
 import { weeklySummaryTemplate } from '../_shared/email-templates.ts'
@@ -12,10 +12,104 @@ interface ObligacionResumen {
   empresas: EmpresaEmbed
 }
 
+type ObligacionEmbed = { nombre: string; categoria: string | null } | { nombre: string; categoria: string | null }[] | null
+
+interface OcurrenciaRow {
+  obligacion_id: string
+  periodo_key: string
+  fecha_vencimiento: string
+  obligaciones: ObligacionEmbed
+  empresas: EmpresaEmbed
+}
+
 /** PostgREST puede devolver el embed como objeto o como arreglo según la relación. */
 function razonSocial(empresas: EmpresaEmbed | undefined): string {
   const empresa = Array.isArray(empresas) ? empresas[0] : empresas
   return empresa?.razon_social ?? ''
+}
+
+const PAGE = 1000
+
+/**
+ * Obligaciones pendientes según sus periodos (ocurrencias) y los cumplimientos vigentes.
+ * Un periodo marcado como cumplido nunca aparece. Por obligación:
+ * - vencida: el periodo vencido más reciente sin marcar, con "+N periodos atrasados" si hay más;
+ * - semana / mes: el próximo periodo sin marcar dentro de la ventana.
+ * empresaIds = null → todas las empresas (admin).
+ */
+async function obligacionesPendientes(
+  supabaseAdmin: SupabaseClient,
+  empresaIds: string[] | null,
+  today: string,
+  next7Days: string,
+  next30Days: string,
+) {
+  const ocurrencias: OcurrenciaRow[] = []
+  for (let from = 0; ; from += PAGE) {
+    let q = supabaseAdmin
+      .from('obligacion_ocurrencias')
+      .select('obligacion_id, periodo_key, fecha_vencimiento, obligaciones!inner(nombre, categoria, activa), empresas(razon_social)')
+      .eq('obligaciones.activa', true)
+      .lte('fecha_vencimiento', next30Days)
+      .order('fecha_vencimiento', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (empresaIds) q = q.in('empresa_id', empresaIds)
+    const { data, error } = await q
+    if (error) throw error
+    ocurrencias.push(...((data || []) as unknown as OcurrenciaRow[]))
+    if (!data || data.length < PAGE) break
+  }
+
+  const obIds = [...new Set(ocurrencias.map(o => o.obligacion_id))]
+  const cumplidas = new Set<string>()
+  for (let i = 0; i < obIds.length; i += 200) {
+    const { data, error } = await supabaseAdmin
+      .from('obligacion_cumplimientos')
+      .select('obligacion_id, periodo_key')
+      .eq('vigente', true)
+      .eq('completada', true)
+      .in('obligacion_id', obIds.slice(i, i + 200))
+    if (error) throw error
+    for (const c of data || []) cumplidas.add(`${c.obligacion_id}:${c.periodo_key}`)
+  }
+
+  // Agrupar periodos sin marcar por obligación (ya vienen ordenados por fecha)
+  const porObligacion = new Map<string, OcurrenciaRow[]>()
+  for (const oc of ocurrencias) {
+    if (cumplidas.has(`${oc.obligacion_id}:${oc.periodo_key}`)) continue
+    const lista = porObligacion.get(oc.obligacion_id) ?? []
+    lista.push(oc)
+    porObligacion.set(oc.obligacion_id, lista)
+  }
+
+  const resumen = (oc: OcurrenciaRow, atrasadas = 0): ObligacionResumen => {
+    const ob = Array.isArray(oc.obligaciones) ? oc.obligaciones[0] : oc.obligaciones
+    const nombre = ob?.nombre ?? 'Obligación'
+    return {
+      nombre: atrasadas > 0 ? `${nombre} (+${atrasadas} periodo${atrasadas > 1 ? 's' : ''} atrasado${atrasadas > 1 ? 's' : ''})` : nombre,
+      fecha_vencimiento: oc.fecha_vencimiento,
+      categoria: ob?.categoria ?? null,
+      empresas: oc.empresas,
+    }
+  }
+
+  const vencidas: ObligacionResumen[] = []
+  const semana: ObligacionResumen[] = []
+  const mes: ObligacionResumen[] = []
+  for (const lista of porObligacion.values()) {
+    const pasadas = lista.filter(oc => oc.fecha_vencimiento < today)
+    if (pasadas.length > 0) {
+      vencidas.push(resumen(pasadas[pasadas.length - 1], pasadas.length - 1))
+      continue
+    }
+    const proxima = lista[0]
+    if (proxima.fecha_vencimiento <= next7Days) semana.push(resumen(proxima))
+    else mes.push(resumen(proxima))
+  }
+
+  const porFecha = (a: ObligacionResumen, b: ObligacionResumen) => a.fecha_vencimiento.localeCompare(b.fecha_vencimiento)
+  return { vencidas: vencidas.sort(porFecha), semana: semana.sort(porFecha), mes: mes.sort(porFecha) }
 }
 
 Deno.serve(async (req) => {
@@ -126,37 +220,10 @@ Deno.serve(async (req) => {
             }
           }
 
-          const buildObligQuery = <Q extends { in(column: string, values: string[]): Q }>(query: Q): Q =>
-            empresaIdFilter ? query.in('empresa_id', empresaIdFilter) : query
-
-          const { data: obsVencidas } = await buildObligQuery(supabaseAdmin
-            .from('obligaciones')
-            .select('nombre, fecha_vencimiento, categoria, empresas(razon_social)')
-            .eq('activa', true)
-            .lt('fecha_vencimiento', today)
-            .order('fecha_vencimiento', { ascending: true })
-            .limit(10))
-          obligacionesVencidas = obsVencidas || []
-
-          const { data: obsSemana } = await buildObligQuery(supabaseAdmin
-            .from('obligaciones')
-            .select('nombre, fecha_vencimiento, categoria, empresas(razon_social)')
-            .eq('activa', true)
-            .gte('fecha_vencimiento', today)
-            .lte('fecha_vencimiento', next7Days)
-            .order('fecha_vencimiento', { ascending: true })
-            .limit(10))
-          obligacionesSemana = obsSemana || []
-
-          const { data: obsMes } = await buildObligQuery(supabaseAdmin
-            .from('obligaciones')
-            .select('nombre, fecha_vencimiento, categoria, empresas(razon_social)')
-            .eq('activa', true)
-            .gt('fecha_vencimiento', next7Days)
-            .lte('fecha_vencimiento', next30Days)
-            .order('fecha_vencimiento', { ascending: true })
-            .limit(10))
-          obligacionesMes = obsMes || []
+          const pend = await obligacionesPendientes(supabaseAdmin, empresaIdFilter, today, next7Days, next30Days)
+          obligacionesVencidas = pend.vencidas.slice(0, 10)
+          obligacionesSemana = pend.semana.slice(0, 10)
+          obligacionesMes = pend.mes.slice(0, 10)
 
           // Renovaciones de programas (usa fecha_renovar + configurable dias_antes)
           let empresasQuery = supabaseAdmin
@@ -241,32 +308,10 @@ Deno.serve(async (req) => {
             .from('profiles').select('empresa_id').eq('id', profile.id).maybeSingle()
 
           if (clientProfile?.empresa_id) {
-            const { data: obsVencidas } = await supabaseAdmin
-              .from('obligaciones')
-              .select('nombre, fecha_vencimiento, categoria, empresas(razon_social)')
-              .eq('activa', true)
-              .eq('empresa_id', clientProfile.empresa_id)
-              .lt('fecha_vencimiento', today)
-              .limit(5)
-            obligacionesVencidas = obsVencidas || []
-
-            const { data: obsSemana } = await supabaseAdmin
-              .from('obligaciones')
-              .select('nombre, fecha_vencimiento, categoria, empresas(razon_social)')
-              .eq('activa', true)
-              .eq('empresa_id', clientProfile.empresa_id)
-              .gte('fecha_vencimiento', today)
-              .lte('fecha_vencimiento', next7Days)
-              .limit(5)
-            obligacionesSemana = obsSemana || []
+            const pend = await obligacionesPendientes(supabaseAdmin, [clientProfile.empresa_id], today, next7Days, next30Days)
+            obligacionesVencidas = pend.vencidas.slice(0, 5)
+            obligacionesSemana = pend.semana.slice(0, 5)
           }
-        }
-
-        // ── Filtrar cumplidas del periodo ────────────────────────────
-        const allObIds = [...obligacionesVencidas, ...obligacionesSemana, ...obligacionesMes]
-        if (allObIds.length > 0) {
-          // Simple check: filter out already-completed ones would require more complex logic
-          // For now send all pending/upcoming
         }
 
         const hasContent =
