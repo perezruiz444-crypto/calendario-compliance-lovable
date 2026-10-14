@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
-import { format, differenceInDays, isPast, isValid, getISOWeek, addWeeks, addMonths, addYears } from 'date-fns';
+import { format, differenceInDays, isPast, isValid, getISOWeek, addWeeks, addMonths, addYears, addDays, setISOWeek, startOfISOWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // ─── Category constants ───────────────────────────────────────────────
@@ -83,17 +83,34 @@ export function getCurrentPeriodKey(presentacion: string | null): string {
   return getPeriodKeyForDate(new Date(), presentacion);
 }
 
+/**
+ * Etiqueta legible de un periodo. Se deduce del formato de la clave (no de `presentacion`, que es
+ * texto libre como "Revisión periódica semanal (cada viernes)"): "2026-W30" → "Semana 30 · 20–26 jul",
+ * "2026-10" → "Octubre 2026", "2026-T4" → "4º trimestre 2026", "2026" → "Año 2026".
+ */
 export function getPeriodLabel(presentacion: string | null, periodKey: string): string {
-  switch (presentacion?.toLowerCase()) {
-    case 'semanal': return `Semana ${periodKey.split('-W')[1]}`;
-    case 'quincenal': return periodKey.includes('Q1') ? '1ra Quincena' : '2da Quincena';
-    case 'mensual': return format(new Date(periodKey + '-01'), 'MMMM yyyy', { locale: es });
-    case 'bimestral': return `Bimestre ${periodKey.split('-B')[1]}`;
-    case 'trimestral': return `Trimestre ${periodKey.split('-T')[1]}`;
-    case 'semestral': return `Semestre ${periodKey.split('-S')[1]}`;
-    case 'anual': return `Año ${periodKey}`;
-    default: return periodKey;
+  let m: RegExpMatchArray | null;
+  if ((m = periodKey.match(/^(\d{4})-W(\d{1,2})$/))) {
+    const inicio = startOfISOWeek(setISOWeek(new Date(Number(m[1]), 0, 4), Number(m[2])));
+    const fin = addDays(inicio, 6);
+    const rango = inicio.getMonth() === fin.getMonth()
+      ? `${format(inicio, 'd')}–${format(fin, 'd MMM', { locale: es })}`
+      : `${format(inicio, 'd MMM', { locale: es })} – ${format(fin, 'd MMM', { locale: es })}`;
+    return `Semana ${Number(m[2])} · ${rango}`;
   }
+  if ((m = periodKey.match(/^(\d{4})-(\d{2})-Q([12])$/))) {
+    const mes = format(new Date(Number(m[1]), Number(m[2]) - 1, 1), 'MMM yyyy', { locale: es });
+    return `${m[3] === '1' ? '1ra' : '2da'} quincena ${mes}`;
+  }
+  if ((m = periodKey.match(/^(\d{4})-(\d{2})$/))) {
+    const label = format(new Date(Number(m[1]), Number(m[2]) - 1, 1), 'MMMM yyyy', { locale: es });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  if ((m = periodKey.match(/^(\d{4})-B(\d)$/))) return `Bimestre ${m[2]} ${m[1]}`;
+  if ((m = periodKey.match(/^(\d{4})-T(\d)$/))) return `${m[2]}º trimestre ${m[1]}`;
+  if ((m = periodKey.match(/^(\d{4})-S(\d)$/))) return `${m[2]}º semestre ${m[1]}`;
+  if (/^\d{4}$/.test(periodKey)) return `Año ${periodKey}`;
+  return periodKey;
 }
 
 // ─── Formatting helpers ───────────────────────────────────────────────

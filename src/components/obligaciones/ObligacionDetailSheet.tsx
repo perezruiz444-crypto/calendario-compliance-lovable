@@ -299,7 +299,7 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
                       <div key={h.id} className="flex items-start gap-2.5 text-xs">
                         <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
                         <div>
-                          <span className="font-medium text-foreground">{h.periodo_key}</span>
+                          <span className="font-medium text-foreground">{getPeriodLabel(ob?.presentacion ?? null, h.periodo_key)}</span>
                           {h.profiles?.nombre_completo && (
                             <span className="text-muted-foreground"> · {h.profiles.nombre_completo}</span>
                           )}
