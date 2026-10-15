@@ -16,7 +16,8 @@ const TareaDetailSheet = lazy(() => import('@/components/tareas/TareaDetailSheet
 
 /** Montar con key empresaId para que un cambio de empresa cierre todos los diálogos. */
 export function ConnectedObligacionesOverview({ empresaId }: { empresaId: string }) {
-  const { user, role } = useAuth();
+  const { user, role, actualRole } = useAuth();
+  const canRecord = actualRole === 'administrador' || actualRole === 'consultor' || actualRole === 'cliente';
   const query = useObligationOverview(empresaId);
   const [selected, setSelected] = useState<OverviewAction | null>(null);
   const [history, setHistory] = useState<OverviewObligation | null>(null);
@@ -30,7 +31,7 @@ export function ConnectedObligacionesOverview({ empresaId }: { empresaId: string
     try {
       const { data, error } = await obligationOverviewClient.rpc('obligacion_v2_puede_registrar', { p_obligacion_id: accion.obligacionId });
       if (error) throw error;
-      if (!data) { toast.error('Esta obligación no está asignada a ti'); return; }
+      if (!data) { toast.error('No tienes permiso para registrar en esta empresa'); return; }
       setSelected(accion);
     } catch {
       toast.error('No pudimos comprobar el permiso. Intenta de nuevo.');
@@ -42,10 +43,10 @@ export function ConnectedObligacionesOverview({ empresaId }: { empresaId: string
   return <>
     <div className="flex justify-end"><Button variant="outline" onClick={()=>void import('@/lib/obligationPdf').then(module=>module.exportObligationOverview(query.data!,mexicoDateKey())).catch(()=>toast.error('No pudimos generar el PDF'))}>Exportar PDF</Button></div>
     <ObligacionesOverview data={query.data} hoy={mexicoDateKey()} busyId={busyId}
-      canRegister={(ob,accion) => query.data.metadataReady && !query.isFetching && (!!accion.ocurrenciaId || !!accion.eventoId) && !accion.completada && (role === 'administrador' || role === 'consultor' || ob.asignadaAMi)}
+      canRegister={(ob,accion) => ob.empresaId === empresaId && query.data.metadataReady && !query.isFetching && (!!accion.ocurrenciaId || !!accion.eventoId) && !accion.completada && canRecord}
       onEvidence={path=>void supabase.storage.from('evidencias-cumplimiento').createSignedUrl(path,60).then(({data,error})=>{if(error||!data?.signedUrl){toast.error('No pudimos abrir la evidencia');return;}window.open(data.signedUrl,'_blank','noopener,noreferrer');}).catch(()=>toast.error('No pudimos abrir la evidencia'))}
       onClassify={role==='administrador'?setClassification:undefined}
-      canManage={ob=>query.data.metadataReady&&(role==='administrador'||role==='consultor'||ob.asignadaAMi)} onRevision={ob=>setTracking({ob,mode:'revision'})} onEvent={ob=>setTracking({ob,mode:'evento'})}
+      canManage={ob=>ob.empresaId===empresaId&&query.data.metadataReady&&canRecord} onRevision={ob=>setTracking({ob,mode:'revision'})} onEvent={ob=>setTracking({ob,mode:'evento'})}
       onRegister={accion => void register(accion)} onHistory={setHistory} onTask={task => setTaskId(task.id)} />
     {selected && selectedParent && user && <EvidenciaCumplimiento open onOpenChange={open => { if (!open) setSelected(null); }} empresaId={empresaId} obligacionId={selectedParent.id} ocurrenciaId={selected.ocurrenciaId} eventoId={selected.eventoId} periodoKey={selected.periodo!} userId={user.id} onCompleted={() => { setSelected(null); void query.refetch(); }} />}
     {classification&&<ClasificarObligacionDialog ob={classification} onClose={()=>setClassification(null)} onSaved={()=>void query.refetch()} />}

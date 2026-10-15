@@ -21,5 +21,6 @@ sql('../supabase/migrations/20261015145240_obligation_rule_calculation.sql');
 sql('../supabase/migrations/20261015145256_obligation_evidence_access.sql');
 sql('../supabase/migrations/20261015145259_obligation_notifications.sql');
 sql('../supabase/migrations/20261015145619_obligation_notification_type_contract.sql');
-for(const file of ['obligation-block-a.sql','obligation-events.sql','obligation-rules.sql','obligation-direct-assignment.sql','obligation-storage.sql','obligation-generator.sql','obligation-notifications.sql'])sql(`../supabase/tests/${file}`);
+sql('../supabase/migrations/20261015153244_obligation_company_completion_access.sql');
+for(const file of ['obligation-block-a.sql','obligation-events.sql','obligation-rules.sql','obligation-direct-assignment.sql','obligation-storage.sql','obligation-generator.sql','obligation-notifications.sql','obligation-company-access.sql'])sql(`../supabase/tests/${file}`);
 console.log('PASS: contrato PostgreSQL local e idempotencia. No acredita Supabase Auth/Storage ni replay del esquema completo.');

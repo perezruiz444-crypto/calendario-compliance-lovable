@@ -37,7 +37,7 @@ SELECT set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002'
 DO $$ BEGIN
   IF (SELECT count(*) FROM obligacion_reglas) <> 1 THEN RAISE EXCEPTION 'Cliente A ve reglas de B'; END IF;
   IF NOT public.obligacion_v2_puede_registrar('40000000-0000-4000-8000-000000000001') THEN RAISE EXCEPTION 'Asignación válida no reconocida'; END IF;
-  IF public.obligacion_v2_puede_registrar('40000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'Cliente escribe no asignada'; END IF;
+  IF NOT public.obligacion_v2_puede_registrar('40000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'Cliente sin acceso a su empresa'; END IF;
   IF public.obligacion_v2_puede_registrar('40000000-0000-4000-8000-000000000003') THEN RAISE EXCEPTION 'Cliente escribe otra empresa'; END IF;
   BEGIN
     INSERT INTO obligacion_revisiones(empresa_id,obligacion_id,resultado) VALUES('20000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','verificada');
@@ -45,8 +45,8 @@ DO $$ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN NULL; END;
   BEGIN
     INSERT INTO obligacion_cumplimientos(id,empresa_id,obligacion_id,periodo_key,completada,completada_por)
-    VALUES('60000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000002','2026-10',true,'10000000-0000-4000-8000-000000000002');
-    RAISE EXCEPTION 'Cumplimiento no asignado permitido';
+    VALUES('60000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000003','2026-10',true,'10000000-0000-4000-8000-000000000002');
+    RAISE EXCEPTION 'Cumplimiento en otra empresa permitido';
   EXCEPTION WHEN insufficient_privilege THEN NULL; END;
 END $$;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000003',true);
