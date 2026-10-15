@@ -14,11 +14,12 @@ if (identity !== 'calendario_obligaciones_test|127.0.0.1/32|55439|Empresa A fict
   throw new Error('Base no reconocida como contrato local sintético. No ejecutar migración.');
 }
 const sql = path => execFileSync(binary, [...args, '-f', fileURLToPath(new URL(path, import.meta.url))], { env, stdio: 'inherit' });
-sql('../supabase/migrations/20261014190000_obligation_types_and_rules.sql');
-sql('../supabase/migrations/20261014190000_obligation_types_and_rules.sql');
-sql('../supabase/migrations/20261015141908_obligation_events_and_reviews.sql');
-sql('../supabase/migrations/20261015141909_obligation_rule_calculation.sql');
-sql('../supabase/migrations/20261015143449_obligation_evidence_access.sql');
-sql('../supabase/migrations/20261015144352_obligation_notifications.sql');
+sql('../supabase/migrations/20261015145224_obligation_types_and_rules.sql');
+sql('../supabase/migrations/20261015145224_obligation_types_and_rules.sql');
+sql('../supabase/migrations/20261015145230_obligation_events_and_reviews.sql');
+sql('../supabase/migrations/20261015145240_obligation_rule_calculation.sql');
+sql('../supabase/migrations/20261015145256_obligation_evidence_access.sql');
+sql('../supabase/migrations/20261015145259_obligation_notifications.sql');
+sql('../supabase/migrations/20261015145619_obligation_notification_type_contract.sql');
 for(const file of ['obligation-block-a.sql','obligation-events.sql','obligation-rules.sql','obligation-direct-assignment.sql','obligation-storage.sql','obligation-generator.sql','obligation-notifications.sql'])sql(`../supabase/tests/${file}`);
 console.log('PASS: contrato PostgreSQL local e idempotencia. No acredita Supabase Auth/Storage ni replay del esquema completo.');

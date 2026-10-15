@@ -44,7 +44,7 @@ las migraciones ni el resumen diario desplegado.
 ## Orden de publicación
 
 1. Respaldar tablas y contrato actual; comprobar permisos y coincidencias del catálogo.
-2. Aplicar únicamente las seis migraciones nuevas, en orden de nombre.
+2. Aplicar únicamente las siete migraciones nuevas, en orden de nombre.
 3. Verificar conservación del historial, permisos y clasificación adoptada.
 4. Integrar el PR con CI correcto. El workflow de main despliega las funciones
    de Supabase con su configuración existente; comprobar su resultado.
