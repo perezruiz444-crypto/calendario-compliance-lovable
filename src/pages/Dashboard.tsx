@@ -1,3 +1,4 @@
+import { obligationsV2Enabled } from '@/lib/obligationFeature';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -96,10 +97,11 @@ export default function Dashboard() {
   }, [location.state?.reopenTour]);
 
   useEffect(() => {
+    if (!loading && user && role === 'cliente' && obligationsV2Enabled) { navigate('/pendientes', { replace: true }); return; }
     if (!loading && !user) {
       navigate('/auth');
     }
-  }, [user, loading, navigate]);
+  }, [user, role, loading, navigate]);
 
   // User is authenticated but has no role assigned
   if (!loading && user && !role) {

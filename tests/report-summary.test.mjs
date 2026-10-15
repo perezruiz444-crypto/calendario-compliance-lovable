@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTaskReportSummary } from '../.test-build/reportSummary.js';
+import { buildTaskReportSummary } from '../.test-build/src/lib/reportSummary.js';
 
 test('el porcentaje y los contadores usan las mismas 17 tareas', () => {
   const tareas = [{ estado: 'completada' }, ...Array.from({ length: 16 }, () => ({ estado: 'pendiente' }))];

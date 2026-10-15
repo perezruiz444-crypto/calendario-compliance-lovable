@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { getReportDateRange } from '../.test-build/reportPeriod.js';
-import { loadAllPages } from '../.test-build/pagination.js';
+import { getReportDateRange } from '../.test-build/src/lib/reportPeriod.js';
+import { loadAllPages } from '../.test-build/src/lib/pagination.js';
 
 const date = value => new Date(value + 'T12:00:00');
 const localDate = value => [value.getFullYear(), String(value.getMonth() + 1).padStart(2, '0'), String(value.getDate()).padStart(2, '0')].join('-');

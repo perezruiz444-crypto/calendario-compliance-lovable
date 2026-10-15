@@ -1,3 +1,4 @@
+import { obligationsV2Enabled } from '@/lib/obligationFeature';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -45,10 +46,10 @@ export default function Auth() {
   const [captchaReady, setCaptchaReady] = useState(false);
   const captchaContainerRef           = useRef<HTMLDivElement>(null);
   const widgetIdRef                   = useRef<string | null>(null);
-  const { signIn, user, authReady }   = useAuth();
+  const { signIn, user, authReady, role }   = useAuth();
   const navigate                      = useNavigate();
 
-  useEffect(() => { if (authReady && user) navigate('/dashboard'); }, [user, authReady, navigate]);
+  useEffect(() => { if (authReady && user) navigate(obligationsV2Enabled && role === 'cliente' ? '/pendientes' : '/dashboard'); }, [user, authReady, role, navigate]);
 
   // Load hCaptcha script once
   useEffect(() => {
