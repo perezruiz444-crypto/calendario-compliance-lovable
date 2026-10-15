@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { obligationOverviewClient } from '@/hooks/useObligationOverview';
 import { toast } from 'sonner';
 import {
   CheckCircle2, AlertCircle, Clock, Calendar, Building2,
@@ -152,18 +153,14 @@ export default function ObligacionDetailSheet({ open, onOpenChange, obligacionId
         setIsCumplida(false);
         toast.success('Cumplimiento desmarcado');
       } else {
-        const { error } = await supabase
-          .from('obligacion_cumplimientos')
-          .insert({
-            obligacion_id: ob.id,
-            ocurrencia_id: activeOcurrenciaId,
-            empresa_id: ob.empresa_id,
-            periodo_key: periodKey,
-            completada: true,
-            completada_por: user.id,
-            notas: evidencia || null,
-          });
+        const { data, error } = await obligationOverviewClient.rpc('registrar_cumplimiento_obligacion', {
+          p_obligacion_id: ob.id,
+          p_ocurrencia_id: activeOcurrenciaId,
+          p_periodo_key: periodKey,
+          ...(evidencia ? { p_notas: evidencia } : {}),
+        });
         if (error) throw error;
+        if (!data) throw new Error('El servidor no confirmó el cumplimiento');
         setIsCumplida(true);
         toast.success('¡Cumplimiento registrado correctamente!');
 

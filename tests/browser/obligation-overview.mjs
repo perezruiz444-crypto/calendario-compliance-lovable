@@ -44,6 +44,21 @@ async function setup(options={}){
    let event=source.eventos.find(e=>e.idempotency_key===body.p_idempotency_key);
    if(!event){event={id:'70000000-0000-4000-8000-000000000001',empresa_id:source.empresa.id,obligacion_id:body.p_obligacion_id,tipo_evento:body.p_tipo_evento,fecha_evento:body.p_fecha_evento,idempotency_key:body.p_idempotency_key};source.eventos.push(event);}return json(event.id);
   }
+  if(url.pathname.includes('/rpc/registrar_cumplimiento_obligacion')){
+   const body=JSON.parse(request.postData());
+   assert.ok(source.obligaciones.some(o=>o.id===body.p_obligacion_id&&o.empresa_id===source.empresa.id&&o.activa));
+   if(body.p_evento_id)assert.ok(source.eventos.some(e=>e.id===body.p_evento_id&&e.obligacion_id===body.p_obligacion_id));
+   if(body.p_ocurrencia_id)assert.ok(source.ocurrencias.some(o=>o.id===body.p_ocurrencia_id&&o.obligacion_id===body.p_obligacion_id&&o.periodo_key===body.p_periodo_key));
+   const old=source.cumplimientos.find(c=>c.obligacion_id===body.p_obligacion_id&&c.periodo_key===body.p_periodo_key&&c.vigente);
+   let row=old;
+   if(!old?.completada){
+    if(old)old.vigente=false;
+    row={id:`completion-${source.cumplimientos.length}`,obligacion_id:body.p_obligacion_id,empresa_id:source.empresa.id,ocurrencia_id:body.p_ocurrencia_id??null,evento_id:body.p_evento_id??null,periodo_key:body.p_periodo_key,completada:true,vigente:true,completada_por:uid,evidencia_url:body.p_evidencia_path??old?.evidencia_url??null,completada_en:'2026-10-15T16:00:00Z'};
+    source.cumplimientos.push(row);if(old)old.reemplazado_por=row.id;
+   }
+   if(state.loseCompletionResponse){state.loseCompletionResponse=false;return json({message:'Respuesta perdida después de guardar'},503);}
+   return json(row.id);
+  }
   if(url.pathname.includes('/rpc/'))return json(null);
   if(table==='obligacion_reglas'&&state.failRules)return json({code:'XX000',message:'Fallo de transporte local'},503);
   if(table==='obligaciones'&&method==='POST'){
@@ -52,6 +67,7 @@ async function setup(options={}){
   }
   if(table==='obligacion_cumplimientos'&&method==='POST'){
    const body=JSON.parse(request.postData());
+   if(source.cumplimientos.some(c=>c.obligacion_id===body.obligacion_id&&c.periodo_key===body.periodo_key&&c.vigente))return json({code:'23505',message:'duplicate key value violates unique constraint obligacion_cumplimientos_vigente_unico'},409);
    assert.equal(body.empresa_id,source.empresa.id);assert.ok(source.obligaciones.some(o=>o.id===body.obligacion_id&&o.empresa_id===source.empresa.id&&o.activa));if(body.evento_id)assert.ok(source.eventos.some(e=>e.id===body.evento_id&&e.obligacion_id===body.obligacion_id));else assert.ok(source.ocurrencias.some(o=>o.id===body.ocurrencia_id&&o.obligacion_id===body.obligacion_id));
    source.cumplimientos.push({...body,id:'completion-fixture',vigente:true,completada_en:'2026-10-14T12:00:00Z'});
    return json(null,201);
@@ -76,6 +92,22 @@ async function setup(options={}){
  return {context,page,state,source,calls};
 }
 try {
+ const corrected=await setup({loseCompletionResponse:true});
+ const target=corrected.source.ocurrencias[0];
+ corrected.source.cumplimientos.push({id:'old-false',empresa_id:corrected.source.empresa.id,obligacion_id:target.obligacion_id,ocurrencia_id:target.id,periodo_key:target.periodo_key,completada:false,vigente:true,evidencia_url:null});
+ await corrected.page.goto('http://127.0.0.1:5179/pendientes');
+ const correctedArticle=corrected.page.locator('article').filter({has:corrected.page.getByRole('heading',{name:'Revisar transmisión de descargos',exact:true})});
+ await correctedArticle.getByRole('button',{name:'Registrar cumplimiento',exact:true}).click();
+ await corrected.page.getByRole('dialog').getByRole('button',{name:'Sin evidencia',exact:true}).click();
+ await corrected.page.getByText('Respuesta perdida después de guardar',{exact:true}).waitFor();
+ assert.equal(corrected.source.cumplimientos.filter(c=>c.obligacion_id===target.obligacion_id).length,2);
+ await corrected.page.getByRole('dialog').getByRole('button',{name:'Sin evidencia',exact:true}).click();
+ await corrected.page.getByRole('dialog').waitFor({state:'hidden'});
+ assert.equal(corrected.source.cumplimientos.filter(c=>c.obligacion_id===target.obligacion_id).length,2);
+ assert.ok(corrected.source.cumplimientos.some(c=>c.id==='old-false'&&!c.vigente&&!c.completada&&c.reemplazado_por));
+ assert.equal(corrected.source.cumplimientos.filter(c=>c.obligacion_id===target.obligacion_id&&c.vigente&&c.completada).length,1);
+ assert.equal(corrected.calls.filter(c=>c.table==='obligacion_cumplimientos'&&c.method==='POST').length,0);
+ await corrected.context.close();
  for(const account of [{role:'cliente'},{role:'administrador'},{role:'administrador',simulatedRole:'cliente'}]){
   const own=await setup(account);
   own.source.asignaciones=[];
