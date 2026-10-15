@@ -67,8 +67,13 @@ npm run test:obligations:sql usa exclusivamente PostgreSQL aislado en
 Inicializar una instancia vacía con supabase/tests/obligation-block-a-bootstrap.sql;
 es un contrato mínimo sintético y nunca debe ejecutarse en una base real.
 El runner comprueba identidad local y datos ficticios, reaplica la migración
-base y ejecuta ocho contratos con rollback. Incluye acceso a evidencia,
+base y ejecuta nueve contratos con rollback. Incluye acceso a evidencia,
 asignación directa, idempotencia y separación de usuarios en avisos.
 
 La función de resumen se comprueba con Deno sin invocar el envío real.
 Los resultados y respaldos con datos de clientes se conservan fuera de Git.
+
+El guardado de cumplimiento usa registrar_cumplimiento_obligacion: reemplaza
+el estado vigente mediante otra versión, conserva evidencia/historial y no
+duplica en reintentos. Una prueba adicional usa dos sesiones PostgreSQL locales
+concurrentes. Los archivos ya subidos se reutilizan al reintentar el guardado.

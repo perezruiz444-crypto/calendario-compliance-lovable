@@ -22,5 +22,7 @@ sql('../supabase/migrations/20261015145256_obligation_evidence_access.sql');
 sql('../supabase/migrations/20261015145259_obligation_notifications.sql');
 sql('../supabase/migrations/20261015145619_obligation_notification_type_contract.sql');
 sql('../supabase/migrations/20261015153244_obligation_company_completion_access.sql');
-for(const file of ['obligation-block-a.sql','obligation-events.sql','obligation-rules.sql','obligation-direct-assignment.sql','obligation-storage.sql','obligation-generator.sql','obligation-notifications.sql','obligation-company-access.sql'])sql(`../supabase/tests/${file}`);
+sql('../supabase/migrations/20261015160130_obligation_completion_recording.sql');
+for(const file of ['obligation-block-a.sql','obligation-events.sql','obligation-rules.sql','obligation-direct-assignment.sql','obligation-storage.sql','obligation-generator.sql','obligation-notifications.sql','obligation-company-access.sql','obligation-completion-recording.sql'])sql(`../supabase/tests/${file}`);
+execFileSync(process.execPath,[fileURLToPath(new URL('./test-obligation-concurrency.mjs',import.meta.url))],{env:{...env,PSQL_BINARY:binary},stdio:'inherit'});
 console.log('PASS: contrato PostgreSQL local e idempotencia. No acredita Supabase Auth/Storage ni replay del esquema completo.');
