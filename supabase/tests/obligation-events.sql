@@ -11,9 +11,10 @@ DO $$ BEGIN
   PERFORM public.registrar_revision_obligacion('40000000-0000-4000-8000-000000000001','no_aplica',NULL,NULL,NULL);
   RAISE EXCEPTION 'No aplica sin motivo permitido';
  EXCEPTION WHEN check_violation THEN NULL; END;
+ PERFORM public.registrar_evento_obligacion('40000000-0000-4000-8000-000000000002','cambio','2026-10-14','una-clave',NULL);
  BEGIN
-  PERFORM public.registrar_evento_obligacion('40000000-0000-4000-8000-000000000002','cambio','2026-10-14','una-clave',NULL);
-  RAISE EXCEPTION 'Cliente sin asignación registra evento';
+  PERFORM public.registrar_evento_obligacion('40000000-0000-4000-8000-000000000003','cambio','2026-10-14','ajena',NULL);
+  RAISE EXCEPTION 'Cliente registra evento en otra empresa';
  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
 END $$;
 RESET ROLE;

@@ -23,8 +23,9 @@ El administrador puede cambiar la clasificación operativa mediante una nueva
 versión. Esto no valida una norma ni modifica las fechas históricas.
 Se preservan las asignaciones directas y las de la tabla de responsables.
 Las escrituras se validan en servidor con la sesión del usuario; nunca
-se usa service role en el navegador. Los clientes responsables pueden subir
-evidencia solo dentro de su obligación autorizada.
+se usa service role en el navegador. Los clientes pueden registrar cumplimientos y subir evidencia en cualquier
+obligación activa de su empresa, aunque no tengan una asignación individual.
+Administradores conservan todas las empresas y consultores sus empresas asignadas.
 
 ## Adopción y límites
 
@@ -44,7 +45,7 @@ las migraciones ni el resumen diario desplegado.
 ## Orden de publicación
 
 1. Respaldar tablas y contrato actual; comprobar permisos y coincidencias del catálogo.
-2. Aplicar únicamente las siete migraciones nuevas, en orden de nombre.
+2. Aplicar únicamente las migraciones nuevas, en orden de nombre.
 3. Verificar conservación del historial, permisos y clasificación adoptada.
 4. Integrar el PR con CI correcto. El workflow de main despliega las funciones
    de Supabase con su configuración existente; comprobar su resultado.
@@ -66,7 +67,7 @@ npm run test:obligations:sql usa exclusivamente PostgreSQL aislado en
 Inicializar una instancia vacía con supabase/tests/obligation-block-a-bootstrap.sql;
 es un contrato mínimo sintético y nunca debe ejecutarse en una base real.
 El runner comprueba identidad local y datos ficticios, reaplica la migración
-base y ejecuta siete contratos con rollback. Incluye acceso a evidencia,
+base y ejecuta ocho contratos con rollback. Incluye acceso a evidencia,
 asignación directa, idempotencia y separación de usuarios en avisos.
 
 La función de resumen se comprueba con Deno sin invocar el envío real.

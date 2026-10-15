@@ -15,10 +15,11 @@ async function setup(options={}){
  const user={id:uid,email:'cliente@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{nombre_completo:'Ana ficticia'},created_at:'2026-10-14T12:00:00Z'};
  const payload={sub:uid,role:'authenticated',exp:Math.floor(Date.now()/1000)+3600};
  const token=[Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),Buffer.from(JSON.stringify(payload)).toString('base64url'),'fixture-no-signature'].join('.');
- await context.addInitScript(({token,user,empresaId})=>{
+ await context.addInitScript(({token,user,empresaId,simulatedRole})=>{
+  if(simulatedRole)sessionStorage.setItem('simulated_role',simulatedRole);
   if(empresaId)localStorage.setItem('selectedEmpresaId',empresaId);
   localStorage.setItem('sb-127-auth-token',JSON.stringify({access_token:token,refresh_token:'fixture',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer',user}));
- },{token,user,empresaId:state.role==='administrador'?source.empresa.id:null});
+ },{token,user,empresaId:state.role==='administrador'?source.empresa.id:null,simulatedRole:state.simulatedRole});
  await context.route('**/*',async route=>{
   const request=route.request();const url=new URL(request.url());
   if(url.hostname!=='127.0.0.1'){if(url.hostname.endsWith('supabase.co'))throw new Error('Intento de acceso remoto');return route.abort();}
@@ -33,13 +34,13 @@ async function setup(options={}){
   if(url.pathname.includes('/rpc/registrar_revision_obligacion')){
    const body=JSON.parse(request.postData());
    if(state.failTracking)return json({message:'No se guardó la revisión'},503);
-   assert.ok(source.asignaciones.includes(body.p_obligacion_id));
+   assert.ok(source.obligaciones.some(o=>o.id===body.p_obligacion_id&&o.empresa_id===source.empresa.id&&o.activa));
    source.revisiones.push({id:'review-new',empresa_id:source.empresa.id,obligacion_id:body.p_obligacion_id,resultado:body.p_resultado,revisada_en:'2026-10-15T14:00:00Z',revisada_por:uid,evidencia_path:body.p_evidencia_path??null,notas:body.p_notas??null,proxima_revision:body.p_proxima_revision??null});return json('review-new');
   }
   if(url.pathname.includes('/rpc/registrar_evento_obligacion')){
    const body=JSON.parse(request.postData());
    if(state.failTracking)return json({message:'No se guardó el evento'},503);
-   assert.ok(source.asignaciones.includes(body.p_obligacion_id));
+   assert.ok(source.obligaciones.some(o=>o.id===body.p_obligacion_id&&o.empresa_id===source.empresa.id&&o.activa));
    let event=source.eventos.find(e=>e.idempotency_key===body.p_idempotency_key);
    if(!event){event={id:'70000000-0000-4000-8000-000000000001',empresa_id:source.empresa.id,obligacion_id:body.p_obligacion_id,tipo_evento:body.p_tipo_evento,fecha_evento:body.p_fecha_evento,idempotency_key:body.p_idempotency_key};source.eventos.push(event);}return json(event.id);
   }
@@ -51,7 +52,7 @@ async function setup(options={}){
   }
   if(table==='obligacion_cumplimientos'&&method==='POST'){
    const body=JSON.parse(request.postData());
-   assert.equal(body.empresa_id,source.empresa.id);assert.ok(source.asignaciones.includes(body.obligacion_id));if(body.evento_id)assert.ok(source.eventos.some(e=>e.id===body.evento_id&&e.obligacion_id===body.obligacion_id));else assert.ok(source.ocurrencias.some(o=>o.id===body.ocurrencia_id&&o.obligacion_id===body.obligacion_id));
+   assert.equal(body.empresa_id,source.empresa.id);assert.ok(source.obligaciones.some(o=>o.id===body.obligacion_id&&o.empresa_id===source.empresa.id&&o.activa));if(body.evento_id)assert.ok(source.eventos.some(e=>e.id===body.evento_id&&e.obligacion_id===body.obligacion_id));else assert.ok(source.ocurrencias.some(o=>o.id===body.ocurrencia_id&&o.obligacion_id===body.obligacion_id));
    source.cumplimientos.push({...body,id:'completion-fixture',vigente:true,completada_en:'2026-10-14T12:00:00Z'});
    return json(null,201);
   }
@@ -75,13 +76,32 @@ async function setup(options={}){
  return {context,page,state,source,calls};
 }
 try {
+ for(const account of [{role:'cliente'},{role:'administrador'},{role:'administrador',simulatedRole:'cliente'}]){
+  const own=await setup(account);
+  own.source.asignaciones=[];
+  own.source.obligaciones.forEach(o=>{o.responsable_id=null;o.responsable_tipo=null;});
+  own.source.ocurrencias[0].periodo_key='2026-08';
+  own.source.ocurrencias[0].fecha_vencimiento='2026-08-17';
+  await own.page.goto('http://127.0.0.1:5179/pendientes');
+  const article=own.page.locator('article').filter({has:own.page.getByRole('heading',{name:'Revisar transmisión de descargos',exact:true})});
+  await article.getByRole('button',{name:'Registrar cumplimiento',exact:true}).waitFor();
+  await article.getByRole('button',{name:'Registrar cumplimiento',exact:true}).click();
+  await own.page.getByRole('dialog').getByRole('button',{name:'Sin evidencia',exact:true}).click();
+  await own.page.getByRole('dialog').waitFor({state:'hidden'});
+  assert.equal(own.source.cumplimientos.at(-1).periodo_key,'2026-08');
+  assert.equal(own.source.cumplimientos.at(-1).ocurrencia_id,own.source.ocurrencias[0].id);
+  assert.equal(own.source.cumplimientos.filter(c=>c.periodo_key==='2026-10').length,0);
+  await own.page.getByRole('tab',{name:'Condiciones',exact:true}).click();
+  await own.page.getByRole('button',{name:'Registrar revisión',exact:true}).first().waitFor();
+  await own.context.close();
+ }
  const app=await setup();
  await app.page.goto('http://127.0.0.1:5179/pendientes');
  await app.page.getByRole('heading',{name:'Obligaciones',exact:true}).waitFor({timeout:12000});
  assert.equal(await app.page.getByRole('navigation',{name:'Herramientas secundarias'}).count(),1);
  app.state.deny=true;
  await app.page.getByRole('button',{name:'Registrar cumplimiento',exact:true}).first().click();
- await app.page.getByText('Esta obligación no está asignada a ti',{exact:true}).waitFor();
+ await app.page.getByText('No tienes permiso para registrar en esta empresa',{exact:true}).waitFor();
  assert.equal(await app.page.getByRole('dialog').count(),0);
  app.state.deny=false;
  await app.page.getByRole('button',{name:'Registrar cumplimiento',exact:true}).first().click();
