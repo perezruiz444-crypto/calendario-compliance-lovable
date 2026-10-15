@@ -11,6 +11,7 @@ import SetPassword from "./pages/SetPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
+const Pendientes = lazy(() => import("./pages/Pendientes"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Empresas = lazy(() => import("./pages/Empresas"));
 const EmpresaDetail = lazy(() => import("./pages/EmpresaDetail"));
@@ -55,6 +56,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/set-password" element={<SetPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/pendientes" element={<Pendientes />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/empresas" element={<Empresas />} />
                 <Route path="/empresas/:id" element={<EmpresaDetail />} />

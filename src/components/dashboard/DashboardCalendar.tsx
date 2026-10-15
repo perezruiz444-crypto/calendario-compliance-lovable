@@ -1,3 +1,8 @@
+import { useNavigate } from 'react-router-dom';
+import { includeObligationAction,selectObligationType,latestScheduledReviews } from '../../../supabase/functions/_shared/obligationPresentation';
+import { obligationOverviewClient } from '@/hooks/useObligationOverview';
+import { loadAllPages } from '@/lib/pagination';
+import { obligationsV2Enabled } from '@/lib/obligationFeature';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -111,6 +116,7 @@ function EventContent({ eventInfo }: { eventInfo: EventContentArg }) {
 
 export default function DashboardCalendar({ onEventClick, height = '580px', filterEmpresaId }: DashboardCalendarProps) {
   const { user, role } = useAuth();
+  const navigate=useNavigate();
   const calRef = useRef<FullCalendar>(null);
   const [events, setEvents] = useState<FcEvent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -143,10 +149,11 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       .then(({ data }) => setEmpresas(data || []));
   }, []);
 
+  const [fetchError,setFetchError]=useState(false);
   const fetchEvents = useCallback(async (start: Date, end: Date) => {
     if (!user) return;
-    setLoading(true);
-
+    setLoading(true);setFetchError(false);
+    try {
     const startStr = format(start, 'yyyy-MM-dd');
     const endStr   = format(end,   'yyyy-MM-dd');
     const allEvents: FcEvent[] = [];
@@ -155,31 +162,37 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     // Fase 2: el timeline se alimenta de OCURRENCIAS reales (fecha_vencimiento vive
     // aquí, no en la obligación-semilla). El estado "cumplida" viene del cumplimiento
     // vigente de la ocurrencia.
-    let obsQuery = supabase
+    let obsQuery = obligationOverviewClient
       .from('obligacion_ocurrencias')
-      .select('id, obligacion_id, empresa_id, periodo_key, fecha_vencimiento, estado, obligaciones(nombre, categoria, catalogo_id), empresas(razon_social)')
+      .select('id, obligacion_id, empresa_id, periodo_key, fecha_vencimiento, estado, origen_fecha, evento_id, obligaciones!inner(id, nombre, categoria, catalogo_id, activa), empresas(razon_social)')
+      .eq('obligaciones.activa',true)
       .gte('fecha_vencimiento', startStr)
       .lte('fecha_vencimiento', endStr);
     if (filterEmpresaId && filterEmpresaId !== 'all') {
       obsQuery = obsQuery.eq('empresa_id', filterEmpresaId);
     }
-    const { data: obs } = await obsQuery;
+    const { data: obs,error:obsError } = await obsQuery;
+    if(obsError)throw obsError;
+    const rules=obligationsV2Enabled?await loadAllPages((offset,size)=>obligationOverviewClient.from('obligacion_reglas').select('*').order('id').range(offset,offset+size-1)):[];
 
     // Cumplimientos vigentes de esas ocurrencias -> set de ocurrencias cumplidas.
     const ocIds = (obs || []).map((o) => o.id);
     let cumplidasSet = new Set<string>();
     if (ocIds.length > 0) {
-      const { data: cData } = await supabase
+      const { data: cData,error:completionsError } = await supabase
         .from('obligacion_cumplimientos')
         .select('ocurrencia_id, completada, vigente')
         .in('ocurrencia_id', ocIds);
+      if(completionsError)throw completionsError;
       cumplidasSet = ocurrenciasCumplidas(cData);
     }
 
     (obs || []).forEach((ob) => {
       if (!ob.fecha_vencimiento) return;
+      const tipo=selectObligationType(rules,{id:ob.obligacion_id,catalogo_id:ob.obligaciones?.catalogo_id??null});
+      if(obligationsV2Enabled&&!includeObligationAction(tipo,ob.origen_fecha,ob.evento_id))return;
       const d = new Date(ob.fecha_vencimiento + 'T12:00:00');
-      const isDone = cumplidasSet.has(ob.id) || ob.estado === 'cumplida';
+      const isDone = cumplidasSet.has(ob.id) || (!obligationsV2Enabled&&ob.estado==='cumplida');
       const overdue = !isDone && d < today;
       const nombre = ob.obligaciones?.nombre ?? 'Obligación';
       const { bg, border } = eventColor('obligacion', undefined, overdue, isDone);
@@ -195,6 +208,24 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       });
     });
 
+    if(obligationsV2Enabled){
+      const reviews=await loadAllPages((offset,size)=>{
+        let query=obligationOverviewClient.from('obligacion_revisiones').select('*').order('id').range(offset,offset+size-1);
+        if(filterEmpresaId&&filterEmpresaId!=='all')query=query.eq('empresa_id',filterEmpresaId);
+        return query;
+      });
+      const parents=await loadAllPages((offset,size)=>{
+        let query=supabase.from('obligaciones').select('id,nombre,catalogo_id,empresa_id').eq('activa',true).order('id').range(offset,offset+size-1);
+        if(filterEmpresaId&&filterEmpresaId!=='all')query=query.eq('empresa_id',filterEmpresaId);
+        return query;
+      });
+      for(const review of latestScheduledReviews(reviews)){
+        const ob=parents.find(o=>o.id===review.obligacion_id);
+        if(!ob||selectObligationType(rules,ob)!=='condicion'||!review.proxima_revision||review.proxima_revision<startStr||review.proxima_revision>endStr)continue;
+        const colors=eventColor('obligacion',undefined,review.proxima_revision<format(today,'yyyy-MM-dd'));
+        allEvents.push({id:`revision-${review.id}`,title:`Revisión interna: ${ob.nombre}`,start:review.proxima_revision,backgroundColor:colors.bg,borderColor:colors.border,textColor:'hsl(var(--foreground))',extendedProps:{type:'obligacion',rawId:ob.id,empresaId:ob.empresa_id}});
+      }
+    }
     let tareasQuery = supabase
       .from('tareas')
       .select('id, titulo, prioridad, estado, fecha_vencimiento, empresa_id, empresas(razon_social)')
@@ -204,7 +235,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     if (filterEmpresaId && filterEmpresaId !== 'all') {
       tareasQuery = tareasQuery.eq('empresa_id', filterEmpresaId);
     }
-    const { data: tareas } = await tareasQuery;
+    const { data: tareas,error:tareasError } = await tareasQuery;if(tareasError)throw tareasError;
 
     (tareas || []).forEach(t => {
       if (!t.fecha_vencimiento) return;
@@ -231,7 +262,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     if (filterEmpresaId && filterEmpresaId !== 'all') {
       docsQuery = docsQuery.eq('empresa_id', filterEmpresaId);
     }
-    const { data: docs } = await docsQuery;
+    const { data: docs,error:docsError } = await docsQuery;if(docsError)throw docsError;
 
     (docs || []).forEach(doc => {
       if (!doc.fecha_vencimiento) return;
@@ -248,7 +279,8 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     });
 
     setEvents(allEvents);
-    setLoading(false);
+    } catch {setEvents([]);setFetchError(true);}
+    finally {setLoading(false);}
   }, [user, filterEmpresaId]);
 
   // Eventos visibles según chips de tipo
@@ -274,6 +306,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
   const handleEventClick = useCallback((arg: EventClickArg) => {
     const extendedProps = arg.event.extendedProps as FcEvent['extendedProps'];
     if (extendedProps.type === 'obligacion' && extendedProps.rawId) {
+      if(obligationsV2Enabled){navigate(role==='cliente'?'/pendientes':`/empresas/${extendedProps.empresaId}`);return;}
       setSelectedObId(extendedProps.rawId);
       setSelectedOcurrenciaId(extendedProps.ocurrenciaId ?? null);
       setSheetOpen(true);
@@ -284,12 +317,13 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     } else {
       toast.info(arg.event.title, { description: `${extendedProps.type} · ${arg.event.start?.toLocaleDateString('es-MX')}` });
     }
-  }, [onEventClick]);
+  }, [onEventClick,navigate,role]);
 
   if (!user) return null;
 
   return (
     <>
+      {fetchError&&<p role="alert" className="text-sm text-destructive p-3">No pudimos cargar la agenda. Recarga para reintentar; no es una agenda vacía.</p>}
       <Card className="shadow-card">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -341,7 +375,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
               ref={calRef}
               plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
               locale={esLocale}
-              initialView="dayGridMonth"
+              initialView={obligationsV2Enabled?"listMonth":"dayGridMonth"}
               headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth,listYear' }}
               buttonText={{ today: 'Hoy', month: 'Mes', listMonth: 'Agenda', listYear: 'Próximos' }}
               views={{

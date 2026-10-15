@@ -4,6 +4,8 @@ import { useAuth } from './useAuth';
 import { usePushNotifications } from './usePushNotifications';
 import { differenceInDays, isValid } from 'date-fns';
 import { logger } from '@/lib/logger';
+import { obligationOverviewClient } from '@/hooks/useObligationOverview';
+import { obligationsV2Enabled } from '@/lib/obligationFeature';
 
 export interface Notification {
   id: string;
@@ -129,7 +131,10 @@ export function useNotifications() {
     }
 
     fetchNotifications();
-    insertVencimientoAlerts(user.id);
+    if (obligationsV2Enabled) {
+      // El servidor deriva identidad, permisos y claves únicas; el navegador no elige destinatarios.
+      void obligationOverviewClient.rpc('generar_mis_avisos_obligaciones',{}).then(({error})=>{if(error)logger.error('No se pudieron actualizar los avisos',error);else void fetchNotifications();});
+    } else insertVencimientoAlerts(user.id);
 
     const channel = supabase
       .channel('notificaciones-changes')
@@ -203,7 +208,7 @@ function getNotificationUrl(notification: Notification): string {
     case 'mensaje':    return `/mensajes?mensaje=${referencia_id}`;
     case 'solicitud':  return `/dashboard?solicitud=${referencia_id}`;
     case 'empresa':    return `/empresas/${referencia_id}`;
-    case 'obligacion': return `/empresas`;
+    case 'obligacion': return obligationsV2Enabled ? '/pendientes' : '/empresas';
     default:           return '/dashboard';
   }
 }

@@ -1,3 +1,6 @@
+import { obligationsV2Enabled } from '@/lib/obligationFeature';
+import { ConnectedObligacionesOverview } from '@/components/obligaciones/ConnectedObligacionesOverview';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useEmpresaDetailData } from '@/hooks/useEmpresaDetailData';
 import { useInlineEdit } from '@/hooks/useInlineEdit';
@@ -138,6 +141,7 @@ export default function EmpresaDetail() {
   const { id } = useParams();
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState("obligaciones");
   const [consultoresDialogOpen, setConsultoresDialogOpen] = useState(false);
@@ -550,10 +554,12 @@ export default function EmpresaDetail() {
 
           <TabsContent value="obligaciones" className="space-y-5">
             <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
-              <EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} refreshTrigger={obligRefreshKey} />
-              <EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} />
+              <>{obligationsV2Enabled ? <ConnectedObligacionesOverview key={id} empresaId={id!} /> : <><EmpresaObligacionesActivasCard empresaId={id!} canEdit={canEdit} refreshTrigger={obligRefreshKey} /><EmpresaObligacionesCard empresa={empresa} canEdit={canEdit} onUpdate={fetchEmpresaData} /></>}</>
               <div id="catalogo-activacion-section">
-                <CatalogoActivacionSection empresaId={id!} canEdit={canEdit} onActivated={() => setObligRefreshKey(k => k + 1)} />
+                <CatalogoActivacionSection empresaId={id!} canEdit={canEdit} onActivated={() => {
+                  setObligRefreshKey(k => k + 1);
+                  if (obligationsV2Enabled) void queryClient.invalidateQueries({ queryKey: ['obligation-overview'], predicate: query => query.queryKey[3] === id });
+                }} />
               </div>
               <ObligacionesManager empresaId={id!} canEdit={canEdit} />
             </Suspense>

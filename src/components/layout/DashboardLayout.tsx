@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { EmpresaSelectorDropdown } from '@/components/empresas/EmpresaSelectorDropdown';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/brand/Logo';
+import { obligationsV2Enabled } from '@/lib/obligationFeature';
 import type { UserRole } from '@/types';
 
 interface DashboardLayoutProps {
@@ -74,7 +75,9 @@ function SidebarContent({
   actualRole, simulatedRole, setSimulatedRole,
   onReopenTour,
 }: SidebarProps) {
-  const filteredNav = navItems.filter(item => role && item.roles.includes(role));
+  const filteredNav = obligationsV2Enabled && role === 'cliente'
+    ? [{ icon: CheckSquare, label: 'Pendientes', path: '/pendientes', roles: ['cliente'] }, ...navItems.filter(item => item.path === '/mi-empresa')]
+    : navItems.filter(item => role && item.roles.includes(role));
   const initials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
@@ -146,6 +149,10 @@ function SidebarContent({
           );
         })}
       </nav>
+
+      {obligationsV2Enabled && role === 'cliente' && <nav aria-label="Herramientas secundarias" className="px-3 py-2 border-t border-sidebar-border space-y-1">
+        {navItems.filter(item => ['/calendario','/ayuda','/configuraciones'].includes(item.path)).map(item => <Button key={item.path} variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground" onClick={() => onNavigate(item.path)}><item.icon className="h-4 w-4 mr-2" />{item.label}</Button>)}
+      </nav>}
 
       {/* User footer */}
       <div className="px-3 py-3 border-t border-sidebar-border/40 mt-auto">

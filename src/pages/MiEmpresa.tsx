@@ -1,3 +1,5 @@
+import { obligationsV2Enabled } from '@/lib/obligationFeature';
+import { ConnectedObligacionesOverview } from '@/components/obligaciones/ConnectedObligacionesOverview';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -306,7 +308,7 @@ export default function MiEmpresa() {
           </div>
           
           {/* KPI Strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10 border-t border-white/10 bg-black/10">
+          {!obligationsV2Enabled && <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10 border-t border-white/10 bg-black/10">
             <div className="p-4 flex flex-col items-center justify-center">
               <span className="text-3xl font-heading font-bold">{completadas}</span>
               <span className="text-xs text-white/70 uppercase tracking-wider font-medium mt-1">Completadas</span>
@@ -324,8 +326,10 @@ export default function MiEmpresa() {
               <span className="text-xs text-white/70 uppercase tracking-wider font-medium mt-1">Tareas</span>
             </div>
           </div>
+          }
         </div>
 
+        {!obligationsV2Enabled && <>
         {/* Command Center Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* LEFT: Score & Programs */}
@@ -502,6 +506,8 @@ export default function MiEmpresa() {
           </div>
         </div>
 
+        </>}
+
         {/* Tabs - 4 Tabs */}
         <Tabs defaultValue="obligaciones" className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto p-1">
@@ -513,6 +519,7 @@ export default function MiEmpresa() {
 
           {/* Obligaciones Tab */}
           <TabsContent value="obligaciones" className="space-y-4">
+            {obligationsV2Enabled ? <ConnectedObligacionesOverview key={empresa.id} empresaId={empresa.id} /> : <>
             <Card className="shadow-card">
               <CardContent className="pt-4 pb-4">
                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -555,11 +562,11 @@ export default function MiEmpresa() {
                       <SelectItem value="mias">Solo asignadas a mí</SelectItem>
                     </SelectContent>
                   </Select>
-                  <ExportarCumplimientoButton
+                  {!obligationsV2Enabled && <ExportarCumplimientoButton
                     obligaciones={obligaciones}
                     cumplimientos={cumplimientos}
                     empresaNombre={empresa.razon_social}
-                  />
+                  />}
                 </div>
               </CardContent>
             </Card>
@@ -668,6 +675,7 @@ export default function MiEmpresa() {
                 })()}
               </CardContent>
             </Card>
+            </>}
           </TabsContent>
 
           {/* Documentos Tab */}

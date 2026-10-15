@@ -1,3 +1,4 @@
+import { obligationsV2Enabled } from '@/lib/obligationFeature';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, authReady } = useAuth();
+  const { user, authReady, role } = useAuth();
 
   useEffect(() => {
     if (!authReady) return;
@@ -21,11 +22,11 @@ const Index = () => {
     }
 
     if (user) {
-      navigate('/dashboard');
+      navigate(obligationsV2Enabled && role === 'cliente' ? '/pendientes' : '/dashboard');
     } else {
       navigate('/auth');
     }
-  }, [user, authReady, navigate]);
+  }, [user, authReady, role, navigate]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {

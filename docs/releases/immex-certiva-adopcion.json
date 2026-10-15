@@ -1,0 +1,471 @@
+[
+  {
+    "catalogo_id": "9e088c03-803f-4625-876a-e4d1d1b1f9b1",
+    "programa": "cert_iva_ieps",
+    "nombre": "Anexo 30 / Descargos",
+    "tipo_propuesto": "Mixta: control permanente y plazos",
+    "tipo_control": null
+  },
+  {
+    "catalogo_id": "10fd55c6-9ce8-4fc3-aa6e-d534d80b17af",
+    "programa": "cert_iva_ieps",
+    "nombre": "Avisos cambios inmueble",
+    "tipo_propuesto": "Por evento / supuesto",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "2acbd72b-8f35-499b-942b-9fd0504965dd",
+    "programa": "cert_iva_ieps",
+    "nombre": "Contratos",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "1178f45c-1ed4-441b-a9df-1dcd1901f924",
+    "programa": "cert_iva_ieps",
+    "nombre": "Cumplimiento previo",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "92cbb8be-aabf-4145-9b7d-f1703bc31c71",
+    "programa": "cert_iva_ieps",
+    "nombre": "Declaración Mensual IVA/IEPS (Certificación)",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "c7dd70b4-9732-4431-a7af-644236744058",
+    "programa": "cert_iva_ieps",
+    "nombre": "Fusión (Descargos)",
+    "tipo_propuesto": "Por evento / supuesto",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "e97001de-b67c-42ef-8909-ddb28c43149f",
+    "programa": "cert_iva_ieps",
+    "nombre": "Fusión o escisión",
+    "tipo_propuesto": "Por evento / supuesto",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "3eaced4a-3957-4ce7-87cf-846c4bbf300c",
+    "programa": "cert_iva_ieps",
+    "nombre": "IMMEX",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "95fefae0-5769-4aae-a201-f58475a9c74c",
+    "programa": "cert_iva_ieps",
+    "nombre": "Importar mercancías adicionales",
+    "tipo_propuesto": "Por evento / supuesto",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "bf931771-16ce-4aec-bbb1-38b39606d5a6",
+    "programa": "cert_iva_ieps",
+    "nombre": "Infraestructura",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "110cb81e-8b41-46f0-bf17-c1d7209e79b6",
+    "programa": "cert_iva_ieps",
+    "nombre": "Inversión",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "b1006cb8-a455-4b8a-a4fd-34c897dc897b",
+    "programa": "cert_iva_ieps",
+    "nombre": "Obligaciones Certificación",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "b42b5748-1b37-47d0-8f26-0661241ca7a2",
+    "programa": "cert_iva_ieps",
+    "nombre": "Procesos",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "3121eaaa-0c58-4d08-9d50-dbb1f44f47e0",
+    "programa": "cert_iva_ieps",
+    "nombre": "Proveedores",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "b57bcb72-71bf-4738-860d-fec7f38bd4e4",
+    "programa": "cert_iva_ieps",
+    "nombre": "Renovación",
+    "tipo_propuesto": "Vigencia / renovación",
+    "tipo_control": "vigencia"
+  },
+  {
+    "catalogo_id": "b34c4595-d4eb-420f-a327-f73d640cb5ff",
+    "programa": "cert_iva_ieps",
+    "nombre": "Reportes mensuales",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "4c17ffd9-f376-4580-8536-65f2e3f5d1da",
+    "programa": "cert_iva_ieps",
+    "nombre": "Requisitos Generales",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "82abad4f-5239-4414-8402-a2a3b7ae0c3a",
+    "programa": "cert_iva_ieps",
+    "nombre": "Requisitos Permanentes",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "849250a5-af43-441f-85ec-c96ba435ce95",
+    "programa": "cert_iva_ieps",
+    "nombre": "Retorno mercancías (A)",
+    "tipo_propuesto": "Condición de mantenimiento / indicador",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "22f6e963-9090-41f3-a4dd-72f7a0494ff0",
+    "programa": "cert_iva_ieps",
+    "nombre": "Retorno mercancías (B)",
+    "tipo_propuesto": "Condición de mantenimiento / indicador",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "9b521e24-fc60-4613-a7cf-1314eee0135c",
+    "programa": "cert_iva_ieps",
+    "nombre": "Sensibles (Anexo II/28)",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "50f2e961-cc3e-49fc-844d-1ea37f7ef13f",
+    "programa": "cert_iva_ieps",
+    "nombre": "Solicitud",
+    "tipo_propuesto": "Hito de alta / solicitud",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "8f6bf26e-97d6-4e77-b5dd-f7611ae99297",
+    "programa": "cert_iva_ieps",
+    "nombre": "Trabajadores",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "35a957ad-b72b-4916-ae5b-574a093cde9f",
+    "programa": "cert_iva_ieps",
+    "nombre": "Declaración mensual de IVA",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "775a46cc-0dca-4f94-9cc8-5e04402d34b1",
+    "programa": "cert_iva_ieps",
+    "nombre": "DIOT — Declaración Informativa de Operaciones con Terceros",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "8b3502e4-25a8-46e0-a978-ff55b2b67f10",
+    "programa": "cert_iva_ieps",
+    "nombre": "Contabilidad electrónica al Portal SAT",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "3f6d2c99-c9f5-4d14-95e2-0f8dc57440d2",
+    "programa": "cert_iva_ieps",
+    "nombre": "Entero de ISR retenido a trabajadores",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "755b738d-a0ae-4759-b27d-484089e2db20",
+    "programa": "cert_iva_ieps",
+    "nombre": "Verificar opinión de cumplimiento positiva (32-D)",
+    "tipo_propuesto": "Revisión / control interno",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "bb12f9ac-38d0-4a4e-a87d-5821959ab42b",
+    "programa": "cert_iva_ieps",
+    "nombre": "Verificar control de inventarios Anexo 24 al corriente",
+    "tipo_propuesto": "Revisión / control interno",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "457a9148-d8a5-4fa1-8cbd-db0301c72b7d",
+    "programa": "cert_iva_ieps",
+    "nombre": "Verificar buzón tributario en estatus Validado",
+    "tipo_propuesto": "Revisión / control interno",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "563cdb91-a23c-4dd1-91fd-6ea6735083b7",
+    "programa": "cert_iva_ieps",
+    "nombre": "Verificar CSD vigentes / no ubicarse en 17-H Bis",
+    "tipo_propuesto": "Revisión / control interno",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "191fffa3-3f0e-472a-8e87-ab3a6934aea5",
+    "programa": "cert_iva_ieps",
+    "nombre": "Verificar no estar en listados 69 / 69-B / 69-B Bis CFF",
+    "tipo_propuesto": "Revisión / control interno",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "92d9b2e4-b2de-419d-9143-5bd0e223a8df",
+    "programa": "cert_iva_ieps",
+    "nombre": "Verificar cuotas obrero-patronales IMSS al corriente",
+    "tipo_propuesto": "Revisión / control interno",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "feef2e3c-6ec2-4203-ab6a-30343ec8fde1",
+    "programa": "cert_iva_ieps",
+    "nombre": "Verificar padrones sin suspensión",
+    "tipo_propuesto": "Revisión / control interno",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "8305a108-7d24-4b75-8cb7-081a093b8017",
+    "programa": "cert_iva_ieps",
+    "nombre": "Verificar e.firma vigente",
+    "tipo_propuesto": "Revisión / control interno",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "aa50b5c7-480e-4b46-8cf9-ac177c78c45c",
+    "programa": "cert_iva_ieps",
+    "nombre": "Verificar socios/accionistas al corriente y no vinculados a cancelados",
+    "tipo_propuesto": "Revisión / control interno",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "a5b1937e-05d5-4b3f-8cb3-333e36e08b2b",
+    "programa": "cert_iva_ieps",
+    "nombre": "Verificar domicilios de CE registrados y localizados",
+    "tipo_propuesto": "Revisión / control interno",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "3d747b69-81a3-45a1-a4e6-c01f6c049fff",
+    "programa": "cert_iva_ieps",
+    "nombre": "Pago anual de derechos art. 40 m) LFD (e5cinco)",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "e81eddae-d839-43a3-b551-b70576fe8f97",
+    "programa": "immex",
+    "nombre": "Ajuste anual inventarios",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "c5009ed1-08af-49b8-86e6-016ed60f14fe",
+    "programa": "immex",
+    "nombre": "Autorización del programa",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "342c61eb-f0dd-4f76-b4e5-60b9ae6761ba",
+    "programa": "immex",
+    "nombre": "Beneficio Maquila/PITEX (Sensibles)",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "bc322a5f-7c14-4fe4-be37-bd3f54b26546",
+    "programa": "immex",
+    "nombre": "Cancelación del programa",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "e90d50d6-87b7-4912-a5b5-ff59683c2a03",
+    "programa": "immex",
+    "nombre": "Constancia de Destrucción de Mermas IMMEX",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "822c0fd7-f0b1-46e7-9ca5-0a9a60114afb",
+    "programa": "immex",
+    "nombre": "Constancia de transferencia (Autopartes)",
+    "tipo_propuesto": "Por evento / operación",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "9af634ae-fe89-4a0c-b682-20372a61df28",
+    "programa": "immex",
+    "nombre": "Control de inventarios",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "8a7b4748-e453-49ed-b13f-716bad58ef99",
+    "programa": "immex",
+    "nombre": "Cumplimiento",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "a4d0d85b-5199-4ea3-b338-16d3048ceff3",
+    "programa": "immex",
+    "nombre": "Destino",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "e0fa8dd7-95d3-4551-a6f8-bf8d2eeff324",
+    "programa": "immex",
+    "nombre": "Destrucción de desperdicios",
+    "tipo_propuesto": "Por evento / supuesto",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "2e809e9a-46ba-4a72-803c-4d7f4becd684",
+    "programa": "immex",
+    "nombre": "Domicilios",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "b98945ff-3ce6-4045-9168-a973c0aa3a15",
+    "programa": "immex",
+    "nombre": "Expedición constancias (Automotriz)",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "6a4f4015-ef50-46ae-b1fa-0bb6b9b011c3",
+    "programa": "immex",
+    "nombre": "INEGI",
+    "tipo_propuesto": "Mixta: separar periodicidad y evento",
+    "tipo_control": null
+  },
+  {
+    "catalogo_id": "ee8be407-58a4-4336-ae2d-c95554cc636b",
+    "programa": "immex",
+    "nombre": "Informe Trimestral de Inventarios IMMEX",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "bff36747-58ff-469e-be7a-f7a236e3a64b",
+    "programa": "immex",
+    "nombre": "Notificar a la Secretaría",
+    "tipo_propuesto": "Por evento / supuesto",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "b8b8b653-efdd-4ee1-b1ca-0c6f7a6094c7",
+    "programa": "immex",
+    "nombre": "Obtención del programa",
+    "tipo_propuesto": "Hito de alta / solicitud",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "78cd3d59-7a28-4b4f-9cb9-24322057c6ae",
+    "programa": "immex",
+    "nombre": "Rectificación constancias",
+    "tipo_propuesto": "Por evento / supuesto",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "14a5ec18-f21e-43c2-82f2-c855516f1390",
+    "programa": "immex",
+    "nombre": "Rectificación de claves",
+    "tipo_propuesto": "Por evento / supuesto",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "626e558a-cfd2-4676-b18d-eb98da1c4364",
+    "programa": "immex",
+    "nombre": "Registros Automotriz",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "63261865-5124-49b4-b680-befd7af439f8",
+    "programa": "immex",
+    "nombre": "Registros Autopartes",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "c5c5bbf4-ef75-470e-9e02-ed110f498377",
+    "programa": "immex",
+    "nombre": "Renovación Anual Programa IMMEX",
+    "tipo_propuesto": "Vigencia / renovación",
+    "tipo_control": "vigencia"
+  },
+  {
+    "catalogo_id": "7963ce26-2f23-412d-a5fa-9df4108ff53f",
+    "programa": "immex",
+    "nombre": "Reporte anual",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "d5219690-363c-4584-a47c-3d87b13a72ae",
+    "programa": "immex",
+    "nombre": "Reporte Mensual de Producción IMMEX",
+    "tipo_propuesto": "Por periodo (regla por validar)",
+    "tipo_control": "periodica"
+  },
+  {
+    "catalogo_id": "c306dcca-f363-4284-a865-99266f36b872",
+    "programa": "immex",
+    "nombre": "Retorno material empaque",
+    "tipo_propuesto": "Por evento / supuesto",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "95032345-a232-47ad-ab4f-a911f30ee6ec",
+    "programa": "immex",
+    "nombre": "Sensibles",
+    "tipo_propuesto": "Condición permanente / aplicabilidad",
+    "tipo_control": "condicion"
+  },
+  {
+    "catalogo_id": "dd9a828b-320a-4891-aeae-c4745577c99a",
+    "programa": "immex",
+    "nombre": "Temporalidad de retorno",
+    "tipo_propuesto": "Por evento / operación",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "329a362d-4f02-40d5-8003-0bd091d0158a",
+    "programa": "immex",
+    "nombre": "Traslado a submanufactureros",
+    "tipo_propuesto": "Por evento / supuesto",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "6cbfef71-f761-4432-8a56-7627769e6b7e",
+    "programa": "immex",
+    "nombre": "Trato arancelario preferencial (Cambio Régimen)",
+    "tipo_propuesto": "Por evento / supuesto",
+    "tipo_control": "evento"
+  },
+  {
+    "catalogo_id": "d33046d2-e306-4d4b-8a50-cbb5bf88897a",
+    "programa": "immex",
+    "nombre": "Ventas anuales",
+    "tipo_propuesto": "Condición de mantenimiento / indicador",
+    "tipo_control": "condicion"
+  }
+]

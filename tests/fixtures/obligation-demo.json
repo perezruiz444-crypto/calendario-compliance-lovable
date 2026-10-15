@@ -1,0 +1,34 @@
+{
+  "empresa": {"id":"20000000-0000-4000-8000-000000000001","razon_social":"Empresa de ejemplo","cert_iva_ieps_rubro":"A","cert_iva_ieps_oficio":"OFICIO-EJEMPLO","cert_iva_ieps_fecha_vencimiento":"2026-12-15","cert_iva_ieps_fecha_renovar":"2026-11-10"},
+  "obligaciones": [
+    {"id":"40000000-0000-4000-8000-000000000001","empresa_id":"20000000-0000-4000-8000-000000000001","catalogo_id":"30000000-0000-4000-8000-000000000001","nombre":"Revisar transmisión de descargos","categoria":"cert_iva_ieps","descripcion":"Revisión de las transmisiones y sus resultados por operación. El límite normativo se valida por separado.","presentacion":"Mensual","activa":true,"responsable_id":"10000000-0000-4000-8000-000000000002","responsable_tipo":"cliente"},
+    {"id":"40000000-0000-4000-8000-000000000002","empresa_id":"20000000-0000-4000-8000-000000000001","catalogo_id":"30000000-0000-4000-8000-000000000002","nombre":"Control de inventarios Anexo 24","categoria":"immex","descripcion":"Control continuo del inventario. Su revisión no es una presentación mensual a la autoridad.","presentacion":"En todo momento","activa":true,"responsable_id":"10000000-0000-4000-8000-000000000002","responsable_tipo":"cliente"},
+    {"id":"40000000-0000-4000-8000-000000000003","empresa_id":"20000000-0000-4000-8000-000000000001","catalogo_id":"30000000-0000-4000-8000-000000000003","nombre":"Cambio en documento del inmueble","categoria":"cert_iva_ieps","descripcion":"El aviso se activa al ocurrir un cambio en el documento de uso o goce del inmueble.","presentacion":"Por evento","activa":true,"responsable_id":null,"responsable_tipo":null},
+    {"id":"40000000-0000-4000-8000-000000000004","empresa_id":"20000000-0000-4000-8000-000000000001","catalogo_id":"30000000-0000-4000-8000-000000000004","nombre":"Reporte anual IMMEX","categoria":"immex","descripcion":"Reporte del ejercicio. La fecha límite y el objetivo interno se mantienen separados.","presentacion":"Anual","activa":true,"responsable_id":"10000000-0000-4000-8000-000000000002","responsable_tipo":"cliente"},
+    {"id":"40000000-0000-4000-8000-000000000005","empresa_id":"20000000-0000-4000-8000-000000000001","catalogo_id":null,"nombre":"Domicilios registrados y localizados","categoria":"immex","descripcion":"Verificar registro y condición del domicilio mediante soporte actual.","presentacion":"En todo momento","activa":true,"responsable_id":null,"responsable_tipo":null},
+    {"id":"40000000-0000-4000-8000-000000000006","empresa_id":"20000000-0000-4000-8000-000000000001","catalogo_id":null,"nombre":"Riesgo por control de inventarios no conforme","categoria":"immex","descripcion":"Referencia de riesgo ligada al control; no constituye otra tarea por entregar.","presentacion":"En todo momento","activa":true,"responsable_id":null,"responsable_tipo":null}
+  ],
+  "ocurrencias": [
+    {"id":"50000000-0000-4000-8000-000000000001","obligacion_id":"40000000-0000-4000-8000-000000000001","empresa_id":"20000000-0000-4000-8000-000000000001","periodo_key":"2026-09","fecha_vencimiento":"2026-10-16","estado":"pendiente","origen_fecha":"interna"},
+    {"id":"50000000-0000-4000-8000-000000000002","obligacion_id":"40000000-0000-4000-8000-000000000001","empresa_id":"20000000-0000-4000-8000-000000000001","periodo_key":"2026-10","fecha_vencimiento":"2026-11-16","estado":"pendiente","origen_fecha":"interna"},
+    {"id":"50000000-0000-4000-8000-000000000003","obligacion_id":"40000000-0000-4000-8000-000000000002","empresa_id":"20000000-0000-4000-8000-000000000001","periodo_key":"2026","fecha_vencimiento":"2026-01-01","estado":"vencida"},
+    {"id":"50000000-0000-4000-8000-000000000004","obligacion_id":"40000000-0000-4000-8000-000000000004","empresa_id":"20000000-0000-4000-8000-000000000001","periodo_key":"2025","fecha_vencimiento":"2026-05-20","estado":"pendiente"}
+  ],
+  "cumplimientos":[{"obligacion_id":"40000000-0000-4000-8000-000000000004","ocurrencia_id":"50000000-0000-4000-8000-000000000004","empresa_id":"20000000-0000-4000-8000-000000000001","periodo_key":"2025","completada":true,"vigente":true,"evidencia_url":null}],
+  "reglas":[
+    {"id":"r1","catalogo_id":"30000000-0000-4000-8000-000000000001","obligacion_id":null,"version":1,"tipo_control":"periodica","clasificacion_estado":"aprobada","normativa_estado":"pendiente","aplicabilidad":{}},
+    {"id":"r2","catalogo_id":"30000000-0000-4000-8000-000000000002","obligacion_id":null,"version":1,"tipo_control":"condicion","clasificacion_estado":"aprobada","normativa_estado":"pendiente","aplicabilidad":{}},
+    {"id":"r3","catalogo_id":"30000000-0000-4000-8000-000000000003","obligacion_id":null,"version":1,"tipo_control":"evento","clasificacion_estado":"aprobada","normativa_estado":"pendiente","aplicabilidad":{}},
+    {"id":"r4","catalogo_id":"30000000-0000-4000-8000-000000000004","obligacion_id":null,"version":1,"tipo_control":"periodica","clasificacion_estado":"aprobada","normativa_estado":"pendiente","aplicabilidad":{}},
+    {"id":"r5","catalogo_id":null,"obligacion_id":"40000000-0000-4000-8000-000000000005","version":1,"tipo_control":"condicion","clasificacion_estado":"aprobada","normativa_estado":"pendiente","aplicabilidad":{}},
+    {"id":"r6","catalogo_id":null,"obligacion_id":"40000000-0000-4000-8000-000000000006","version":1,"tipo_control":"riesgo","clasificacion_estado":"aprobada","normativa_estado":"pendiente","aplicabilidad":{}}
+  ],
+  "revisiones":[{"id":"review1","empresa_id":"20000000-0000-4000-8000-000000000001","obligacion_id":"40000000-0000-4000-8000-000000000002","resultado":"verificada","revisada_en":"2026-09-30T16:00:00Z","revisada_por":"10000000-0000-4000-8000-000000000002","evidencia_path":null,"notas":"Revisión de ejemplo","proxima_revision":"2026-10-30"}],
+  "eventos":[],
+  "relaciones":[{"id":"rel1","empresa_id":"20000000-0000-4000-8000-000000000001","obligacion_origen_id":"40000000-0000-4000-8000-000000000002","obligacion_destino_id":"40000000-0000-4000-8000-000000000006","tipo":"riesgo","created_by":"10000000-0000-4000-8000-000000000002","created_at":"2026-10-14T12:00:00Z"}],
+  "documentos":[],
+  "tareas":[{"id":"task1","titulo":"Adjuntar soporte de revisión INEGI","empresa_id":"20000000-0000-4000-8000-000000000001","fecha_vencimiento":"2026-10-20","estado":"pendiente","prioridad":"media"}],
+  "asignaciones":["40000000-0000-4000-8000-000000000001","40000000-0000-4000-8000-000000000002","40000000-0000-4000-8000-000000000004"],
+  "perfiles":[{"id":"10000000-0000-4000-8000-000000000002","nombre_completo":"Ana · usuario ficticio"}],
+  "metadataReady":true
+}

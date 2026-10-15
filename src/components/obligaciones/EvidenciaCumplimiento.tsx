@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Upload } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
+import { obligationOverviewClient } from '@/hooks/useObligationOverview';
 
 interface Props {
   open: boolean;
@@ -15,12 +16,13 @@ interface Props {
   obligacionId: string;
   /** Fase 2: ocurrencia a la que pertenece este cumplimiento (recurrentes). NULL para manuales/eventuales. */
   ocurrenciaId?: string | null;
+  eventoId?: string | null;
   periodoKey: string;
   userId: string;
   onCompleted: () => void;
 }
 
-export function EvidenciaCumplimiento({ open, onOpenChange, empresaId, obligacionId, ocurrenciaId = null, periodoKey, userId, onCompleted }: Props) {
+export function EvidenciaCumplimiento({ open, onOpenChange, empresaId, obligacionId, ocurrenciaId = null, eventoId = null, periodoKey, userId, onCompleted }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -53,9 +55,10 @@ export function EvidenciaCumplimiento({ open, onOpenChange, empresaId, obligacio
         evidenciaPath = path;
       }
 
-      const { error } = await supabase.from('obligacion_cumplimientos').insert({
+      const { error } = await obligationOverviewClient.from('obligacion_cumplimientos').insert({
         obligacion_id: obligacionId,
         ocurrencia_id: ocurrenciaId,
+        ...(eventoId ? { evento_id: eventoId } : {}),
         empresa_id: empresaId,
         periodo_key: periodoKey,
         completada: true,

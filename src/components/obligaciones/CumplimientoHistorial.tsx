@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, CheckCircle2, XCircle, Paperclip } from 'lucide-react';
 import { getPeriodLabel } from '@/lib/obligaciones';
+import { loadAllPages } from '@/lib/pagination';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   open: boolean;
@@ -14,6 +16,8 @@ interface Props {
 }
 
 interface Cumplimiento {
+  id: string;
+  vigente: boolean;
   periodo_key: string;
   completada: boolean;
   completada_en: string;
@@ -24,6 +28,8 @@ export function CumplimientoHistorial({ open, onOpenChange, obligacionId, obliga
   const [data, setData] = useState<Cumplimiento[]>([]);
   const [loading, setLoading] = useState(true);
   const [descargando, setDescargando] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   // La evidencia vive en un bucket privado. Generamos una URL firmada de corta
   // duración solo al descargar; nunca persistimos URLs (expirarían y dejarían
@@ -46,19 +52,22 @@ export function CumplimientoHistorial({ open, onOpenChange, obligacionId, obliga
 
   useEffect(() => {
     if (!open) return;
+    let active = true;
     setLoading(true);
-    supabase
+    setError(false);
+    setData([]);
+    loadAllPages((offset, size) => supabase
       .from('obligacion_cumplimientos')
-      .select('periodo_key, completada, completada_en, evidencia_url')
+      .select('id, vigente, periodo_key, completada, completada_en, evidencia_url')
       .eq('obligacion_id', obligacionId)
-      .eq('vigente', true)
-      .order('periodo_key', { ascending: false })
-      .limit(12)
-      .then(({ data: rows }) => {
-        setData((rows as Cumplimiento[]) || []);
-        setLoading(false);
-      });
-  }, [open, obligacionId]);
+      .order('completada_en', { ascending: false })
+      .order('id')
+      .range(offset, offset + size - 1))
+      .then(rows => { if (active) setData(rows); })
+      .catch(() => { if (active) setError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [open, obligacionId, attempt]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -68,15 +77,17 @@ export function CumplimientoHistorial({ open, onOpenChange, obligacionId, obliga
         </DialogHeader>
         {loading ? (
           <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+        ) : error ? (
+          <div role="alert" className="py-6 space-y-3"><p className="text-sm">No pudimos cargar el historial.</p><Button variant="outline" onClick={() => setAttempt(a => a + 1)}>Reintentar</Button></div>
         ) : data.length === 0 ? (
           <p className="text-center text-muted-foreground text-sm py-6">Sin historial de cumplimiento</p>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto">
             {data.map(c => (
               <div
-                key={c.periodo_key}
+                key={c.id}
                 className={`flex flex-col items-center gap-1 p-2 rounded-lg border text-center ${
-                  c.completada
+                  c.completada && c.vigente
                     ? 'bg-success/10 border-success/30'
                     : 'bg-muted/50 border-border'
                 }`}
@@ -89,6 +100,7 @@ export function CumplimientoHistorial({ open, onOpenChange, obligacionId, obliga
                 <span className="text-xs font-medium truncate w-full">
                   {getPeriodLabel(presentacion, c.periodo_key)}
                 </span>
+                {!c.vigente && <span className="text-xs text-muted-foreground">Registro corregido</span>}
                 {c.evidencia_url && (
                   <button
                     type="button"
