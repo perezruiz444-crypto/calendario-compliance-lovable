@@ -31,3 +31,7 @@ verify_jwt = false
 
 [functions.send-message-notification]
 verify_jwt = false
+
+# Acción interna de revisión, protegida por CRON_SECRET en el handler.
+[functions.send-review-notification]
+verify_jwt = false

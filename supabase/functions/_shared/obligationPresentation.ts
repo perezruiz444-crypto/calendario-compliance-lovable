@@ -15,3 +15,13 @@ export function latestScheduledReviews<T extends {id:string;obligacion_id:string
  for(const row of rows){const old=latest.get(row.obligacion_id);if(!old||`${row.revisada_en}:${row.id}`>`${old.revisada_en}:${old.id}`)latest.set(row.obligacion_id,row);}
  return [...latest.values()].filter(row=>row.proxima_revision!==null);
 }
+
+/** Una fecha heredada no demuestra un vencimiento legal. No cambiar el dato para ocultar el aviso. */
+export function includeClientReminder(
+  occurrence: { origen_fecha: string | null; regla_id: string | null },
+  rules: readonly { id: string; clasificacion_estado: string; normativa_estado: string }[],
+): boolean {
+  if (occurrence.origen_fecha === 'interna') return true;
+  return occurrence.origen_fecha === 'normativa' && rules.some(rule =>
+    rule.id === occurrence.regla_id && rule.clasificacion_estado === 'aprobada' && rule.normativa_estado === 'validada');
+}
