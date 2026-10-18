@@ -1,4 +1,4 @@
-import { includeObligationAction,selectObligationType,latestScheduledReviews } from '../_shared/obligationPresentation.ts'
+import { includeObligationAction,selectObligationType,latestScheduledReviews,includeClientReminder } from '../_shared/obligationPresentation.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
 import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail } from '../_shared/smtp.ts'
@@ -18,6 +18,7 @@ type ObligacionEmbed = ObligationInfo | ObligationInfo[] | null
 
 interface OcurrenciaRow {
   obligacion_id: string
+  regla_id: string | null
   origen_fecha: string | null
   evento_id: string | null
   periodo_key: string
@@ -47,12 +48,13 @@ async function obligacionesPendientes(
   today: string,
   next7Days: string,
   next30Days: string,
+  clientSummary = false,
 ) {
   const ocurrencias: OcurrenciaRow[] = []
   for (let from = 0; ;) {
     let q = supabaseAdmin
       .from('obligacion_ocurrencias')
-      .select('obligacion_id, periodo_key, fecha_vencimiento, origen_fecha, evento_id, obligaciones!inner(id, nombre, categoria, catalogo_id, activa), empresas(razon_social)')
+      .select('obligacion_id, regla_id, periodo_key, fecha_vencimiento, origen_fecha, evento_id, obligaciones!inner(id, nombre, categoria, catalogo_id, activa), empresas(razon_social)')
       .eq('obligaciones.activa', true)
       .lte('fecha_vencimiento', next30Days)
       .order('fecha_vencimiento', { ascending: true })
@@ -66,9 +68,9 @@ async function obligacionesPendientes(
     from += data.length
   }
 
-  const rules: {obligacion_id:string|null;catalogo_id:string|null;clasificacion_estado:string;tipo_control:string;version:number}[]=[];
+  const rules: {id:string;obligacion_id:string|null;catalogo_id:string|null;clasificacion_estado:string;normativa_estado:string;tipo_control:string;version:number}[]=[];
   for(let from=0;;){
-    const {data,error}=await supabaseAdmin.from('obligacion_reglas').select('obligacion_id,catalogo_id,clasificacion_estado,tipo_control,version').order('id').range(from,from+PAGE-1);
+    const {data,error}=await supabaseAdmin.from('obligacion_reglas').select('id,obligacion_id,catalogo_id,clasificacion_estado,normativa_estado,tipo_control,version').order('id').range(from,from+PAGE-1);
     if(error)throw error;
     if(!data?.length)break;
     rules.push(...data);from+=data.length;
@@ -88,9 +90,10 @@ async function obligacionesPendientes(
   for(const review of latestScheduledReviews(reviews)){
     const ob=parents.find(o=>o.id===review.obligacion_id);
     if(!ob||!review.proxima_revision||review.proxima_revision>next30Days||selectObligationType(rules,ob)!=='condicion')continue;
-    ocurrencias.push({obligacion_id:ob.id,periodo_key:`revision:${review.id}`,fecha_vencimiento:review.proxima_revision,origen_fecha:'interna',evento_id:null,obligaciones:ob,empresas:ob.empresas});
+    ocurrencias.push({obligacion_id:ob.id,regla_id:null,periodo_key:`revision:${review.id}`,fecha_vencimiento:review.proxima_revision,origen_fecha:'interna',evento_id:null,obligaciones:ob,empresas:ob.empresas});
   }
   const eligible=ocurrencias.filter(oc=>{
+    if (clientSummary && !includeClientReminder(oc, rules)) return false;
     const ob=Array.isArray(oc.obligaciones)?oc.obligaciones[0]:oc.obligaciones;
     return includeObligationAction(selectObligationType(rules,{id:oc.obligacion_id,catalogo_id:ob?.catalogo_id??null}),oc.origen_fecha,oc.evento_id);
   });
@@ -341,7 +344,7 @@ Deno.serve(async (req) => {
             .from('profiles').select('empresa_id').eq('id', profile.id).maybeSingle()
 
           if (clientProfile?.empresa_id) {
-            const pend = await obligacionesPendientes(supabaseAdmin, [clientProfile.empresa_id], today, next7Days, next30Days)
+            const pend = await obligacionesPendientes(supabaseAdmin, [clientProfile.empresa_id], today, next7Days, next30Days, true)
             obligacionesVencidas = pend.vencidas.slice(0, 5)
             obligacionesSemana = pend.semana.slice(0, 5)
           }
