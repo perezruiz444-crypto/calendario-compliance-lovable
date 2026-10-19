@@ -81,3 +81,18 @@ test('la revisión interna pendiente se comparte y solo cuenta la más reciente'
  assert.deepEqual(latestScheduledReviews(rows).map(r=>r.id),['new']);
  assert.deepEqual(latestScheduledReviews([...rows,{id:'last',obligacion_id:'o',revisada_en:'2026-10-16',proxima_revision:null}]),[]);
 });
+
+
+test('el inventario distingue controles, eventos y consecuencias sin inferir cumplimiento', () => {
+  assert.equal(call('managementFollowupLabel', true, rule('condicion'), true), 'Condición permanente');
+  assert.equal(call('managementFollowupLabel', true, rule('evento'), true), 'Por evento');
+  assert.equal(call('managementFollowupLabel', true, rule('riesgo'), true), 'Consecuencia del incumplimiento');
+  assert.equal(call('managementFollowupLabel', true, rule('periodica'), true), 'Entrega periódica');
+  assert.equal(call('managementFollowupLabel', true, rule('vigencia'), true), 'Vigencia documental');
+});
+test('el inventario conserva inactivas y no presenta una clasificación desconocida como confirmada', () => {
+  assert.equal(call('managementFollowupLabel', false, rule('condicion'), true), 'Inactiva');
+  assert.equal(call('managementFollowupLabel', true, null, true), 'Por clasificar');
+  assert.equal(call('managementFollowupLabel', true, {...rule('condicion'), clasificacionAprobada:false}, true), 'Por clasificar');
+  assert.equal(call('managementFollowupLabel', true, rule('condicion'), false), 'Seguimiento por confirmar');
+});

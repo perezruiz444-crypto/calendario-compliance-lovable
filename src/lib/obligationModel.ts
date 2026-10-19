@@ -41,6 +41,20 @@ export function classifyObligation(regla: ReglaVista | null): TipoControl | 'por
     ? regla.tipo : 'por_clasificar';
 }
 
+/** El inventario describe el seguimiento; no acredita una entrega ni un atraso. */
+export function managementFollowupLabel(activa: boolean, regla: ReglaVista | null, metadataReady: boolean): string {
+  if (!activa) return 'Inactiva';
+  if (!metadataReady) return 'Seguimiento por confirmar';
+  switch (classifyObligation(regla)) {
+    case 'condicion': return 'Condición permanente';
+    case 'evento': return 'Por evento';
+    case 'vigencia': return 'Vigencia documental';
+    case 'riesgo': return 'Consecuencia del incumplimiento';
+    case 'periodica': return 'Entrega periódica';
+    default: return 'Por clasificar';
+  }
+}
+
 export function buildObligationSections(
   obligaciones: readonly ObligacionFuente[], acciones: readonly AccionFuente[]
 ): SeccionesObligacion {

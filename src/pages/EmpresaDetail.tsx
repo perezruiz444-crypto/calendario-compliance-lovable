@@ -561,7 +561,7 @@ export default function EmpresaDetail() {
                   if (obligationsV2Enabled) void queryClient.invalidateQueries({ queryKey: ['obligation-overview'], predicate: query => query.queryKey[3] === id });
                 }} />
               </div>
-              <ObligacionesManager empresaId={id!} canEdit={canEdit} />
+              <ObligacionesManager key={id} empresaId={id!} canEdit={canEdit} />
             </Suspense>
           </TabsContent>
 
