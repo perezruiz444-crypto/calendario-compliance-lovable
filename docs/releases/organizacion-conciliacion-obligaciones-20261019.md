@@ -169,9 +169,9 @@ Las cinco primeras clases conservan 21 periodos, y las dos de evento 31: incluye
 
 1. Conservar cada registro original, autor, fecha, notas y evidencia. No marcar toda una condición como cumplida por haber atendido un periodo.
 2. Reconocer automáticamente solo el vínculo ya acreditado entre empresa, obligación, ocurrencia y periodo. Si falta correspondencia, dejar el caso para revisión administrativa, sin afirmar cumplimiento ni incumplimiento legal.
-3. Los 14 cumplimientos vigentes en obligaciones inactivas de ITW se conservaron. Diez tienen el mismo periodo reconocido en un registro activo por coincidencia de nombre y categoría; la consulta no acredita por sí sola equivalencia normativa.
-4. Las otras cuatro marcas requieren revisión: tres de buzón sin periodo actual equivalente y una de autorización IMMEX sin equivalente activo con el mismo nombre y categoría. No se copiaron ni reinterpretaron.
-5. Se contaron 65 ocurrencias pasadas de obligaciones activas sin cumplimiento vigente vinculado exactamente a su ocurrencia y periodo. Todas tienen origen de fecha heredado. Dos corresponden a condiciones de ITW y tres a un supuesto por evento de Tokaikogyo. Los otros 60 requieren validación individual. Este conteo no equivale al contador particular de una pantalla ni a 65 incumplimientos legales confirmados.
+3. En el diagnóstico inicial se encontraron 14 cumplimientos vigentes en obligaciones inactivas de ITW; se conservaron íntegros. Diez tienen el mismo periodo reconocido en un registro activo por coincidencia de nombre y categoría; la consulta no acredita por sí sola equivalencia normativa.
+4. Las otras cuatro marcas se revisaron con el administrador: tres de buzón sin periodo actual equivalente y una de autorización IMMEX. Se confirmó que las marcas mensual de mayo y semana 19 de buzón corresponden a la misma revisión. Las tres permanecen como antecedentes cumplidos sin completar otros periodos. Se reactivó la autorización IMMEX existente como condición, conservando su antecedente anual. No se registró una revisión nueva ni se validó normativa.
+5. Antes de esa reactivación, se contaron 65 ocurrencias pasadas de obligaciones activas sin cumplimiento vigente vinculado exactamente a su ocurrencia y periodo. Todas tienen origen de fecha heredado. Dos corresponden a condiciones de ITW y tres a un supuesto por evento de Tokaikogyo. Los otros 60 requieren validación individual. Este conteo no equivale al contador particular de una pantalla ni a 65 incumplimientos legales confirmados.
 
 ## Pendientes sustantivos
 
@@ -179,7 +179,7 @@ La consolidación de IVA, opinión positiva, buzón y listados fiscales aún no 
 
 ## Publicación
 
-El cambio es de frontend. No requiere migraciones ni despliegue de funciones. Tras pasar CI e integrar el PR, Publish/Update en Lovable es manual. La revisión y la implementación de interfaz no equivalen a publicación.
+El cambio de código es de frontend y no requiere migraciones ni despliegue de funciones. Por confirmación explícita posterior del administrador se realizó una operación de datos en producción: reactivar exclusivamente la condición Autorización del programa IMMEX de ITW y registrar los criterios de conciliación en auditoría privada. La operación guardó el estado anterior y los cuatro antecedentes en audit_logs, comprobó hashes íntegros de cumplimientos y ocurrencias antes/después y no cambió ningún otro campo de la obligación salvo activa y la fecha automática de actualización. La normativa sigue pendiente y no hay una revisión actual que permita presentarla como verificada. Tras pasar CI e integrar el PR, Publish/Update en Lovable es manual. La revisión y la implementación de interfaz no equivalen a publicación.
 
 
 ## Verificación
