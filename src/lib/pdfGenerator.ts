@@ -1125,8 +1125,8 @@ interface ObligacionPDFData {
   presentacion: string | null;
   fecha_vencimiento: string | null;
   estado: string;
-  completada_periodo: boolean;
-  periodo_actual: string;
+  activa: boolean;
+  seguimiento: string;
 }
 
 export function generateObligacionesPDF(
@@ -1147,12 +1147,12 @@ export function generateObligacionesPDF(
   doc.setFontSize(14);
   doc.setTextColor(...C.white);
   doc.setFont('helvetica', 'bold');
-  doc.text('REPORTE DE OBLIGACIONES', 14, 10);
+  doc.text('INVENTARIO DE OBLIGACIONES', 14, 10);
 
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(180, 205, 230);
-  doc.text('Comercio Exterior · Cumplimiento Regulatorio', 14, 17);
+  doc.text('Configuración e historial · No acredita cumplimiento', 14, 17);
 
   // Company block
   doc.setFillColor(...C.white);
@@ -1169,80 +1169,56 @@ export function generateObligacionesPDF(
   doc.setFont('helvetica', 'normal');
   doc.text(`RFC: ${empresa.rfc}  ·  Generado: ${new Date().toLocaleDateString('es-MX')}`, 19, 42);
 
-  // ── KPI STRIP ─────────────────────────────────────────────────────
-
-  const completadas = obligaciones.filter(o => o.completada_periodo).length;
-  const pendientes  = obligaciones.length - completadas;
-  const tasa = obligaciones.length > 0 ? Math.round((completadas / obligaciones.length) * 100) : 0;
-  const tasaColor: [number,number,number] = tasa >= 80 ? C.green : tasa >= 50 ? C.amber : C.red;
-
+  const activas = obligaciones.filter(o => o.activa).length;
   const kpis = [
-    { label: 'Total',        value: String(obligaciones.length), color: C.navy  },
-    { label: 'Cumplidas',    value: String(completadas),          color: C.green },
-    { label: 'Pendientes',   value: String(pendientes),           color: C.amber },
-    { label: 'Cumplimiento', value: `${tasa}%`,                   color: tasaColor },
+    { label: 'Registros', value: String(obligaciones.length), color: C.navy },
+    { label: 'Activos', value: String(activas), color: C.navy },
+    { label: 'Inactivos', value: String(obligaciones.length - activas), color: C.gray },
   ];
-  const cardW = (pw - 20 - 9) / 4;
+  const cardW = (pw - 26) / 3;
   kpis.forEach((k, i) => kpiCard(doc, 10 + i * (cardW + 3), 52, cardW, 20, k.label, k.value, k.color));
-
-  let y = 78;
+  const y = 86;
   doc.setFontSize(7);
   doc.setTextColor(...C.gray);
-  doc.text('Porcentaje de cumplimiento del periodo:', 10, y + 2.5);
-  doc.setTextColor(...tasaColor);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`${tasa}%`, pw - 10, y + 2.5, { align: 'right' });
-  doc.setFont('helvetica', 'normal');
-  progressBar(doc, 10, y + 4, pw - 20, tasa, tasaColor);
-  y += 14;
+  doc.text('Fechas y referencias capturadas: por revisar. Consulta las entregas y revisiones en el reporte de seguimiento.', 10, 80);
 
   // ── TABLE ─────────────────────────────────────────────────────────
 
   autoTable(doc, {
     startY: y,
     margin: { left: 10, right: 10 },
-    head: [['Programa', 'Obligación', 'Fundamento legal', 'Periodicidad', 'Periodo', 'Vencimiento', 'Estado']],
+    head: [['Programa', 'Registro', 'Referencia capturada', 'Presentación capturada', 'Fecha registrada', 'Seguimiento', 'Activo']],
     body: obligaciones.map(ob => [
       CATEGORIA_LABELS_PDF[ob.categoria] || ob.categoria,
       ob.nombre,
       ob.articulos || '—',
       ob.presentacion || '—',
-      ob.periodo_actual,
-      ob.fecha_vencimiento ? new Date(ob.fecha_vencimiento).toLocaleDateString('es-MX') : '—',
-      ob.completada_periodo ? 'Cumplida' : ob.estado,
+      ob.fecha_vencimiento ? new Date(ob.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX') : '—',
+      ob.seguimiento,
+      ob.activa ? 'Sí' : 'No',
     ]),
     columnStyles: {
-      0: { cellWidth: 28 },
-      1: { cellWidth: 70 },
-      2: { cellWidth: 42 },
-      3: { cellWidth: 24, halign: 'center' },
-      4: { cellWidth: 24, halign: 'center' },
-      5: { cellWidth: 24, halign: 'center' },
-      6: { cellWidth: 22, halign: 'center' },
+      0: { cellWidth: 26 },
+      1: { cellWidth: 64 },
+      2: { cellWidth: 40 },
+      3: { cellWidth: 34, halign: 'center' },
+      4: { cellWidth: 29, halign: 'center' },
+      5: { cellWidth: 56, halign: 'center' },
+      6: { cellWidth: 28, halign: 'center' },
     },
     ...tableStyles(),
-    didDrawCell: (data) => {
-      if (data.section === 'body') {
-        if (data.column.index === 6) {
-          const val = String(data.cell.raw);
-          doc.setTextColor(...(val === 'Cumplida' ? C.green : C.amber));
-          doc.setFont('helvetica', 'bold');
-        }
-        if (data.column.index === 1 && obligaciones[data.row.index]?.completada_periodo) {
-          doc.setTextColor(...C.green);
-        }
-      }
-    },
+    styles: { overflow: 'linebreak', fontSize: 7 },
+    rowPageBreak: 'avoid',
   });
 
   const finalY = finalYDeUltimaTabla(doc);
   doc.setFontSize(7.5);
   doc.setTextColor(...C.gray);
   doc.text(
-    `${obligaciones.length} obligaciones · ${completadas} cumplidas · ${pendientes} pendientes`,
+    `${obligaciones.length} registros · ${activas} activos · ${obligaciones.length - activas} inactivos`,
     10, finalY + 5
   );
 
   applyFooters(doc, empresa.razon_social);
-  doc.save(`obligaciones-${empresa.razon_social.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`);
+  doc.save(`inventario-obligaciones-${empresa.razon_social.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`);
 }

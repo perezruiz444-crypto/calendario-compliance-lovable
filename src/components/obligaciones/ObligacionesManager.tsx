@@ -4,15 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useObligationOverview } from '@/hooks/useObligationOverview';
+import { useQueryClient } from '@tanstack/react-query';
+import { managementFollowupLabel } from '@/lib/obligationModel';
 import { toast } from 'sonner';
-import { differenceInDays, isPast, format } from 'date-fns';
 import {
   Plus, Trash2, Pencil, Search,
-  Calendar, AlertCircle, CheckCircle2, ClipboardList, Filter, FileDown,
-  Zap, User, Users, ToggleLeft, ToggleRight, RefreshCw, BookOpen
+  ClipboardList, Filter, FileDown,
+  Zap, User, Users, ToggleLeft, ToggleRight, BookOpen
 } from 'lucide-react';
 import { ObligacionFormDialog, type ObligacionFormData } from './ObligacionFormDialog';
 import { CrearObligacionChooser } from './CrearObligacionChooser';
@@ -23,18 +23,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  CATEGORIA_LABELS, CATEGORIA_COLORS,
-  getCurrentPeriodKey, getPeriodLabel, formatDateShort, getVencimientoInfo, programaToCategoria,
-  isRecurring, ocurrenciasCumplidas, estadoPorOcurrencias, guardarCumplimiento } from '@/lib/obligaciones';
-
-// Estado del periodo en curso (obligaciones.estado se queda en 'completada' tras la primera marca)
-function estadoPeriodo(tieneOcurrencia: boolean, cumplida: boolean, fecha: string | null): string {
-  if (!tieneOcurrencia) return 'Eventual';
-  if (cumplida) return 'Cumplida';
-  return getVencimientoInfo(fecha)?.status === 'vencido' ? 'Vencida' : 'Pendiente';
-}
-import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
+import { CATEGORIA_LABELS, CATEGORIA_COLORS, formatDateShort } from '@/lib/obligaciones';
+import { CumplimientoHistorial } from './CumplimientoHistorial';
 import { logger } from '@/lib/logger';
 import { nombresPerfiles } from '@/lib/perfiles';
 import type { Obligacion } from '@/types/domain';
@@ -51,22 +41,12 @@ interface CatalogoMinItem {
   presentacion: string | null;
 }
 
-function getVencimientoBadge(fecha: string | null) {
-  const info = getVencimientoInfo(fecha);
-  if (!info) return null;
-  if (info.status === 'vencido') return <Badge variant="destructive" className="text-xs gap-1"><AlertCircle className="w-3 h-3" />Vencido</Badge>;
-  if (info.status === 'urgente') return <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-xs gap-1"><AlertCircle className="w-3 h-3" />{info.days}d</Badge>;
-  if (info.status === 'proximo') return <Badge className="bg-warning/20 text-warning border-warning/30 text-xs gap-1"><Calendar className="w-3 h-3" />{info.days}d</Badge>;
-  return <Badge className="bg-success/20 text-success border-success/30 text-xs gap-1"><CheckCircle2 className="w-3 h-3" />Vigente</Badge>;
-}
-
 export function ObligacionesManager({ empresaId, canEdit }: Props) {
-  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const overview = useObligationOverview(empresaId);
   const [obligaciones, setObligaciones] = useState<Obligacion[]>([]);
-  const [cumplimientoKeys, setCumplimientoKeys] = useState<Set<string>>(new Set());
-  const [cumplimientos, setCumplimientos] = useState<Record<string, boolean>>({});
-  // Fase 2: próxima ocurrencia pendiente (o la más próxima) por obligación_id.
-  const [proximaOcurrencia, setProximaOcurrencia] = useState<Record<string, { id: string; periodo_key: string; fecha_vencimiento: string }>>({});
+  const [history, setHistory] = useState<Obligacion | null>(null);
+  const [filterEstado, setFilterEstado] = useState('activas');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -76,10 +56,7 @@ export function ObligacionesManager({ empresaId, canEdit }: Props) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filterResponsable, setFilterResponsable] = useState('all');
   const [filterOrigen, setFilterOrigen] = useState<'all' | 'manual' | 'catalogo'>('all');
-const [profiles, setProfiles] = useState<Record<string, string>>({});
-const [detailSheetOpen, setDetailSheetOpen] = useState(false);
-const [selectedObId, setSelectedObId] = useState<string | null>(null);
-const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [chooserOpen, setChooserOpen] = useState(false);
   const [sugerenciaCatalogoItem, setSugerenciaCatalogoItem] = useState<CatalogoMinItem | null>(null);
   const [sugerenciaDialogOpen, setSugerenciaDialogOpen] = useState(false);
@@ -94,47 +71,8 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     if (error) { toast.error('Error al cargar obligaciones'); logger.error('Error en la operación', error); }
     else {
       setObligaciones(data || []);
-      // Fetch cumplimientos for current periods
-      if (data && data.length > 0) {
-        await fetchCumplimientos(data);
-      }
     }
     setLoading(false);
-  };
-
-  const fetchCumplimientos = async (obs: Obligacion[]) => {
-    const obIds = obs.map(ob => ob.id);
-    if (obIds.length === 0) { setCumplimientos({}); setProximaOcurrencia({}); return; }
-
-    // Ocurrencias de estas obligaciones (ordenadas por fecha).
-    const { data: ocData } = await supabase
-      .from('obligacion_ocurrencias')
-      .select('id, obligacion_id, periodo_key, fecha_vencimiento')
-      .in('obligacion_id', obIds)
-      .order('fecha_vencimiento', { ascending: true });
-    const ocs = ocData || [];
-
-    // Cumplimientos vigentes -> set de ocurrencias cumplidas.
-    const ocIds = ocs.map((o) => o.id);
-    let cumplidas = new Set<string>();
-    if (ocIds.length > 0) {
-      const { data: cData } = await supabase
-        .from('obligacion_cumplimientos')
-        .select('ocurrencia_id, completada, vigente')
-        .in('ocurrencia_id', ocIds);
-      cumplidas = ocurrenciasCumplidas(cData);
-    }
-
-    // Map cumplimientos por ocurrencia_id + próxima ocurrencia pendiente por obligación.
-    const cMap: Record<string, boolean> = {};
-    const proxMap: Record<string, { id: string; periodo_key: string; fecha_vencimiento: string }> = {};
-    ocs.forEach((oc) => { cMap[oc.id] = cumplidas.has(oc.id); });
-    // Ocurrencia del periodo en curso (cada periodo es independiente)
-    estadoPorOcurrencias(ocs, cumplidas).forEach((e, oblId) => { proxMap[oblId] = e.actual; });
-
-    setCumplimientos(cMap);
-    setProximaOcurrencia(proxMap);
-    setCumplimientoKeys(new Set(Object.keys(cMap).filter(k => cMap[k])));
   };
 
   useEffect(() => { fetchObligaciones(); }, [empresaId]);
@@ -175,22 +113,6 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     };
     fetchResponsables();
   }, [obligaciones]);
-
-  const toggleCumplimiento = async (obligacionId: string, presentacion: string | null) => {
-    if (!user) return;
-    const oc = proximaOcurrencia[obligacionId];
-    if (!oc) { toast.error('Esta obligación no tiene ocurrencias para cumplir'); return; }
-    const isCompleted = cumplimientos[oc.id];
-    const { error } = await guardarCumplimiento(supabase, {
-      ocurrencia: { ...oc, obligacion_id: obligacionId }, empresaId, userId: user.id, completada: !isCompleted,
-    });
-    if (error) { toast.error(isCompleted ? 'Error al desmarcar' : 'Error al marcar cumplimiento'); return; }
-    setCumplimientos(prev => ({ ...prev, [oc.id]: !isCompleted }));
-    toast.success(isCompleted
-      ? 'Cumplimiento desmarcado'
-      : `Marcada como completada - ${getPeriodLabel(presentacion, oc.periodo_key)}`);
-  };
-
 
   const syncResponsables = async (obligacionId: string, responsableIds: string[], usuarios?: { id: string; nombre: string; tipo: string }[]) => {
     // Delete existing
@@ -233,6 +155,7 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
       await syncResponsables(inserted[0].id, data.responsable_ids);
     }
     setSaving(false);
+    void queryClient.invalidateQueries({ queryKey: ['obligation-overview'] });
     toast.success('Obligación creada');
     setFormOpen(false);
     fetchObligaciones();
@@ -263,6 +186,7 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     // Sync responsables
     await syncResponsables(data.id, data.responsable_ids || []);
     setSaving(false);
+    void queryClient.invalidateQueries({ queryKey: ['obligation-overview'] });
     toast.success('Obligación actualizada');
     setFormOpen(false);
     setEditData(null);
@@ -273,6 +197,7 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     if (!deleteId) return;
     const { error } = await supabase.from('obligaciones').delete().eq('id', deleteId);
     if (error) { toast.error('Error al eliminar'); return; }
+    void queryClient.invalidateQueries({ queryKey: ['obligation-overview'] });
     toast.success('Obligación eliminada');
     setDeleteId(null);
     fetchObligaciones();
@@ -295,49 +220,32 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     setFormOpen(true);
   };
 
+  const followup = (ob: Obligacion) => managementFollowupLabel(
+    ob.activa,
+    overview.data?.obligaciones.find(item => item.id === ob.id)?.regla ?? null,
+    !!overview.data?.metadataReady && !overview.isError,
+  );
+
   const handleExportPDF = async () => {
-    // Fetch empresa info
     const { data: empresa } = await supabase.from('empresas').select('razon_social, rfc').eq('id', empresaId).single();
     if (!empresa) { toast.error('Error al obtener datos de la empresa'); return; }
-
-    generateObligacionesPDF(
-      empresa,
-      filtered.map(ob => {
-        const oc = proximaOcurrencia[ob.id];
-        return {
-          ...ob,
-          completada_periodo: oc ? (cumplimientos[oc.id] || false) : false,
-          periodo_actual: getPeriodLabel(ob.presentacion, oc?.periodo_key ?? getCurrentPeriodKey(ob.presentacion)),
-        };
-      })
-    );
-    toast.success('Reporte PDF generado');
+    generateObligacionesPDF(empresa, filtered.map(ob => ({ ...ob, seguimiento: followup(ob) })));
+    toast.success('Inventario PDF generado');
   };
 
   const handleExportExcel = async () => {
-    const rows = filtered.map(ob => {
-      const oc = proximaOcurrencia[ob.id];
-      const periodKey = oc?.periodo_key ?? getCurrentPeriodKey(ob.presentacion);
-      const isCompleted = oc ? (cumplimientos[oc.id] || false) : false;
-
-      return {
-        'Categoría': CATEGORIA_LABELS[ob.categoria] || ob.categoria,
-        'Nombre': ob.nombre,
-        'Artículos': ob.articulos || '-',
-        'Presentación': ob.presentacion || '-',
-        'Período Actual': ob.presentacion && ob.presentacion !== 'unica' 
-          ? getPeriodLabel(ob.presentacion, periodKey) : '-',
-        'Vencimiento': (oc?.fecha_vencimiento ?? ob.fecha_vencimiento) ? formatDateShort((oc?.fecha_vencimiento ?? ob.fecha_vencimiento)!) : '-',
-        'Estado': estadoPeriodo(!!oc, isCompleted, oc?.fecha_vencimiento ?? ob.fecha_vencimiento),
-        'Activa': ob.activa ? 'Sí' : 'No',
-        'Cumplida': isCompleted ? 'Sí' : 'No',
-        'Responsable': ob.responsable_id ? (profiles[ob.responsable_id] || ob.responsable_tipo || '-') : (ob.responsable_tipo || '-'),
-        'Notas': ob.notas || '',
-      };
-    });
-
-    await exportToExcel(rows, 'Obligaciones', `obligaciones_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success('Reporte Excel generado');
+    await exportToExcel(filtered.map(ob => ({
+      'Categoría': CATEGORIA_LABELS[ob.categoria] || ob.categoria,
+      'Nombre': ob.nombre,
+      'Referencias capturadas': ob.articulos || '-',
+      'Presentación capturada': ob.presentacion || '-',
+      'Fecha registrada (por revisar)': ob.fecha_vencimiento ? formatDateShort(ob.fecha_vencimiento) : '-',
+      'Seguimiento': followup(ob),
+      'Activa': ob.activa ? 'Sí' : 'No',
+      'Responsable': ob.responsable_id ? (profiles[ob.responsable_id] || ob.responsable_tipo || '-') : (ob.responsable_tipo || '-'),
+      'Notas': ob.notas || '',
+    })), 'Inventario', `inventario_obligaciones_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success('Inventario Excel generado');
   };
 
   const filtered = obligaciones.filter(ob => {
@@ -345,30 +253,13 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
     if (filterResponsable === 'cliente' && ob.responsable_tipo !== 'cliente') return false;
     if (filterResponsable === 'consultor' && ob.responsable_tipo !== 'consultor') return false;
     if (filterResponsable === 'sin_asignar' && ob.responsable_tipo) return false;
-    if (filterResponsable === 'activas' && !ob.activa) return false;
+    if (filterEstado === 'activas' && !ob.activa) return false;
+    if (filterEstado === 'inactivas' && ob.activa) return false;
     if (search && !ob.nombre.toLowerCase().includes(search.toLowerCase())) return false;
     if (filterOrigen === 'manual' && ob.catalogo_id) return false;
     if (filterOrigen === 'catalogo' && !ob.catalogo_id) return false;
     return true;
   });
-
-  // Por periodo en curso: un periodo ya cumplido no cuenta como vencido ni por vencer
-  const fechaPendiente = (ob: Obligacion): string | null => {
-    const oc = proximaOcurrencia[ob.id];
-    if (!oc || cumplimientos[oc.id]) return null;
-    return oc.fecha_vencimiento;
-  };
-  const vencidosCount = obligaciones.filter(ob => {
-    const f = fechaPendiente(ob);
-    return !!f && getVencimientoInfo(f)?.status === 'vencido';
-  }).length;
-  const porVencerCount = obligaciones.filter(ob => {
-    const f = fechaPendiente(ob);
-    if (!f) return false;
-    const days = differenceInDays(new Date(f + 'T12:00:00'), new Date());
-    return days >= 0 && days <= 90;
-  }).length;
-  const huerfanasCount = obligaciones.filter(ob => !ob.catalogo_id).length;
 
   const handleDesdeCatalogo = () => {
     const el = document.getElementById('catalogo-activacion-section');
@@ -383,35 +274,23 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
   };
 
   return (
-    <Card className="shadow-card col-span-1 lg:col-span-2">
+    <Card role="region" aria-label="Configuración e historial de obligaciones" className="shadow-card col-span-1 lg:col-span-2">
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <CardTitle className="font-heading flex items-center gap-2">
             <ClipboardList className="w-5 h-5" />
-            Gestión de Obligaciones
-            <Badge variant="secondary" className="ml-2">{obligaciones.length}</Badge>
+            Configuración e historial de obligaciones
+            <Badge variant="secondary" className="ml-2">{filtered.length}</Badge>
           </CardTitle>
           <div className="flex items-center gap-2">
-            {vencidosCount > 0 && (
-              <Badge variant="destructive" className="gap-1"><AlertCircle className="w-3 h-3" />{vencidosCount} vencido(s)</Badge>
-            )}
-            {porVencerCount > 0 && (
-              <Badge className="bg-warning/20 text-warning border-warning/30 gap-1"><Calendar className="w-3 h-3" />{porVencerCount} próximo(s)</Badge>
-            )}
-            {huerfanasCount >= 3 && (
-              <Badge
-                className="bg-muted text-muted-foreground cursor-pointer hover:bg-muted/80 gap-1"
-                title="Obligaciones sin vínculo al catálogo maestro"
-                onClick={() => setFilterOrigen('manual')}
-              >
-                {huerfanasCount} manuales · revisar
-              </Badge>
-            )}
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 mt-3">
-          <div className="relative flex-1">
+        <p className="text-sm text-muted-foreground mt-2">Configura los registros y consulta su historial. Atiende entregas, eventos y revisiones en el panel de seguimiento superior.</p>
+        <p className="text-xs text-muted-foreground mt-1">Las fechas y presentaciones capturadas no acreditan vencimientos ni validación normativa.</p>
+        {overview.isError && <p role="alert" className="text-sm text-warning mt-2">No se pudo confirmar el tipo de seguimiento. Los registros y su historial siguen disponibles.</p>}
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2 mt-3">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar obligación..." className="pl-9" />
           </div>
@@ -426,13 +305,20 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
               ))}
             </SelectContent>
           </Select>
+          <Select value={filterEstado} onValueChange={setFilterEstado}>
+            <SelectTrigger className="w-[160px]" aria-label="Estado de los registros"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="activas">Solo activas</SelectItem>
+              <SelectItem value="inactivas">Solo inactivas</SelectItem>
+              <SelectItem value="todas">Activas e inactivas</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={filterResponsable} onValueChange={setFilterResponsable}>
             <SelectTrigger className="w-[160px]">
               <Users className="w-4 h-4 mr-1" /><SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="activas">Solo activas</SelectItem>
               <SelectItem value="cliente">Cliente</SelectItem>
               <SelectItem value="consultor">Consultor</SelectItem>
               <SelectItem value="sin_asignar">Sin asignar</SelectItem>
@@ -484,43 +370,19 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                   {canEdit && <th className="text-center p-2 font-heading font-medium text-muted-foreground w-10">✓</th>}
                    <th className="text-left p-2 font-heading font-medium text-muted-foreground">Categoría</th>
                    <th className="text-left p-2 font-heading font-medium text-muted-foreground">Nombre</th>
                    <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Responsable</th>
-                   <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Presentación</th>
-                   <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden lg:table-cell">Período Actual</th>
-                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Vencimiento</th>
-                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Estado</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground hidden md:table-cell">Presentación capturada</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Fecha registrada</th>
+                   <th className="text-left p-2 font-heading font-medium text-muted-foreground">Seguimiento</th>
                    {canEdit && <th className="text-right p-2 font-heading font-medium text-muted-foreground">Acciones</th>}
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(ob => {
-                  const recurring = isRecurring(ob.presentacion);
-                  const oc = proximaOcurrencia[ob.id];
-                  const periodKey = oc?.periodo_key ?? getCurrentPeriodKey(ob.presentacion);
-                  const isCompleted = oc ? (cumplimientos[oc.id] || false) : false;
-                  const fechaVenc = oc?.fecha_vencimiento ?? ob.fecha_vencimiento;
-                  const displayDate = fechaVenc ? formatDateShort(fechaVenc) : '-';
-                  const vencInfo = getVencimientoInfo(fechaVenc);
-
                   return (
-                    <tr key={ob.id} className={`border-b last:border-0 hover:bg-muted/50 transition-colors ${isCompleted ? 'bg-success/5' : ''}`}>
-                      {canEdit && (
-                        <td className="p-2 text-center">
-                          {oc ? (
-                            <Checkbox
-                              checked={isCompleted}
-                              onCheckedChange={() => toggleCumplimiento(ob.id, ob.presentacion)}
-                              aria-label="Marcar como completada"
-                            />
-                          ) : (
-                            // Eventual: sin periodo que marcar
-                            <span className="text-xs text-muted-foreground" title="Eventual: sin periodo">—</span>
-                          )}
-                        </td>
-                      )}
+                    <tr key={ob.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
                       <td className="p-2">
                         <Badge variant="outline" className={`text-xs ${CATEGORIA_COLORS[ob.categoria] || ''}`}>
                           {CATEGORIA_LABELS[ob.categoria] || ob.categoria}
@@ -531,8 +393,9 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
                           {ob.activa && <Zap className="w-3.5 h-3.5 text-primary shrink-0" />}
                           <div>
                            <button
-  className={`font-medium text-left hover:text-primary transition-colors ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
-  onClick={() => { setSelectedObId(ob.id); setSelectedOcurrenciaId(proximaOcurrencia[ob.id]?.id ?? null); setDetailSheetOpen(true); }}
+  className="font-medium text-left hover:text-primary transition-colors"
+  title="Consultar historial de cumplimientos"
+  onClick={() => setHistory(ob)}
 >
   {ob.nombre}
 </button>
@@ -565,27 +428,10 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
                         )}
                       </td>
                       <td className="p-2 hidden md:table-cell">
-                        <div className="flex items-center gap-1">
-                          {recurring && <RefreshCw className="w-3 h-3 text-muted-foreground" />}
-                          <span className="text-muted-foreground capitalize">{ob.presentacion || '-'}</span>
-                        </div>
+                        <span className="text-muted-foreground">{ob.presentacion || '-'}</span>
                       </td>
-                      <td className="p-2 hidden lg:table-cell">
-                        {ob.presentacion && ob.presentacion !== 'unica' ? (
-                          <Badge variant={isCompleted ? 'default' : 'outline'} className={`text-xs ${isCompleted ? 'bg-success text-success-foreground' : ''}`}>
-                            {isCompleted ? '✓ ' : ''}{getPeriodLabel(ob.presentacion, periodKey)}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">-</span>
-                        )}
-                      </td>
-                      <td className="p-2">
-                        <div className="flex items-center gap-2">
-                          <span>{displayDate}</span>
-                          {vencInfo && !isCompleted && getVencimientoBadge(fechaVenc)}
-                        </div>
-                      </td>
-                      <td className="p-2"><Badge variant="outline" className="text-xs">{estadoPeriodo(!!oc, isCompleted, fechaVenc)}</Badge></td>
+                      <td className="p-2"><span>{ob.fecha_vencimiento ? formatDateShort(ob.fecha_vencimiento) : '-'}</span></td>
+                      <td className="p-2"><Badge variant="outline" className="text-xs">{followup(ob)}</Badge></td>
                       {canEdit && (
                         <td className="p-2 text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -598,6 +444,7 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
                               onClick={async () => {
                                 const { error } = await supabase.from('obligaciones').update({ activa: !ob.activa }).eq('id', ob.id);
                                 if (error) { toast.error('Error al cambiar estado'); return; }
+                                void queryClient.invalidateQueries({ queryKey: ['obligation-overview'] });
                                 toast.success(ob.activa ? 'Obligación desactivada' : 'Obligación activada');
                                 fetchObligaciones();
                               }}
@@ -628,13 +475,10 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
         onSugerirCatalogo={handleSugerirCatalogo}
       />
 
-      <ObligacionDetailSheet
-        open={detailSheetOpen}
-        onOpenChange={(o) => { setDetailSheetOpen(o); if (!o) setSelectedOcurrenciaId(null); }}
-        obligacionId={selectedObId}
-        ocurrenciaId={selectedOcurrenciaId}
-        onCumplimientoChange={() => fetchObligaciones()}
-      />
+      {history && <CumplimientoHistorial
+        open onOpenChange={open => { if (!open) setHistory(null); }}
+        obligacionId={history.id} obligacionNombre={history.nombre} presentacion={history.presentacion}
+      />}
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -659,7 +503,11 @@ const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(
         onOpenChange={setSugerenciaDialogOpen}
         item={sugerenciaCatalogoItem as Parameters<typeof ActivarObligacionDialog>[0]['item']}
         empresaId={empresaId}
-        onActivated={() => { setSugerenciaCatalogoItem(null); fetchObligaciones(); }}
+        onActivated={() => {
+          setSugerenciaCatalogoItem(null);
+          void queryClient.invalidateQueries({ queryKey: ['obligation-overview'] });
+          fetchObligaciones();
+        }}
       />
     </Card>
   );
