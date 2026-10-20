@@ -1,5 +1,11 @@
 # Continuación de ITW — 20 de octubre de 2026
 
+## Retirada de la plantilla de renovación anual IMMEX
+
+Se buscaron las referencias de renovación y reportes anuales en todas las hojas de los cinco Excel del repositorio. No se encontró una solicitud de renovación anual IMMEX; sí el reporte anual de ventas y exportaciones (checklist IMMEX_Obligaciones C16/D16 y OBLIGACIONES.xlsx, hoja Obligaciones, fila 23). Las referencias de renovación en otras hojas corresponden a CERTIVA. La solicitud anual IMMEX aparece en la misma plantilla inicial SQL del 25/03/2026. En la publicación original del Decreto consultada, el artículo 10 trata facilidades de inventarios y el 12 conserva la vigencia mientras se cumplan requisitos y obligaciones, sin sustentar dicha solicitud anual.
+
+El administrador ordenó retirarla. Aplicado y verificado: catálogo inactivo/no obligatorio y seis asignaciones desactivadas (incluida Balluff). Cero marcas propias, seis antecedentes conservados; todas las marcas, ocurrencias y demás obligaciones intactas por huellas antes/después. Se conserva separado y activo el reporte anual real. No se modificó la autorización IMMEX ni se acreditaron periodos. Auditoría privada `retiro_renovacion_anual_immex_20261020`; operación fuente `scripts/operations/retirar-renovacion-anual-immex-20261020.sql`.
+
 ## Informe Trimestral de Inventarios IMMEX: fundamento capturado incongruente
 
 Retirada posterior autorizada expresamente para todas las empresas y aplicada en producción: catálogo desactivado y no obligatorio, cinco asignaciones desactivadas (ITW, Johnson Electric, Tokaikogyo, Wealth, Xinquan). Se conserva la marca histórica de ITW. Todas las ocurrencias, todos los cumplimientos y las demás obligaciones conservaron su contenido, comprobado mediante huellas antes/después dentro de transacción y consulta posterior independiente. Verificación: cero asignaciones activas de la plantilla, cinco antecedentes conservados y una marca conservada. No se eliminaron filas, no se acreditaron periodos ni se alteró el control real automatizado de inventarios. Auditoría privada `retiro_informe_trimestral_inventarios_20261020`; fuente en `scripts/operations/retirar-informe-trimestral-inventarios-20261020.sql`. Las notas posteriores de esta sección describen la investigación previa a esta retirada.
