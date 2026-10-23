@@ -136,7 +136,7 @@ La nueva clasificación de «Cancelación del programa» IMMEX deriva del conten
 
 **Fechas y modalidades:** el objetivo interno capturado del 15 de abril no sustituye los límites indicados de abril PROSEC/mayo IMMEX. No se recalcularon fechas heredadas. Renovación CERTIVA depende de la vigencia real de resolución; no se impone anualidad única a todos los rubros. Los alcances por proceso industrial, mercancía, permiso y beneficio requieren documentos de empresa; no se inventaron ni se resolvieron como «no aplica» para limpiar contadores.
 
-**Resguardo técnico:** esta continuación está en la rama `ops/revision-catalogo-completa-20261023`. Las cinco operaciones ya están aplicadas y auditadas en producción; verificar el PR correspondiente antes de reintentar. No hay cambios de esquema ni de funciones que requieran repetir despliegues. El informe distingue el recorrido operativo completo de los tres casos pendientes de decisión y de una validación normativa integral aún no cerrada.
+**Resguardo técnico:** esta continuación se conserva en [PR #54](https://github.com/perezruiz444-crypto/calendario-compliance-lovable/pull/54), desde la rama `ops/revision-catalogo-completa-20261023`. El enlace permite verificar CI y merge sin repetir las operaciones ya aplicadas. Las cinco operaciones ya están aplicadas y auditadas en producción; verificar el PR correspondiente antes de reintentar. No hay cambios de esquema ni de funciones que requieran repetir despliegues. El informe distingue el recorrido operativo completo de los tres casos pendientes de decisión y de una validación normativa integral aún no cerrada.
 
 ## Evidencia y fuentes
 
