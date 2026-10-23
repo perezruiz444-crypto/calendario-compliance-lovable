@@ -172,3 +172,6 @@ Después de cada decisión, actualizar la fila correspondiente con: alcance por 
 ## Instrucción breve para retomar
 
 «Lee SEGUIMIENTO_OBLIGACIONES.md y docs/releases/revision-catalogo-completo-20261023.md. El anual genérico se conserva; OVL y semestral PROSEC ya están retirados con antecedentes intactos. No repitas esas decisiones ni reejecutes sus operaciones auditadas. Verifica la integración de la rama de revisión completa sin reejecutar operaciones ya auditadas. Documenta con Tokaikogyo la periodicidad mensual/bimestral de descargos. No reinicies decisiones aplicadas ni acredites cumplimientos sin confirmación».
+
+
+**Resguardo de las decisiones posteriores:** [retiro de OVL y semestral PROSEC](https://github.com/perezruiz444-crypto/calendario-compliance-lovable/pull/55). Ambas operaciones ya están aplicadas en producción; el estado de integración del PR debe verificarse antes de cualquier reintento. No hay cambios de interfaz ni funciones.
