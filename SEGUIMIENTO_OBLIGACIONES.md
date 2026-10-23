@@ -52,6 +52,23 @@ Migración `20261020183637_inegi_operational_schedule.sql` aplicada; operación 
 | Reportes mensuales CERTIVA sobre cambios | 3 | **Pendiente de revisión.** Asignación activa en Tokaikogyo. Comprobar qué cambios, supuesto, periodicidad y fundamento corresponden; no asumir una entrega mensual por el nombre. |
 | **Total de referencia** | **37** | Los cambios de tipo, retiros y completados hacen que este total histórico no equivalga al estado actual. No recalcularlo silenciosamente. |
 
+## Pendientes adicionales fuera del grupo original: comprobación 23/10/2026
+
+**Cerrar la clasificación de los 19 periodos originales no termina el catálogo.** Consulta adicional de producción: 87 definiciones históricas, 85 activas y 217 asignaciones activas. De estas, **19 asignaciones de 8 definiciones distintas no tienen regla de clasificación aprobada**. No confundir estas 19 asignaciones con los 19 periodos originales ya clasificados; son unidades y alcances diferentes. No equivalen a 19 incumplimientos.
+
+| Definición sin clasificación aprobada | Asignaciones activas | Empresas |
+|---|---:|---|
+| Opinión positiva | 6 | Todas las seis empresas actuales. |
+| Anexo 30 / Descargos | 1 | Tokaikogyo. |
+| Declaración Anual de Contribuciones Comercio Exterior | 1 | ITW. |
+| Pago de Cuotas Compensatorias | 1 | ITW. |
+| Reporte de Operaciones Vuelta Larga (OVL) | 1 | ITW. |
+| Verificación de Datos Padrón de Importadores | 2 | ITW y Wealth. |
+| Renovación Padrones Sectoriales | 3 | ITW, Johnson Electric y Wealth. |
+| Informe de Utilización PROSEC | 4 | ITW, Johnson Electric, Tokaikogyo y Xinquan. |
+
+Este inventario adicional no autoriza por sí mismo una clasificación, retiro ni cumplimiento. Conservar orden de continuidad: primero IVA/IEPS y cambios CERTIVA de la tabla original; después revisar estos criterios compartidos y sus fuentes/Excel. Sigue pendiente la disponibilidad en catálogo del duplicado mensual de producción IMMEX, actualmente sin asignaciones activas. También quedan fundamentos, fechas y aplicabilidad por validar en registros ya clasificados; clasificado no significa revisión normativa terminada.
+
 ## Otras decisiones aplicadas durante esta revisión
 
 - **Control de inventarios IMMEX y PROSEC de ITW:** ambos son condiciones permanentes. Ya tienen frecuencia de catálogo EVENTUAL y tipo efectivo condición. IMMEX no tenía ocurrencia; PROSEC conserva la anual heredada de 01/01/2026, excluida de las entregas exigibles por la política de presentación. No se borró ni marcó ese antecedente. Mantener ambos controles separados por alcance.
