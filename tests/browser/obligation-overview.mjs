@@ -61,6 +61,11 @@ async function setup(options={}){
   }
   if(url.pathname.includes('/rpc/'))return json(null);
   if(table==='obligacion_reglas'&&state.failRules)return json({code:'XX000',message:'Fallo de transporte local'},503);
+  if(table==='obligacion_reglas'&&method==='POST'){
+   const body=JSON.parse(request.postData());
+   source.reglas.push({catalogo_id:null,obligacion_id:null,...body,id:`rule-${source.reglas.length}`});
+   return json(null,201);
+  }
   if(table==='obligaciones'&&method==='POST'){
    const body=JSON.parse(request.postData());assert.equal(body.empresa_id,source.empresa.id);
    const row={...body,id:'40000000-0000-4000-8000-000000000099',responsable_id:null,responsable_tipo:null};source.obligaciones.push(row);return json(row,201);
@@ -81,6 +86,7 @@ async function setup(options={}){
    :table==='obligacion_relaciones'?source.relaciones:table==='documentos'?source.documentos:table==='tareas'?source.tareas
    :table==='obligacion_responsables'?source.asignaciones.map((id,i)=>({id:`assignment-${i}`,obligacion_id:id,user_id:uid})):[];
   for(const [key,value] of url.searchParams){if(value.startsWith('eq.'))rows=rows.filter(row=>String(row[key])===value.slice(3));}
+  if(url.searchParams.get('order')==='version.desc')rows=[...rows].sort((a,b)=>b.version-a.version);
   const offset=Number(url.searchParams.get('offset')??0);const limit=Number(url.searchParams.get('limit')??250);
   rows=rows.slice(offset,offset+limit);
   if((request.headers().accept??'').includes('application/vnd.pgrst.object+json'))return json(rows[0]??null);
@@ -92,6 +98,27 @@ async function setup(options={}){
  return {context,page,state,source,calls};
 }
 try {
+ for(const scope of ['general','empresa','heredar']){
+  const shared=await setup({role:'administrador'});
+  const obligation=shared.source.obligaciones[1];
+  shared.source.reglas=shared.source.reglas.filter(r=>r.catalogo_id!==obligation.catalogo_id);
+  await shared.page.goto('http://127.0.0.1:5179/pendientes');
+  await shared.page.locator('summary').filter({hasText:'Por revisar'}).click();
+  const article=shared.page.locator('article').filter({hasText:obligation.nombre});
+  await article.getByRole('button',{name:'Clasificar',exact:true}).click();
+  const dialog=shared.page.getByRole('dialog');
+  assert.equal(await dialog.getByLabel('Dónde se aplica').inputValue(),'general');
+  await dialog.getByLabel('Dónde se aplica').selectOption(scope);
+  await dialog.getByRole('button',{name:scope==='general'?'Guardar criterio general':'Guardar clasificación',exact:true}).click();
+  await dialog.waitFor({state:'hidden'});
+  const saved=shared.source.reglas.at(-1);
+  assert.equal(saved.catalogo_id,scope==='general'?obligation.catalogo_id:null);
+  assert.equal(saved.obligacion_id,scope==='general'?null:obligation.id);
+  assert.equal(saved.parametros.heredar_catalogo,scope==='heredar'?true:undefined);
+  assert.equal(saved.normativa_estado,'pendiente');
+  assert.equal(shared.calls.filter(c=>c.table==='obligacion_cumplimientos'&&c.method==='POST').length,0);
+  await shared.context.close();
+ }
  const corrected=await setup({loseCompletionResponse:true});
  const target=corrected.source.ocurrencias[0];
  corrected.source.cumplimientos.push({id:'old-false',empresa_id:corrected.source.empresa.id,obligacion_id:target.obligacion_id,ocurrencia_id:target.id,periodo_key:target.periodo_key,completada:false,vigente:true,evidencia_url:null});

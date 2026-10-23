@@ -68,9 +68,9 @@ async function obligacionesPendientes(
     from += data.length
   }
 
-  const rules: {id:string;obligacion_id:string|null;catalogo_id:string|null;clasificacion_estado:string;normativa_estado:string;tipo_control:string;version:number}[]=[];
+  const rules: {id:string;obligacion_id:string|null;catalogo_id:string|null;clasificacion_estado:string;normativa_estado:string;tipo_control:string;version:number;parametros?:unknown}[]=[];
   for(let from=0;;){
-    const {data,error}=await supabaseAdmin.from('obligacion_reglas').select('id,obligacion_id,catalogo_id,clasificacion_estado,normativa_estado,tipo_control,version').order('id').range(from,from+PAGE-1);
+    const {data,error}=await supabaseAdmin.from('obligacion_reglas').select('id,obligacion_id,catalogo_id,clasificacion_estado,normativa_estado,tipo_control,version,parametros').order('id').range(from,from+PAGE-1);
     if(error)throw error;
     if(!data?.length)break;
     rules.push(...data);from+=data.length;
