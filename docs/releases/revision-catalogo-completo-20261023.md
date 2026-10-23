@@ -21,7 +21,15 @@ En esta continuación se ajustaron **38 criterios compartidos** (incluye la nuev
 - Referencias fiscales sin asignaciones: DIOT, contabilidad electrónica, ISR retenido y derechos distinguen sus supuestos; no se activaron nuevas obligaciones fiscales en empresas.
 - Duplicados retirados del catálogo disponible: mensual de producción IMMEX, IVA mensual sin asignaciones, verificación de opinión positiva, verificación adicional de buzón y requisito general de contacto del buzón. Se conserva el seguimiento general y todas las referencias/antecedentes. La plantilla de reporte semestral de operaciones OEA quedó fuera de disponibilidad por falta de sustento en la cita, sin asignaciones ni historial afectado.
 
-## Casos que requieren decisión del administrador
+## Decisiones posteriores al corte original
+
+- El administrador decidió **conservar** la declaración anual genérica de comercio exterior. El artículo 32 CFF no acredita por sí solo la entrega consolidada: fundamento y clasificación siguen pendientes; no reabrir su retiro sin nueva instrucción.
+- Autorizó **retirar temporalmente OVL de todas las empresas** mientras busca su fundamento. Aplicado en producción: catálogo inactivo/no obligatorio, única asignación ITW inactiva, sus **once cumplimientos intactos**, cero asignaciones activas de OVL. Auditoría `retiro_temporal_ovl_20261023`; SQL guardado en `scripts/operations/retiro-temporal-ovl-20261023.sql`. Todas las huellas de historia y obligaciones ajenas se conservaron. No borrar ni trasladar marcas ni reejecutar la operación.
+- Nuevo corte: **88 definiciones históricas, 79 activas, 9 inactivas; 221 asignaciones activas**. Dos definiciones activas sin clasificación aprobada, cinco asignaciones; son la anual conservada y PROSEC semestral. Los conteos del recorrido anterior describen ese corte, no este.
+- **PROSEC semestral retirado por instrucción posterior del administrador:** catálogo inactivo y cuatro asignaciones inactivas; su único antecedente conservado. El reporte anual del artículo 8 se mantiene activo en cinco empresas y no cambió. Operación auditada `retiro_semestral_prosec_20261023`, guardada en `scripts/operations/retiro-semestral-prosec-20261023.sql`; todas las huellas de historia y obligaciones ajenas permanecieron iguales. La [guía oficial RAOCE 2026](https://www.snice.gob.mx/~oracle/SNICE_DOCS/RAOCE-2026-PROGRAMAS-DE-FOMENTO_20260423-20260423.pdf) confirma el anual; no se acreditó el semestral en la cita capturada.
+- **Corte final tras ambas decisiones: 88 definiciones, 78 activas y 10 inactivas; 217 asignaciones activas.** Solo queda sin clasificación aprobada la declaración anual genérica conservada por instrucción expresa, asignada a ITW. Conservarla no acredita fundamento, periodicidad ni cumplimiento. Próximo dato operativo: opción mensual/bimestral de descargos de Tokaikogyo.
+
+## Casos pendientes en el corte original (ver decisiones posteriores arriba)
 
 | Registro | Asignaciones activas | Situación |
 |---|---:|---|
@@ -192,6 +200,6 @@ La columna Excel localiza coincidencias literales del nombre o descripción ante
 
 Se aplicaron una sola vez en producción y se verificaron después. Los intentos detenidos por precondiciones se revirtieron íntegramente antes de corregir el alcance del guardado: no se forzó una excepción particular ni se reactivó una versión histórica por error. No hay cambios de esquema ni funciones y no corresponde repetir despliegues de esta revisión de datos.
 
-La revisión operativa del inventario está recorrida; el cierre de los tres casos señalados requiere la respuesta del administrador. La validación normativa integral, la selección de periodicidad de descargos y la conciliación de hechos de cumplimiento requieren fuentes/documentos reales adicionales. No presentar el catálogo como normativamente validado o todas las empresas como cumplidas.
+La revisión operativa del inventario está recorrida. Las decisiones de los tres casos de plantilla ya se recibieron y aplicaron: conservar anual genérico, retirar temporalmente OVL y retirar semestral PROSEC conservando anual real. El fundamento y clasificación del anual genérico siguen pendientes. La validación normativa integral, la selección de periodicidad de descargos y la conciliación de hechos de cumplimiento requieren fuentes/documentos reales adicionales. No presentar el catálogo como normativamente validado o todas las empresas como cumplidas.
 
 Resguardo de esta revisión: [PR #54](https://github.com/perezruiz444-crypto/calendario-compliance-lovable/pull/54). Comprobar su estado de CI/merge antes de cualquier reintento; las operaciones de producción ya están aplicadas y verificadas.
