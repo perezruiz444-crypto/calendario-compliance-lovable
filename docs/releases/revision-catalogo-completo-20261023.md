@@ -21,7 +21,14 @@ En esta continuación se ajustaron **38 criterios compartidos** (incluye la nuev
 - Referencias fiscales sin asignaciones: DIOT, contabilidad electrónica, ISR retenido y derechos distinguen sus supuestos; no se activaron nuevas obligaciones fiscales en empresas.
 - Duplicados retirados del catálogo disponible: mensual de producción IMMEX, IVA mensual sin asignaciones, verificación de opinión positiva, verificación adicional de buzón y requisito general de contacto del buzón. Se conserva el seguimiento general y todas las referencias/antecedentes. La plantilla de reporte semestral de operaciones OEA quedó fuera de disponibilidad por falta de sustento en la cita, sin asignaciones ni historial afectado.
 
-## Casos que requieren decisión del administrador
+## Decisiones posteriores al corte original
+
+- El administrador decidió **conservar** la declaración anual genérica de comercio exterior. El artículo 32 CFF no acredita por sí solo la entrega consolidada: fundamento y clasificación siguen pendientes; no reabrir su retiro sin nueva instrucción.
+- Autorizó **retirar temporalmente OVL de todas las empresas** mientras busca su fundamento. Aplicado en producción: catálogo inactivo/no obligatorio, única asignación ITW inactiva, sus **once cumplimientos intactos**, cero asignaciones activas de OVL. Auditoría `retiro_temporal_ovl_20261023`; SQL guardado en `scripts/operations/retiro-temporal-ovl-20261023.sql`. Todas las huellas de historia y obligaciones ajenas se conservaron. No borrar ni trasladar marcas ni reejecutar la operación.
+- Nuevo corte: **88 definiciones históricas, 79 activas, 9 inactivas; 221 asignaciones activas**. Dos definiciones activas sin clasificación aprobada, cinco asignaciones; son la anual conservada y PROSEC semestral. Los conteos del recorrido anterior describen ese corte, no este.
+- Sigue **PROSEC semestral**: la [guía oficial RAOCE 2026](https://www.snice.gob.mx/~oracle/SNICE_DOCS/RAOCE-2026-PROGRAMAS-DE-FOMENTO_20260423-20260423.pdf) confirma el reporte anual. El artículo 8 del Decreto y regla 3.4.11 de Economía lo sustentan; 3.4.12 atribuye facultades a funcionarios. No se identificó el instrumento de la cita «Acuerdo PROSEC Art. 12» ni fundamento para la entrega semestral descrita. No se modificó este seguimiento.
+
+## Casos pendientes en el corte original (ver decisiones posteriores arriba)
 
 | Registro | Asignaciones activas | Situación |
 |---|---:|---|
