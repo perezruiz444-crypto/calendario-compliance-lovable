@@ -31,6 +31,17 @@ test('versión propuesta nueva no sustituye la clasificación aprobada anterior'
  const result=build(source({reglas:[rule,{...rule,id:'draft',version:2,tipo_control:'evento',clasificacion_estado:'propuesta'}]}));
  assert.equal(result.obligaciones[0].regla.tipo,'condicion');
 });
+test('heredar catálogo sigue versiones generales nuevas sin revivir la excepción anterior',()=>{
+ const personal={...rule,id:'personal',catalogo_id:null,obligacion_id:'o',version:50,tipo_control:'evento'};
+ const inherit={...personal,id:'inherit',version:51,parametros:{heredar_catalogo:true}};
+ const result=build(source({reglas:[personal,inherit,{...personal,id:'draft',version:52,clasificacion_estado:'propuesta'},rule,{...rule,id:'new',version:2,tipo_control:'periodica'}]}));
+ assert.equal(result.obligaciones[0].regla.tipo,'periodica');
+ assert.equal(result.obligaciones[0].catalogoId,'catalog');
+});
+test('una excepción explícita conserva prioridad sobre versiones generales nuevas',()=>{
+ const result=build(source({reglas:[{...rule,version:100},{...rule,id:'exception',catalogo_id:null,obligacion_id:'o',version:1,tipo_control:'evento',parametros:{}}]}));
+ assert.equal(result.obligaciones[0].regla.tipo,'evento');
+});
 test('rubro requerido sin dato provoca revisión de aplicabilidad',()=>{
  const result=build(source({reglas:[{...rule,aplicabilidad:{rubro:['AA']}}]}));
  assert.equal(result.obligaciones[0].aplicable,null);

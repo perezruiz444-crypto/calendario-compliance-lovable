@@ -1,4 +1,4 @@
-import { latestScheduledReviews } from '../../supabase/functions/_shared/obligationPresentation.js';
+import { latestScheduledReviews, selectObligationRule } from '../../supabase/functions/_shared/obligationPresentation.js';
 import type { Database, Json } from '../integrations/supabase/types.js';
 import type { NewTables } from '../types/obligationOverviewDatabase.js';
 import { buildObligationSections, type AccionFuente, type ObligacionFuente, type OrigenFecha, type ReglaVista, type TipoControl } from './obligationModel.js';
@@ -7,7 +7,7 @@ type Tables = Database['public']['Tables'];
 export type RawObligation = Pick<Tables['obligaciones']['Row'], 'id' | 'empresa_id' | 'catalogo_id' | 'nombre' | 'categoria' | 'descripcion' | 'presentacion' | 'activa' | 'responsable_id' | 'responsable_tipo'> & Partial<Pick<Tables['obligaciones']['Row'], 'fecha_fin' | 'fecha_renovacion'>>;
 export type RawOccurrence = Pick<Tables['obligacion_ocurrencias']['Row'], 'id' | 'obligacion_id' | 'empresa_id' | 'periodo_key' | 'fecha_vencimiento' | 'estado'> & { evento_id?: string | null; origen_fecha?: string; fecha_objetivo_interna?: string | null };
 export type RawCompletion = Pick<Tables['obligacion_cumplimientos']['Row'], 'obligacion_id' | 'ocurrencia_id' | 'empresa_id' | 'periodo_key' | 'completada' | 'vigente' | 'evidencia_url'> & { evento_id?: string | null };
-export type RawRule = Pick<NewTables['obligacion_reglas']['Row'], 'id' | 'catalogo_id' | 'obligacion_id' | 'version' | 'tipo_control' | 'clasificacion_estado' | 'normativa_estado' | 'aplicabilidad'>;
+export type RawRule = Pick<NewTables['obligacion_reglas']['Row'], 'id' | 'catalogo_id' | 'obligacion_id' | 'version' | 'tipo_control' | 'clasificacion_estado' | 'normativa_estado' | 'aplicabilidad'> & { parametros?: Json };
 export type RawEvent = Pick<NewTables['obligacion_eventos']['Row'], 'id' | 'obligacion_id' | 'empresa_id' | 'tipo_evento' | 'fecha_evento'> & { evidencia_path?: string | null };
 export type RawReview = NewTables['obligacion_revisiones']['Row'];
 export type OverviewCompany = Partial<Tables['empresas']['Row']> & Pick<Tables['empresas']['Row'], 'id' | 'razon_social'>;
@@ -28,6 +28,7 @@ export interface OverviewSources {
   metadataReady: boolean;
 }
 export interface OverviewObligation extends ObligacionFuente {
+  catalogoId: string | null;
   nombre: string;
   descripcion: string | null;
   presentacion: string | null;
@@ -75,15 +76,14 @@ export function buildOverviewData(source: OverviewSources) {
   const assigned = new Set(source.asignaciones);
   const nombres = new Map(source.perfiles.map(p => [p.id, p.nombre_completo]));
   const obligations: OverviewObligation[] = source.obligaciones.map(ob => {
-    const approved = source.reglas.filter(r => r.clasificacion_estado === 'aprobada' && (r.obligacion_id === ob.id || (ob.catalogo_id !== null && r.catalogo_id === ob.catalogo_id)))
-      .sort((a, b) => Number(b.obligacion_id === ob.id) - Number(a.obligacion_id === ob.id) || b.version - a.version)[0];
+    const approved = selectObligationRule(source.reglas,ob);
     const regla: ReglaVista | null = approved ? {
       tipo: TYPES.find(t => t === approved.tipo_control) ?? null,
       clasificacionAprobada: true, normativaValidada: approved.normativa_estado === 'validada',
     } : null;
     const reviews = source.revisiones.filter(r => r.obligacion_id === ob.id)
       .sort((a, b) => b.revisada_en.localeCompare(a.revisada_en) || b.id.localeCompare(a.id));
-    return { id: ob.id, empresaId: ob.empresa_id, programa: ob.categoria, activa: ob.activa,
+    return { id: ob.id, catalogoId: ob.catalogo_id, empresaId: ob.empresa_id, programa: ob.categoria, activa: ob.activa,
       aplicable: approved ? applicability(approved.aplicabilidad, empresa) : true, regla,
       nombre: ob.nombre, descripcion: ob.descripcion, presentacion: ob.presentacion,
       asignadaAMi: assigned.has(ob.id), responsable: ob.responsable_id ? nombres.get(ob.responsable_id) ?? 'Responsable asignado' : null,
