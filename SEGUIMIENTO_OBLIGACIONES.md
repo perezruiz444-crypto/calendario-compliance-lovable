@@ -175,3 +175,6 @@ Después de cada decisión, actualizar la fila correspondiente con: alcance por 
 
 
 **Resguardo de las decisiones posteriores:** [retiro de OVL y semestral PROSEC](https://github.com/perezruiz444-crypto/calendario-compliance-lovable/pull/55). Ambas operaciones ya están aplicadas en producción; el estado de integración del PR debe verificarse antes de cualquier reintento. No hay cambios de interfaz ni funciones.
+
+
+**Integración del calendario Anexo 30:** [PR de cálculo y seguimiento](https://github.com/perezruiz444-crypto/calendario-compliance-lovable/pull/56). Backend y validación acotada ya aplicados; revisar estado de merge y publicar en Lovable antes de anunciar disponible el nuevo diálogo. No repetir migración/operación ni registrar eventos o cumplimientos reales para probar.
