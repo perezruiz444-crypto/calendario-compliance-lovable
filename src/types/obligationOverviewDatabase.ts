@@ -13,6 +13,8 @@ export type OverviewDatabase = Omit<Database, 'public'> & { public: Omit<Databas
   obligacion_cumplimientos: Extended<Database['public']['Tables']['obligacion_cumplimientos'], ExtraCompletion>;
  };
  Functions: Database['public']['Functions'] & {
+  previsualizar_anexo30: { Args: { p_obligacion_id: string; p_frecuencia: string; p_origen: string }; Returns: Json };
+  programar_anexo30: { Args: { p_obligacion_id: string; p_frecuencia: string; p_origen: string }; Returns: string };
   registrar_cumplimiento_obligacion: { Args: { p_obligacion_id: string; p_periodo_key: string; p_ocurrencia_id?: string; p_evento_id?: string; p_evidencia_path?: string; p_notas?: string }; Returns: string };
   obligacion_v2_puede_registrar: { Args: { p_obligacion_id: string }; Returns: boolean };
   generar_mis_avisos_obligaciones: { Args: Record<PropertyKey,never>; Returns: number };

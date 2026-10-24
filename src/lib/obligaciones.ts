@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
+import { anexo30PeriodLabel } from './anexo30';
 import { format, differenceInDays, isPast, isValid, getISOWeek, addWeeks, addMonths, addYears, addDays, setISOWeek, startOfISOWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -89,6 +90,8 @@ export function getCurrentPeriodKey(presentacion: string | null): string {
  * "2026-10" → "Octubre 2026", "2026-T4" → "4º trimestre 2026", "2026" → "Año 2026".
  */
 export function getPeriodLabel(presentacion: string | null, periodKey: string): string {
+  const anexoPeriod = anexo30PeriodLabel(periodKey);
+  if (anexoPeriod) return anexoPeriod;
   let m: RegExpMatchArray | null;
   if ((m = periodKey.match(/^(\d{4})-W(\d{1,2})$/))) {
     const inicio = startOfISOWeek(setISOWeek(new Date(Number(m[1]), 0, 4), Number(m[2])));

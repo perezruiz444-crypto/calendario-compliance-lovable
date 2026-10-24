@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "test:ui": "tsc src/lib/reportPeriod.ts src/lib/pagination.ts src/lib/reportSummary.ts src/lib/obligationModel.ts src/lib/obligationDate.ts src/lib/obligationOverviewData.ts --target ES2022 --module NodeNext --rootDir . --outDir .test-build --skipLibCheck && node --test tests/*.test.mjs",
+    "test:ui": "tsc src/lib/reportPeriod.ts src/lib/pagination.ts src/lib/reportSummary.ts src/lib/obligationModel.ts src/lib/obligationDate.ts src/lib/anexo30.ts src/lib/obligationOverviewData.ts --target ES2022 --module NodeNext --rootDir . --outDir .test-build --skipLibCheck && node --test tests/*.test.mjs",
     "preview": "vite preview",
     "test:obligations:browser": "node tests/browser/obligation-overview.mjs",
     "test:obligations:sql": "node scripts/test-obligation-contract.mjs"
