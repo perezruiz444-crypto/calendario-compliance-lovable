@@ -1,10 +1,10 @@
 # Revisión operativa completa del catálogo — 23 de octubre de 2026
 
-Punto de entrada: [SEGUIMIENTO_OBLIGACIONES.md](../../SEGUIMIENTO_OBLIGACIONES.md). Revisión operativa de las **88 definiciones históricas**: **80 activas y 8 inactivas**, con **222 asignaciones activas**. No son 217 obligaciones diferentes ni un contador de atrasos.
+Punto de entrada: [SEGUIMIENTO_OBLIGACIONES.md](../../SEGUIMIENTO_OBLIGACIONES.md). Revisión operativa de las **88 definiciones históricas**: **78 activas y 10 inactivas**, con **217 asignaciones activas** (corte actualizado tras decisiones posteriores). No son 217 obligaciones diferentes ni un contador de atrasos.
 
 En esta continuación se ajustaron **38 criterios compartidos** (incluye la nueva separación de inventario inicial), se retiraron de disponibilidad **6 definiciones duplicadas o no acreditadas** y se retiró una asignación duplicada de buzón. Las reglas operativas de las demás definiciones se conservaron tras revisar su contenido; esto no constituye una validación normativa integral ni de aplicabilidad por empresa.
 
-**Clasificación actual del catálogo activo:** Por evento: 20, Entrega por periodo: 12, Condición permanente: 42, Vigencia: 1, Sin clasificación: 3, Consecuencia del incumplimiento: 2.
+**Clasificación actual del catálogo activo:** Por evento: 20, Entrega por periodo: 12, Condición permanente: 42, Vigencia: 1, Sin clasificación: 1, Consecuencia del incumplimiento: 2.
 
 ## Cambios aplicados y comprobados
 
@@ -113,7 +113,7 @@ La columna Excel localiza coincidencias literales del nombre o descripción ante
 | Declaración Anual de Contribuciones Comercio Exterior | Sin clasificación aprobada | 1 | Decisión pendiente: uso interno o retiro; no se acredita la entrega capturada. Sin coincidencia literal; ver fuente y dictamen. |
 | Opinión positiva de cumplimiento fiscal | Condición permanente | 6 | Criterio ajustado y comprobado; normativa integral pendiente. OBLIGACIONES.xlsx · Hoja1 · B2 |
 | Pago de Cuotas Compensatorias | Por evento | 1 | Criterio ajustado y comprobado; normativa integral pendiente. Sin coincidencia literal; ver fuente y dictamen. |
-| Reporte de Operaciones Vuelta Larga (OVL) | Sin clasificación aprobada | 1 | Decisión pendiente: uso interno o retiro; no se acredita la entrega capturada. Sin coincidencia literal; ver fuente y dictamen. |
+| Reporte de Operaciones Vuelta Larga (OVL) | Inactiva | 0 | Retiro temporal aplicado por instrucción del administrador. Once marcas de ITW conservadas. |
 
 ### immex
 
@@ -184,7 +184,7 @@ La columna Excel localiza coincidencias literales del nombre o descripción ante
 | Cancelación | Consecuencia del incumplimiento | 5 | Criterio ajustado y comprobado; normativa integral pendiente. OBLIGACIONES.xlsx · Hoja1 · B60 |
 | Control de inventarios | Condición permanente | 5 | Criterio ajustado y comprobado; normativa integral pendiente. OBLIGACIONES.xlsx · Hoja1 · B28 |
 | Enajenación | Condición permanente | 5 | Se conserva tipo operativo; validar norma y supuesto concreto antes de confirmar fechas. OBLIGACIONES.xlsx · Hoja1 · B64 |
-| Informe de Utilización PROSEC | Sin clasificación aprobada | 4 | Decisión pendiente: uso interno o retiro; no se acredita la entrega capturada. Sin coincidencia literal; ver fuente y dictamen. |
+| Informe de Utilización PROSEC | Inactiva | 0 | Retiro aplicado por instrucción del administrador. Antecedente de ITW conservado; reporte anual real sigue activo. |
 | PROSEC — vigencia ligada al reporte anual | Condición permanente | 5 | Criterio ajustado y comprobado; normativa integral pendiente. Sin coincidencia literal; ver fuente y dictamen. |
 | Reporte Anual Operaciones | Entrega por periodo | 5 | Criterio ajustado y comprobado; normativa integral pendiente. OBLIGACIONES.xlsx · Hoja1 · B58 |
 
@@ -203,3 +203,6 @@ Se aplicaron una sola vez en producción y se verificaron después. Los intentos
 La revisión operativa del inventario está recorrida. Las decisiones de los tres casos de plantilla ya se recibieron y aplicaron: conservar anual genérico, retirar temporalmente OVL y retirar semestral PROSEC conservando anual real. El fundamento y clasificación del anual genérico siguen pendientes. La validación normativa integral, la selección de periodicidad de descargos y la conciliación de hechos de cumplimiento requieren fuentes/documentos reales adicionales. No presentar el catálogo como normativamente validado o todas las empresas como cumplidas.
 
 Resguardo de esta revisión: [PR #54](https://github.com/perezruiz444-crypto/calendario-compliance-lovable/pull/54). Comprobar su estado de CI/merge antes de cualquier reintento; las operaciones de producción ya están aplicadas y verificadas.
+
+
+**Calendario Anexo 30, continuación:** ver [cálculo y verificación](calendario-anexo30-20261023.md). Dos versiones compartidas con validación acotada del cálculo; calendario hasta 30/11/2026. Backend aplicado sin crear eventos, periodos ni cumplimientos. La interfaz requiere integrar el PR y publicar manualmente en Lovable.

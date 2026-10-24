@@ -11,6 +11,13 @@ async function setup(options={}){
  await context.routeWebSocket('**/*',socket=>socket.close());
  const source=structuredClone(fixture);
  const state={failRules:false,deny:false,noCompany:false,...options};
+ if(state.anexo30){
+  for(const [suffix,catalogo_id,nombre,tipo] of [['031','9e088c03-803f-4625-876a-e4d1d1b1f9b1','Descargos Anexo 30 ficticios','periodica'],['032','0d34c8bc-b57b-43a2-ade9-401563e2f203','Inventario inicial Anexo 30 ficticio','evento']]){
+   const id='40000000-0000-4000-8000-000000000'+suffix;
+   source.obligaciones.push({...source.obligaciones[0],id,catalogo_id,nombre,empresa_id:source.empresa.id,activa:true,responsable_id:null});
+   source.reglas.push({id:'regla-anexo-'+suffix,catalogo_id,obligacion_id:null,version:1,tipo_control:tipo,clasificacion_estado:'aprobada',normativa_estado:'validada',aplicabilidad:{},parametros:{}});
+  }
+ }
  const calls=[];
  const user={id:uid,email:'cliente@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{nombre_completo:'Ana ficticia'},created_at:'2026-10-14T12:00:00Z'};
  const payload={sub:uid,role:'authenticated',exp:Math.floor(Date.now()/1000)+3600};
@@ -30,6 +37,16 @@ async function setup(options={}){
   if(method==='OPTIONS')return route.fulfill({status:204,headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Allow-Methods':'*'}});
   if(url.pathname.includes('/auth/v1/'))return json({user});
   if(url.pathname.includes('/rpc/get_my_role'))return json(state.role??'cliente');
+  if(url.pathname.includes('/rpc/previsualizar_anexo30')){
+   const body=JSON.parse(request.postData());
+   const base=body.p_frecuencia==='bimestral'?'2026-11-30':body.p_origen==='2026-11-01'?'2026-12-31':body.p_origen==='2026-07-01'?'2026-08-31':'2026-10-31';
+   return json({fecha_base:base,fecha_limite:base==='2026-12-31'?null:base==='2026-10-31'?'2026-11-02':base,periodo_inicio:body.p_origen,periodo_fin:body.p_frecuencia==='bimestral'?'2026-10-31':'2026-09-30',motivo:base==='2026-12-31'?'calendario_fuera_de_cobertura':null});
+  }
+  if(url.pathname.includes('/rpc/programar_anexo30')){
+   const body=JSON.parse(request.postData());
+   assert.equal(body.p_frecuencia,'bimestral');assert.equal(body.p_origen,'2026-09-01');
+   return json('90000000-0000-4000-8000-000000000001');
+  }
   if(url.pathname.includes('/rpc/obligacion_v2_puede_registrar'))return json(!state.deny);
   if(url.pathname.includes('/rpc/registrar_revision_obligacion')){
    const body=JSON.parse(request.postData());
@@ -98,8 +115,34 @@ async function setup(options={}){
  return {context,page,state,source,calls};
 }
 try {
+  const anexo=await setup({anexo30:true});
+ await anexo.page.clock.install({time:new Date('2026-10-23T18:00:00Z')});
+ await anexo.page.goto('http://127.0.0.1:5179/pendientes');
+ await anexo.page.getByText('Descargos Anexo 30 ficticios',{exact:true}).first().locator('..').getByRole('button',{name:'Calcular plazo'}).click();
+ const anexoDialog=anexo.page.getByRole('dialog');
+ await anexoDialog.getByLabel('Periodicidad de este informe').selectOption('mensual');
+ await anexoDialog.getByLabel('Mes de operaciones',{exact:true}).fill('2026-09');
+ await anexoDialog.getByText('Prorrogado al siguiente día hábil conforme al calendario verificado.').waitFor();
+ await anexoDialog.getByLabel('Periodicidad de este informe').selectOption('bimestral');
+ await anexoDialog.getByText('Operaciones:').waitFor();
+ await anexo.page.setViewportSize({width:390,height:844});
+ assert.equal(await anexo.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
+ await anexo.page.screenshot({path:'/tmp/anexo30-calendario-preview.png'});
+ await anexoDialog.getByRole('button',{name:'Programar periodo'}).click();
+ await anexoDialog.waitFor({state:'hidden'});
+ assert.equal(anexo.calls.filter(c=>c.table==='programar_anexo30').length,1);
+ assert.equal(anexo.calls.filter(c=>c.table==='registrar_cumplimiento_obligacion').length,0);
+ await anexo.page.getByText('Descargos Anexo 30 ficticios',{exact:true}).first().locator('..').getByRole('button',{name:'Calcular plazo'}).click();
+ await anexoDialog.getByLabel('Periodicidad de este informe').selectOption('mensual');
+ await anexoDialog.getByLabel('Mes de operaciones',{exact:true}).fill('2026-11');
+ await anexoDialog.getByText('El plazo base está calculado.',{exact:false}).waitFor();
+ assert.equal(await anexoDialog.getByRole('button',{name:'Programar periodo'}).isDisabled(),true);
+ await anexoDialog.getByLabel('Mes de operaciones',{exact:true}).fill('2026-07');
+ await anexoDialog.getByText('Este plazo ya pasó.',{exact:false}).waitFor();
+ assert.equal(await anexoDialog.getByRole('button',{name:'Programar periodo'}).isDisabled(),true);
+ await anexo.context.close();
  for(const scope of ['general','empresa','heredar']){
-  const shared=await setup({role:'administrador'});
+ const shared=await setup({role:'administrador'});
   const obligation=shared.source.obligaciones[1];
   shared.source.reglas=shared.source.reglas.filter(r=>r.catalogo_id!==obligation.catalogo_id);
   await shared.page.goto('http://127.0.0.1:5179/pendientes');
@@ -226,7 +269,7 @@ try {
  await management.context.close();
  const activation=await setup({role:'administrador',catalog:[{id:'30000000-0000-4000-8000-000000000099',programa:'general',categoria:'general',nombre:'Control sintético nuevo',descripcion:'Solo prueba local de refresco',presentacion:'Mensual',frecuencia_tipo:'MENSUAL',dia_vencimiento:20,obligatorio:false,activo:true}]});
  await activation.page.goto(`http://127.0.0.1:5179/empresas/${activation.source.empresa.id}`);
- await activation.page.locator('#catalogo-activacion-section').getByRole('button',{name:'Activar',exact:true}).first().click();
+ await activation.page.locator('#catalogo-activacion-section').getByRole('button',{name:'Activar',exact:true}).first().click().catch(async error=>{await activation.page.screenshot({path:'/tmp/anexo30-activation-failure.png'});console.error((await activation.page.locator('body').innerText()).slice(0,5000));throw error;});
  await activation.page.getByRole('dialog').getByRole('button',{name:/^Activar y generar/}).click();
  await activation.page.getByRole('region',{name:'Obligaciones organizadas',exact:true}).getByText('Control sintético nuevo',{exact:true}).waitFor({state:'attached',timeout:5000});
  assert.ok(activation.calls.some(c=>c.table==='obligaciones'&&c.method==='POST'));

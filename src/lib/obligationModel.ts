@@ -104,7 +104,7 @@ export function effectiveActionState(accion: AccionFuente, hoy: string): EstadoA
 }
 
 export function summarizePeriod(acciones: readonly AccionFuente[], periodo: string) {
-  const unique = new Map(acciones.filter(a => a.periodo === periodo).map(a => [a.id, a]));
+  const unique = new Map(acciones.filter(a => a.periodo === periodo || (a.periodo?.startsWith('anexo30:') && validDateKey(a.fecha) && a.fecha.slice(0, 7) === periodo)).map(a => [a.id, a]));
   const total = unique.size;
   const cumplidas = [...unique.values()].filter(a => a.completada).length;
   return { total, cumplidas, pendientes: total - cumplidas, porcentaje: total ? Math.round(cumplidas / total * 100) : null };

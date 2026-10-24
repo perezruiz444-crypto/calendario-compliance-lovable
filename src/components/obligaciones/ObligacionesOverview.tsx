@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CATEGORIA_LABELS, formatDateShort, getPeriodLabel } from '@/lib/obligaciones';
 import { classifyObligation, effectiveActionState, summarizePeriod, validDateKey } from '@/lib/obligationModel';
 import type { OverviewAction, OverviewData, OverviewObligation, OverviewTask } from '@/lib/obligationOverviewData';
+import { ANEXO30_DESCARGOS, ANEXO30_INICIAL } from '@/lib/anexo30';
 
 interface Props {
   data: OverviewData;
@@ -21,6 +22,7 @@ interface Props {
   onEvidence?: (path: string) => void;
   onClassify?: (ob: OverviewObligation) => void;
   onEvent?: (ob: OverviewObligation) => void;
+  onAnexo30?: (ob: OverviewObligation) => void;
 }
 const actionPeriod = (a: OverviewAction, ob: OverviewObligation) => a.eventoId ? `${a.eventoNombre??'Evento registrado'}${a.eventoFecha?` · ${formatDateShort(a.eventoFecha)}`:''}` : a.periodo ? getPeriodLabel(ob.presentacion,a.periodo) : 'Sin periodo';
 const programaLabel = (programa: string) => programa === 'oea' ? 'OEA' : programa === 'matriz_seguridad' ? 'Matriz de Seguridad' : CATEGORIA_LABELS[programa] ?? programa;
@@ -58,7 +60,7 @@ function References({ ob, onEvidence }: { ob: OverviewObligation; onEvidence?: (
   </div>;
 }
 
-export function ObligacionesOverview({ data, hoy, canRegister, onRegister, onHistory, onTask, busyId, canManage, onRevision, onEvent, onClassify, onEvidence }: Props) {
+export function ObligacionesOverview({ data, hoy, canRegister, onRegister, onHistory, onTask, busyId, canManage, onRevision, onEvent, onClassify, onEvidence, onAnexo30 }: Props) {
   const instance = useId();
   const [programa, setPrograma] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
@@ -120,6 +122,7 @@ export function ObligacionesOverview({ data, hoy, canRegister, onRegister, onHis
         <div><label htmlFor={`${instance}-buscar`} className="text-xs text-muted-foreground block mb-1">Buscar</label><div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" aria-hidden="true" /><Input className="pl-9" id={`${instance}-buscar`} value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Nombre de la obligación" /></div></div>
         <div><label htmlFor={`${instance}-programa`} className="text-xs text-muted-foreground block mb-1">Programa</label><Select value={programa} onValueChange={setPrograma}><SelectTrigger id={`${instance}-programa`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos los programas</SelectItem>{programs.map(p=><SelectItem key={p} value={p}>{programaLabel(p)}</SelectItem>)}</SelectContent></Select></div>
       </div>
+      {onAnexo30 && visibles.filter(ob => ob.activa && ob.aplicable !== false && (ob.catalogoId === ANEXO30_DESCARGOS || ob.catalogoId === ANEXO30_INICIAL)).map(ob => <div className="rounded-md border p-4 space-y-2" key={`calendario-${ob.id}`}><p className="font-medium">{ob.nombre}</p><p className="text-sm text-muted-foreground">{ob.catalogoId === ANEXO30_INICIAL ? 'Calcula treinta días naturales desde el inicio real de vigencia.' : 'Selecciona el mes o bimestre de operaciones para calcular su plazo de presentación.'}</p><Button variant="outline" size="sm" onClick={() => onAnexo30(ob)}>Calcular plazo</Button></div>)}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full h-auto gap-1">
           <TabsTrigger className="min-h-11" value="acciones">Acciones</TabsTrigger><TabsTrigger className="min-h-11" value="vigencias">Vigencias</TabsTrigger><TabsTrigger className="min-h-11" value="condiciones">Condiciones</TabsTrigger><TabsTrigger className="min-h-11" value="eventos">Por evento</TabsTrigger>

@@ -11,6 +11,8 @@ import { EvidenciaCumplimiento } from './EvidenciaCumplimiento';
 import { ClasificarObligacionDialog } from './ClasificarObligacionDialog';
 import { RegistrarSeguimientoDialog } from './RegistrarSeguimientoDialog';
 import { CumplimientoHistorial } from './CumplimientoHistorial';
+import { CalendarioAnexo30Dialog } from './CalendarioAnexo30Dialog';
+import { ANEXO30_INICIAL } from '@/lib/anexo30';
 import type { OverviewAction, OverviewObligation } from '@/lib/obligationOverviewData';
 const TareaDetailSheet = lazy(() => import('@/components/tareas/TareaDetailSheet'));
 
@@ -25,6 +27,7 @@ export function ConnectedObligacionesOverview({ empresaId }: { empresaId: string
   const [classification,setClassification]=useState<OverviewObligation|null>(null);
   const [tracking,setTracking]=useState<{ob:OverviewObligation;mode:'revision'|'evento'}|null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [anexo30, setAnexo30] = useState<OverviewObligation | null>(null);
   const register = async (accion: OverviewAction) => {
     if (!user || (!accion.ocurrenciaId && !accion.eventoId) || accion.empresaId !== empresaId) return;
     setBusyId(accion.id);
@@ -46,11 +49,13 @@ export function ConnectedObligacionesOverview({ empresaId }: { empresaId: string
       canRegister={(ob,accion) => ob.empresaId === empresaId && query.data.metadataReady && !query.isFetching && (!!accion.ocurrenciaId || !!accion.eventoId) && !accion.completada && canRecord}
       onEvidence={path=>void supabase.storage.from('evidencias-cumplimiento').createSignedUrl(path,60).then(({data,error})=>{if(error||!data?.signedUrl){toast.error('No pudimos abrir la evidencia');return;}window.open(data.signedUrl,'_blank','noopener,noreferrer');}).catch(()=>toast.error('No pudimos abrir la evidencia'))}
       onClassify={role==='administrador'?setClassification:undefined}
-      canManage={ob=>ob.empresaId===empresaId&&query.data.metadataReady&&canRecord} onRevision={ob=>setTracking({ob,mode:'revision'})} onEvent={ob=>setTracking({ob,mode:'evento'})}
+      onAnexo30={setAnexo30}
+      canManage={ob=>ob.empresaId===empresaId&&query.data.metadataReady&&canRecord} onRevision={ob=>setTracking({ob,mode:'revision'})} onEvent={ob=>ob.catalogoId===ANEXO30_INICIAL?setAnexo30(ob):setTracking({ob,mode:'evento'})}
       onRegister={accion => void register(accion)} onHistory={setHistory} onTask={task => setTaskId(task.id)} />
     {selected && selectedParent && user && <EvidenciaCumplimiento open onOpenChange={open => { if (!open) setSelected(null); }} empresaId={empresaId} obligacionId={selectedParent.id} ocurrenciaId={selected.ocurrenciaId} eventoId={selected.eventoId} periodoKey={selected.periodo!} userId={user.id} onCompleted={() => { setSelected(null); void query.refetch(); }} />}
     {classification&&<ClasificarObligacionDialog ob={classification} onClose={()=>setClassification(null)} onSaved={()=>void query.refetch()} />}
     {tracking&&<RegistrarSeguimientoDialog key={`${tracking.ob.id}:${tracking.mode}`} ob={tracking.ob} mode={tracking.mode} onClose={()=>setTracking(null)} onSaved={()=>void query.refetch()} />}
+    {anexo30 && <CalendarioAnexo30Dialog key={anexo30.id} ob={anexo30} canSave={canRecord && query.data.metadataReady && !query.isFetching} onClose={() => setAnexo30(null)} onSaved={() => void query.refetch()} />}
     {history && <CumplimientoHistorial open onOpenChange={open => { if (!open) setHistory(null); }} obligacionId={history.id} obligacionNombre={history.nombre} presentacion={history.presentacion} />}
     {taskId && <Suspense fallback={<p role="status">Cargando tarea…</p>}><TareaDetailSheet open onOpenChange={open => { if (!open) setTaskId(null); }} tareaId={taskId} onUpdate={() => void query.refetch()} /></Suspense>}
   </>;
