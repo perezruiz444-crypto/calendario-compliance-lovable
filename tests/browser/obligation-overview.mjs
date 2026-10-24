@@ -2,6 +2,7 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 await fs.mkdir('.superpowers/sdd/plan',{recursive:true});
+const evidenceRoot=await fs.mkdtemp('.superpowers/sdd/plan/browser-');
 const fixture=JSON.parse(await fs.readFile('tests/fixtures/obligation-demo.json','utf8'));
 const uid='10000000-0000-4000-8000-000000000002';
 const browser=await chromium.launch({headless:true,...(process.env.CHROME_EXECUTABLE ? {executablePath:process.env.CHROME_EXECUTABLE} : {})});
@@ -212,7 +213,7 @@ try {
  await app.page.getByText('Historial de periodos cumplidos (2)',{exact:true}).waitFor();
  assert.equal(app.source.cumplimientos.length,2);
  assert.equal(app.source.cumplimientos[1].evidencia_url,null);
- await app.page.screenshot({path:'.superpowers/sdd/plan/app-pendientes.png',fullPage:true});
+ await app.page.screenshot({path:`${evidenceRoot}/app-pendientes.png`,fullPage:true});
  await app.context.close();
  const failing=await setup({failRules:true});
  await failing.page.goto('http://127.0.0.1:5179/pendientes');
