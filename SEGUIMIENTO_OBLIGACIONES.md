@@ -178,3 +178,16 @@ Después de cada decisión, actualizar la fila correspondiente con: alcance por 
 
 
 **Integración del calendario Anexo 30:** [PR de cálculo y seguimiento](https://github.com/perezruiz444-crypto/calendario-compliance-lovable/pull/56). Backend y validación acotada ya aplicados; revisar estado de merge y publicar en Lovable antes de anunciar disponible el nuevo diálogo. No repetir migración/operación ni registrar eventos o cumplimientos reales para probar.
+
+
+## Corte del 24/10/2026: pendientes de cierre y cobertura
+
+- **Catálogo recorrido:** 88 definiciones históricas, 78 activas, 10 retiradas y 217 asignaciones activas. Una definición activa sin clasificación aprobada: declaración anual genérica de comercio exterior, conservada por decisión expresa. Falta identificar la entrega real y acreditar fundamento; no volver a preguntar si se retira.
+- **Anexo 30 integrado:** el PR de cálculo y seguimiento se fusionó el 24/10, con CI del PR y de main correctos. Main quedó en `88dd76e4ff7cc277b0c8b2f7f4de8bcf3566f5c8`; backend y dos nuevas versiones de regla ya aplicados, sin crear periodos/eventos/cumplimientos. Falta publicación manual en Lovable. El calendario corroborado cubre hasta 30/11/2026.
+- **Nuevo pendiente detectado al cruzar cobertura:** Johnson Electric y Xinquan tienen datos de CERTIVA en su ficha, pero cero seguimientos del Anexo 30 y ningún registro relacionado encontrado por categoría CERTIVA/nombres Anexo 30 o descargos, activos o inactivos. Tokaikogyo sí tiene las dos definiciones. Esto indica candidatos a revisar, no demuestra por sí solo aplicabilidad vigente ni autoriza inventar obligaciones vencidas.
+- **Johnson Electric:** autorización registrada del 15/12/2016, última renovación registrada del 20/12/2024 y vencimiento capturado del 20/12/2025. No se presume que la empresa carezca hoy de certificación: falta corroborar si existe renovación posterior.
+- **Xinquan:** oficio registrado y nota «Rubro A», última renovación capturada del 10/03/2025; faltan fechas estructuradas de autorización/vencimiento. No inferir una nueva vigencia ni plazo por esa sola nota.
+- La búsqueda en `documentos` de ambas empresas por metadatos de IVA/IEPS, certificación, renovación, SCCCyG, descargos y Anexo 30 no devolvió coincidencias. No equivale a revisión exhaustiva del contenido de todos los archivos, Mensajes u otros repositorios. Antes de activar, corroborar resolución/acuse vigente o confirmación operativa respaldada; sin crear eventos iniciales históricos ni cumplimientos para probar.
+- Siguen pendientes validaciones normativas específicas, fechas y aplicabilidad según la operación real de cada empresa. Recorrer y clasificar el catálogo no certifica integridad legal ni cumplimiento de todos los expedientes.
+
+**Para retomar:** «Lee este último corte. El calendario Anexo 30 ya está integrado; verifica publicación manual. Continúa con cobertura CERTIVA de Johnson Electric y Xinquan, buscando primero respaldo vigente en los documentos disponibles. No repitas retiros, migraciones ni cumplimientos; la declaración anual genérica se conserva y requiere identificar la entrega real».

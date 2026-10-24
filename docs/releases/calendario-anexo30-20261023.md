@@ -40,3 +40,7 @@ Migración `20261023220304_anexo30_calendar.sql` aplicada en producción con ese
 Security advisors: comprobar RPC públicas solo para sesiones autenticadas con autorización de empresa; helper de cálculo y trigger sin ejecución para anónimos o usuarios autenticados. Los [nuevos endpoints autenticados SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable) son intencionales para registrar seguimiento mediante permisos acotados; no conceden escritura directa a tablas ni acceso a otras empresas. Los hallazgos previos ajenos al cambio no se alteraron.
 
 Resguardo: [Calcula plazos del Anexo 30 y conserva el historial de la empresa](https://github.com/perezruiz444-crypto/calendario-compliance-lovable/pull/56). Verificar CI/merge antes de reintentar; backend ya aplicado y operación auditada. La publicación manual de la interfaz sigue pendiente.
+
+## Integración verificada el 24/10
+
+PR fusionado y CI de main correcto: `88dd76e4ff7cc277b0c8b2f7f4de8bcf3566f5c8`. La copia de trabajo de `/workspace` se sincronizó por fast-forward. No se verificó ni se anuncia sincronizada la copia del Mac. La publicación manual en Lovable sigue pendiente. El último repaso de cobertura identificó candidatos en Johnson Electric y Xinquan: datos CERTIVA capturados sin seguimientos Anexo 30; consultar el último corte de SEGUIMIENTO_OBLIGACIONES.md antes de activarlos.
