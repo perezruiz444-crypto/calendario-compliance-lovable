@@ -191,3 +191,8 @@ Después de cada decisión, actualizar la fila correspondiente con: alcance por 
 - Siguen pendientes validaciones normativas específicas, fechas y aplicabilidad según la operación real de cada empresa. Recorrer y clasificar el catálogo no certifica integridad legal ni cumplimiento de todos los expedientes.
 
 **Para retomar:** «Lee este último corte. El calendario Anexo 30 ya está integrado; verifica publicación manual. Continúa con cobertura CERTIVA de Johnson Electric y Xinquan, buscando primero respaldo vigente en los documentos disponibles. No repitas retiros, migraciones ni cumplimientos; la declaración anual genérica se conserva y requiere identificar la entrega real».
+
+
+## 31/10/2026: correos de obligaciones sin fines de semana
+
+[Configuración y verificación](docs/releases/correos-obligaciones-lunes-viernes-20261031.md). Aplicado en producción: `send-daily-summary-email` activo de lunes a viernes a las 08:00 de Ciudad de México (`0 14 * * 1-5`, cron en GMT). Migración `20261031141658_obligation_summary_weekdays.sql` y auditoría `obligation_summary_weekdays_20261031`. Comando e historial del job conservados; ningún otro job cambiado. No se enviaron correos de prueba ni se desplegaron funciones. No requiere publicación en Lovable. No reejecutar ni volver a habilitar fines de semana sin una nueva instrucción.
