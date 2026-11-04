@@ -13,6 +13,8 @@ export type OverviewDatabase = Omit<Database, 'public'> & { public: Omit<Databas
   obligacion_cumplimientos: Extended<Database['public']['Tables']['obligacion_cumplimientos'], ExtraCompletion>;
  };
  Functions: Database['public']['Functions'] & {
+  asegurar_horizonte_calendario: { Args: { p_empresa_id?: string }; Returns: number };
+  dias_recordatorio_calendario: { Args: { p_empresa_id?: string }; Returns: { empresa_id: string; tipo: string; dias_antes: number[] }[] };
   registrar_fecha_manual_obligacion: { Args: { p_obligacion_id: string }; Returns: undefined };
   previsualizar_anexo30: { Args: { p_obligacion_id: string; p_frecuencia: string; p_origen: string }; Returns: Json };
   programar_anexo30: { Args: { p_obligacion_id: string; p_frecuencia: string; p_origen: string }; Returns: string };

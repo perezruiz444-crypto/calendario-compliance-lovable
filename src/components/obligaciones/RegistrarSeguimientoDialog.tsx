@@ -11,7 +11,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { toast } from 'sonner';
 import type { OverviewObligation } from '@/lib/obligationOverviewData';
 
-export function RegistrarSeguimientoDialog({ ob, mode, onClose, onSaved }: { ob: OverviewObligation; mode: 'revision' | 'evento'; onClose: () => void; onSaved: () => void }) {
+export function RegistrarSeguimientoDialog({ ob, mode, onClose, onSaved }: { ob: Pick<OverviewObligation, 'id' | 'empresaId' | 'nombre'>; mode: 'revision' | 'evento'; onClose: () => void; onSaved: () => void }) {
  const [resultado,setResultado]=useState('verificada');
  const [notas,setNotas]=useState('');
  const [tipo,setTipo]=useState('');

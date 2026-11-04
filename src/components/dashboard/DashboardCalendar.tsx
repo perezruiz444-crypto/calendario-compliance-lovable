@@ -1,11 +1,11 @@
-import { pendingNext30 } from '@/lib/dashboardCalendar';
+import { pendingNext30, calendarEventIsDone } from '@/lib/dashboardCalendar';
 import { parseCalendarDate, mexicoDateKey, addCalendarDays, calendarDaysUntil } from '@/lib/obligationDate';
-import { useNavigate } from 'react-router-dom';
+import type { CalendarExportItem } from '@/lib/calendarIcs';
 import { includeObligationAction,selectObligationType,latestScheduledReviews } from '../../../supabase/functions/_shared/obligationPresentation';
 import { obligationOverviewClient } from '@/hooks/useObligationOverview';
 import { loadAllPages } from '@/lib/pagination';
 import { obligationsV2Enabled } from '@/lib/obligationFeature';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import listPlugin from '@fullcalendar/list';
@@ -32,6 +32,7 @@ interface FcEvent {
   title: string;
   start: string;
   end?: string;
+  allDay: true;
   backgroundColor: string;
   borderColor: string;
   textColor: string;
@@ -42,6 +43,9 @@ interface FcEvent {
     completada?: boolean;
     rawId?: string;
     ocurrenciaId?: string;
+    revisionId?: string;
+    categoria?: string;
+    origenFecha?: string;
     empresaId?: string;
     isRecurrente?: boolean;
     /** Fila de origen (tarea o documento); los consumidores solo leen `id` y `empresa_id`. */
@@ -79,6 +83,8 @@ interface DashboardCalendarProps {
   onEventClick?: (event: CalendarEventClick) => void;
   height?: string;
   filterEmpresaId?: string | null;
+  onExportItemsChange?: (items: CalendarExportItem[] | null) => void;
+  refreshKey?: number;
 }
 
 function eventColor(type: string, prioridad?: string, isOverdue?: boolean, isDone?: boolean): { bg: string; border: string } {
@@ -117,17 +123,21 @@ function EventContent({ eventInfo }: { eventInfo: EventContentArg }) {
   );
 }
 
-export default function DashboardCalendar({ onEventClick, height = '580px', filterEmpresaId }: DashboardCalendarProps) {
+export default function DashboardCalendar({ onEventClick, height = '580px', filterEmpresaId, onExportItemsChange, refreshKey = 0 }: DashboardCalendarProps) {
   const { user, role } = useAuth();
-  const navigate=useNavigate();
   const calRef = useRef<FullCalendar>(null);
   const [events, setEvents] = useState<FcEvent[]>([]);
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const [horizonError, setHorizonError] = useState(false);
+  const requestId = useRef(0);
+  const invalidateRequests = useCallback(() => { requestId.current++; }, []);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [showNext30, setShowNext30] = useState(false);
   const [selectedObId, setSelectedObId] = useState<string | null>(null);
   const [selectedOcurrenciaId, setSelectedOcurrenciaId] = useState<string | null>(null);
+  const [selectedRevisionId, setSelectedRevisionId] = useState<string | null>(null);
   const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
   // Por defecto, los clientes no ven Tareas (son operativas internas del despacho)
   const [activeTypes, setActiveTypes] = useState<Set<EventType>>(
@@ -155,8 +165,15 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
   const [fetchError,setFetchError]=useState(false);
   const fetchEvents = useCallback(async (start: Date, end: Date) => {
     if (!user) return;
-    setLoading(true);setFetchError(false);
+    const currentRequest = ++requestId.current;
+    setLoading(true);setFetchError(false);setHorizonError(false);
     try {
+    if (obligationsV2Enabled) {
+      const { error } = await obligationOverviewClient.rpc('asegurar_horizonte_calendario',
+        filterEmpresaId && filterEmpresaId !== 'all' ? { p_empresa_id: filterEmpresaId } : {});
+      if (currentRequest !== requestId.current) return;
+      setHorizonError(!!error);
+    }
     // Cargar la unión de la vista abierta y los próximos 30 días.
     const hoy = mexicoDateKey();
     const limite = addCalendarDays(hoy, 30);
@@ -203,11 +220,12 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         id: `oc-${ob.id}`,
         title: `${isDone ? '✓ ' : ''}${nombre}${ob.empresas?.razon_social ? ` · ${ob.empresas.razon_social}` : ''}`,
         start: ob.fecha_vencimiento,
+        allDay: true,
         backgroundColor: bg,
         borderColor: border,
         textColor: 'hsl(var(--foreground))',
         // rawId = obligación padre (para abrir el detail sheet); ocurrenciaId aparte.
-        extendedProps: { type: 'obligacion', rawId: ob.obligacion_id, ocurrenciaId: ob.id, empresaId: ob.empresa_id, isRecurrente: !!ob.obligaciones?.catalogo_id, estado: ob.estado, completada: isDone, data: ob },
+        extendedProps: { type: 'obligacion', rawId: ob.obligacion_id, ocurrenciaId: ob.id, empresaId: ob.empresa_id, categoria: ob.obligaciones?.categoria, origenFecha: ob.origen_fecha, isRecurrente: !!ob.obligaciones?.catalogo_id, estado: ob.estado, completada: isDone, data: ob },
       });
     });
 
@@ -218,7 +236,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         return query;
       });
       const parents=await loadAllPages((offset,size)=>{
-        let query=supabase.from('obligaciones').select('id,nombre,catalogo_id,empresa_id').eq('activa',true).order('id').range(offset,offset+size-1);
+        let query=supabase.from('obligaciones').select('id,nombre,catalogo_id,empresa_id,categoria').eq('activa',true).order('id').range(offset,offset+size-1);
         if(filterEmpresaId&&filterEmpresaId!=='all')query=query.eq('empresa_id',filterEmpresaId);
         return query;
       });
@@ -226,7 +244,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         const ob=parents.find(o=>o.id===review.obligacion_id);
         if(!ob||selectObligationType(rules,ob)!=='condicion'||!review.proxima_revision||!((review.proxima_revision>=viewStart&&review.proxima_revision<viewEnd)||(review.proxima_revision>=hoy&&review.proxima_revision<=limite)))continue;
         const colors=eventColor('obligacion',undefined,review.proxima_revision<hoy);
-        allEvents.push({id:`revision-${review.id}`,title:`Revisión interna: ${ob.nombre}`,start:review.proxima_revision,backgroundColor:colors.bg,borderColor:colors.border,textColor:'hsl(var(--foreground))',extendedProps:{type:'obligacion',rawId:ob.id,empresaId:ob.empresa_id}});
+        allEvents.push({id:`revision-${review.id}`,title:`Revisión interna: ${ob.nombre}`,start:review.proxima_revision,allDay:true,backgroundColor:colors.bg,borderColor:colors.border,textColor:'hsl(var(--foreground))',extendedProps:{type:'obligacion',rawId:ob.id,empresaId:ob.empresa_id,revisionId:review.id,categoria:ob.categoria,origenFecha:'interna'}});
       }
     }
     let tareasQuery = supabase
@@ -247,6 +265,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         id: `tarea-${t.id}`,
         title: t.titulo,
         start: t.fecha_vencimiento,
+        allDay: true,
         backgroundColor: bg,
         borderColor: border,
         textColor: 'hsl(var(--foreground))',
@@ -271,6 +290,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         id: `doc-${doc.id}`,
         title: `${doc.nombre}${doc.empresas?.razon_social ? ` · ${doc.empresas.razon_social}` : ''}`,
         start: doc.fecha_vencimiento,
+        allDay: true,
         backgroundColor: bg,
         borderColor: border,
         textColor: 'hsl(var(--foreground))',
@@ -278,28 +298,37 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       });
     });
 
-    setEvents(allEvents);
-    } catch {setEvents([]);setFetchError(true);}
-    finally {setLoading(false);}
+    if (currentRequest === requestId.current) setEvents(allEvents);
+    } catch {if (currentRequest === requestId.current) {setEvents([]);setFetchError(true);}}
+    finally {if (currentRequest === requestId.current) setLoading(false);}
   }, [user, filterEmpresaId]);
 
   // Eventos visibles según chips de tipo
-  const visibleEvents = events.filter(e => activeTypes.has(e.extendedProps.type as EventType));
+  const visibleEvents = useMemo(() => events.filter(e => activeTypes.has(e.extendedProps.type as EventType) && !(role === 'cliente' && e.extendedProps.type === 'tarea') && (!hideCompleted || !calendarEventIsDone(e))), [events, activeTypes, hideCompleted, role]);
+
+  const exportItems = useMemo<CalendarExportItem[]>(() => visibleEvents.filter(e => e.extendedProps.type === 'obligacion' && !calendarEventIsDone(e) && e.extendedProps.estado !== 'cancelada' && dateRange && e.start >= format(dateRange.start, 'yyyy-MM-dd') && e.start < format(dateRange.end, 'yyyy-MM-dd'))
+    .map(e => ({ id: e.id, title: e.title, date: e.start, empresaId: e.extendedProps.empresaId!, categoria: e.extendedProps.categoria ?? 'general', description: e.extendedProps.origenFecha === 'interna' ? 'Objetivo interno pendiente.' : e.extendedProps.origenFecha === 'normativa' ? 'Fecha normativa registrada.' : 'Fecha registrada; regla por validar.' })), [visibleEvents, dateRange]);
+
+  useEffect(() => { onExportItemsChange?.(loading || fetchError || !dateRange ? null : exportItems); }, [onExportItemsChange, exportItems, loading, fetchError, dateRange]);
 
   // Independiente de la vista de FullCalendar, excluye lo ya cumplido.
   const next30 = pendingNext30(visibleEvents, mexicoDateKey());
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
-    setDateRange({ start: arg.start, end: arg.end });
-    fetchEvents(arg.start, arg.end);
-  }, [fetchEvents]);
+    setDateRange(previous => previous?.start.getTime() === arg.start.getTime() && previous.end.getTime() === arg.end.getTime() ? previous : { start: arg.start, end: arg.end });
+  }, []);
+
+  useEffect(() => {
+    if (dateRange) void fetchEvents(dateRange.start, dateRange.end);
+    return invalidateRequests;
+  }, [dateRange, fetchEvents, invalidateRequests, refreshKey]);
 
   const handleEventClick = useCallback((arg: EventClickArg) => {
     const extendedProps = arg.event.extendedProps as FcEvent['extendedProps'];
     if (extendedProps.type === 'obligacion' && extendedProps.rawId) {
-      if(obligationsV2Enabled){navigate(role==='cliente'?'/pendientes':`/empresas/${extendedProps.empresaId}`);return;}
       setSelectedObId(extendedProps.rawId);
       setSelectedOcurrenciaId(extendedProps.ocurrenciaId ?? null);
+      setSelectedRevisionId(extendedProps.revisionId ?? null);
       setSheetOpen(true);
       return;
     }
@@ -308,12 +337,13 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     } else {
       toast.info(arg.event.title, { description: `${extendedProps.type} · ${arg.event.start?.toLocaleDateString('es-MX')}` });
     }
-  }, [onEventClick,navigate,role]);
+  }, [onEventClick]);
 
   if (!user) return null;
 
   return (
     <>
+      {horizonError && <p role="alert" className="text-sm text-muted-foreground p-3">Mostramos las fechas existentes. No pudimos actualizar los próximos 12 meses; recarga para reintentar.</p>}
       {fetchError&&<p role="alert" className="text-sm text-destructive p-3">No pudimos cargar la agenda. Recarga para reintentar; no es una agenda vacía.</p>}
       <Card className="shadow-card">
         <CardHeader className="pb-3">
@@ -358,6 +388,10 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
                   </button>
                 );
               })}
+            <button type="button" aria-pressed={hideCompleted} onClick={() => setHideCompleted(value => !value)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-none text-xs font-medium border transition-colors ${hideCompleted ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-background border-border text-muted-foreground'}`}>
+              Ocultar cumplidas
+            </button>
           </div>
         </CardHeader>
         <CardContent>
@@ -366,7 +400,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
               ref={calRef}
               plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
               locale={esLocale}
-              initialView={obligationsV2Enabled?"listMonth":"dayGridMonth"}
+              initialView="dayGridMonth"
               headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth,listYear' }}
               buttonText={{ today: 'Hoy', month: 'Mes', listMonth: 'Agenda', listYear: 'Próximos' }}
               views={{
@@ -430,6 +464,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         onOpenChange={setSheetOpen}
         obligacionId={selectedObId}
         ocurrenciaId={selectedOcurrenciaId}
+        revisionId={selectedRevisionId}
         onCumplimientoChange={() => { if (dateRange) fetchEvents(dateRange.start, dateRange.end); }}
       />
 
@@ -478,6 +513,13 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         .fc .fc-more-link { font-size: 0.72rem; color: hsl(var(--primary)); font-weight: 600; }
         .fc .fc-popover { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: var(--radius); box-shadow: 0 8px 24px hsl(var(--foreground) / 0.12); }
         .fc .fc-popover-header { background: hsl(var(--muted) / 0.5); border-radius: var(--radius) var(--radius) 0 0; }
+        @media (max-width: 640px) {
+          .fc .fc-header-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+          .fc .fc-toolbar-chunk { display: flex; justify-content: center; }
+          .fc .fc-toolbar-chunk:nth-child(2) { grid-row: 1; }
+          .fc .fc-toolbar-title { font-size: 1rem; }
+          .fc .fc-button { padding: 5px 10px !important; font-size: 0.72rem !important; }
+        }
       `}</style>
     </>
   );
