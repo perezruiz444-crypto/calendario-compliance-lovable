@@ -179,6 +179,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    const { error: horizonError } = await supabaseAdmin.rpc('asegurar_horizonte_calendario');
+    if (horizonError) throw horizonError;
+
     const today = mexicoDateKey();
     const next7Days = addCalendarDays(today, 7);
     const next30Days = addCalendarDays(today, 30);

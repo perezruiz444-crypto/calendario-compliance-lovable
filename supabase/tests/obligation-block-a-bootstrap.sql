@@ -68,3 +68,5 @@ ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY fixture_roles_self ON public.user_roles FOR SELECT TO authenticated USING(user_id=auth.uid());
 ALTER TABLE public.consultor_empresa_asignacion ENABLE ROW LEVEL SECURITY;
 CREATE POLICY fixture_assignments_self ON public.consultor_empresa_asignacion FOR SELECT TO authenticated USING(consultor_id=auth.uid());
+
+ALTER TABLE public.obligaciones ADD COLUMN created_at timestamptz DEFAULT '2026-01-01T12:00:00Z';
