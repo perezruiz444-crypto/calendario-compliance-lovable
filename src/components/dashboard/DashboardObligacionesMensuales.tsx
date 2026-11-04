@@ -1,5 +1,7 @@
+import { completionCounts } from '@/lib/dashboardCalendar';
+import { parseCalendarDate, mexicoDateKey } from '@/lib/obligationDate';
 import { useEffect, useState, useMemo } from 'react';
-import { format, getDaysInMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -84,14 +86,11 @@ export default function DashboardObligacionesMensuales() {
 
   // Obligaciones del MES actual, aplanadas desde las ocurrencias del hook.
   const obligaciones = useMemo<Obligacion[]>(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth();
+    const mesActual = mexicoDateKey().slice(0, 7);
     return ocurrencias
       .filter((oc) => {
         if (!oc.fecha_vencimiento) return false;
-        const d = new Date(oc.fecha_vencimiento + 'T12:00:00');
-        return d.getFullYear() === y && d.getMonth() === m;
+        return oc.fecha_vencimiento.slice(0, 7) === mesActual;
       })
       .map((oc) => ({
         id: oc.id,
@@ -164,19 +163,18 @@ export default function DashboardObligacionesMensuales() {
       if (aWeight !== bWeight) return aWeight - bWeight;
 
       // Desempate por fecha
-      const aDate = a.fecha_vencimiento ? new Date(a.fecha_vencimiento).getTime() : Infinity;
-      const bDate = b.fecha_vencimiento ? new Date(b.fecha_vencimiento).getTime() : Infinity;
+      const aDate = a.fecha_vencimiento ? parseCalendarDate(a.fecha_vencimiento).getTime() : Infinity;
+      const bDate = b.fecha_vencimiento ? parseCalendarDate(b.fecha_vencimiento).getTime() : Infinity;
       return aDate - bDate;
     });
   }, [obligaciones, cumplimientos, ocultarCumplidas]);
 
   // ── Derivados ──────────────────────────────────────────────────────
-  const now       = new Date();
+  const now       = parseCalendarDate(mexicoDateKey());
   const mesLabel  = format(now, 'MMMM yyyy', { locale: es });
   const mesTitulo = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
 
-  const completadas = Object.values(cumplimientos).filter(Boolean).length;
-  const pendientes  = obligaciones.length - completadas;
+  const { completadas, pendientes } = completionCounts(obligaciones, cumplimientos);
 
   // ── Loading ────────────────────────────────────────────────────────
   if (loading) {

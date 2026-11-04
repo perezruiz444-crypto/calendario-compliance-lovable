@@ -28,6 +28,8 @@ sql('../supabase/migrations/20261015153244_obligation_company_completion_access.
 sql('../supabase/migrations/20261015160130_obligation_completion_recording.sql');
 sql('../supabase/migrations/20261023220304_anexo30_calendar.sql');
 sql('../supabase/migrations/20261023220304_anexo30_calendar.sql');
-for(const file of ['obligation-block-a.sql','obligation-events.sql','obligation-rules.sql','obligation-direct-assignment.sql','obligation-storage.sql','obligation-generator.sql','obligation-internal-reviews.sql','obligation-operational-schedule.sql','obligation-shared-catalog.sql','obligation-notifications.sql','obligation-company-access.sql','obligation-completion-recording.sql','obligation-anexo30.sql'])sql(`../supabase/tests/${file}`);
+sql('../supabase/migrations/20261104155045_calendar_dates_reminders_manual_occurrences.sql');
+sql('../supabase/migrations/20261104155045_calendar_dates_reminders_manual_occurrences.sql');
+for(const file of ['obligation-block-a.sql','obligation-events.sql','obligation-rules.sql','obligation-direct-assignment.sql','obligation-storage.sql','obligation-generator.sql','obligation-internal-reviews.sql','obligation-operational-schedule.sql','obligation-shared-catalog.sql','obligation-notifications.sql','obligation-company-access.sql','obligation-completion-recording.sql','obligation-anexo30.sql','obligation-manual-reminders.sql'])sql(`../supabase/tests/${file}`);
 execFileSync(process.execPath,[fileURLToPath(new URL('./test-obligation-concurrency.mjs',import.meta.url))],{env:{...env,PSQL_BINARY:binary},stdio:'inherit'});
 console.log('PASS: contrato PostgreSQL local e idempotencia. No acredita Supabase Auth/Storage ni replay del esquema completo.');

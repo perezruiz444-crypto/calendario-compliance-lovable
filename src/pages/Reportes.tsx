@@ -1,3 +1,4 @@
+import { parseCalendarDate, calendarDaysUntil } from '@/lib/obligationDate';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { FileText, Download, Calendar, Building2, CheckSquare, AlertTriangle, User, Filter, Mail, Send, FileDown, Clock, TrendingUp, CheckCircle2, XCircle } from 'lucide-react';
-import { format, subMonths, differenceInDays } from 'date-fns';
+import { format, subMonths } from 'date-fns';
 import { CATEGORIA_LABELS } from '@/lib/obligaciones';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -325,8 +326,9 @@ export default function Reportes() {
       // Empresas cuya certificación vence dentro de la ventana de 30 días (solo las que tienen fecha).
       const vencenPronto = (fecha: string | null) => {
         if (!fecha) return false;
-        const vencimiento = new Date(fecha);
-        return vencimiento >= today && vencimiento <= in30Days;
+        const vencimiento = parseCalendarDate(fecha);
+        const dias = calendarDaysUntil(fecha, today);
+        return dias >= 0 && dias <= 30;
       };
 
       const certificacionesVencimiento: VencimientoCertificacion[] = (empresasData ?? []).flatMap(emp =>
@@ -607,7 +609,7 @@ export default function Reportes() {
           o.nombre,
           o.empresa,
           o.categoria,
-          o.fecha_vencimiento ? format(new Date(o.fecha_vencimiento), 'dd/MM/yyyy') : '-'
+          o.fecha_vencimiento ? format(parseCalendarDate(o.fecha_vencimiento), 'dd/MM/yyyy') : '-'
         ])
       );
     }
@@ -620,7 +622,7 @@ export default function Reportes() {
         ...reporteData.certificacionesVencimiento.map(c => [
           c.razon_social,
           c.tipo,
-          format(new Date(c.fecha_vencimiento), 'dd/MM/yyyy')
+          format(parseCalendarDate(c.fecha_vencimiento), 'dd/MM/yyyy')
         ])
       );
     }
@@ -646,7 +648,7 @@ export default function Reportes() {
       'Empresa': o.empresa,
       'Programa': CATEGORIA_LABELS[o.categoria] || o.categoria,
       'Vencimiento': o.fecha_vencimiento
-        ? new Date(o.fecha_vencimiento).toLocaleDateString('es-MX')
+        ? parseCalendarDate(o.fecha_vencimiento).toLocaleDateString('es-MX')
         : '—',
       'Estado': 'Pendiente',
     }));
@@ -1098,7 +1100,7 @@ export default function Reportes() {
                 <CardContent>
                   <div className="space-y-2">
                     {reporteData.obligacionesPendientesDetalle.map((ob, idx) => {
-                      const dias = ob.fecha_vencimiento ? differenceInDays(new Date(ob.fecha_vencimiento), new Date()) : null;
+                      const dias = ob.fecha_vencimiento ? calendarDaysUntil(ob.fecha_vencimiento, new Date()) : null;
                       return (
                         <div key={idx} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:border-warning/50 transition-colors">
                           <div className="flex-1 min-w-0">
@@ -1399,7 +1401,7 @@ export default function Reportes() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-heading font-medium text-destructive">
-                          Vence: {format(new Date(cert.fecha_vencimiento), 'dd/MM/yyyy', { locale: es })}
+                          Vence: {format(parseCalendarDate(cert.fecha_vencimiento), 'dd/MM/yyyy', { locale: es })}
                         </p>
                       </div>
                     </div>

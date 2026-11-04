@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -147,7 +148,7 @@ export function EmpresaCertificacionCard({ empresa, canEdit, onUpdate }: Empresa
               <div>
                 <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Autorización</label>
                 <p className="font-body mt-1">
-                  {new Date(empresa.cert_iva_ieps_fecha_autorizacion).toLocaleDateString('es-MX')}
+                  {parseCalendarDate(empresa.cert_iva_ieps_fecha_autorizacion).toLocaleDateString('es-MX')}
                 </p>
               </div>
             )}
@@ -155,7 +156,7 @@ export function EmpresaCertificacionCard({ empresa, canEdit, onUpdate }: Empresa
               <div>
                 <label className="text-sm font-heading font-medium text-muted-foreground">Última Renovación</label>
                 <p className="font-body mt-1">
-                  {new Date(empresa.cert_iva_ieps_fecha_ultima_renovacion).toLocaleDateString('es-MX')}
+                  {parseCalendarDate(empresa.cert_iva_ieps_fecha_ultima_renovacion).toLocaleDateString('es-MX')}
                 </p>
               </div>
             )}
@@ -163,7 +164,7 @@ export function EmpresaCertificacionCard({ empresa, canEdit, onUpdate }: Empresa
               <div>
                 <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Vencimiento</label>
                 <p className="font-body mt-1">
-                  {new Date(empresa.cert_iva_ieps_fecha_vencimiento).toLocaleDateString('es-MX')}
+                  {parseCalendarDate(empresa.cert_iva_ieps_fecha_vencimiento).toLocaleDateString('es-MX')}
                 </p>
               </div>
             )}
@@ -171,7 +172,7 @@ export function EmpresaCertificacionCard({ empresa, canEdit, onUpdate }: Empresa
               <div>
                 <label className="text-sm font-heading font-medium text-muted-foreground">Fecha para Renovar</label>
                 <p className="font-body mt-1">
-                  {new Date(empresa.cert_iva_ieps_fecha_renovar).toLocaleDateString('es-MX')}
+                  {parseCalendarDate(empresa.cert_iva_ieps_fecha_renovar).toLocaleDateString('es-MX')}
                 </p>
               </div>
             )}

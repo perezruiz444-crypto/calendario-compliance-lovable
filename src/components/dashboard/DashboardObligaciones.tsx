@@ -1,3 +1,4 @@
+import { parseCalendarDate, calendarDaysUntil } from '@/lib/obligationDate';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +15,7 @@ import {
   getCurrentPeriodKey, fetchCumplidasPorOcurrencias, CATEGORIA_LABELS, CATEGORIA_COLORS,
   getVencimientoInfo, formatDateShort,
 } from '@/lib/obligaciones';
-import { differenceInDays, isPast, isValid } from 'date-fns';
+import { isValid } from 'date-fns';
 import type { ObligacionConEmpresa } from '@/types/domain';
 
 type UrgencyLevel = 'vencida' | 'semana' | 'mes' | 'ok';
@@ -22,10 +23,10 @@ type UrgencyLevel = 'vencida' | 'semana' | 'mes' | 'ok';
 function getUrgency(fechaVencimiento: string | null, isCumplida: boolean): UrgencyLevel {
   if (isCumplida) return 'ok';
   if (!fechaVencimiento) return 'ok';
-  const d = new Date(fechaVencimiento);
+  const d = parseCalendarDate(fechaVencimiento);
   if (!isValid(d)) return 'ok';
-  if (isPast(d)) return 'vencida';
-  const days = differenceInDays(d, new Date());
+  const days = calendarDaysUntil(fechaVencimiento);
+  if (days < 0) return 'vencida';
   if (days <= 7) return 'semana';
   if (days <= 30) return 'mes';
   return 'ok';

@@ -1,3 +1,5 @@
+import { calendarDaysUntil } from '@/lib/obligationDate';
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { obligationsV2Enabled } from '@/lib/obligationFeature';
 import { ConnectedObligacionesOverview } from '@/components/obligaciones/ConnectedObligacionesOverview';
 import { useEffect, useState } from 'react';
@@ -15,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, ClipboardList, ChevronDown, TrendingUp, ListTodo, Loader2, Search, History, User } from 'lucide-react';
-import { format, differenceInDays, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AgentesAduanalesCard } from '@/components/empresas/AgentesAduanalesCard';
 import { DocumentosManager } from '@/components/documentos/DocumentosManager';
@@ -60,7 +62,6 @@ export default function MiEmpresa() {
   const [filterEstado, setFilterEstado] = useState<string>('todos');
   const [filterCategoria, setFilterCategoria] = useState<string>('todas');
   const [filterAsignacion, setFilterAsignacion] = useState<'todas' | 'mias'>('todas');
-
 
   // Dialogs
   const [historialObl, setHistorialObl] = useState<ObligacionVista | null>(null);
@@ -205,7 +206,6 @@ export default function MiEmpresa() {
     }
   };
 
-
   const handleEvidenciaCompleted = () => {
     if (evidenciaObl) {
       setCumplimientos(prev => ({ ...prev, [evidenciaObl.ocurrenciaId]: true }));
@@ -216,7 +216,7 @@ export default function MiEmpresa() {
   // `Badge` solo tiene las variantes default | secondary | destructive | outline: warning y success se resuelven con clases.
   const getVencimientoAlert = (fecha: string | null): { variant: 'default' | 'destructive' | 'outline'; className: string; icon: typeof AlertCircle; text: string } | null => {
     if (!fecha) return null;
-    const dias = differenceInDays(parseISO(fecha), new Date());
+    const dias = calendarDaysUntil(fecha, new Date());
     if (dias < 0) return { variant: 'destructive', className: '', icon: AlertCircle, text: 'Vencido' };
     if (dias <= 30) return { variant: 'outline', className: 'border-warning text-warning', icon: AlertCircle, text: `${dias} días` };
     if (dias <= 90) return { variant: 'default', className: '', icon: Calendar, text: `${dias} días` };
@@ -235,7 +235,6 @@ export default function MiEmpresa() {
     }
     return true;
   });
-
 
   const categorias = [...new Set(obligaciones.map((o) => o.categoria))];
 
@@ -265,14 +264,14 @@ export default function MiEmpresa() {
   const pendientes = total - completadas;
   const porVencer = obligaciones.filter((ob) => {
     if (!ob.fecha_vencimiento) return false;
-    const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
+    const dias = calendarDaysUntil(ob.fecha_vencimiento, new Date());
     return dias >= 0 && dias <= 30 && !cumplimientos[ob.id];
   }).length;
   const score = total > 0 ? Math.round((completadas / total) * 100) : 0;
   
   const upcomingObligations = [...obligaciones]
     .filter(ob => !cumplimientos[ob.id] && ob.fecha_vencimiento)
-    .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+    .sort((a, b) => parseCalendarDate(a.fecha_vencimiento).getTime() - parseCalendarDate(b.fecha_vencimiento).getTime())
     .slice(0, 8);
 
   return (
@@ -401,7 +400,7 @@ export default function MiEmpresa() {
                 {upcomingObligations.length > 0 ? (
                   <div className="space-y-3">
                     {upcomingObligations.map(ob => {
-                      const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
+                      const dias = calendarDaysUntil(ob.fecha_vencimiento, new Date());
                       const statusClass = dias < 0 ? 'status-vencida' : dias <= 15 ? 'status-pendiente' : 'status-cumplida';
                       const urgencyColor = dias < 0 ? 'bg-destructive' : dias <= 15 ? 'bg-warning' : 'bg-success';
                       return (
@@ -640,7 +639,7 @@ export default function MiEmpresa() {
                                         {getPeriodLabel(ob.presentacion, periodKey)}
                                       </span>
                                       {ob.fecha_vencimiento && (() => {
-                                        const dias = differenceInDays(parseISO(ob.fecha_vencimiento), new Date());
+                                        const dias = calendarDaysUntil(ob.fecha_vencimiento, new Date());
                                         if (dias < 0) return <Badge variant="destructive" className="text-[10px] h-4 px-1.5 py-0">Vencido</Badge>;
                                         if (dias <= 30) return <Badge className="bg-destructive/20 text-destructive text-[10px] h-4 px-1.5 py-0 border-transparent">{dias}d</Badge>;
                                         return null;

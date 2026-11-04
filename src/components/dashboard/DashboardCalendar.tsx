@@ -1,3 +1,5 @@
+import { pendingNext30 } from '@/lib/dashboardCalendar';
+import { parseCalendarDate, mexicoDateKey, addCalendarDays, calendarDaysUntil } from '@/lib/obligationDate';
 import { useNavigate } from 'react-router-dom';
 import { includeObligationAction,selectObligationType,latestScheduledReviews } from '../../../supabase/functions/_shared/obligationPresentation';
 import { obligationOverviewClient } from '@/hooks/useObligationOverview';
@@ -17,7 +19,7 @@ import { Calendar, AlertCircle, Building2, ClipboardList, FileText, Scale, Calen
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { isPast, startOfDay, format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { es as esLocaleDate } from 'date-fns/locale';
 import ObligacionDetailSheet from '@/components/obligaciones/ObligacionDetailSheet';
 import { ObligacionesPorUrgencia } from '@/components/obligaciones/ObligacionesPorUrgencia';
@@ -37,6 +39,7 @@ interface FcEvent {
     type: 'tarea' | 'documento' | 'obligacion';
     prioridad?: string;
     estado?: string;
+    completada?: boolean;
     rawId?: string;
     ocurrenciaId?: string;
     empresaId?: string;
@@ -154,10 +157,13 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
     if (!user) return;
     setLoading(true);setFetchError(false);
     try {
-    const startStr = format(start, 'yyyy-MM-dd');
-    const endStr   = format(end,   'yyyy-MM-dd');
+    // Cargar la unión de la vista abierta y los próximos 30 días.
+    const hoy = mexicoDateKey();
+    const limite = addCalendarDays(hoy, 30);
+    const viewStart = format(start, 'yyyy-MM-dd');
+    const viewEnd = format(end, 'yyyy-MM-dd');
+    const rangeFilter = `and(fecha_vencimiento.gte.${viewStart},fecha_vencimiento.lt.${viewEnd}),and(fecha_vencimiento.gte.${hoy},fecha_vencimiento.lte.${limite})`;
     const allEvents: FcEvent[] = [];
-    const today = startOfDay(new Date());
 
     // Fase 2: el timeline se alimenta de OCURRENCIAS reales (fecha_vencimiento vive
     // aquí, no en la obligación-semilla). El estado "cumplida" viene del cumplimiento
@@ -166,34 +172,31 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       .from('obligacion_ocurrencias')
       .select('id, obligacion_id, empresa_id, periodo_key, fecha_vencimiento, estado, origen_fecha, evento_id, obligaciones!inner(id, nombre, categoria, catalogo_id, activa), empresas(razon_social)')
       .eq('obligaciones.activa',true)
-      .gte('fecha_vencimiento', startStr)
-      .lte('fecha_vencimiento', endStr);
+      .or(rangeFilter);
     if (filterEmpresaId && filterEmpresaId !== 'all') {
       obsQuery = obsQuery.eq('empresa_id', filterEmpresaId);
     }
-    const { data: obs,error:obsError } = await obsQuery;
-    if(obsError)throw obsError;
+    const obs = await loadAllPages((offset, size) => obsQuery.order('id').range(offset, offset + size - 1));
     const rules=obligationsV2Enabled?await loadAllPages((offset,size)=>obligationOverviewClient.from('obligacion_reglas').select('*').order('id').range(offset,offset+size-1)):[];
 
     // Cumplimientos vigentes de esas ocurrencias -> set de ocurrencias cumplidas.
     const ocIds = (obs || []).map((o) => o.id);
-    let cumplidasSet = new Set<string>();
+    const cumplidasSet = new Set<string>();
     if (ocIds.length > 0) {
-      const { data: cData,error:completionsError } = await supabase
-        .from('obligacion_cumplimientos')
-        .select('ocurrencia_id, completada, vigente')
-        .in('ocurrencia_id', ocIds);
-      if(completionsError)throw completionsError;
-      cumplidasSet = ocurrenciasCumplidas(cData);
+      for (let offset = 0; offset < ocIds.length; offset += 200) {
+        const ids = ocIds.slice(offset, offset + 200);
+        const cData = await loadAllPages((from, size) => supabase.from('obligacion_cumplimientos')
+          .select('id, ocurrencia_id, completada, vigente').in('ocurrencia_id', ids).order('id').range(from, from + size - 1));
+        for (const id of ocurrenciasCumplidas(cData)) cumplidasSet.add(id);
+      }
     }
 
     (obs || []).forEach((ob) => {
       if (!ob.fecha_vencimiento) return;
       const tipo=selectObligationType(rules,{id:ob.obligacion_id,catalogo_id:ob.obligaciones?.catalogo_id??null});
       if(obligationsV2Enabled&&!includeObligationAction(tipo,ob.origen_fecha,ob.evento_id))return;
-      const d = new Date(ob.fecha_vencimiento + 'T12:00:00');
       const isDone = cumplidasSet.has(ob.id) || (!obligationsV2Enabled&&ob.estado==='cumplida');
-      const overdue = !isDone && d < today;
+      const overdue = !isDone && calendarDaysUntil(ob.fecha_vencimiento) < 0;
       const nombre = ob.obligaciones?.nombre ?? 'Obligación';
       const { bg, border } = eventColor('obligacion', undefined, overdue, isDone);
       allEvents.push({
@@ -204,7 +207,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
         borderColor: border,
         textColor: 'hsl(var(--foreground))',
         // rawId = obligación padre (para abrir el detail sheet); ocurrenciaId aparte.
-        extendedProps: { type: 'obligacion', rawId: ob.obligacion_id, ocurrenciaId: ob.id, empresaId: ob.empresa_id, isRecurrente: !!ob.obligaciones?.catalogo_id, estado: ob.estado, data: ob },
+        extendedProps: { type: 'obligacion', rawId: ob.obligacion_id, ocurrenciaId: ob.id, empresaId: ob.empresa_id, isRecurrente: !!ob.obligaciones?.catalogo_id, estado: ob.estado, completada: isDone, data: ob },
       });
     });
 
@@ -221,8 +224,8 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       });
       for(const review of latestScheduledReviews(reviews)){
         const ob=parents.find(o=>o.id===review.obligacion_id);
-        if(!ob||selectObligationType(rules,ob)!=='condicion'||!review.proxima_revision||review.proxima_revision<startStr||review.proxima_revision>endStr)continue;
-        const colors=eventColor('obligacion',undefined,review.proxima_revision<format(today,'yyyy-MM-dd'));
+        if(!ob||selectObligationType(rules,ob)!=='condicion'||!review.proxima_revision||!((review.proxima_revision>=viewStart&&review.proxima_revision<viewEnd)||(review.proxima_revision>=hoy&&review.proxima_revision<=limite)))continue;
+        const colors=eventColor('obligacion',undefined,review.proxima_revision<hoy);
         allEvents.push({id:`revision-${review.id}`,title:`Revisión interna: ${ob.nombre}`,start:review.proxima_revision,backgroundColor:colors.bg,borderColor:colors.border,textColor:'hsl(var(--foreground))',extendedProps:{type:'obligacion',rawId:ob.id,empresaId:ob.empresa_id}});
       }
     }
@@ -230,17 +233,15 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       .from('tareas')
       .select('id, titulo, prioridad, estado, fecha_vencimiento, empresa_id, empresas(razon_social)')
       .not('estado', 'in', '(completada,cancelada)')
-      .gte('fecha_vencimiento', startStr)
-      .lte('fecha_vencimiento', endStr);
+      .or(rangeFilter);
     if (filterEmpresaId && filterEmpresaId !== 'all') {
       tareasQuery = tareasQuery.eq('empresa_id', filterEmpresaId);
     }
-    const { data: tareas,error:tareasError } = await tareasQuery;if(tareasError)throw tareasError;
+    const tareas = await loadAllPages((offset, size) => tareasQuery.order('id').range(offset, offset + size - 1));
 
     (tareas || []).forEach(t => {
       if (!t.fecha_vencimiento) return;
-      const d = new Date(t.fecha_vencimiento + 'T12:00:00');
-      const overdue = d < today;
+      const overdue = calendarDaysUntil(t.fecha_vencimiento) < 0;
       const { bg, border } = eventColor('tarea', t.prioridad ?? undefined, overdue);
       allEvents.push({
         id: `tarea-${t.id}`,
@@ -257,12 +258,11 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       .from('documentos')
       .select('id, nombre, empresa_id, fecha_vencimiento, empresas(razon_social)')
       .not('fecha_vencimiento', 'is', null)
-      .gte('fecha_vencimiento', startStr)
-      .lte('fecha_vencimiento', endStr);
+      .or(rangeFilter);
     if (filterEmpresaId && filterEmpresaId !== 'all') {
       docsQuery = docsQuery.eq('empresa_id', filterEmpresaId);
     }
-    const { data: docs,error:docsError } = await docsQuery;if(docsError)throw docsError;
+    const docs = await loadAllPages((offset, size) => docsQuery.order('id').range(offset, offset + size - 1));
 
     (docs || []).forEach(doc => {
       if (!doc.fecha_vencimiento) return;
@@ -286,17 +286,8 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
   // Eventos visibles según chips de tipo
   const visibleEvents = events.filter(e => activeTypes.has(e.extendedProps.type as EventType));
 
-  // Lista "Próximos 30 días" — derivada de los eventos cargados
-  const next30 = (() => {
-    const today = startOfDay(new Date());
-    const limit = addDays(today, 30);
-    return visibleEvents
-      .filter(e => {
-        const d = new Date(e.start + 'T12:00:00');
-        return d >= today && d <= limit;
-      })
-      .sort((a, b) => a.start.localeCompare(b.start));
-  })();
+  // Independiente de la vista de FullCalendar, excluye lo ya cumplido.
+  const next30 = pendingNext30(visibleEvents, mexicoDateKey());
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
     setDateRange({ start: arg.start, end: arg.end });
@@ -423,7 +414,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ background: TYPE_COLORS[e.extendedProps.type] }} />
                       <span className="flex-1 min-w-0 truncate text-sm font-medium">{e.title}</span>
                       <span className="text-xs text-muted-foreground shrink-0 font-mono">
-                        {format(new Date(e.start + 'T12:00:00'), 'dd MMM', { locale: esLocaleDate })}
+                        {format(parseCalendarDate(e.start), 'dd MMM', { locale: esLocaleDate })}
                       </span>
                     </button>
                   )}

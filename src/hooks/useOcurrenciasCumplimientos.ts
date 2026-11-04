@@ -16,6 +16,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import type { OcurrenciaConObligacion } from '@/types/domain';
+import { obligationOverviewClient } from '@/hooks/useObligationOverview';
+import { obligationsV2Enabled } from '@/lib/obligationFeature';
+import { includeObligationAction, selectObligationType } from '../../supabase/functions/_shared/obligationPresentation';
+import { loadAllPages } from '@/lib/pagination';
 
 export function useOcurrenciasCumplimientos(empresaId: string | null) {
   const { user } = useAuth();
@@ -34,41 +38,41 @@ export function useOcurrenciasCumplimientos(empresaId: string | null) {
     }
     setLoading(true);
 
-    // Ocurrencias de la empresa con su obligación
-    const { data: ocData, error: ocErr } = await supabase
-      .from('obligacion_ocurrencias')
-      .select('*, obligaciones(id, nombre, categoria, presentacion, descripcion, empresas(razon_social))')
-      .eq('empresa_id', empresaId)
-      .order('fecha_vencimiento', { ascending: true });
-
-    if (ocErr) {
-      logger.error('Error al cargar ocurrencias', ocErr);
-      toast.error('No se pudieron cargar las obligaciones.');
-      setLoading(false);
-      return;
-    }
-
-    const ocs = (ocData || []) as unknown as OcurrenciaConObligacion[];
-    setOcurrencias(ocs);
-
-    // Cumplimientos vigentes ligados a esas ocurrencias
-    if (ocs.length > 0) {
-      const ocIds = ocs.map((o) => o.id);
-      const { data: cData } = await supabase
-        .from('obligacion_cumplimientos')
-        .select('ocurrencia_id, completada, vigente')
+    try {
+      // Paginar evita que el historial oculte las ocurrencias del mes actual.
+      const ocData = await loadAllPages((offset, size) => obligationOverviewClient
+        .from('obligacion_ocurrencias')
+        .select('*, obligaciones!inner(id, nombre, categoria, catalogo_id, activa, presentacion, descripcion, empresas(razon_social))')
+        .eq('obligaciones.activa', true)
         .eq('empresa_id', empresaId)
-        .in('ocurrencia_id', ocIds);
-
+        .order('id').range(offset, offset + size - 1));
+      let eligible = ocData;
+      if (obligationsV2Enabled) {
+        const rules = await loadAllPages((offset, size) => obligationOverviewClient.from('obligacion_reglas').select('*').order('id').range(offset, offset + size - 1));
+        eligible = eligible.filter(oc => includeObligationAction(
+          selectObligationType(rules, { id: oc.obligacion_id, catalogo_id: oc.obligaciones?.catalogo_id ?? null }),
+          oc.origen_fecha, oc.evento_id,
+        ));
+      }
+      const ocs = eligible as unknown as OcurrenciaConObligacion[];
       const map: Record<string, boolean> = {};
-      (cData || []).forEach((c) => {
-        if (c.vigente && c.ocurrencia_id) map[c.ocurrencia_id] = c.completada;
-      });
+      for (let start = 0; start < ocs.length; start += 200) {
+        const ids = ocs.slice(start, start + 200).map(oc => oc.id);
+        const completions = await loadAllPages((offset, size) => supabase.from('obligacion_cumplimientos')
+          .select('id, ocurrencia_id, completada, vigente').eq('empresa_id', empresaId)
+          .in('ocurrencia_id', ids).eq('vigente', true).order('id').range(offset, offset + size - 1));
+        for (const c of completions) if (c.ocurrencia_id) map[c.ocurrencia_id] = c.completada;
+      }
+      setOcurrencias(ocs);
       setCumplimientos(map);
-    } else {
+    } catch (error) {
+      logger.error('Error al cargar ocurrencias y cumplimientos', error);
+      setOcurrencias([]);
       setCumplimientos({});
+      toast.error('No se pudieron cargar las obligaciones.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [empresaId]);
 
   useEffect(() => {

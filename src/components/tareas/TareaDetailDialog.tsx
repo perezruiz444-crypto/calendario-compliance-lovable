@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -303,7 +304,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
                 <div>
                   <p className="text-xs font-heading font-medium text-muted-foreground">Vencimiento</p>
                   <p className="font-body text-sm">
-                    {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
+                    {format(parseCalendarDate(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
                   </p>
                 </div>
               </div>
@@ -328,7 +329,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
                   <div>
                     <p className="text-muted-foreground">Fecha Inicio</p>
                     <p className="font-medium">
-                      {format(new Date(tarea.fecha_inicio_recurrencia), 'dd/MM/yyyy')}
+                      {format(parseCalendarDate(tarea.fecha_inicio_recurrencia), 'dd/MM/yyyy')}
                     </p>
                   </div>
                 )}
@@ -336,7 +337,7 @@ export default function TareaDetailDialog({ open, onOpenChange, tareaId }: Tarea
                   <div>
                     <p className="text-muted-foreground">Fecha Fin</p>
                     <p className="font-medium">
-                      {format(new Date(tarea.fecha_fin_recurrencia), 'dd/MM/yyyy')}
+                      {format(parseCalendarDate(tarea.fecha_fin_recurrencia), 'dd/MM/yyyy')}
                     </p>
                   </div>
                 )}

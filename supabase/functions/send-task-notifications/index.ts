@@ -1,3 +1,4 @@
+import { formatCalendarDate } from '../_shared/calendarDate.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
 import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail } from '../_shared/smtp.ts'
@@ -179,7 +180,7 @@ Deno.serve(async (req) => {
             titulo: t.titulo,
             empresa: (Array.isArray(t.empresas) ? t.empresas[0] : t.empresas)?.razon_social || '-',
             prioridad: t.prioridad || '-',
-            fechaVencimiento: t.fecha_vencimiento ? new Date(t.fecha_vencimiento).toLocaleDateString('es-MX') : 'Sin fecha',
+            fechaVencimiento: t.fecha_vencimiento ? formatCalendarDate(t.fecha_vencimiento) : 'Sin fecha',
           }));
 
           const htmlBody = taskNotificationTemplate(consultorName, titulo, tareasData);

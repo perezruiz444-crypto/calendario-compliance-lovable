@@ -1,8 +1,9 @@
+import { parseCalendarDate, calendarDaysUntil } from '@/lib/obligationDate';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { usePushNotifications } from './usePushNotifications';
-import { differenceInDays, isValid } from 'date-fns';
+import { isValid } from 'date-fns';
 import { logger } from '@/lib/logger';
 import { obligationOverviewClient } from '@/hooks/useObligationOverview';
 import { obligationsV2Enabled } from '@/lib/obligationFeature';
@@ -34,9 +35,9 @@ async function insertVencimientoAlerts(userId: string) {
 
     for (const ob of obs) {
       if (!ob.fecha_vencimiento) continue;
-      const d = new Date(ob.fecha_vencimiento);
+      const d = parseCalendarDate(ob.fecha_vencimiento);
       if (!isValid(d)) continue;
-      const daysLeft = differenceInDays(d, today);
+      const daysLeft = calendarDaysUntil(ob.fecha_vencimiento, today);
 
       for (const umbral of UMBRALES) {
         if (daysLeft !== umbral) continue;

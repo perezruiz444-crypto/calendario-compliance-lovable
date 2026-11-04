@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -270,14 +271,14 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                     <Button variant="outline" size="sm" className="font-normal gap-2">
                       <CalendarIcon className="h-3.5 w-3.5" />
                       {tarea.fecha_vencimiento
-                        ? format(new Date(tarea.fecha_vencimiento), 'dd MMM yyyy', { locale: es })
+                        ? format(parseCalendarDate(tarea.fecha_vencimiento), 'dd MMM yyyy', { locale: es })
                         : 'Sin fecha'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={tarea.fecha_vencimiento ? new Date(tarea.fecha_vencimiento) : undefined}
+                      selected={tarea.fecha_vencimiento ? parseCalendarDate(tarea.fecha_vencimiento) : undefined}
                       onSelect={(date) => {
                         if (date) updateField('fecha_vencimiento', format(date, 'yyyy-MM-dd'));
                       }}

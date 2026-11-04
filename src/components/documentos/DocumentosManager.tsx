@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -380,7 +381,7 @@ export function DocumentosManager({ empresaId, empresaNombre }: DocumentosManage
                         </span>
                         {doc.fecha_vencimiento && (
                           <span className="flex items-center gap-1">
-                            Vence: {format(new Date(doc.fecha_vencimiento), 'dd/MM/yyyy', { locale: es })}
+                            Vence: {format(parseCalendarDate(doc.fecha_vencimiento), 'dd/MM/yyyy', { locale: es })}
                           </span>
                         )}
                         <span>{((doc.archivo_tamano ?? 0) / 1024).toFixed(0)} KB</span>

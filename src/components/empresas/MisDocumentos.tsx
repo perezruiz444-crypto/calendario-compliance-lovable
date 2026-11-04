@@ -1,10 +1,11 @@
+import { calendarDaysUntil } from '@/lib/obligationDate';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { FileText, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
-import { format, parseISO, differenceInDays } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface Doc {
@@ -73,7 +74,7 @@ export default function MisDocumentos({ empresaId, onVerTodos }: Props) {
           <div className="space-y-2">
             {docs.map(d => {
               const fecha = parseISO(d.fecha_vencimiento!);
-              const dias = differenceInDays(fecha, new Date());
+              const dias = calendarDaysUntil(d.fecha_vencimiento!);
               const urgente = dias <= 30;
               return (
                 <div

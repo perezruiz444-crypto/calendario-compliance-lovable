@@ -1,9 +1,10 @@
+import { calendarDaysUntil, mexicoDateKey, addCalendarDays } from '@/lib/obligationDate';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresaContext } from '@/hooks/useEmpresaContext';
-import { getCurrentPeriodKey, fetchCumplidasPorOcurrencias, formatDateShort, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
-import { differenceInDays, isToday, isTomorrow, isPast, isValid, startOfDay, endOfDay, addDays } from 'date-fns';
+import { getCurrentPeriodKey, fetchEstadoOcurrencias, formatDateShort, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
+import { addDays } from 'date-fns';
 import { AlertCircle, CheckCircle2, Clock, Building2, ChevronRight, Sun } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
@@ -32,17 +33,15 @@ export default function AgendaHoy() {
     setLoading(true);
     const hoy = new Date();
     const manana = addDays(hoy, 1);
-    const rangeFin = addDays(hoy, 1).toISOString().split('T')[0];
-    const rangeInicio = addDays(hoy, -30).toISOString().split('T')[0];
+    const rangeFin = addCalendarDays(mexicoDateKey(hoy), 1);
+    const rangeInicio = addCalendarDays(mexicoDateKey(hoy), -30);
 
     const result: AgendaItem[] = [];
 
    let obsQuery = supabase
       .from('obligaciones')
       .select('*, empresas(id, razon_social)')
-      .eq('activa', true)
-      .lte('fecha_vencimiento', rangeFin)
-      .gte('fecha_vencimiento', rangeInicio);
+      .eq('activa', true);
 
     if (selectedEmpresaId && selectedEmpresaId !== 'all') {
       obsQuery = obsQuery.eq('empresa_id', selectedEmpresaId);
@@ -58,15 +57,15 @@ export default function AgendaHoy() {
         .in('obligacion_id', obs.map(o => o.id));
       const cumplMap: Record<string, boolean> = {};
       (cumplData || []).forEach(c => { cumplMap[`${c.obligacion_id}:${c.periodo_key}`] = true; });
-      const cumplidasOc = await fetchCumplidasPorOcurrencias(supabase, obs.map(o => o.id));
+      const estadosOc = await fetchEstadoOcurrencias(supabase, obs.map(o => o.id));
 
       obs.forEach(ob => {
-        if (!ob.fecha_vencimiento) return;
+        const fecha = estadosOc.get(ob.id)?.actual.fecha_vencimiento ?? ob.fecha_vencimiento;
+        if (!fecha || fecha < rangeInicio || fecha > rangeFin) return;
         const pk = getCurrentPeriodKey(ob.presentacion);
-        if (cumplidasOc.get(ob.id) ?? cumplMap[`${ob.id}:${pk}`]) return;
-        const d = new Date(ob.fecha_vencimiento);
-        if (!isValid(d)) return;
-        const urgency = isPast(startOfDay(d)) && !isToday(d) ? 'vencida' : isToday(d) ? 'hoy' : 'manana';
+        if (estadosOc.get(ob.id)?.cumplida ?? cumplMap[`${ob.id}:${pk}`]) return;
+        const days = calendarDaysUntil(fecha, hoy);
+        const urgency = days < 0 ? 'vencida' : days === 0 ? 'hoy' : 'manana';
         result.push({
           id: ob.id,
           nombre: ob.nombre,
@@ -94,9 +93,9 @@ export default function AgendaHoy() {
 
     (tareas || []).forEach(t => {
       if (!t.fecha_vencimiento) return;
-      const d = new Date(t.fecha_vencimiento);
-      if (!isValid(d)) return;
-      const urgency = isPast(startOfDay(d)) && !isToday(d) ? 'vencida' : isToday(d) ? 'hoy' : 'manana';
+      const days = calendarDaysUntil(t.fecha_vencimiento, hoy);
+      if (!Number.isFinite(days)) return;
+      const urgency = days < 0 ? 'vencida' : days === 0 ? 'hoy' : 'manana';
       result.push({
         id: t.id,
         nombre: t.titulo,

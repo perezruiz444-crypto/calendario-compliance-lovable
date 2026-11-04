@@ -230,7 +230,7 @@ export function ReminderRulesManager() {
         <div>
           <h2 className="text-lg font-semibold">Reglas de Recordatorio</h2>
           <p className="text-sm text-muted-foreground">
-            Configura cuántos días antes se envían alertas de vencimiento
+            Configura la anticipación de alertas. Las reglas de una empresa sustituyen las globales del mismo tipo.
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -308,14 +308,14 @@ export function ReminderRulesManager() {
               <div className="space-y-2">
                 <Label htmlFor="empresa_id">Aplica a empresa</Label>
                 <Select
-                  value={formData.empresa_id}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, empresa_id: value }))}
+                  value={formData.empresa_id || 'all'}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, empresa_id: value === 'all' ? '' : value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Todas las empresas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas las empresas</SelectItem>
+                    <SelectItem value="all">Todas las empresas</SelectItem>
                     {empresas.map(empresa => (
                       <SelectItem key={empresa.id} value={empresa.id}>
                         {empresa.razon_social}

@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useState, useEffect, useMemo } from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -61,8 +62,8 @@ function generatePreviewDates(
   count: number = 5
 ): Date[] {
   const dates: Date[] = [];
-  const start = new Date(startDateStr + 'T12:00:00');
-  const maxDate = endDateStr ? new Date(endDateStr + 'T12:00:00') : addYears(new Date(), 1);
+  const start = parseCalendarDate(startDateStr);
+  const maxDate = endDateStr ? parseCalendarDate(endDateStr) : addYears(new Date(), 1);
   let current = new Date(start);
 
   while (dates.length < count && current <= maxDate) {
@@ -91,8 +92,8 @@ function getRecurrenceSummary(frecuencia: string, intervalo: number, inicio: str
   };
   const [sing, plur] = labels[frecuencia] || [frecuencia, frecuencia];
   const cada = intervalo === 1 ? `cada ${sing}` : `cada ${intervalo} ${plur}`;
-  const desde = inicio ? ` desde ${format(new Date(inicio + 'T12:00:00'), 'dd MMM yyyy', { locale: es })}` : '';
-  const hasta = fin ? ` hasta ${format(new Date(fin + 'T12:00:00'), 'dd MMM yyyy', { locale: es })}` : '';
+  const desde = inicio ? ` desde ${format(parseCalendarDate(inicio), 'dd MMM yyyy', { locale: es })}` : '';
+  const hasta = fin ? ` hasta ${format(parseCalendarDate(fin), 'dd MMM yyyy', { locale: es })}` : '';
   return `Se repite ${cada}${desde}${hasta}`;
 }
 
@@ -236,7 +237,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
   const schedulingSummary = useMemo(() => {
     const parts: string[] = [];
     if (formData.fecha_vencimiento) {
-      parts.push(`📅 ${format(new Date(formData.fecha_vencimiento + 'T12:00:00'), 'dd MMM', { locale: es })}`);
+      parts.push(`📅 ${format(parseCalendarDate(formData.fecha_vencimiento), 'dd MMM', { locale: es })}`);
     }
     if (formData.es_recurrente) {
       const preset = RECURRENCE_PRESETS.find(p => p.frecuencia === formData.frecuencia_recurrencia && p.intervalo === formData.intervalo_recurrencia);
@@ -543,12 +544,12 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                         <PopoverTrigger asChild>
                           <button type="button" className="px-2.5 py-1 rounded-none text-xs font-medium bg-muted/50 text-muted-foreground hover:bg-muted transition-all flex items-center gap-1">
                             <CalendarIcon className="h-3 w-3" />
-                            {formData.fecha_vencimiento ? format(new Date(formData.fecha_vencimiento + 'T12:00:00'), 'dd MMM', { locale: es }) : 'Elegir'}
+                            {formData.fecha_vencimiento ? format(parseCalendarDate(formData.fecha_vencimiento), 'dd MMM', { locale: es }) : 'Elegir'}
                           </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar mode="single"
-                            selected={formData.fecha_vencimiento ? new Date(formData.fecha_vencimiento + 'T12:00:00') : undefined}
+                            selected={formData.fecha_vencimiento ? parseCalendarDate(formData.fecha_vencimiento) : undefined}
                             onSelect={(d) => { if (d) setFormData(prev => ({ ...prev, fecha_vencimiento: format(d, 'yyyy-MM-dd') })); setDatePickerOpen(false); }}
                             className="p-3 pointer-events-auto" />
                         </PopoverContent>
@@ -636,13 +637,13 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                                 <Button variant="outline" className={cn("w-full h-8 text-xs justify-start font-normal", !formData.fecha_inicio_recurrencia && "text-muted-foreground")}>
                                   <CalendarIcon className="h-3 w-3 mr-1.5 opacity-50" />
                                   {formData.fecha_inicio_recurrencia
-                                    ? format(new Date(formData.fecha_inicio_recurrencia + 'T12:00:00'), 'dd MMM yy', { locale: es })
+                                    ? format(parseCalendarDate(formData.fecha_inicio_recurrencia), 'dd MMM yy', { locale: es })
                                     : 'Seleccionar'}
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar mode="single"
-                                  selected={formData.fecha_inicio_recurrencia ? new Date(formData.fecha_inicio_recurrencia + 'T12:00:00') : undefined}
+                                  selected={formData.fecha_inicio_recurrencia ? parseCalendarDate(formData.fecha_inicio_recurrencia) : undefined}
                                   onSelect={(d) => { if (d) setFormData(prev => ({ ...prev, fecha_inicio_recurrencia: format(d, 'yyyy-MM-dd') })); setRecStartPickerOpen(false); }}
                                   className="p-3 pointer-events-auto" />
                               </PopoverContent>
@@ -655,13 +656,13 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                                 <Button variant="outline" className={cn("w-full h-8 text-xs justify-start font-normal", !formData.fecha_fin_recurrencia && "text-muted-foreground")}>
                                   <CalendarIcon className="h-3 w-3 mr-1.5 opacity-50" />
                                   {formData.fecha_fin_recurrencia
-                                    ? format(new Date(formData.fecha_fin_recurrencia + 'T12:00:00'), 'dd MMM yy', { locale: es })
+                                    ? format(parseCalendarDate(formData.fecha_fin_recurrencia), 'dd MMM yy', { locale: es })
                                     : 'Sin fin'}
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar mode="single"
-                                  selected={formData.fecha_fin_recurrencia ? new Date(formData.fecha_fin_recurrencia + 'T12:00:00') : undefined}
+                                  selected={formData.fecha_fin_recurrencia ? parseCalendarDate(formData.fecha_fin_recurrencia) : undefined}
                                   onSelect={(d) => { if (d) setFormData(prev => ({ ...prev, fecha_fin_recurrencia: format(d, 'yyyy-MM-dd') })); setRecEndPickerOpen(false); }}
                                   className="p-3 pointer-events-auto" />
                               </PopoverContent>

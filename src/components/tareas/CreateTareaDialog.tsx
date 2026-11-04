@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -710,8 +711,8 @@ export default function CreateTareaDialog({ open, onOpenChange, onTareaCreated, 
                     {formData.frecuencia_recurrencia === 'mensual' && (formData.ultimo_dia_habil ? 'mes(es) el último día hábil' : `mes(es) el día ${formData.dia_mes}`)}
                     {formData.frecuencia_recurrencia === 'trimestral' && (formData.ultimo_dia_habil ? 'trimestre(s) el último día hábil' : `trimestre(s) el día ${formData.dia_mes}`)}
                     {formData.frecuencia_recurrencia === 'anual' && 'año(s)'}
-                    {formData.fecha_inicio_recurrencia && ` desde ${new Date(formData.fecha_inicio_recurrencia).toLocaleDateString('es-MX')}`}
-                    {formData.fecha_fin_recurrencia && ` hasta ${new Date(formData.fecha_fin_recurrencia).toLocaleDateString('es-MX')}`}
+                    {formData.fecha_inicio_recurrencia && ` desde ${parseCalendarDate(formData.fecha_inicio_recurrencia).toLocaleDateString('es-MX')}`}
+                    {formData.fecha_fin_recurrencia && ` hasta ${parseCalendarDate(formData.fecha_fin_recurrencia).toLocaleDateString('es-MX')}`}
                   </div>
                 </div>
               )}

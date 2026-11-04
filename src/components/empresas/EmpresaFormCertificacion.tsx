@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,7 +31,7 @@ export default function EmpresaFormCertificacion({ formData, setFormData }: Empr
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {formData[field] ? (
-              format(new Date(formData[field] + 'T12:00:00'), "PPP")
+              format(parseCalendarDate(formData[field]), "PPP")
             ) : (
               <span>Seleccionar fecha</span>
             )}
@@ -39,7 +40,7 @@ export default function EmpresaFormCertificacion({ formData, setFormData }: Empr
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
-            selected={formData[field] ? new Date(formData[field] + 'T12:00:00') : undefined}
+            selected={formData[field] ? parseCalendarDate(formData[field]) : undefined}
             onSelect={(date) => setFormData({ ...formData, [field]: date?.toISOString().split('T')[0] })}
             initialFocus
             className={cn("p-3 pointer-events-auto")}

@@ -1,12 +1,13 @@
+import { mexicoDateKey, calendarDaysUntil } from '@/lib/obligationDate';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { CalendarClock, CheckCircle2, Upload, AlertCircle } from 'lucide-react';
-import { format, parseISO, differenceInDays, startOfMonth } from 'date-fns';
+import { format, parseISO, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { getCurrentPeriodKey, fetchCumplidasPorOcurrencias } from '@/lib/obligaciones';
+import { getCurrentPeriodKey, fetchEstadoOcurrencias } from '@/lib/obligaciones';
 
 interface Obligacion {
   id: string;
@@ -15,6 +16,7 @@ interface Obligacion {
   presentacion: string | null;
   fecha_vencimiento: string | null;
   catalogo_id: string | null;
+  periodo_key?: string;
 }
 
 interface Props {
@@ -36,19 +38,20 @@ export default function MisVencimientos({ empresaId, onSubirEvidencia, refreshKe
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const today = format(new Date(), 'yyyy-MM-dd');
+      const today = mexicoDateKey();
       // Próximas 10 obligaciones desde hoy
       const { data } = await supabase
         .from('obligaciones')
         .select('id, nombre, categoria, presentacion, fecha_vencimiento, catalogo_id')
         .eq('empresa_id', empresaId)
         .eq('activa', true)
-        .not('fecha_vencimiento', 'is', null)
-        .gte('fecha_vencimiento', today)
-        .order('fecha_vencimiento', { ascending: true })
-        .limit(12);
+        .order('fecha_vencimiento', { ascending: true });
       if (cancelled) return;
-      const list = data || [];
+      const estados = await fetchEstadoOcurrencias(supabase, (data || []).map(o => o.id));
+      if (cancelled) return;
+      const list = (data || []).map(ob => ({ ...ob, fecha_vencimiento: estados.get(ob.id)?.actual.fecha_vencimiento ?? ob.fecha_vencimiento, periodo_key: estados.get(ob.id)?.actual.periodo_key }))
+        .filter(ob => ob.fecha_vencimiento && ob.fecha_vencimiento >= today)
+        .sort((a, b) => a.fecha_vencimiento!.localeCompare(b.fecha_vencimiento!)).slice(0, 12);
       setObs(list);
 
       if (list.length > 0) {
@@ -64,7 +67,7 @@ export default function MisVencimientos({ empresaId, onSubirEvidencia, refreshKe
           map[`${c.obligacion_id}:${c.periodo_key}`] = true;
         });
         setCumplimientos(map);
-        setCumplidasOc(await fetchCumplidasPorOcurrencias(supabase, ids));
+        setCumplidasOc(new Map([...estados].map(([id, e]) => [id, e.cumplida])));
       } else {
         setCumplimientos({});
         setCumplidasOc(new Map());
@@ -130,8 +133,8 @@ export default function MisVencimientos({ empresaId, onSubirEvidencia, refreshKe
             <div className="space-y-2">
               {items.map(ob => {
                 const fecha = parseISO(ob.fecha_vencimiento!);
-                const dias = differenceInDays(fecha, new Date());
-                const periodKey = getCurrentPeriodKey(ob.presentacion);
+                const dias = calendarDaysUntil(ob.fecha_vencimiento!);
+                const periodKey = ob.periodo_key ?? getCurrentPeriodKey(ob.presentacion);
                 const cumplida = cumplidasOc.get(ob.id) ?? !!cumplimientos[`${ob.id}:${periodKey}`];
                 const isUrgente = dias <= 7 && !cumplida;
                 const isRecurrente = !!ob.catalogo_id;

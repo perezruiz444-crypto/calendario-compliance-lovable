@@ -1,3 +1,4 @@
+import { parseCalendarDate, calendarDaysUntil } from '@/lib/obligationDate';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -447,7 +448,7 @@ export async function generateReportPDF(
         ob.nombre,
         ob.empresa,
         CATEGORIA_LABELS_PDF[ob.categoria] || ob.categoria,
-        ob.fecha_vencimiento ? new Date(ob.fecha_vencimiento).toLocaleDateString('es-MX') : '—',
+        ob.fecha_vencimiento ? parseCalendarDate(ob.fecha_vencimiento).toLocaleDateString('es-MX') : '—',
       ]),
       columnStyles: {
         0: { cellWidth: 70 },
@@ -474,7 +475,7 @@ export async function generateReportPDF(
       body: reportData.certificacionesVencimiento.slice(0, 20).map(c => [
         c.razon_social,
         c.tipo,
-        new Date(c.fecha_vencimiento).toLocaleDateString('es-MX'),
+        parseCalendarDate(c.fecha_vencimiento).toLocaleDateString('es-MX'),
         c.dias_restantes !== undefined ? `${c.dias_restantes}d` : '—',
       ]),
       columnStyles: {
@@ -524,7 +525,7 @@ export async function generateReportPDF(
         t.categoria || '—',
         t.prioridad ? t.prioridad.charAt(0).toUpperCase() + t.prioridad.slice(1) : '—',
         ESTADO_LABELS[t.estado] || t.estado,
-        t.fecha_vencimiento ? new Date(t.fecha_vencimiento).toLocaleDateString('es-MX') : '—',
+        t.fecha_vencimiento ? parseCalendarDate(t.fecha_vencimiento).toLocaleDateString('es-MX') : '—',
       ]),
       columnStyles: {
         0: { cellWidth: 65 },
@@ -571,13 +572,13 @@ export async function generateReportPDF(
       .filter(c => {
         const dias = c.dias_restantes !== undefined
           ? c.dias_restantes
-          : Math.ceil((new Date(c.fecha_vencimiento).getTime() - hoy.getTime()) / 86400000);
+          : calendarDaysUntil(c.fecha_vencimiento, hoy);
         return dias <= 90;
       })
       .map(c => {
         const dias = c.dias_restantes !== undefined
           ? c.dias_restantes
-          : Math.ceil((new Date(c.fecha_vencimiento).getTime() - hoy.getTime()) / 86400000);
+          : calendarDaysUntil(c.fecha_vencimiento, hoy);
         const riesgo: 'alto' | 'medio' | 'bajo' = dias <= 7 ? 'alto' : dias <= 30 ? 'medio' : 'bajo';
         const item: ObligacionCategoriaItem = {
           nombre: `${c.tipo} — ${c.razon_social}`,
@@ -686,7 +687,7 @@ function drawCategoryObligacionesTable(
     body: obligaciones.map(ob => [
       ob.nombre,
       ob.presentacion || '—',
-      ob.fecha_vencimiento ? new Date(ob.fecha_vencimiento).toLocaleDateString('es-MX') : '—',
+      ob.fecha_vencimiento ? parseCalendarDate(ob.fecha_vencimiento).toLocaleDateString('es-MX') : '—',
       ob.dias_restantes !== null ? `${ob.dias_restantes}d` : '—',
       ob.completada ? 'Cumplida' : 'Pendiente',
     ]),
@@ -768,7 +769,7 @@ function drawVencimientosRoadmap(
     doc.setTextColor(...C.gray);
     doc.setFont('helvetica', 'normal');
     if (ob.fecha_vencimiento) {
-      doc.text(new Date(ob.fecha_vencimiento).toLocaleDateString('es-MX'), pw - 10, y + 9.5, { align: 'right' });
+      doc.text(parseCalendarDate(ob.fecha_vencimiento).toLocaleDateString('es-MX'), pw - 10, y + 9.5, { align: 'right' });
     }
     y += 14;
   });
@@ -1046,7 +1047,7 @@ export async function generateCumplimientoMensualPDF(data: CumplimientoMensualDa
       body: cat.obligaciones.map(ob => [
         ob.nombre,
         ob.presentacion || '—',
-        ob.fecha_vencimiento ? new Date(ob.fecha_vencimiento).toLocaleDateString('es-MX') : '—',
+        ob.fecha_vencimiento ? parseCalendarDate(ob.fecha_vencimiento).toLocaleDateString('es-MX') : '—',
         ob.completada ? 'Sí' : 'No',
         ob.completada_en ? new Date(ob.completada_en).toLocaleDateString('es-MX') : '—',
         ob.notas || '—',
@@ -1193,7 +1194,7 @@ export function generateObligacionesPDF(
       ob.nombre,
       ob.articulos || '—',
       ob.presentacion || '—',
-      ob.fecha_vencimiento ? new Date(ob.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX') : '—',
+      ob.fecha_vencimiento ? parseCalendarDate(ob.fecha_vencimiento).toLocaleDateString('es-MX') : '—',
       ob.seguimiento,
       ob.activa ? 'Sí' : 'No',
     ]),

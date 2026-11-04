@@ -1,3 +1,4 @@
+import { parseCalendarDate, calendarDaysUntil } from '@/lib/obligationDate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { CheckSquare, FileText, Shield, Clock, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
@@ -146,7 +147,7 @@ export default function ClienteAnalytics({ data }: ClienteAnalyticsProps) {
           <CardContent>
             <div className="space-y-2">
               {data.proximasTareas.map((tarea, index) => {
-                const dias = tarea.fecha_vencimiento ? Math.ceil((new Date(tarea.fecha_vencimiento).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                const dias = tarea.fecha_vencimiento ? calendarDaysUntil(tarea.fecha_vencimiento) : null;
                 const isObligacion = tarea.titulo.startsWith('[Obligación]');
                 return (
                   <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:border-primary/50 transition-colors">
@@ -200,7 +201,7 @@ export default function ClienteAnalytics({ data }: ClienteAnalyticsProps) {
                   <div className="flex-1">
                     <p className="font-medium text-sm">{venc.tipo}</p>
                     <p className="text-xs text-muted-foreground">
-                      Vence: {new Date(venc.fecha).toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      Vence: {parseCalendarDate(venc.fecha).toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
                   <Badge variant={venc.dias <= 7 ? 'destructive' : venc.dias <= 30 ? 'secondary' : 'default'}>

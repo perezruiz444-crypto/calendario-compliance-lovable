@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -183,7 +184,7 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
               <div>
                 <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Autorización</label>
                 <p className="font-body mt-1">
-                  {new Date(empresa.prosec_fecha_autorizacion).toLocaleDateString('es-MX')}
+                  {parseCalendarDate(empresa.prosec_fecha_autorizacion).toLocaleDateString('es-MX')}
                 </p>
               </div>
             )}
@@ -191,7 +192,7 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
               <div>
                 <label className="text-sm font-heading font-medium text-muted-foreground">Última Renovación</label>
                 <p className="font-body mt-1">
-                  {new Date(empresa.prosec_fecha_ultima_renovacion).toLocaleDateString('es-MX')}
+                  {parseCalendarDate(empresa.prosec_fecha_ultima_renovacion).toLocaleDateString('es-MX')}
                 </p>
               </div>
             )}
@@ -199,7 +200,7 @@ export function EmpresaPROSECCard({ empresa, canEdit, onUpdate }: EmpresaPROSECC
               <div>
                 <label className="text-sm font-heading font-medium text-muted-foreground">Siguiente Renovación</label>
                 <p className="font-body mt-1">
-                  {new Date(empresa.prosec_fecha_siguiente_renovacion).toLocaleDateString('es-MX')}
+                  {parseCalendarDate(empresa.prosec_fecha_siguiente_renovacion).toLocaleDateString('es-MX')}
                 </p>
               </div>
             )}
