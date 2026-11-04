@@ -14,7 +14,9 @@ Migración `20261104155045_calendar_dates_reminders_manual_occurrences.sql` apli
 
 Se verificaron la función de avisos, el nuevo trigger y la ausencia de permisos anónimos en las nuevas funciones. El asesor de seguridad identifica la nueva RPC autenticada SECURITY DEFINER: su ejecución es intencional, exige autorización sobre la obligación y no concede acceso a otra empresa. Los avisos previos del proyecto no se alteraron.
 
-El workflow de `main` despliega las Edge Functions con la configuración existente. Comprobar su resultado después de integrar. La interfaz requiere [Publish/Update en el editor Lovable](https://lovable.dev/projects/lovp_5x0f73h8az9mvaxdvzf80at05f); integrar código o aplicar la migración no acredita la publicación del sitio público.
+Despliegue directo verificado: `send-daily-summary` versión 157 y `send-task-notifications` versión 177, ambas activas con su configuración de autenticación anterior. Se descargó el paquete publicado del resumen y coincide con los archivos de origen y sus dependencias utilizadas. La comprobación HTTP sin credenciales no ejecutó envíos.
+
+El workflow de `main` también despliega las Edge Functions con la configuración existente. GitHub Actions dejó la ejecución del PR en cola, sin asignar un runner; la validación local completa pasó. La interfaz requiere [Publish/Update en el editor Lovable](https://lovable.dev/projects/lovp_5x0f73h8az9mvaxdvzf80at05f); integrar código o aplicar la migración no acredita la publicación del sitio público. Esta sesión no dispone de acceso al navegador del editor. El sitio público conservaba el paquete `/assets/index-BoT7lLip.js` antes de integrar.
 
 ## Verificación
 
