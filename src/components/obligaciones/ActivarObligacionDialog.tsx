@@ -8,23 +8,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
+import { obligationOverviewClient } from '@/hooks/useObligationOverview';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarIcon, BookOpen, Repeat, Sparkles } from 'lucide-react';
+import { CalendarIcon, BookOpen, Repeat } from 'lucide-react';
 import { CATEGORIA_COLORS, PROGRAMA_LABELS } from '@/lib/obligaciones';
 import { getErrorMessage } from '@/lib/errors';
 
 type FrecuenciaTipo = 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | 'EVENTUAL';
-
-const OCURRENCIAS_POR_FRECUENCIA: Record<FrecuenciaTipo, number> = {
-  MENSUAL: 12, BIMESTRAL: 6, TRIMESTRAL: 4, SEMESTRAL: 2, ANUAL: 1, EVENTUAL: 0,
-};
-
-const FRECUENCIA_LABEL: Record<FrecuenciaTipo, string> = {
-  MENSUAL: 'Mensual', BIMESTRAL: 'Bimestral', TRIMESTRAL: 'Trimestral',
-  SEMESTRAL: 'Semestral', ANUAL: 'Anual', EVENTUAL: 'Eventual',
-};
 
 interface CatalogoItem {
   id: string;
@@ -38,27 +30,6 @@ interface CatalogoItem {
   frecuencia_tipo?: FrecuenciaTipo | null;
   dia_vencimiento?: number | null;
   mes_vencimiento?: number | null;
-}
-
-/** Calcula las fechas que el trigger generará para el año en curso */
-function calcularPreviewFechas(
-  freq: FrecuenciaTipo,
-  dia: number,
-  mes: number | null
-): Date[] {
-  if (freq === 'EVENTUAL') return [];
-  const stepMap = { MENSUAL: 1, BIMESTRAL: 2, TRIMESTRAL: 3, SEMESTRAL: 6, ANUAL: 12, EVENTUAL: 0 };
-  const step = stepMap[freq];
-  const count = OCURRENCIAS_POR_FRECUENCIA[freq];
-  const year = new Date().getFullYear();
-  const out: Date[] = [];
-  for (let i = 0; i < count; i++) {
-    const m = freq === 'ANUAL' ? (mes ?? 1) : ((i * step) % 12) + 1;
-    const lastDay = new Date(year, m, 0).getDate();
-    const d = Math.min(dia, lastDay);
-    out.push(new Date(year, m - 1, d, 12));
-  }
-  return out;
 }
 
 interface Usuario {
@@ -134,20 +105,8 @@ export function ActivarObligacionDialog({ open, onOpenChange, item, empresaId, o
     );
   };
 
-  const freq = item?.frecuencia_tipo ?? null;
-  const isRecurrente = !!freq && freq !== 'EVENTUAL';
-  const previewFechas = isRecurrente && item?.dia_vencimiento
-    ? calcularPreviewFechas(freq!, item.dia_vencimiento, item.mes_vencimiento ?? null)
-    : [];
-
   const handleActivar = async () => {
     if (!item) return;
-    // Si es recurrente, usamos la primera fecha del preview como semilla
-    const fechaSemilla = isRecurrente && previewFechas.length > 0
-      ? previewFechas[0]
-      : fechaVencimiento;
-    if (!fechaSemilla) { toast.error('La fecha de vencimiento es requerida'); return; }
-
     setSaving(true);
     try {
       const { data: oblig, error } = await supabase
@@ -160,7 +119,7 @@ export function ActivarObligacionDialog({ open, onOpenChange, item, empresaId, o
           descripcion:      item.descripcion,
           articulos:        item.articulos,
           presentacion:     item.presentacion,
-          fecha_vencimiento: format(fechaSemilla, 'yyyy-MM-dd'),
+          fecha_vencimiento: fechaVencimiento ? format(fechaVencimiento, 'yyyy-MM-dd') : null,
           fecha_inicio:     fechaInicio ? format(fechaInicio, 'yyyy-MM-dd') : null,
           notas:            notas.trim() || null,
           estado:           'vigente',
@@ -170,6 +129,11 @@ export function ActivarObligacionDialog({ open, onOpenChange, item, empresaId, o
         .single();
 
       if (error) throw error;
+
+      if (fechaVencimiento) {
+        const { error: dateError } = await obligationOverviewClient.rpc('registrar_fecha_manual_obligacion', { p_obligacion_id: oblig.id });
+        if (dateError) toast.warning('Obligación activada; no se pudo registrar la fecha en el calendario. Revisa su ficha.');
+      }
 
       if (responsableIds.length > 0) {
         await supabase.from('obligacion_responsables').insert(
@@ -181,12 +145,11 @@ export function ActivarObligacionDialog({ open, onOpenChange, item, empresaId, o
         );
       }
 
-      if (isRecurrente) {
-        const n = OCURRENCIAS_POR_FRECUENCIA[freq!];
-        toast.success(`Activada • ${n} fecha${n > 1 ? 's' : ''} generada${n > 1 ? 's' : ''} automáticamente para ${new Date().getFullYear()}`);
-      } else {
-        toast.success(`"${item.nombre}" activada correctamente`);
-      }
+      const { count, error: countError } = await supabase.from('obligacion_ocurrencias')
+        .select('id', { count: 'exact', head: true }).eq('obligacion_id', oblig.id);
+      if (countError) toast.success('Obligación activada. No se pudo confirmar el calendario generado.');
+      else if (count) toast.success(`Activada • ${count} fecha${count > 1 ? 's' : ''} registrada${count > 1 ? 's' : ''}`);
+      else toast.info('Obligación activada sin fechas. Registra el evento o configura su calendario para mostrarla en la agenda.');
 
       onOpenChange(false);
       onActivated();
@@ -231,30 +194,9 @@ export function ActivarObligacionDialog({ open, onOpenChange, item, empresaId, o
         </div>
 
         <div className="space-y-4">
-          {/* Preview de fechas auto-calculadas (recurrente) o selector manual (eventual) */}
-          {isRecurrente ? (
-            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-sm font-semibold text-primary">
-                  Generación automática · {FRECUENCIA_LABEL[freq!]}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Se crearán <strong>{previewFechas.length} ocurrencia{previewFechas.length > 1 ? 's' : ''}</strong> para {new Date().getFullYear()}:
-              </p>
-              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
-                {previewFechas.map((d, i) => (
-                  <Badge key={i} variant="outline" className="text-[10px] bg-background">
-                    {format(d, 'd MMM', { locale: es })}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ) : (
             <div>
               <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Fecha de vencimiento *
+                Fecha de vencimiento (opcional)
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -276,10 +218,9 @@ export function ActivarObligacionDialog({ open, onOpenChange, item, empresaId, o
                 </PopoverContent>
               </Popover>
               <p className="text-[11px] text-muted-foreground mt-1">
-                Esta obligación es eventual. Define la fecha manualmente.
+                Registra una fecha confirmada. Al activar podrás ver cuántas fechas tiene su calendario.
               </p>
             </div>
-          )}
 
           {/* Fecha de inicio (opcional) */}
           <div>
@@ -367,8 +308,8 @@ export function ActivarObligacionDialog({ open, onOpenChange, item, empresaId, o
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleActivar} disabled={saving || (!isRecurrente && !fechaVencimiento)}>
-            {saving ? 'Activando...' : isRecurrente ? `Activar y generar ${previewFechas.length} fechas` : 'Activar obligación'}
+          <Button onClick={handleActivar} disabled={saving}>
+            {saving ? 'Activando...' : 'Activar obligación'}
           </Button>
         </DialogFooter>
       </DialogContent>

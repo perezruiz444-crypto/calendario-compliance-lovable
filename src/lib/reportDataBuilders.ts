@@ -1,4 +1,5 @@
-import { differenceInDays, parseISO, subMonths, getISOWeek, format } from 'date-fns';
+import { calendarDaysUntil } from '@/lib/obligationDate';
+import { subMonths, getISOWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CategoriaReportData, ObligacionCategoriaItem, CumplimientoMensualData } from './pdfGenerator';
@@ -107,7 +108,7 @@ export async function buildCategoriaReportData(
     const periodoKey = getPeriodKeyForDateLocal(refDate, ob.presentacion);
     const completada = completadasSet.has(`${ob.id}:${periodoKey}`);
     const diasRestantes = ob.fecha_vencimiento
-      ? differenceInDays(parseISO(ob.fecha_vencimiento), today)
+      ? calendarDaysUntil(ob.fecha_vencimiento, today)
       : null;
 
     return {

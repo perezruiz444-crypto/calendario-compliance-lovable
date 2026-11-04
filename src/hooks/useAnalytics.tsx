@@ -1,8 +1,9 @@
+import { parseCalendarDate, calendarDaysUntil } from '@/lib/obligationDate';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { useAuth } from './useAuth';
-import { differenceInDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { getCurrentPeriodKey, fetchCumplidasPorOcurrencias } from '@/lib/obligaciones';
 import type { Tarea } from '@/types/domain';
 
@@ -144,9 +145,9 @@ export function useAnalytics(empresaId?: string | null) {
       .flatMap(t => {
         const fecha = t.fecha_vencimiento;
         if (!fecha || t.estado === 'completada' || t.estado === 'cancelada') return [];
-        return differenceInDays(new Date(fecha), today) >= 0 ? [{ ...t, fecha_vencimiento: fecha }] : [];
+        return calendarDaysUntil(fecha, today) >= 0 ? [{ ...t, fecha_vencimiento: fecha }] : [];
       })
-      .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+      .sort((a, b) => parseCalendarDate(a.fecha_vencimiento).getTime() - parseCalendarDate(b.fecha_vencimiento).getTime())
       .slice(0, 10);
 
     if (proximas.length === 0) return [];
@@ -206,7 +207,7 @@ export function useAnalytics(empresaId?: string | null) {
       if (!isCumplida) {
         pendientes++;
         if (ob.fecha_vencimiento) {
-          const dias = differenceInDays(new Date(ob.fecha_vencimiento), today);
+          const dias = calendarDaysUntil(ob.fecha_vencimiento, today);
           if (dias >= 0) {
             proximasOb.push({
               id: ob.id,
@@ -260,7 +261,7 @@ export function useAnalytics(empresaId?: string | null) {
     const tareasCompletadas = tareas.filter(t => t.estado === 'completada').length;
     const tareasVencidas = tareas.filter(t => {
       if (!t.fecha_vencimiento || t.estado === 'completada') return false;
-      return differenceInDays(new Date(t.fecha_vencimiento), today) < 0;
+      return calendarDaysUntil(t.fecha_vencimiento, today) < 0;
     }).length;
 
     // Performance últimos 6 meses
@@ -318,7 +319,7 @@ export function useAnalytics(empresaId?: string | null) {
       return {
         nombre: doc.nombre,
         empresa: empresaData?.razon_social || 'N/A',
-        dias: differenceInDays(new Date(doc.fecha_vencimiento!), today),
+        dias: calendarDaysUntil(doc.fecha_vencimiento!, today),
       };
     }).filter(d => d.dias >= 0 && d.dias <= 90) || [];
 
@@ -328,7 +329,7 @@ export function useAnalytics(empresaId?: string | null) {
     const obFilter = empresaId && empresaId !== 'all' ? empresaId : undefined;
     const obData = await fetchObligacionesPendientes(obFilter);
     const allProximas = [...proximasTareas, ...obData.proximasOb]
-      .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+      .sort((a, b) => parseCalendarDate(a.fecha_vencimiento).getTime() - parseCalendarDate(b.fecha_vencimiento).getTime())
       .slice(0, 10);
 
     setData({
@@ -378,7 +379,7 @@ export function useAnalytics(empresaId?: string | null) {
     const tareasCompletadas = tareas?.filter(t => t.estado === 'completada').length || 0;
     const tareasVencidas = tareas?.filter(t => {
       if (!t.fecha_vencimiento || t.estado === 'completada') return false;
-      return differenceInDays(new Date(t.fecha_vencimiento), today) < 0;
+      return calendarDaysUntil(t.fecha_vencimiento, today) < 0;
     }).length || 0;
 
     const performanceMensual = [];
@@ -414,7 +415,7 @@ export function useAnalytics(empresaId?: string | null) {
         return {
           nombre: doc.nombre,
           empresa: empresaData?.razon_social || 'N/A',
-          dias: differenceInDays(new Date(doc.fecha_vencimiento!), today),
+          dias: calendarDaysUntil(doc.fecha_vencimiento!, today),
         };
       }).filter(d => d.dias >= 0 && d.dias <= 90);
     }
@@ -425,7 +426,7 @@ export function useAnalytics(empresaId?: string | null) {
     const obFilter = empresaId && empresaId !== 'all' ? empresaId : (empresaIds.length > 0 ? empresaIds : undefined);
     const obData = await fetchObligacionesPendientes(obFilter);
     const allProximas = [...proximasTareas, ...obData.proximasOb]
-      .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+      .sort((a, b) => parseCalendarDate(a.fecha_vencimiento).getTime() - parseCalendarDate(b.fecha_vencimiento).getTime())
       .slice(0, 10);
 
     setData({
@@ -469,11 +470,11 @@ export function useAnalytics(empresaId?: string | null) {
     const tareasCompletadas = tareas.filter(t => t.estado === 'completada').length;
     const tareasVencidas = tareas.filter(t => {
       if (!t.fecha_vencimiento || t.estado === 'completada') return false;
-      return differenceInDays(new Date(t.fecha_vencimiento), today) < 0;
+      return calendarDaysUntil(t.fecha_vencimiento, today) < 0;
     }).length;
 
     const documentosPorVencer = documentos.filter(doc => {
-      const dias = differenceInDays(new Date(doc.fecha_vencimiento!), today);
+      const dias = calendarDaysUntil(doc.fecha_vencimiento!, today);
       return dias >= 0 && dias <= 30;
     }).length;
 
@@ -486,7 +487,7 @@ export function useAnalytics(empresaId?: string | null) {
       ];
       checks.forEach(({ fecha, tipo }) => {
         if (fecha) {
-          const dias = differenceInDays(new Date(fecha), today);
+          const dias = calendarDaysUntil(fecha, today);
           if (dias >= 0 && dias <= 90) {
             proximosVencimientos.push({ tipo, fecha, dias });
           }
@@ -497,7 +498,7 @@ export function useAnalytics(empresaId?: string | null) {
     const documentosVencimiento = documentos.map(doc => ({
       nombre: doc.nombre,
       empresa: empresa?.razon_social || 'N/A',
-      dias: differenceInDays(new Date(doc.fecha_vencimiento!), today)
+      dias: calendarDaysUntil(doc.fecha_vencimiento!, today)
     })).filter(d => d.dias >= 0 && d.dias <= 90).slice(0, 5);
 
     const proximasTareas = await fetchProximasTareas(tareas);
@@ -505,7 +506,7 @@ export function useAnalytics(empresaId?: string | null) {
     // Fetch obligaciones pendientes for this empresa
     const obData = await fetchObligacionesPendientes(common.empresa_id);
     const allProximas = [...proximasTareas, ...obData.proximasOb]
-      .sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime())
+      .sort((a, b) => parseCalendarDate(a.fecha_vencimiento).getTime() - parseCalendarDate(b.fecha_vencimiento).getTime())
       .slice(0, 10);
 
     setData({

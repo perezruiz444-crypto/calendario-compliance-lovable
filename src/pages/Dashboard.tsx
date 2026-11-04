@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { obligationsV2Enabled } from '@/lib/obligationFeature';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -360,7 +361,7 @@ export default function Dashboard() {
                             </span>
                           )}
                           <span className="flex items-center gap-1 font-mono">
-                            <Clock className="w-3 h-3" /> {format(new Date(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
+                            <Clock className="w-3 h-3" /> {format(parseCalendarDate(tarea.fecha_vencimiento), 'dd/MM/yyyy')}
                           </span>
                         </div>
                       </div>

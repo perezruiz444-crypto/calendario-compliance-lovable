@@ -54,4 +54,17 @@ AS $function$
     WHEN 'EVENTUAL'       THEN to_char(p_fecha,'YYYY')
     ELSE to_char(p_fecha,'YYYY-MM')
   END;
-$function$
+$function$;
+
+-- Contrato usado por fechas manuales y recordatorios; solo datos sintéticos.
+ALTER TABLE public.obligaciones ADD COLUMN fecha_vencimiento date, ADD COLUMN categoria text;
+CREATE TABLE public.reminder_rules(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),tipo text NOT NULL,dias_antes integer NOT NULL CHECK(dias_antes>0),empresa_id uuid REFERENCES public.empresas,activa boolean DEFAULT true);
+ALTER TABLE public.reminder_rules ENABLE ROW LEVEL SECURITY;
+CREATE POLICY fixture_reminders_admin ON public.reminder_rules FOR SELECT TO authenticated USING(EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=auth.uid() AND role='administrador'));
+GRANT SELECT ON public.reminder_rules TO authenticated;
+
+GRANT SELECT ON public.user_roles,public.consultor_empresa_asignacion TO authenticated;
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY fixture_roles_self ON public.user_roles FOR SELECT TO authenticated USING(user_id=auth.uid());
+ALTER TABLE public.consultor_empresa_asignacion ENABLE ROW LEVEL SECURITY;
+CREATE POLICY fixture_assignments_self ON public.consultor_empresa_asignacion FOR SELECT TO authenticated USING(consultor_id=auth.uid());

@@ -1,3 +1,4 @@
+import { parseCalendarDate, calendarDaysUntil } from '@/lib/obligationDate';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,7 @@ import {
   ClipboardCheck, FileCheck, Ship, Factory, Calendar as CalendarIcon,
   AlertCircle, CheckCircle2, RefreshCw, Pencil, StickyNote, Check, X
 } from 'lucide-react';
-import { format, differenceInDays, isPast, isValid, addYears } from 'date-fns';
+import { format, isValid, addYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -42,12 +43,12 @@ interface ObligacionSection {
 
 function getStatusBadge(fecha: string | null | undefined) {
   if (!fecha) return null;
-  const date = new Date(fecha);
+  const date = parseCalendarDate(fecha);
   if (!isValid(date)) return null;
   const today = new Date();
-  const daysUntil = differenceInDays(date, today);
+  const daysUntil = calendarDaysUntil(fecha, today);
 
-  if (isPast(date)) {
+  if (daysUntil < 0) {
     return (
       <Badge variant="destructive" className="text-xs gap-1">
         <AlertCircle className="w-3 h-3" />Vencido
@@ -77,7 +78,7 @@ function getStatusBadge(fecha: string | null | undefined) {
 
 function formatDate(fecha: string | null | undefined) {
   if (!fecha) return 'No registrado';
-  const date = new Date(fecha);
+  const date = parseCalendarDate(fecha);
   if (!isValid(date)) return 'Fecha inválida';
   return format(date, "d 'de' MMMM, yyyy", { locale: es });
 }
@@ -89,7 +90,7 @@ function ObligacionRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    item.fecha ? new Date(item.fecha) : undefined
+    item.fecha ? parseCalendarDate(item.fecha) : undefined
   );
   const [saving, setSaving] = useState(false);
 
@@ -100,7 +101,7 @@ function ObligacionRow({
       const dateStr = format(date, 'yyyy-MM-dd');
       const { error } = await supabase
         .from('empresas')
-        .update({ [item.field]: dateStr + 'T12:00:00' })
+        .update({ [item.field]: dateStr })
         .eq('id', empresaId);
       if (error) throw error;
       toast.success('Fecha actualizada');
@@ -115,7 +116,7 @@ function ObligacionRow({
 
   const handleRenew = async () => {
     if (!item.fecha) return;
-    const currentDate = new Date(item.fecha);
+    const currentDate = parseCalendarDate(item.fecha);
     const newDate = addYears(currentDate, 1);
     await handleSaveDate(newDate);
   };
@@ -163,7 +164,7 @@ function ObligacionRow({
                 >
                   <Pencil className="w-3 h-3" />
                 </Button>
-                {item.tipo === 'vencimiento' && item.fecha && isPast(new Date(item.fecha)) && (
+                {item.tipo === 'vencimiento' && item.fecha && calendarDaysUntil(item.fecha) < 0 && (
                   <Button
                     aria-label="Renovar (+1 año)"
                     variant="ghost"
@@ -371,9 +372,9 @@ export function EmpresaObligacionesCard({ empresa, canEdit, onUpdate }: EmpresaO
   const upcomingCount = sections.reduce((count, section) => {
     return count + section.items.filter(item => {
       if (item.tipo !== 'vencimiento' || !item.fecha) return false;
-      const date = new Date(item.fecha);
+      const date = parseCalendarDate(item.fecha);
       if (!isValid(date)) return false;
-      const daysUntil = differenceInDays(date, new Date());
+      const daysUntil = calendarDaysUntil(item.fecha);
       return daysUntil >= 0 && daysUntil <= 90;
     }).length;
   }, 0);
@@ -381,9 +382,9 @@ export function EmpresaObligacionesCard({ empresa, canEdit, onUpdate }: EmpresaO
   const expiredCount = sections.reduce((count, section) => {
     return count + section.items.filter(item => {
       if (item.tipo !== 'vencimiento' || !item.fecha) return false;
-      const date = new Date(item.fecha);
+      const date = parseCalendarDate(item.fecha);
       if (!isValid(date)) return false;
-      return isPast(date);
+      return calendarDaysUntil(item.fecha) < 0;
     }).length;
   }, 0);
 

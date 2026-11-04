@@ -1,3 +1,4 @@
+import { formatCalendarDate } from './calendarDate.ts';
 // =============================================
 // Plantillas de correo — Calendario Compliance
 // =============================================
@@ -83,7 +84,7 @@ function sectionHeader(title: string, color: string = NAVY): string {
 }
 
 function obligacionRow(nombre: string, empresa: string, fecha: string, badgeColor: string, badgeText: string): string {
-  const fmtFecha = fecha ? new Date(fecha).toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+  const fmtFecha = fecha ? formatCalendarDate(fecha, { day:'2-digit', month:'short', year:'numeric' }) : '—';
   return `<tr style="border-bottom:1px solid ${BORDER};">
     <td style="padding:9px 8px;">
       <p style="margin:0;font-size:13px;font-weight:600;color:#1e293b;">${esc(nombre)}</p>
@@ -127,7 +128,7 @@ interface TareaRow {
 export function taskNotificationTemplate(consultorName: string, titulo: string, tareas: TareaRow[]): string {
   const rows = tareas.map(t => {
     const color = t.prioridad === 'alta' ? RED : t.prioridad === 'media' ? AMBER : GREEN;
-    const fmtFecha = t.fechaVencimiento ? new Date(t.fechaVencimiento).toLocaleDateString('es-MX') : '—';
+    const fmtFecha = t.fechaVencimiento ? formatCalendarDate(t.fechaVencimiento) : '—';
     return `<tr style="border-bottom:1px solid ${BORDER};">
       <td style="padding:8px;font-size:13px;">${esc(t.titulo)}</td>
       <td style="padding:8px;font-size:13px;">${esc(t.empresa)}</td>
@@ -205,7 +206,7 @@ export function weeklySummaryTemplate(userName: string, data: WeeklySummaryData)
       <tr>
         ${kpiCell('Vencidas', totalVencidas, totalVencidas > 0 ? RED : GRAY)}
         ${kpiCell('Esta semana', totalSemana, totalSemana > 0 ? AMBER : GRAY)}
-        ${kpiCell('Este mes', totalMes, totalMes > 0 ? '#0ea5e9' : GRAY)}
+        ${kpiCell('Próximas', totalMes, totalMes > 0 ? '#0ea5e9' : GRAY)}
         <td style="text-align:center;padding:14px 8px;border-right:1px solid ${BORDER};">
           <p style="margin:0;font-size:26px;font-weight:800;color:${totalCerts > 0 ? AMBER : GRAY};">${totalCerts}</p>
           <p style="margin:3px 0 0;font-size:10px;color:${GRAY};text-transform:uppercase;letter-spacing:0.5px;">Certif. por vencer</p>
@@ -261,7 +262,7 @@ export function weeklySummaryTemplate(userName: string, data: WeeklySummaryData)
 
   // Obligaciones este mes
   if (data.obligacionesMes.length > 0) {
-    sections += sectionHeader('Este mes — próximas obligaciones', '#0ea5e9');
+    sections += sectionHeader('Próximas obligaciones — según tus recordatorios', '#0ea5e9');
     sections += `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #bae6fd;border-radius:8px;overflow:hidden;">`;
     sections += data.obligacionesMes.map(o =>
       obligacionRow(o.nombre, o.empresa, o.fecha, '#0ea5e9', CATEGORIA_LABELS[o.categoria||''] || 'Obligación')
@@ -301,7 +302,7 @@ export function weeklySummaryTemplate(userName: string, data: WeeklySummaryData)
   const preheader = totalVencidas > 0
     ? `Vencidas: ${totalVencidas} · Esta semana: ${totalSemana} — requieren atención`
     : totalSemana > 0
-      ? `Esta semana: ${totalSemana} vencimiento(s) · ${totalMes} este mes`
+      ? `Esta semana: ${totalSemana} vencimiento(s) · ${totalMes} próximas`
       : `Sin pendientes esta semana · Todo al corriente`;
 
   return baseLayout(`

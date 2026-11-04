@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Building2, User, AlertCircle, Tag } from 'lucide-react';
@@ -89,7 +90,7 @@ export function TareaPreview({ formData, empresas, consultores, categorias = [] 
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="w-4 h-4" />
             <span>
-              Vence: {format(new Date(formData.fecha_vencimiento), 'PPP', { locale: es })}
+              Vence: {format(parseCalendarDate(formData.fecha_vencimiento), 'PPP', { locale: es })}
             </span>
           </div>
         )}

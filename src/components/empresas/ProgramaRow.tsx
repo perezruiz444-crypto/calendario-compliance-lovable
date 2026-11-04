@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -80,7 +81,7 @@ export function ProgramaRow({ programa, registros, empresaId, canEdit, onUpdate 
                     <span className="font-medium text-foreground/70">{r.sectores[0]}</span>
                   )}
                   {r.fecha_inicio && (
-                    <span>— desde {format(new Date(r.fecha_inicio + 'T12:00:00'), 'dd/MM/yyyy', { locale: es })}</span>
+                    <span>— desde {format(parseCalendarDate(r.fecha_inicio), 'dd/MM/yyyy', { locale: es })}</span>
                   )}
                 </div>
               ))}
@@ -88,7 +89,7 @@ export function ProgramaRow({ programa, registros, empresaId, canEdit, onUpdate 
           ) : registro?.fecha_inicio ? (
             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
               <Calendar className="w-3 h-3" />
-              Desde {format(new Date(registro.fecha_inicio + 'T12:00:00'), 'dd/MM/yyyy', { locale: es })}
+              Desde {format(parseCalendarDate(registro.fecha_inicio), 'dd/MM/yyyy', { locale: es })}
             </p>
           ) : null}
         </div>

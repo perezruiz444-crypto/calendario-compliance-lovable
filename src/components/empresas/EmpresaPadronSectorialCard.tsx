@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -111,7 +112,7 @@ export function EmpresaPadronSectorialCard({ empresaId, canEdit }: EmpresaPadron
                   )}
                   {r.fecha_inicio && (
                     <p className="text-xs text-muted-foreground">
-                      Alta: {format(new Date(r.fecha_inicio + 'T12:00:00'), 'dd/MM/yyyy', { locale: es })}
+                      Alta: {format(parseCalendarDate(r.fecha_inicio), 'dd/MM/yyyy', { locale: es })}
                     </p>
                   )}
                 </div>

@@ -1,12 +1,12 @@
+import { calendarDaysUntil } from '@/lib/obligationDate';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresaContext } from '@/hooks/useEmpresaContext';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentPeriodKey, fetchCumplidasPorOcurrencias } from '@/lib/obligaciones';
+import { getCurrentPeriodKey, fetchEstadoOcurrencias } from '@/lib/obligaciones';
 import { Building2, ChevronRight } from 'lucide-react';
-import { isPast, isValid } from 'date-fns';
 
 type SemaforoLevel = 'rojo' | 'amarillo' | 'verde';
 
@@ -80,7 +80,7 @@ export default function EmpresaComplianceSemaforo() {
         cumplMap[`${c.obligacion_id}:${c.periodo_key}`] = true;
       });
     }
-    const cumplidasOc = await fetchCumplidasPorOcurrencias(supabase, obsIds);
+    const estadosOc = await fetchEstadoOcurrencias(supabase, obsIds);
 
     const stats: EmpresaStats[] = empData.map(emp => {
       const empObs = obs.filter(o => o.empresa_id === emp.id);
@@ -89,17 +89,15 @@ export default function EmpresaComplianceSemaforo() {
 
       empObs.forEach(ob => {
         // Eventual (sin ocurrencias ni fecha): no cuenta como pendiente
-        if (!cumplidasOc.has(ob.id) && !ob.fecha_vencimiento) return;
+        if (!estadosOc.has(ob.id) && !ob.fecha_vencimiento) return;
         const pk = getCurrentPeriodKey(ob.presentacion);
-        if (cumplidasOc.get(ob.id) ?? cumplMap[`${ob.id}:${pk}`]) return;
+        if (estadosOc.get(ob.id)?.cumplida ?? cumplMap[`${ob.id}:${pk}`]) return;
         pendientes++;
-        if (ob.fecha_vencimiento) {
-          const d = new Date(ob.fecha_vencimiento);
-          if (isValid(d) && isPast(d)) vencidas++;
-        }
+        const fecha = estadosOc.get(ob.id)?.actual.fecha_vencimiento ?? ob.fecha_vencimiento;
+        if (fecha && calendarDaysUntil(fecha) < 0) vencidas++;
       });
 
-      const total = empObs.filter(o => cumplidasOc.has(o.id) || o.fecha_vencimiento).length;
+      const total = empObs.filter(o => estadosOc.has(o.id) || o.fecha_vencimiento).length;
       const pct = total === 0 ? 100 : Math.round(((total - pendientes) / total) * 100);
       const nivel: SemaforoLevel = vencidas > 0 ? 'rojo' : pendientes > 0 ? 'amarillo' : 'verde';
 

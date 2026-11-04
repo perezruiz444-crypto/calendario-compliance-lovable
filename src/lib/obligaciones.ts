@@ -1,8 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import { anexo30PeriodLabel } from './anexo30';
-import { format, differenceInDays, isPast, isValid, getISOWeek, addWeeks, addMonths, addYears, addDays, setISOWeek, startOfISOWeek } from 'date-fns';
+import { format, isValid, getISOWeek, addWeeks, addMonths, addYears, addDays, setISOWeek, startOfISOWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { mexicoDateKey, parseCalendarDate } from './obligationDate';
+export { getVencimientoInfo } from './obligationDate';
 
 // ─── Category constants ───────────────────────────────────────────────
 export const CATEGORIA_LABELS: Record<string, string> = {
@@ -81,7 +83,7 @@ export async function fetchCumplimientoKeys(
 // ─── Period key helpers ───────────────────────────────────────────────
 /** Período actual (basado en hoy). Atajo de getPeriodKeyForDate(new Date(), presentacion). */
 export function getCurrentPeriodKey(presentacion: string | null): string {
-  return getPeriodKeyForDate(new Date(), presentacion);
+  return getPeriodKeyForDate(parseCalendarDate(mexicoDateKey()), presentacion);
 }
 
 /**
@@ -90,6 +92,7 @@ export function getCurrentPeriodKey(presentacion: string | null): string {
  * "2026-10" → "Octubre 2026", "2026-T4" → "4º trimestre 2026", "2026" → "Año 2026".
  */
 export function getPeriodLabel(presentacion: string | null, periodKey: string): string {
+  if (periodKey === 'manual') return 'Fecha registrada';
   const anexoPeriod = anexo30PeriodLabel(periodKey);
   if (anexoPeriod) return anexoPeriod;
   let m: RegExpMatchArray | null;
@@ -119,21 +122,8 @@ export function getPeriodLabel(presentacion: string | null, periodKey: string): 
 // ─── Formatting helpers ───────────────────────────────────────────────
 export function formatDateShort(fecha: string | null): string {
   if (!fecha) return '-';
-  // Append T12:00:00 for date-only strings to avoid UTC-midnight timezone shifts
-  const d = new Date(fecha.includes('T') ? fecha : fecha + 'T12:00:00');
+  const d = parseCalendarDate(fecha);
   return isValid(d) ? format(d, 'dd/MM/yyyy') : '-';
-}
-
-export function getVencimientoInfo(fecha: string | null): { status: 'vencido' | 'urgente' | 'proximo' | 'vigente'; days: number } | null {
-  if (!fecha) return null;
-  // Append T12:00:00 for date-only strings to avoid UTC-midnight timezone shifts
-  const date = new Date(fecha.includes('T') ? fecha : fecha + 'T12:00:00');
-  if (!isValid(date)) return null;
-  const days = differenceInDays(date, new Date());
-  if (isPast(date)) return { status: 'vencido', days };
-  if (days <= 30) return { status: 'urgente', days };
-  if (days <= 90) return { status: 'proximo', days };
-  return { status: 'vigente', days };
 }
 
 // ─── Programa to categoría mapping ────────────────────────────────────
@@ -177,7 +167,7 @@ export function getNextVencimiento(
   obligacionId: string
 ): { date: Date; periodKey: string } | null {
   if (!fechaVencimiento) return null;
-  const base = new Date(fechaVencimiento + 'T12:00:00');
+  const base = parseCalendarDate(fechaVencimiento);
   if (!isValid(base)) return null;
 
   // Non-recurring: return the fixed date
@@ -239,7 +229,6 @@ export function isRecurring(presentacion: string | null): boolean {
   return !!presentacion && presentacion.toLowerCase() !== 'unica';
 }
 
-
 /** Ids de las ocurrencias con un cumplimiento vigente y completado. */
 export function ocurrenciasCumplidas(
   cumplimientos: ReadonlyArray<{ ocurrencia_id: string | null; completada: boolean | null; vigente: boolean | null }> | null | undefined,
@@ -299,11 +288,12 @@ export function estadoPorOcurrencias(
     lista.push(oc);
     porObligacion.set(oc.obligacion_id, lista);
   }
-  const hoyStr = format(hoy, 'yyyy-MM-dd');
+  const hoyStr = mexicoDateKey(hoy);
+  const diaCivil = parseCalendarDate(hoyStr);
   const estado = new Map<string, EstadoObligacionOc>();
   for (const [obligacionId, lista] of porObligacion) {
     const actual =
-      lista.find((oc) => periodoKeyComo(oc.periodo_key, hoy) === oc.periodo_key) ??
+      lista.find((oc) => periodoKeyComo(oc.periodo_key, diaCivil) === oc.periodo_key) ??
       lista.find((oc) => oc.fecha_vencimiento >= hoyStr) ??
       lista[lista.length - 1];
     const atrasadas = lista.filter(

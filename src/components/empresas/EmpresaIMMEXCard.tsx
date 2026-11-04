@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -133,7 +134,7 @@ export function EmpresaIMMEXCard({ empresa, canEdit, onUpdate }: EmpresaIMMEXCar
                 <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Autorización</label>
                 <p className="font-body mt-1">
                   {/* Safe: the enclosing && guarantees at least one date is truthy */}
-                  {new Date((empresa.immex_fecha_autorizacion || empresa.immex_fecha_inicio)!).toLocaleDateString('es-MX')}
+                  {parseCalendarDate((empresa.immex_fecha_autorizacion || empresa.immex_fecha_inicio)!).toLocaleDateString('es-MX')}
                 </p>
               </div>
             )}

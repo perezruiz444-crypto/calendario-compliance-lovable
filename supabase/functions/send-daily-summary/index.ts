@@ -1,3 +1,5 @@
+import { mexicoDateKey, addCalendarDays, calendarDaysUntil, nextRenewalDate } from '../_shared/calendarDate.ts';
+import { reminderDays, obligationReminderType, type ReminderRule } from '../_shared/reminderRules.ts';
 import { includeObligationAction,selectObligationType,latestScheduledReviews,includeClientReminder } from '../_shared/obligationPresentation.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0'
 import { corsHeaders } from '../_shared/cors.ts'
@@ -17,6 +19,7 @@ type ObligationInfo = { id: string; nombre: string; categoria: string | null; ca
 type ObligacionEmbed = ObligationInfo | ObligationInfo[] | null
 
 interface OcurrenciaRow {
+  empresa_id: string
   obligacion_id: string
   regla_id: string | null
   origen_fecha: string | null
@@ -48,15 +51,17 @@ async function obligacionesPendientes(
   today: string,
   next7Days: string,
   next30Days: string,
+  reminderRules: readonly ReminderRule[],
   clientSummary = false,
 ) {
+  const horizon = addCalendarDays(today, Math.max(30, ...reminderRules.filter(r => r.activa).map(r => r.dias_antes)));
   const ocurrencias: OcurrenciaRow[] = []
   for (let from = 0; ;) {
     let q = supabaseAdmin
       .from('obligacion_ocurrencias')
-      .select('obligacion_id, regla_id, periodo_key, fecha_vencimiento, origen_fecha, evento_id, obligaciones!inner(id, nombre, categoria, catalogo_id, activa), empresas(razon_social)')
+      .select('empresa_id, obligacion_id, regla_id, periodo_key, fecha_vencimiento, origen_fecha, evento_id, obligaciones!inner(id, nombre, categoria, catalogo_id, activa), empresas(razon_social)')
       .eq('obligaciones.activa', true)
-      .lte('fecha_vencimiento', next30Days)
+      .lte('fecha_vencimiento', horizon)
       .order('fecha_vencimiento', { ascending: true })
       .order('id', { ascending: true })
       .range(from, from + PAGE - 1)
@@ -89,11 +94,14 @@ async function obligacionesPendientes(
   }
   for(const review of latestScheduledReviews(reviews)){
     const ob=parents.find(o=>o.id===review.obligacion_id);
-    if(!ob||!review.proxima_revision||review.proxima_revision>next30Days||selectObligationType(rules,ob)!=='condicion')continue;
-    ocurrencias.push({obligacion_id:ob.id,regla_id:null,periodo_key:`revision:${review.id}`,fecha_vencimiento:review.proxima_revision,origen_fecha:'interna',evento_id:null,obligaciones:ob,empresas:ob.empresas});
+    if(!ob||!review.proxima_revision||review.proxima_revision>horizon||selectObligationType(rules,ob)!=='condicion')continue;
+    ocurrencias.push({empresa_id:review.empresa_id,obligacion_id:ob.id,regla_id:null,periodo_key:`revision:${review.id}`,fecha_vencimiento:review.proxima_revision,origen_fecha:'interna',evento_id:null,obligaciones:ob,empresas:ob.empresas});
   }
   const eligible=ocurrencias.filter(oc=>{
     if (clientSummary && !includeClientReminder(oc, rules)) return false;
+    const parent = Array.isArray(oc.obligaciones) ? oc.obligaciones[0] : oc.obligaciones;
+    const days = calendarDaysUntil(oc.fecha_vencimiento, today);
+    if (days > Math.max(0, ...reminderDays(reminderRules, obligationReminderType(parent?.categoria ?? null), oc.empresa_id))) return false;
     const ob=Array.isArray(oc.obligaciones)?oc.obligaciones[0]:oc.obligaciones;
     return includeObligationAction(selectObligationType(rules,{id:oc.obligacion_id,catalogo_id:ob?.catalogo_id??null}),oc.origen_fecha,oc.evento_id);
   });
@@ -171,29 +179,15 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const today = new Intl.DateTimeFormat('en-CA',{timeZone:'America/Mexico_City',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
-    const next7Days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    const next30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const today = mexicoDateKey();
+    const next7Days = addCalendarDays(today, 7);
+    const next30Days = addCalendarDays(today, 30);
 
-    // Load configurable dias_antes per program type from reminder_rules
-    const { data: reminderRules } = await supabaseAdmin
-      .from('reminder_rules')
-      .select('tipo, dias_antes')
-      .eq('activa', true)
-
-    const diasAntesByTipo: Record<string, number> = {}
-    for (const rule of reminderRules || []) {
-      if (!diasAntesByTipo[rule.tipo] || rule.dias_antes > diasAntesByTipo[rule.tipo]) {
-        diasAntesByTipo[rule.tipo] = rule.dias_antes
-      }
-    }
-    const getDias = (tipo: string) => diasAntesByTipo[tipo] ?? 30
-
-    // Helper: get renewal cutoff date string for a program type
-    const getRenewalCutoff = (tipo: string): string => {
-      const dias = getDias(tipo)
-      return new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    }
+    const { data: reminderRules, error: reminderError } = await supabaseAdmin
+      .from('reminder_rules').select('tipo, dias_antes, empresa_id, activa');
+    if (reminderError) throw reminderError;
+    const getRenewalCutoff = (tipo: string, empresaId: string) =>
+      addCalendarDays(today, Math.max(0, ...reminderDays(reminderRules || [], tipo, empresaId, [30])));
 
     const { data: profiles } = await supabaseAdmin
       .from('profiles')
@@ -256,7 +250,7 @@ Deno.serve(async (req) => {
             }
           }
 
-          const pend = await obligacionesPendientes(supabaseAdmin, empresaIdFilter, today, next7Days, next30Days)
+          const pend = await obligacionesPendientes(supabaseAdmin, empresaIdFilter, today, next7Days, next30Days, reminderRules || [])
           obligacionesVencidas = pend.vencidas.slice(0, 10)
           obligacionesSemana = pend.semana.slice(0, 10)
           obligacionesMes = pend.mes.slice(0, 10)
@@ -265,6 +259,7 @@ Deno.serve(async (req) => {
           let empresasQuery = supabaseAdmin
             .from('empresas')
             .select(`
+              id,
               razon_social,
               immex_fecha_fin,
               immex_fecha_autorizacion,
@@ -284,57 +279,50 @@ Deno.serve(async (req) => {
           for (const e of (empresas || [])) {
             // CERTIVA: prefer fecha_renovar, fallback to fecha_vencimiento
             const certFecha = e.cert_iva_ieps_fecha_renovar || e.cert_iva_ieps_fecha_vencimiento
-            const certCutoff = getRenewalCutoff('certificacion')
+            const certCutoff = getRenewalCutoff('certificacion', e.id)
             if (certFecha && certFecha >= today && certFecha <= certCutoff) {
-              const dias = Math.ceil((new Date(certFecha + 'T12:00:00').getTime() - Date.now()) / 86400000)
+              const dias = calendarDaysUntil(certFecha, today)
               renovacionesProximas.push({ empresa: e.razon_social, programa: 'Cert. IVA/IEPS', fecha: certFecha, diasRestantes: dias })
             }
 
             // PROSEC: prefer fecha_siguiente_renovacion, fallback to fecha_fin
             const prosecFecha = e.prosec_fecha_siguiente_renovacion || e.prosec_fecha_fin
-            const prosecCutoff = getRenewalCutoff('prosec')
+            const prosecCutoff = getRenewalCutoff('prosec', e.id)
             if (prosecFecha && prosecFecha >= today && prosecFecha <= prosecCutoff) {
-              const dias = Math.ceil((new Date(prosecFecha + 'T12:00:00').getTime() - Date.now()) / 86400000)
+              const dias = calendarDaysUntil(prosecFecha, today)
               renovacionesProximas.push({ empresa: e.razon_social, programa: 'PROSEC', fecha: prosecFecha, diasRestantes: dias })
             }
 
             // Matriz de Seguridad: prefer fecha_renovar, fallback to fecha_vencimiento
             const matrizFecha = e.matriz_seguridad_fecha_renovar || e.matriz_seguridad_fecha_vencimiento
-            const matrizCutoff = getRenewalCutoff('matriz_seguridad')
+            const matrizCutoff = getRenewalCutoff('matriz_seguridad', e.id)
             if (matrizFecha && matrizFecha >= today && matrizFecha <= matrizCutoff) {
-              const dias = Math.ceil((new Date(matrizFecha + 'T12:00:00').getTime() - Date.now()) / 86400000)
+              const dias = calendarDaysUntil(matrizFecha, today)
               renovacionesProximas.push({ empresa: e.razon_social, programa: 'Matriz de Seguridad', fecha: matrizFecha, diasRestantes: dias })
             }
 
             // IMMEX: calculate from autorización + period, or use immex_fecha_fin
-            const immexCutoff = getRenewalCutoff('immex')
+            const immexCutoff = getRenewalCutoff('immex', e.id)
             if (e.immex_fecha_autorizacion && e.immex_periodo_renovacion_meses) {
-              const autDate = new Date(e.immex_fecha_autorizacion + 'T12:00:00')
-              const meses = e.immex_periodo_renovacion_meses as number
-              let nextRenewal = new Date(autDate)
-              const nowDate = new Date()
-              while (nextRenewal <= nowDate) {
-                nextRenewal = new Date(nextRenewal.setMonth(nextRenewal.getMonth() + meses))
-              }
-              const nextStr = nextRenewal.toISOString().split('T')[0]
-              if (nextStr >= today && nextStr <= immexCutoff) {
-                const dias = Math.ceil((nextRenewal.getTime() - Date.now()) / 86400000)
+              const nextStr = nextRenewalDate(e.immex_fecha_autorizacion, e.immex_periodo_renovacion_meses, today);
+              if (nextStr && nextStr >= today && nextStr <= immexCutoff) {
+                const dias = calendarDaysUntil(nextStr, today)
                 renovacionesProximas.push({ empresa: e.razon_social, programa: 'IMMEX', fecha: nextStr, diasRestantes: dias })
               }
             } else if (e.immex_fecha_fin && e.immex_fecha_fin >= today && e.immex_fecha_fin <= immexCutoff) {
-              const dias = Math.ceil((new Date(e.immex_fecha_fin + 'T12:00:00').getTime() - Date.now()) / 86400000)
+              const dias = calendarDaysUntil(e.immex_fecha_fin, today)
               renovacionesProximas.push({ empresa: e.razon_social, programa: 'IMMEX', fecha: e.immex_fecha_fin, diasRestantes: dias })
             }
 
             // Keep legacy certificacionesVencer for backwards compatibility (use vencimiento dates within 30 days)
             const legacyProgs = [
-              { label: 'IMMEX', date: e.immex_fecha_fin },
-              { label: 'PROSEC', date: e.prosec_fecha_fin },
-              { label: 'Cert. IVA/IEPS', date: e.cert_iva_ieps_fecha_vencimiento },
-              { label: 'Matriz Seguridad', date: e.matriz_seguridad_fecha_vencimiento },
+              { tipo: 'immex', label: 'IMMEX', date: e.immex_fecha_fin },
+              { tipo: 'prosec', label: 'PROSEC', date: e.prosec_fecha_fin },
+              { tipo: 'certificacion', label: 'Cert. IVA/IEPS', date: e.cert_iva_ieps_fecha_vencimiento },
+              { tipo: 'matriz_seguridad', label: 'Matriz Seguridad', date: e.matriz_seguridad_fecha_vencimiento },
             ]
             for (const p of legacyProgs) {
-              if (p.date && p.date >= today && p.date <= next30Days) {
+              if (p.date && p.date >= today && p.date <= getRenewalCutoff(p.tipo, e.id)) {
                 certificacionesVencer.push({ empresa: e.razon_social, tipo: p.label, fecha: p.date })
               }
             }
@@ -344,9 +332,10 @@ Deno.serve(async (req) => {
             .from('profiles').select('empresa_id').eq('id', profile.id).maybeSingle()
 
           if (clientProfile?.empresa_id) {
-            const pend = await obligacionesPendientes(supabaseAdmin, [clientProfile.empresa_id], today, next7Days, next30Days, true)
+            const pend = await obligacionesPendientes(supabaseAdmin, [clientProfile.empresa_id], today, next7Days, next30Days, reminderRules || [], true)
             obligacionesVencidas = pend.vencidas.slice(0, 5)
             obligacionesSemana = pend.semana.slice(0, 5)
+            obligacionesMes = pend.mes.slice(0, 5)
           }
         }
 

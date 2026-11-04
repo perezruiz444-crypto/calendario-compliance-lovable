@@ -1,3 +1,4 @@
+import { parseCalendarDate, calendarDaysUntil } from '@/lib/obligationDate';
 import { useEffect, useMemo, useState, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -655,16 +656,12 @@ export default function Tareas() {
 
   const isOverdue = (fecha: string) => {
     if (!fecha) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dueDate = new Date(fecha);
-    dueDate.setHours(0, 0, 0, 0);
-    return dueDate < today;
+    return calendarDaysUntil(fecha) < 0;
   };
 
   const formatDate = (fecha: string) => {
     if (!fecha) return '';
-    const date = new Date(fecha);
+    const date = parseCalendarDate(fecha);
     return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
   };
 
@@ -842,8 +839,8 @@ export default function Tareas() {
       ? [{
           id: t.id,
           title: t.titulo,
-          start: new Date(t.fecha_vencimiento),
-          end: new Date(t.fecha_vencimiento),
+          start: parseCalendarDate(t.fecha_vencimiento),
+          end: parseCalendarDate(t.fecha_vencimiento),
           resource: t,
         }]
       : []

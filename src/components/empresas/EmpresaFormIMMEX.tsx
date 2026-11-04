@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
@@ -54,7 +55,7 @@ export default function EmpresaFormIMMEX({ formData, setFormData }: EmpresaFormI
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {formData.immex_fecha_autorizacion ? (
-                format(new Date(formData.immex_fecha_autorizacion + 'T12:00:00'), "PPP")
+                format(parseCalendarDate(formData.immex_fecha_autorizacion), "PPP")
               ) : (
                 <span>Seleccionar fecha</span>
               )}
@@ -63,7 +64,7 @@ export default function EmpresaFormIMMEX({ formData, setFormData }: EmpresaFormI
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
-              selected={formData.immex_fecha_autorizacion ? new Date(formData.immex_fecha_autorizacion + 'T12:00:00') : undefined}
+              selected={formData.immex_fecha_autorizacion ? parseCalendarDate(formData.immex_fecha_autorizacion) : undefined}
               onSelect={(date) => setFormData({ ...formData, immex_fecha_autorizacion: date?.toISOString().split('T')[0] })}
               initialFocus
               className={cn("p-3 pointer-events-auto")}

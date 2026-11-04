@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -71,7 +72,7 @@ export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaForm
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {formData.prosec_fecha_autorizacion ? (
-                format(new Date(formData.prosec_fecha_autorizacion), "PPP")
+                format(parseCalendarDate(formData.prosec_fecha_autorizacion), "PPP")
               ) : (
                 <span>Seleccionar fecha</span>
               )}
@@ -80,7 +81,7 @@ export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaForm
           <PopoverContent className="w-auto p-0 z-50" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
             <Calendar
               mode="single"
-              selected={formData.prosec_fecha_autorizacion ? new Date(formData.prosec_fecha_autorizacion + 'T12:00:00') : undefined}
+              selected={formData.prosec_fecha_autorizacion ? parseCalendarDate(formData.prosec_fecha_autorizacion) : undefined}
               onSelect={(date) => {
                 if (date) {
                   const year = date.getFullYear();
@@ -112,7 +113,7 @@ export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaForm
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {formData.prosec_fecha_ultima_renovacion ? (
-                format(new Date(formData.prosec_fecha_ultima_renovacion), "PPP")
+                format(parseCalendarDate(formData.prosec_fecha_ultima_renovacion), "PPP")
               ) : (
                 <span>Seleccionar fecha</span>
               )}
@@ -121,7 +122,7 @@ export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaForm
           <PopoverContent className="w-auto p-0 z-50" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
             <Calendar
               mode="single"
-              selected={formData.prosec_fecha_ultima_renovacion ? new Date(formData.prosec_fecha_ultima_renovacion + 'T12:00:00') : undefined}
+              selected={formData.prosec_fecha_ultima_renovacion ? parseCalendarDate(formData.prosec_fecha_ultima_renovacion) : undefined}
               onSelect={(date) => {
                 if (date) {
                   const year = date.getFullYear();
@@ -153,7 +154,7 @@ export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaForm
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {formData.prosec_fecha_siguiente_renovacion ? (
-                format(new Date(formData.prosec_fecha_siguiente_renovacion), "PPP")
+                format(parseCalendarDate(formData.prosec_fecha_siguiente_renovacion), "PPP")
               ) : (
                 <span>Seleccionar fecha</span>
               )}
@@ -162,7 +163,7 @@ export default function EmpresaFormPROSEC({ formData, setFormData }: EmpresaForm
           <PopoverContent className="w-auto p-0 z-50" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
             <Calendar
               mode="single"
-              selected={formData.prosec_fecha_siguiente_renovacion ? new Date(formData.prosec_fecha_siguiente_renovacion + 'T12:00:00') : undefined}
+              selected={formData.prosec_fecha_siguiente_renovacion ? parseCalendarDate(formData.prosec_fecha_siguiente_renovacion) : undefined}
               onSelect={(date) => {
                 if (date) {
                   const year = date.getFullYear();

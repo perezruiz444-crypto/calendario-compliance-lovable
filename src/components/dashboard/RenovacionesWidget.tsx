@@ -1,8 +1,10 @@
+import { reminderDays } from '../../../supabase/functions/_shared/reminderRules';
+import { parseCalendarDate, calendarDaysUntil, nextRenewalDate } from '@/lib/obligationDate';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { differenceInDays, addMonths } from 'date-fns';
+
 import { ShieldAlert, AlertTriangle, Clock, CheckCircle2, RefreshCw } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
@@ -38,18 +40,9 @@ export default function RenovacionesWidget() {
       // Get configurable dias_antes per program type from reminder_rules
       const { data: rules } = await supabase
         .from('reminder_rules')
-        .select('tipo, dias_antes')
-        .eq('activa', true);
+        .select('tipo, dias_antes, empresa_id, activa');
 
-      const diasAntesByTipo: Record<string, number> = {};
-      (rules || []).forEach((r: { tipo: string; dias_antes: number }) => {
-        // Use the largest dias_antes if multiple rules exist for the same type
-        if (!diasAntesByTipo[r.tipo] || r.dias_antes > diasAntesByTipo[r.tipo]) {
-          diasAntesByTipo[r.tipo] = r.dias_antes;
-        }
-      });
-
-      const getDias = (tipo: string) => diasAntesByTipo[tipo] ?? DEFAULT_DIAS_ANTES;
+      const getDias = (tipo: string, empresaId: string) => Math.max(0, ...reminderDays(rules || [], tipo, empresaId, [DEFAULT_DIAS_ANTES]));
 
       // Fetch all empresas with program date fields
       const { data: empresas } = await supabase
@@ -77,21 +70,14 @@ export default function RenovacionesWidget() {
 
         // IMMEX: calculate next renewal from autorización date + period
         if (e.immex_fecha_autorizacion && e.immex_periodo_renovacion_meses) {
-          const autorizacion = new Date(e.immex_fecha_autorizacion + 'T12:00:00');
-          const meses = e.immex_periodo_renovacion_meses;
-          // Find the next renewal after today
-          let nextRenewal = new Date(autorizacion);
-          while (nextRenewal <= now) {
-            nextRenewal = addMonths(nextRenewal, meses);
-          }
-          checks.push({ tipo: 'immex', fecha: nextRenewal.toISOString().split('T')[0] });
+          checks.push({ tipo: 'immex', fecha: nextRenewalDate(e.immex_fecha_autorizacion, e.immex_periodo_renovacion_meses) });
         }
 
         for (const check of checks) {
           if (!check.fecha) continue;
-          const fechaDate = new Date(check.fecha + 'T12:00:00');
-          const dias = differenceInDays(fechaDate, now);
-          if (dias >= 0 && dias <= getDias(check.tipo)) {
+          const fechaDate = parseCalendarDate(check.fecha);
+          const dias = calendarDaysUntil(check.fecha, now);
+          if (dias >= 0 && dias <= getDias(check.tipo, e.id)) {
             nuevasAlertas.push({
               empresa: e.razon_social,
               empresaId: e.id,

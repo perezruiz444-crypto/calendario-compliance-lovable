@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '@/lib/obligationDate';
 import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { ClipboardList } from 'lucide-react';
@@ -103,7 +104,7 @@ export function EmpresaPadronGeneralCard({ empresaId, canEdit }: EmpresaPadronGe
             <div>
               <label className="text-sm font-heading font-medium text-muted-foreground">Fecha de Alta</label>
               <p className="font-body mt-1">
-                {new Date(registro.fecha_inicio + 'T12:00:00').toLocaleDateString('es-MX')}
+                {parseCalendarDate(registro.fecha_inicio).toLocaleDateString('es-MX')}
               </p>
             </div>
           )}
