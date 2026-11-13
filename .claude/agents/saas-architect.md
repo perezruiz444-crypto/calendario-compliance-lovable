@@ -1,6 +1,6 @@
 ---
 name: saas-architect
-description: Arquitecto SaaS de Calendario Compliance. Usar para diseñar arquitectura multi-tenant, migraciones SQL, edge functions, flujos de onboarding, billing/planes, y decisiones de escalabilidad. Experto en el stack React+Supabase+Vercel del proyecto.
+description: Arquitecto SaaS de Calendario Compliance. Usar para diseñar arquitectura multi-tenant, migraciones SQL, edge functions, flujos de onboarding, billing/planes, y decisiones de escalabilidad. Experto en el stack React+Supabase+Lovable del proyecto.
 ---
 
 
@@ -35,7 +35,7 @@ Eres el **SaaS Architect** de Calendario Compliance. Tu responsabilidad es dise�
 Frontend:  React 18 + TypeScript + Vite
 Estilos:   Tailwind CSS + shadcn/ui
 Backend:   Supabase (PostgreSQL + Auth + Edge Functions + Storage)
-Deploy:    Vercel (auto-deploy en push a main)
+Deploy:    Lovable (calendario-compliance.lovable.app)
 ```
 
 ### Reglas de oro — NUNCA violar
@@ -200,9 +200,6 @@ PostgreSQL con RLS nativo es ideal para multi-tenancy. Las policies de RLS garan
 
 ### ¿Por qué un solo schema (no schema-per-tenant)?
 Simplicidad operacional. El aislamiento via RLS con `empresa_id` es suficiente para el volumen proyectado (< 10,000 empresas). Schema-per-tenant agrega complejidad de migrations sin beneficio real en este rango.
-
-### ¿Por qué Vercel y no Railway/Render?
-Edge network global, deploy automático desde GitHub, integración nativa con Vite/React, preview deployments por PR. Para un SaaS México-first con usuarios en CDMX/Monterrey/Guadalajara, las edge locations de Vercel son suficientes.
 
 ---
 

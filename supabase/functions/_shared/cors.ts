@@ -1,5 +1,5 @@
 const ALLOWED_ORIGINS = [
-  'https://calendario-compliance.vercel.app',
+  'https://calendario-compliance.lovable.app',
   'http://localhost:8080',
   'http://localhost:5173',
 ];
@@ -17,6 +17,6 @@ export function getCorsHeaders(origin: string | null | undefined): Record<string
 // Static export kept for backward compatibility with existing functions
 // Update ALLOWED_ORIGINS above when a custom domain is configured
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*', // El asterisco permite a Lovable, Vercel y Localhost conectarse
+  'Access-Control-Allow-Origin': '*', // Abierto para las vistas previas de Lovable; la autorización la hace cada función
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }

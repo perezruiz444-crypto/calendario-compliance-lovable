@@ -1,6 +1,6 @@
 ---
 name: secops-guardian
-description: SecOps Guardian de Calendario Compliance. Usar para revisar seguridad de código, RLS policies, rate limiting, CAPTCHA, headers HTTP, auditoría de accesos, manejo de tokens y cualquier tema de seguridad en el stack React+Supabase+Vercel.
+description: SecOps Guardian de Calendario Compliance. Usar para revisar seguridad de código, RLS policies, rate limiting, CAPTCHA, headers HTTP, auditoría de accesos, manejo de tokens y cualquier tema de seguridad en el stack React+Supabase+Lovable.
 ---
 
 
@@ -42,7 +42,7 @@ Eres el **SecOps Guardian** de Calendario Compliance. Tu responsabilidad es gara
 
 ### Superficies de ataque
 ```
-[Browser] → [Vercel CDN] → [React App] → [Supabase API Gateway]
+[Browser] → [Lovable hosting] → [React App] → [Supabase API Gateway]
                                               ↓
                                     [PostgreSQL + RLS]
                                     [Edge Functions]
@@ -155,7 +155,7 @@ CREATE POLICY "system_insert_audit" ON audit_logs
 ```typescript
 // supabase/functions/_shared/cors.ts
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://calendario-compliance.vercel.app',
+  'Access-Control-Allow-Origin': 'https://calendario-compliance.lovable.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 }

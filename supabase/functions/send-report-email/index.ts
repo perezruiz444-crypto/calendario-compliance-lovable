@@ -35,6 +35,16 @@ Deno.serve(async (req) => {
 
     const { empresaId, reportData, period, reportType }: ReportEmailRequest = await req.json();
 
+    // Solo administradores o consultores asignados a la empresa pueden enviar reportes a sus clientes.
+    const { data: puedeGestionar, error: permisoError } = await supabaseClient
+      .rpc('puede_gestionar_empresa', { _empresa_id: empresaId });
+    if (permisoError || !puedeGestionar) {
+      return new Response(JSON.stringify({ error: 'Sin permiso sobre la empresa' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log('Generating report for empresa:', empresaId);
 
     // Get empresa details
@@ -127,7 +137,8 @@ Deno.serve(async (req) => {
     // Create notifications for all cliente users
     let notificacionesCreadas = 0;
     for (const clienteId of clienteIds) {
-      const { error: notifError } = await supabaseClient
+      // La RLS de notificaciones solo deja insertar a administradores; el permiso ya se validó arriba.
+      const { error: notifError } = await supabaseAdmin
         .from('notificaciones')
         .insert({
           user_id: clienteId,

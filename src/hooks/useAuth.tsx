@@ -140,12 +140,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: captchaToken ? { captchaToken } : undefined,
     });
 
-    supabase.rpc('record_login_attempt', {
-      p_email: email,
-      p_ip: null,
-      p_success: !error,
-    }).then(() => {});
-
     return { error };
   };
 

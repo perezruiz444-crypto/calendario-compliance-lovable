@@ -36,4 +36,4 @@ jobs:
         env:
           # Vite needs these at build time — use dummy values for CI
           VITE_SUPABASE_URL: https://placeholder.supabase.co
-          VITE_SUPABASE_ANON_KEY: placeholder_anon_key
+          VITE_SUPABASE_PUBLISHABLE_KEY: placeholder_anon_key
