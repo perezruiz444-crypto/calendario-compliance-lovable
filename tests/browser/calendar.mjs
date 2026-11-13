@@ -16,7 +16,6 @@ async function setup({deny=false,loseResponse=false}={}){
  const companyRow={id:company,razon_social:'Empresa ficticia',rfc:'EJE000000AAA'};
  const obligations=[['Entrega mensual ficticia',1],['Entrega cumplida ficticia',2],['Entrega de diciembre ficticia',3],['Revisión de control ficticia',4]].map(([nombre,n])=>({id:oid(n),empresa_id:company,nombre,categoria:'immex',presentacion:'mensual',activa:true,catalogo_id:null,responsable_id:null,articulos:'Referencia ficticia',descripcion:'Obligación de prueba local',fecha_vencimiento:'2026-01-01',empresas:companyRow}));
  const occurrences=[['2026-11-07',1],['2026-11-10',2],['2026-12-01',3]].map(([date,n])=>({id:cid(n),obligacion_id:oid(n),empresa_id:company,periodo_key:date.slice(0,7),fecha_vencimiento:date,origen_fecha:'heredada',estado:'pendiente',evento_id:null,regla_id:null,obligaciones:obligations.find(o=>o.id===oid(n)),empresas:companyRow}));
- const documents=[{id:'80000000-0000-4000-8000-000000000001',empresa_id:company,nombre:'Documento ficticio',descripcion:'Documento de prueba',fecha_vencimiento:'2026-11-09',archivo_nombre:'prueba.pdf',archivo_url:`${company}/prueba.pdf`,empresas:companyRow}];
  const completions=[{id:'60000000-0000-4000-8000-000000000002',obligacion_id:oid(2),empresa_id:company,ocurrencia_id:cid(2),periodo_key:'2026-11',completada:true,vigente:true,completada_por:uid,created_at:'2026-11-01T12:00:00Z'}];
  const rules=obligations.map((o,n)=>({id:`rule-${n}`,obligacion_id:o.id,catalogo_id:null,clasificacion_estado:'aprobada',normativa_estado:'pendiente',tipo_control:n===3?'condicion':'periodica',version:1,aplicabilidad:{},parametros:{}}));
  const reviews=[{id:'70000000-0000-4000-8000-000000000004',obligacion_id:oid(4),empresa_id:company,revisada_en:'2026-11-01T12:00:00Z',proxima_revision:'2026-11-08',resultado:'verificada'}];
@@ -44,7 +43,7 @@ async function setup({deny=false,loseResponse=false}={}){
    if(loseResponse){loseResponse=false;return json({message:'Respuesta perdida después de guardar'},503);}return json('60000000-0000-4000-8000-000000000001');
   }
   if(url.pathname.includes('/rpc/'))return json(null);
-  let rows=table==='profiles'?[{id:uid,empresa_id:company,nombre_completo:'Persona ficticia',notificaciones_activas:false}]:table==='empresas'?[companyRow]:table==='obligaciones'?obligations:table==='obligacion_ocurrencias'?occurrences:table==='obligacion_cumplimientos'?completions:table==='obligacion_reglas'?rules:table==='obligacion_revisiones'?reviews:table==='documentos'?documents:[];
+  let rows=table==='profiles'?[{id:uid,empresa_id:company,nombre_completo:'Persona ficticia',notificaciones_activas:false}]:table==='empresas'?[companyRow]:table==='obligaciones'?obligations:table==='obligacion_ocurrencias'?occurrences:table==='obligacion_cumplimientos'?completions:table==='obligacion_reglas'?rules:table==='obligacion_revisiones'?reviews:[];
   for(const [key,value] of url.searchParams){
    if(value.startsWith('eq.'))rows=rows.filter(row=>String(key==='obligaciones.activa'?row.obligaciones?.activa:row[key])===value.slice(3));
    if(value.startsWith('in.')){const ids=value.slice(4,-1).split(',');rows=rows.filter(row=>ids.includes(String(row[key])));}
@@ -96,10 +95,7 @@ try{
  await sheet.getByRole('button',{name:'Registrar revisión',exact:true}).waitFor();
  assert.equal(await sheet.getByRole('button',{name:'Marcar como cumplida'}).count(),0);
  await sheet.getByRole('button',{name:'Close',exact:true}).click();
- await event('Documento ficticio').click();
- await sheet.getByRole('heading',{name:'Documento ficticio',exact:true}).waitFor();
  assert.equal(new URL(page.url()).pathname,'/calendario');
- await sheet.getByRole('button',{name:'Close',exact:true}).click();
  await page.locator('.fc-next-button').click();
  await event('Entrega de diciembre ficticia').waitFor();
  const download=page.waitForEvent('download');await page.getByRole('button',{name:'Descargar .ics',exact:true}).click();

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Calendar } from '@/components/ui/calendar';
@@ -15,21 +15,17 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { CategorySelector } from './CategorySelector';
 import { FileAttachments } from './FileAttachments';
-import { TemplateSelector } from './TemplateSelector';
 import { cn } from '@/lib/utils';
 import { format, addDays, addWeeks, addMonths, addYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
-  CalendarIcon, ChevronDown, Repeat, Paperclip, Tag, Search, Check, X,
+  CalendarIcon, ChevronDown, Repeat, Paperclip, Search, Check, X,
   Sparkles, Building2, User, FileText, Clock
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
-import type { EmpresaResumen, ConsultorResumen, TareaAdjunto, TareaTemplate } from '@/types/domain';
+import type { EmpresaResumen, ConsultorResumen, TareaAdjunto } from '@/types/domain';
 import type { TareaDuplicada } from './DuplicateTareaButton';
-import { getCamposTemplate, getSubtareasTemplate } from '@/lib/templates';
-import { toPrioridad } from '@/lib/prioridad';
 
 interface CreateTareaSheetProps {
   open: boolean;
@@ -134,7 +130,6 @@ function SectionHeader({ icon: Icon, title, summary, isOpen, onToggle }: {
 export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, defaultEmpresaId, duplicateData }: CreateTareaSheetProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [pendingSubtareas, setPendingSubtareas] = useState<{ titulo: string; descripcion?: string }[]>([]);
   const [empresas, setEmpresas] = useState<EmpresaResumen[]>([]);
   const [consultores, setConsultores] = useState<ConsultorResumen[]>([]);
   const [empresaSearch, setEmpresaSearch] = useState('');
@@ -158,7 +153,6 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
     fecha_vencimiento: '',
     empresa_id: defaultEmpresaId || '',
     consultor_asignado_id: '',
-    categoria_id: '',
     es_recurrente: false,
     frecuencia_recurrencia: 'mensual',
     intervalo_recurrencia: 1,
@@ -253,42 +247,14 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
       const c = consultores.find(c => c.id === formData.consultor_asignado_id);
       if (c) parts.push(`👤 ${c.nombre_completo.split(' ')[0]}`);
     }
-    if (formData.categoria_id) parts.push('🏷️ Categoría');
     if (attachments.length > 0) parts.push(`📎 ${attachments.length}`);
     return parts.join(' · ');
-  }, [formData.descripcion, formData.consultor_asignado_id, formData.categoria_id, attachments, consultores]);
+  }, [formData.descripcion, formData.consultor_asignado_id, attachments, consultores]);
 
   const setQuickDate = (type: 'today' | 'tomorrow' | 'nextWeek') => {
     const now = new Date();
     const date = type === 'today' ? now : type === 'tomorrow' ? addDays(now, 1) : addWeeks(now, 1);
     setFormData(prev => ({ ...prev, fecha_vencimiento: format(date, 'yyyy-MM-dd') }));
-  };
-
-  const handleTemplateSelect = (template: TareaTemplate) => {
-    const campos = getCamposTemplate(template.campos_personalizados);
-    setFormData(prev => ({
-      ...prev,
-      titulo: template.titulo_template.replace('[EMPRESA]', empresas.find(e => e.id === prev.empresa_id)?.razon_social || ''),
-      descripcion: template.descripcion_template || '',
-      prioridad: toPrioridad(template.prioridad),
-      categoria_id: template.categoria_id || '',
-      // Apply recurrence from template
-      es_recurrente: campos.es_recurrente || false,
-      frecuencia_recurrencia: campos.frecuencia_recurrencia || 'mensual',
-      intervalo_recurrencia: campos.intervalo_recurrencia || 1,
-    }));
-    if (template.duracion_dias && !formData.fecha_vencimiento) {
-      setFormData(prev => ({ ...prev, fecha_vencimiento: format(addDays(new Date(), template.duracion_dias ?? 0), 'yyyy-MM-dd') }));
-    }
-    // Apply subtareas from template
-    const subtareas = getSubtareasTemplate(template.subtareas_template);
-    if (subtareas.length > 0) {
-      setPendingSubtareas(subtareas);
-    }
-    // Open scheduling section if recurrence was applied
-    if (campos.es_recurrente) {
-      setSchedulingOpen(true);
-    }
   };
 
   const handlePresetSelect = (preset: typeof RECURRENCE_PRESETS[number]) => {
@@ -304,7 +270,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
   const resetForm = () => {
     setFormData({
       titulo: '', descripcion: '', prioridad: 'media', fecha_vencimiento: '',
-      empresa_id: defaultEmpresaId || '', consultor_asignado_id: '', categoria_id: '',
+      empresa_id: defaultEmpresaId || '', consultor_asignado_id: '',
       es_recurrente: false, frecuencia_recurrencia: 'mensual', intervalo_recurrencia: 1,
       fecha_inicio_recurrencia: '', fecha_fin_recurrencia: '',
     });
@@ -314,7 +280,6 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
     setSchedulingOpen(false);
     setDetailsOpen(false);
     setCustomRecurrence(false);
-    setPendingSubtareas([]);
   };
 
   const handleSubmit = async () => {
@@ -337,7 +302,6 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
         empresa_id: eid,
         consultor_asignado_id: formData.consultor_asignado_id || null,
         fecha_vencimiento: formData.fecha_vencimiento || null,
-        categoria_id: formData.categoria_id || null,
         archivos_adjuntos: attachments.length > 0 ? attachments : null,
         creado_por: user.id,
         es_recurrente: formData.es_recurrente,
@@ -347,21 +311,8 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
         fecha_fin_recurrencia: formData.es_recurrente && formData.fecha_fin_recurrencia ? formData.fecha_fin_recurrencia : null,
       }));
 
-      const { data: insertedTareas, error } = await supabase.from('tareas').insert(tareasToInsert).select('id');
+      const { error } = await supabase.from('tareas').insert(tareasToInsert);
       if (error) throw error;
-
-      // Create subtareas from template if any
-      if (pendingSubtareas.length > 0 && insertedTareas && insertedTareas.length > 0) {
-        const subtareasToInsert = insertedTareas.flatMap(tarea =>
-          pendingSubtareas.map((sub, idx) => ({
-            tarea_id: tarea.id,
-            titulo: sub.titulo,
-            descripcion: sub.descripcion || null,
-            orden: idx,
-          }))
-        );
-        await supabase.from('subtareas').insert(subtareasToInsert);
-      }
 
       setSuccessAnim(true);
       setTimeout(() => {
@@ -410,9 +361,6 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                 </div>
               </div>
             )}
-
-            {/* Template */}
-            <TemplateSelector onSelect={handleTemplateSelect} />
 
             {/* ═══ SECTION 1: ESSENTIALS (always visible) ═══ */}
             <div className="space-y-3">
@@ -746,18 +694,6 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                       </Select>
                     </div>
                   )}
-
-                  {/* Categoría */}
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">
-                      <Tag className="h-3 w-3 inline mr-1" />
-                      Categoría
-                    </Label>
-                    <CategorySelector
-                      value={formData.categoria_id}
-                      onValueChange={(v) => setFormData(prev => ({ ...prev, categoria_id: v }))}
-                    />
-                  </div>
 
                   {/* Archivos */}
                   <div>

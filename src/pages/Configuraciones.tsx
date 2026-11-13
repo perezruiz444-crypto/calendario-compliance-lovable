@@ -1,45 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { CatalogoAdmin } from '@/components/configuraciones/CatalogoAdmin';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
 import { Loader2, Shield, Bell, Settings, Clock, History, Search, ChevronRight, User, Lock, BookOpen } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useSearchParams } from 'react-router-dom';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { UserNotificationPreferences } from '@/components/notifications/UserNotificationPreferences';
 import { ReminderRulesManager } from '@/components/notifications/ReminderRulesManager';
-import { NotificationHistory } from '@/components/notifications/NotificationHistory';
 import ProfileSection from '@/components/configuraciones/ProfileSection';
 import SecurityAuditSection from '@/components/configuraciones/SecurityAuditSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { logger } from '@/lib/logger';
-
-interface NotificationSetting {
-  id: string;
-  notification_key: string;
-  enabled: boolean;
-  name: string;
-  description: string | null;
-  category: string;
-}
-
-const categoryIcons: Record<string, string> = {
-  tareas: '📋', certificaciones: '🏆', documentos: '📄',
-  solicitudes: '🔔', usuarios: '👥', mensajes: '💬', reportes: '📊'
-};
-
-const categoryNames: Record<string, string> = {
-  tareas: 'Tareas', certificaciones: 'Certificaciones', documentos: 'Documentos',
-  solicitudes: 'Solicitudes de Servicio', usuarios: 'Usuarios', mensajes: 'Mensajes', reportes: 'Reportes'
-};
 
 interface SectionItem {
   id: string;
@@ -53,9 +28,6 @@ export default function Configuraciones() {
   const { role } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isSupported, permission, isSubscribed, requestPermission, unsubscribe } = usePushNotifications();
-  const [settings, setSettings] = useState<NotificationSetting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const isMobile = useIsMobile();
 
@@ -65,9 +37,7 @@ export default function Configuraciones() {
   const sections: SectionItem[] = [
     { id: 'perfil', label: 'Mi Perfil', description: 'Nombre, contacto y contraseña', icon: <User className="h-5 w-5" /> },
     { id: 'general', label: 'General', description: 'Notificaciones push', icon: <Settings className="h-5 w-5" /> },
-    { id: 'notificaciones', label: 'Mis Notificaciones', description: 'Preferencias de alertas', icon: <Bell className="h-5 w-5" /> },
     { id: 'recordatorios', label: 'Recordatorios', description: 'Reglas de recordatorio automáticas', icon: <Clock className="h-5 w-5" />, adminOnly: true },
-    { id: 'historial', label: 'Historial', description: 'Registro de notificaciones enviadas', icon: <History className="h-5 w-5" />, adminOnly: true },
     { id: 'seguridad', label: 'Seguridad', description: 'Auditoría y actividad del sistema', icon: <Lock className="h-5 w-5" />, adminOnly: true },
     { id: 'catalogo', label: 'Catálogo', description: 'Catálogo maestro de obligaciones', icon: <BookOpen className="h-5 w-5" />, adminOnly: true },
   ];
@@ -81,43 +51,6 @@ export default function Configuraciones() {
     return true;
   });
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('notification_settings')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('name', { ascending: true });
-      if (error) throw error;
-      setSettings(data || []);
-    } catch (error) {
-      logger.error('Error fetching settings:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleToggle = async (id: string, currentValue: boolean) => {
-    setUpdating(id);
-    try {
-      const { error } = await supabase
-        .from('notification_settings')
-        .update({ enabled: !currentValue })
-        .eq('id', id);
-      if (error) throw error;
-      setSettings(prev => prev.map(s => s.id === id ? { ...s, enabled: !currentValue } : s));
-      toast.success(!currentValue ? 'Notificación activada' : 'Notificación desactivada');
-    } catch {
-      toast.error('Error al actualizar configuración');
-    } finally {
-      setUpdating(null);
-    }
-  };
-
   const handleTogglePush = async () => {
     if (isSubscribed) await unsubscribe();
     else await requestPermission();
@@ -127,13 +60,6 @@ export default function Configuraciones() {
     setSearchParams({ tab: id });
   };
 
-  const groupedSettings = settings.reduce((acc, setting) => {
-    if (!acc[setting.category]) acc[setting.category] = [];
-    acc[setting.category].push(setting);
-    return acc;
-  }, {} as Record<string, NotificationSetting[]>);
-
-  const enabledCount = settings.filter(s => s.enabled).length;
 
   return (
     <DashboardLayout currentPage="/configuraciones">
@@ -224,14 +150,6 @@ export default function Configuraciones() {
                 ))}
               </nav>
 
-              {isAdmin && (
-                <Card className="bg-muted/50 border-border/50">
-                  <CardContent className="p-3">
-                    <p className="text-xs text-muted-foreground">Notificaciones globales</p>
-                    <p className="text-lg font-bold text-foreground">{enabledCount} <span className="text-xs font-normal text-muted-foreground">/ {settings.length} activas</span></p>
-                  </CardContent>
-                </Card>
-              )}
             </div>
           </aside>
 
@@ -273,71 +191,11 @@ export default function Configuraciones() {
                     </Card>
                   </div>
 
-                  {isAdmin && (
-                    <>
-                      <Card className="border-primary/20 bg-primary/5">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center gap-2">
-                            <Shield className="h-5 w-5 text-primary" />
-                            <CardTitle className="text-primary text-base">Configuración Global (Administrador)</CardTitle>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground">Los cambios en esta sección afectan a todos los usuarios del sistema.</p>
-                        </CardContent>
-                      </Card>
-
-                      {loading ? (
-                        <div className="flex justify-center items-center py-12">
-                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {Object.entries(groupedSettings).map(([category, categorySettings]) => (
-                            <Card key={category} className="hover:shadow-md transition-shadow">
-                              <CardHeader className="pb-3">
-                                <CardTitle className="flex items-center gap-2 text-base">
-                                  <span className="text-xl">{categoryIcons[category]}</span>
-                                  {categoryNames[category] || category}
-                                  <Badge variant="secondary" className="ml-auto text-[10px]">
-                                    {categorySettings.filter(s => s.enabled).length}/{categorySettings.length}
-                                  </Badge>
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-3">
-                                {categorySettings.map((setting, index) => (
-                                  <div key={setting.id}>
-                                    {index > 0 && <Separator className="my-3" />}
-                                    <div className="flex items-start justify-between gap-4">
-                                      <div className="flex-1 space-y-0.5">
-                                        <Label htmlFor={setting.id} className="text-sm font-medium cursor-pointer">{setting.name}</Label>
-                                        {setting.description && <p className="text-xs text-muted-foreground">{setting.description}</p>}
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        {updating === setting.id && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                                        <Switch id={setting.id} checked={setting.enabled} onCheckedChange={() => handleToggle(setting.id, setting.enabled)} disabled={updating === setting.id} />
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
                 </div>
               )}
 
-              {/* My Notifications */}
-              {activeSection === 'notificaciones' && <UserNotificationPreferences />}
-
               {/* Reminder Rules (Admin) */}
               {activeSection === 'recordatorios' && isAdmin && <ReminderRulesManager />}
-
-              {/* Notification History (Admin) */}
-              {activeSection === 'historial' && isAdmin && <NotificationHistory />}
 
               {/* Security & Audit (Admin) */}
               {activeSection === 'seguridad' && isAdmin && <SecurityAuditSection />}

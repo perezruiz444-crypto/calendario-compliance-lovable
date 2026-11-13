@@ -26,17 +26,6 @@ export interface VencimientoCertificacion {
   tipo: string;
 }
 
-export interface TiempoConsultor {
-  name: string;
-  horas: number;
-  facturable: number;
-}
-
-export interface TiempoPorNombre {
-  name: string;
-  horas: number;
-}
-
 export interface TareaDetalleReporte {
   titulo: string;
   empresa: string;
@@ -45,7 +34,6 @@ export interface TareaDetalleReporte {
   estado: string;
   fecha_vencimiento: string | null;
   created_at: string | null;
-  categoria: string;
 }
 
 export interface ObligacionPendienteDetalle {
@@ -62,8 +50,6 @@ export interface ResumenReporte {
   tareasPendientes: number;
   certificacionesVencer: number;
   tasaCompletitud: number;
-  totalHorasTrabajadas: number;
-  horasFacturables: number;
 }
 
 export interface ReporteData {
@@ -71,14 +57,10 @@ export interface ReporteData {
   tareasPorPrioridad: DatoNombreValor[];
   tareasPorConsultor: DatoNombreValor[];
   tareasPorEmpresa: DatoNombreValor[];
-  tareasPorCategoria: DatoNombreValor[];
   tareasTimeline: PuntoTimeline[];
   empresasConVencimientos: Empresa[];
   certificacionesVencimiento: VencimientoCertificacion[];
   rendimientoConsultores: RendimientoConsultor[];
-  tiempoPorConsultor: TiempoConsultor[];
-  tiempoPorEmpresa: TiempoPorNombre[];
-  tiempoPorTarea: TiempoPorNombre[];
   tareasDetalle: TareaDetalleReporte[];
   obligacionesPendientesDetalle: ObligacionPendienteDetalle[];
   resumen: ResumenReporte;

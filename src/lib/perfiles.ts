@@ -15,8 +15,7 @@ export async function nombresPerfiles(ids: readonly string[]): Promise<Consultor
 
 /**
  * Une el nombre del usuario a cada fila sin depender de una FK a `profiles`.
- * En la base, columnas como `comentarios.user_id`, `subtareas.asignado_a`, `time_entries.user_id` o
- * `tarea_asignaciones.consultor_id` apuntan a `auth.users`, no a `profiles`, por lo que PostgREST no admite
+ * En la base, columnas como `tareas.consultor_asignado_id` no tienen FK a `profiles`, por lo que PostgREST no admite
  * `select('*, profiles:columna(...)')`. Se piden los nombres aparte (una consulta) y se unen aquí.
  */
 export async function conPerfiles<Row extends object, Key extends keyof Row & string>(

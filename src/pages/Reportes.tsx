@@ -31,14 +31,10 @@ const REPORTE_VACIO: ReporteData = {
   tareasPorPrioridad: [],
   tareasPorConsultor: [],
   tareasPorEmpresa: [],
-  tareasPorCategoria: [],
   tareasTimeline: [],
   empresasConVencimientos: [],
   certificacionesVencimiento: [],
   rendimientoConsultores: [],
-  tiempoPorConsultor: [],
-  tiempoPorEmpresa: [],
-  tiempoPorTarea: [],
   tareasDetalle: [],
   obligacionesPendientesDetalle: [],
   resumen: {
@@ -47,9 +43,7 @@ const REPORTE_VACIO: ReporteData = {
     tareasCompletadas: 0,
     tareasPendientes: 0,
     certificacionesVencer: 0,
-    tasaCompletitud: 0,
-    totalHorasTrabajadas: 0,
-    horasFacturables: 0
+    tasaCompletitud: 0
   }
 };
 
@@ -64,14 +58,12 @@ export default function Reportes() {
   const [selectedPeriod, setSelectedPeriod] = useState('mes_actual');
   const [selectedEmpresa, setSelectedEmpresa] = useState<string>('todas');
   const [selectedConsultor, setSelectedConsultor] = useState<string>('todos');
-  const [selectedCategoria, setSelectedCategoria] = useState<string>('todas');
   const [selectedEstado, setSelectedEstado] = useState<string>('todos');
   const [loadingCategoria, setLoadingCategoria] = useState<string | null>(null);
   const [conteosPorCategoria, setConteosPorCategoria] = useState<Record<string, number>>({});
 
   const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
   const [consultores, setConsultores] = useState<{ id: string; nombre_completo: string }[]>([]);
-  const [categorias, setCategorias] = useState<{ id: string; nombre: string }[]>([]);
   
   const [reporteData, setReporteData] = useState<ReporteData>(REPORTE_VACIO);
 
@@ -88,7 +80,6 @@ export default function Reportes() {
     if (user && role) {
       fetchEmpresas();
       fetchConsultores();
-      fetchCategorias();
     }
   }, [user, role]);
 
@@ -97,7 +88,7 @@ export default function Reportes() {
       fetchReportData();
     }
     return () => { reportRequestId.current += 1; };
-  }, [selectedPeriod, selectedEmpresa, selectedConsultor, selectedCategoria, selectedEstado, empresas, user, role, loading]);
+  }, [selectedPeriod, selectedEmpresa, selectedConsultor, selectedEstado, empresas, user, role, loading]);
 
   useEffect(() => {
     if (!selectedEmpresa || selectedEmpresa === 'todas') {
@@ -159,21 +150,7 @@ export default function Reportes() {
     }
   };
 
-  const fetchCategorias = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('categorias_tareas')
-        .select('id, nombre')
-        .order('nombre');
-
-      if (error) throw error;
-      setCategorias(data || []);
-    } catch (error) {
-      logger.error('Error fetching categorias:', error);
-    }
-  };
-
-  const reportKey = JSON.stringify([user?.id, role, selectedPeriod, selectedEmpresa, selectedConsultor, selectedCategoria, selectedEstado]);
+  const reportKey = JSON.stringify([user?.id, role, selectedPeriod, selectedEmpresa, selectedConsultor, selectedEstado]);
   const getDateRange = () => getReportDateRange(selectedPeriod, reportNow);
   const { startDate: periodStart, endDate: periodEnd } = getDateRange();
   const periodLabel = `${format(periodStart, 'dd/MM/yyyy')} – ${format(periodEnd, 'dd/MM/yyyy')}`;
@@ -190,14 +167,14 @@ export default function Reportes() {
       // Query 1: Tareas del periodo (por created_at) para timeline y gráficas
       let tareasDelPeriodoQuery = supabase
         .from('tareas')
-        .select('*, empresa_id, consultor_asignado_id, categoria_id')
+        .select('*')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
       // Query 2: Tareas pendientes/en_progreso SIN filtro de fecha (siempre relevantes)
       let tareasPendientesQuery = supabase
         .from('tareas')
-        .select('*, empresa_id, consultor_asignado_id, categoria_id')
+        .select('*')
         .in('estado', ['pendiente', 'en_progreso']);
 
       // Aplicar filtros compartidos a ambas queries
@@ -209,11 +186,6 @@ export default function Reportes() {
       if (selectedConsultor !== 'todos') {
         tareasDelPeriodoQuery = tareasDelPeriodoQuery.eq('consultor_asignado_id', selectedConsultor);
         tareasPendientesQuery = tareasPendientesQuery.eq('consultor_asignado_id', selectedConsultor);
-      }
-
-      if (selectedCategoria !== 'todas') {
-        tareasDelPeriodoQuery = tareasDelPeriodoQuery.eq('categoria_id', selectedCategoria);
-        tareasPendientesQuery = tareasPendientesQuery.eq('categoria_id', selectedCategoria);
       }
 
       if (selectedEstado !== 'todos') {
@@ -272,23 +244,6 @@ export default function Reportes() {
         
         empresaMap = empresas?.reduce((acc, e) => {
           acc[e.id] = e.razon_social;
-          return acc;
-        }, {} as Record<string, string>) || {};
-      }
-
-      // Fetch categoria names
-      const categoriaIds = [...new Set(tareas?.map(t => t.categoria_id).filter((id): id is string => Boolean(id)))];
-      let categoriaMap: Record<string, string> = {};
-      
-      if (categoriaIds.length > 0) {
-        const { data: cats, error: categoriesError } = await supabase
-          .from('categorias_tareas')
-          .select('id, nombre')
-          .in('id', categoriaIds);
-        if (categoriesError) throw categoriesError;
-        
-        categoriaMap = cats?.reduce((acc, c) => {
-          acc[c.id] = c.nombre;
           return acc;
         }, {} as Record<string, string>) || {};
       }
@@ -371,20 +326,6 @@ export default function Reportes() {
         .sort((a, b) => b.value - a.value)
         .slice(0, 10);
 
-      // Process tareas por categoría
-      const categoriaCounts: Record<string, number> = {};
-      tareas?.forEach(t => {
-        if (t.categoria_id) {
-          const nombre = categoriaMap[t.categoria_id] || 'Sin categoría';
-          categoriaCounts[nombre] = (categoriaCounts[nombre] || 0) + 1;
-        }
-      });
-
-      const tareasPorCategoria = Object.entries(categoriaCounts).map(([name, value]) => ({
-        name,
-        value
-      }));
-
       // Rendimiento de consultores
       const rendimientoConsultores = Object.keys(consultorCounts).map(nombre => {
         const tareasConsultor = tareas?.filter(t =>
@@ -429,74 +370,6 @@ export default function Reportes() {
 
       const taskSummary = buildTaskReportSummary(tareas);
 
-      // Fetch time entries for time tracking reports
-      const { data: timeEntries, error: timeError } = await supabase
-        .from('time_entries')
-        .select('*, user_id, tarea_id')
-        .gte('inicio', startDate.toISOString())
-        .lte('inicio', endDate.toISOString());
-      if (timeError) throw timeError;
-
-      // Calculate time by consultor
-      const tiempoPorConsultor: Record<string, { total: number; facturable: number }> = {};
-      timeEntries?.forEach(entry => {
-        const nombre = consultorMap[entry.user_id] || 'Sin asignar';
-        if (!tiempoPorConsultor[nombre]) {
-          tiempoPorConsultor[nombre] = { total: 0, facturable: 0 };
-        }
-        const minutos = entry.duracion_minutos || 0;
-        tiempoPorConsultor[nombre].total += minutos;
-        if (entry.facturable) {
-          tiempoPorConsultor[nombre].facturable += minutos;
-        }
-      });
-
-      const tiempoPorConsultorArray = Object.entries(tiempoPorConsultor).map(([name, data]) => ({
-        name,
-        horas: Math.round((data.total / 60) * 10) / 10,
-        facturable: Math.round((data.facturable / 60) * 10) / 10
-      }));
-
-      // Calculate time by empresa
-      const tiempoPorEmpresa: Record<string, number> = {};
-      timeEntries?.forEach(entry => {
-        const tarea = tareas?.find(t => t.id === entry.tarea_id);
-        if (tarea) {
-          const nombre = empresaMap[tarea.empresa_id] || 'Sin empresa';
-          tiempoPorEmpresa[nombre] = (tiempoPorEmpresa[nombre] || 0) + (entry.duracion_minutos || 0);
-        }
-      });
-
-      const tiempoPorEmpresaArray = Object.entries(tiempoPorEmpresa)
-        .map(([name, minutos]) => ({
-          name,
-          horas: Math.round((minutos / 60) * 10) / 10
-        }))
-        .sort((a, b) => b.horas - a.horas)
-        .slice(0, 10);
-
-      // Calculate time by tarea (top 10)
-      const tiempoPorTarea: Record<string, number> = {};
-      timeEntries?.forEach(entry => {
-        const tarea = tareas?.find(t => t.id === entry.tarea_id);
-        if (tarea) {
-          tiempoPorTarea[tarea.titulo] = (tiempoPorTarea[tarea.titulo] || 0) + (entry.duracion_minutos || 0);
-        }
-      });
-
-      const tiempoPorTareaArray = Object.entries(tiempoPorTarea)
-        .map(([name, minutos]) => ({
-          name,
-          horas: Math.round((minutos / 60) * 10) / 10
-        }))
-        .sort((a, b) => b.horas - a.horas)
-        .slice(0, 10);
-
-      const totalMinutos = timeEntries?.reduce((sum, e) => sum + (e.duracion_minutos || 0), 0) || 0;
-      const totalHorasTrabajadas = Math.round((totalMinutos / 60) * 10) / 10;
-      const minutosFacturables = timeEntries?.filter(e => e.facturable).reduce((sum, e) => sum + (e.duracion_minutos || 0), 0) || 0;
-      const horasFacturables = Math.round((minutosFacturables / 60) * 10) / 10;
-
       // Build detailed task list for PDF
       const tareasDetalle = (tareas || []).map(t => ({
         titulo: t.titulo,
@@ -506,7 +379,6 @@ export default function Reportes() {
         estado: t.estado || 'pendiente',
         fecha_vencimiento: t.fecha_vencimiento,
         created_at: t.created_at,
-        categoria: t.categoria_id ? (categoriaMap[t.categoria_id] || '-') : '-',
       }));
 
       // Fase 2: obligaciones pendientes = OCURRENCIAS sin cumplimiento vigente completado.
@@ -549,22 +421,16 @@ export default function Reportes() {
         tareasPorPrioridad,
         tareasPorConsultor,
         tareasPorEmpresa,
-        tareasPorCategoria,
         tareasTimeline: Object.values(tareasTimeline),
         empresasConVencimientos: empresasData || [],
         certificacionesVencimiento: allVencimientos,
         rendimientoConsultores,
-        tiempoPorConsultor: tiempoPorConsultorArray,
-        tiempoPorEmpresa: tiempoPorEmpresaArray,
-        tiempoPorTarea: tiempoPorTareaArray,
         tareasDetalle,
         obligacionesPendientesDetalle,
         resumen: {
           totalEmpresas: empresasData?.length || 0,
           ...taskSummary,
-          certificacionesVencer: allVencimientos.length,
-          totalHorasTrabajadas,
-          horasFacturables
+          certificacionesVencer: allVencimientos.length
         }
       });
       setLoadedReportKey(reportKey);
@@ -682,7 +548,6 @@ export default function Reportes() {
     );
   }
 
-  const CATEGORY_COLORS = CATEGORY_CHART_COLORS;
 
   const ESTADO_COLORS = {
     'Pendiente': 'hsl(var(--warning))',
@@ -836,25 +701,6 @@ export default function Reportes() {
                     {consultores.map(cons => (
                       <SelectItem key={cons.id} value={cons.id}>
                         {cons.nombre_completo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label htmlFor="reporte-categoria" className="text-sm font-heading font-medium mb-2 block">
-                  Categoría
-                </label>
-                <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
-                  <SelectTrigger id="reporte-categoria">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas</SelectItem>
-                    {categorias.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.nombre}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1147,36 +993,6 @@ export default function Reportes() {
 
           <TabsContent value="categoria" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle className="font-heading">Tareas por Categoría</CardTitle>
-                  <CardDescription className="font-body">Distribución por categorías</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={350}>
-                    <PieChart>
-                      <Pie
-                        data={reporteData.tareasPorCategoria}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={120}
-                        paddingAngle={3}
-                        dataKey="value"
-                        strokeWidth={2}
-                        stroke="hsl(var(--background))"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {reporteData.tareasPorCategoria.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
               <Card className="shadow-card">
                 <CardHeader>
                   <CardTitle className="font-heading">Timeline de Tareas</CardTitle>
