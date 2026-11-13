@@ -30,3 +30,8 @@ supabase/.temp/
 
 # Compiled UI regression test helpers
 .test-build/
+
+# Cachés y archivos temporales locales
+node-compile-cache/
+.superpowers/
+~$*

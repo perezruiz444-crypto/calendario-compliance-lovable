@@ -101,7 +101,7 @@ async function setup(options={}){
    :table==='obligaciones'?source.obligaciones:table==='obligacion_ocurrencias'?source.ocurrencias
    :table==='obligacion_cumplimientos'?source.cumplimientos:table==='obligacion_reglas'?source.reglas
    :table==='obligacion_revisiones'?source.revisiones:table==='obligacion_eventos'?source.eventos
-   :table==='obligacion_relaciones'?source.relaciones:table==='documentos'?source.documentos:table==='tareas'?source.tareas
+   :table==='obligacion_relaciones'?source.relaciones:table==='tareas'?source.tareas
    :table==='obligacion_responsables'?source.asignaciones.map((id,i)=>({id:`assignment-${i}`,obligacion_id:id,user_id:uid})):[];
   for(const [key,value] of url.searchParams){if(value.startsWith('eq.'))rows=rows.filter(row=>String(row[key])===value.slice(3));}
   if(url.searchParams.get('order')==='version.desc')rows=[...rows].sort((a,b)=>b.version-a.version);

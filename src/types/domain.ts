@@ -46,7 +46,6 @@ export type Notificacion = Tables['notificaciones']['Row'];
 // Tareas con joins frecuentes
 export type TareaConJoins = Tarea & {
   profiles?: { nombre_completo: string | null } | null;
-  categorias_tareas?: { nombre: string; color: string | null } | null;
 };
 
 // ── Resúmenes y joins usados en selectores y formularios ───────────────────
@@ -54,13 +53,6 @@ export type TareaConJoins = Tarea & {
 export type EmpresaResumen = Pick<Empresa, 'id' | 'razon_social'>;
 /** Consultor tal como lo devuelven los selectores (`select('id, nombre_completo')`). */
 export type ConsultorResumen = Pick<Profile, 'id' | 'nombre_completo'>;
-export type CategoriaTarea = Tables['categorias_tareas']['Row'];
-
-/** Plantilla de tarea con su categoría (`select('*, categorias_tareas(nombre, color)')`). */
-export type TareaTemplate = Tables['tarea_templates']['Row'] & {
-  categorias_tareas?: { nombre: string; color: string | null } | null;
-};
-
 /** Archivo adjunto de una tarea, tal como se guarda en `tareas.archivos_adjuntos`. */
 // `type` (no `interface`) para que sea asignable a `Json` al guardarlo en `archivos_adjuntos`.
 export type TareaAdjunto = {
@@ -70,44 +62,16 @@ export type TareaAdjunto = {
   type: string;
 };
 
-/** Tarea abierta en el detalle: fila + joins de `select('*, empresas(...), categorias_tareas(...)')`. */
+/** Tarea abierta en el detalle: fila + joins de `select('*, empresas(...)')`. */
 export type TareaDetalle = Omit<Tarea, 'archivos_adjuntos'> & {
   /** Ya validados con `getAdjuntos` al cargar (en BD es `Json`). */
   archivos_adjuntos: TareaAdjunto[] | null;
   empresas?: { razon_social: string } | null;
-  categorias_tareas?: { id?: string; nombre: string; color: string | null } | null;
   consultor_profile?: ConsultorResumen | null;
   creador_profile?: ConsultorResumen | null;
   /** Variante del diálogo: consultor asignado y creador. */
   profiles?: ConsultorResumen | null;
   creador?: ConsultorResumen | null;
-};
-
-export type Comentario = Tables['comentarios']['Row'] & {
-  profiles?: { nombre_completo: string } | null;
-};
-
-export type Subtarea = Tables['subtareas']['Row'] & {
-  profiles?: { nombre_completo: string } | null;
-};
-
-export type CustomField = Tables['custom_fields']['Row'];
-
-export type TimeEntry = Tables['time_entries']['Row'] & {
-  profiles?: { nombre_completo: string } | null;
-};
-
-export type TareaAsignacion = Tables['tarea_asignaciones']['Row'] & {
-  profiles?: { nombre_completo: string } | null;
-};
-
-export type TareaResumen = Pick<Tarea, 'id' | 'titulo' | 'estado'>;
-
-/** Dependencia con la tarea relacionada (`tareas:tarea_id(...)` o `tareas:depende_de_tarea_id(...)`). */
-export type TareaDependencia = {
-  id: string;
-  tipo: string | null;
-  tareas: TareaResumen | null;
 };
 
 /**
@@ -152,12 +116,8 @@ export type ObligacionConEmpresa = Obligacion & { empresas?: { razon_social: str
 export type TareaListado = Omit<Tarea, 'archivos_adjuntos'> & {
   archivos_adjuntos: TareaAdjunto[] | null;
   empresas?: { razon_social: string } | null;
-  categorias_tareas?: { nombre: string; color: string | null } | null;
   consultor_profile?: ConsultorResumen | null;
 };
-
-export type Documento = Tables['documentos']['Row'];
-export type SolicitudServicio = Tables['solicitudes_servicio']['Row'];
 
 /** Mensaje con remitente, destinatario y empresa (`select` con `profiles!mensajes_*_fkey(...)`). */
 export type MensajeConJoins = Tables['mensajes']['Row'] & {

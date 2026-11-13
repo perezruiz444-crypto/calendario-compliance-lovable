@@ -118,7 +118,7 @@ export const guiaSections: GuiaSection[] = [
         text: 'Recibirás notificaciones en la plataforma (ícono de campana en la barra superior) cuando se te asigne una tarea, cuando venza una obligación o cuando cambie su estado.',
       },
       {
-        text: 'Para activar notificaciones por correo: ve a Configuraciones → Notificaciones y activa la opción "Notificaciones por email".',
+        text: 'Para activar notificaciones por correo: ve a Configuraciones → General y activa "Notificaciones del navegador"; ese mismo interruptor habilita el resumen por correo.',
         tip: 'Recomendamos activar las alertas de vencimiento con al menos 7 días de anticipación para tener tiempo de preparar evidencias.',
       },
       {
@@ -184,7 +184,7 @@ export const guiaSections: GuiaSection[] = [
         text: 'Cuando termines de cumplir una obligación, cambia el estado de la tarea a "Completada" para que tu consultor lo registre.',
       },
       {
-        text: 'Si tienes dudas sobre una obligación específica, usa el campo de comentarios en la tarea para comunicarte directamente con tu consultor.',
+        text: 'Si tienes dudas sobre una obligación específica, escribe a tu consultor desde la sección "Mensajes".',
       },
     ],
   },

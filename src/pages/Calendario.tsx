@@ -13,7 +13,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Building2, Download } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 const TareaDetailSheet = lazy(() => import('@/components/tareas/TareaDetailSheet'));
-const DocumentoDetailSheet = lazy(() => import('@/components/documentos/DocumentoDetailSheet'));
 
 export default function Calendario() {
   const { user, role, loading } = useAuth();
@@ -21,7 +20,6 @@ export default function Calendario() {
   const navigate = useNavigate();
   const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
   const [taskId, setTaskId] = useState<string | null>(null);
-  const [documentId, setDocumentId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -112,16 +110,11 @@ export default function Calendario() {
           filterEmpresaId={selectedEmpresaId}
           onEventClick={(event) => {
             const { type, data } = event.resource;
-            if (type === 'tarea') {
-              setTaskId(event.resource.rawId ?? data?.id ?? null);
-            } else if (type === 'documento' && data) {
-              setDocumentId(data.id);
-            }
+            if (type === 'tarea') setTaskId(event.resource.rawId ?? data?.id ?? null);
           }}
         />
         <Suspense fallback={<p role="status">Cargando detalle…</p>}>
           {taskId && <TareaDetailSheet tareaId={taskId} open onOpenChange={open => { if (!open) setTaskId(null); }} onUpdate={() => setRefreshKey(value => value + 1)} />}
-          {documentId && <DocumentoDetailSheet id={documentId} onClose={() => setDocumentId(null)} />}
         </Suspense>
       </div>
     </DashboardLayout>

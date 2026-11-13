@@ -6,8 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { Lock, Mail, ArrowRight, Shield, Bell, BarChart3, AlertTriangle } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Shield, Bell, BarChart3 } from 'lucide-react';
 import { z } from 'zod';
 import { Logo } from '@/components/brand/Logo';
 
@@ -41,7 +40,6 @@ export default function Auth() {
   const [email, setEmail]             = useState('');
   const [password, setPassword]       = useState('');
   const [loading, setLoading]         = useState(false);
-  const [blocked, setBlocked]         = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaReady, setCaptchaReady] = useState(false);
   const captchaContainerRef           = useRef<HTMLDivElement>(null);
@@ -99,24 +97,10 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (blocked) return;
 
     setLoading(true);
     try {
       const validated = loginSchema.parse({ email, password });
-
-      // Check rate limiting before attempting sign-in
-      const { data: isBlocked } = await supabase.rpc('is_login_blocked', {
-        p_email: validated.email,
-        p_ip: null,
-      });
-
-      if (isBlocked) {
-        setBlocked(true);
-        toast.error('Demasiados intentos fallidos. Espera 15 minutos antes de intentar de nuevo.');
-        setLoading(false);
-        return;
-      }
 
       // Execute hCaptcha challenge (invisible — fires silently for real users)
       let token = captchaToken;
@@ -211,17 +195,6 @@ export default function Auth() {
             <p className="text-sm text-muted-foreground">Ingresa tus credenciales para continuar</p>
           </div>
 
-          {/* Rate-limit block message */}
-          {blocked && (
-            <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-              <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-              <p className="text-xs text-destructive leading-relaxed">
-                Cuenta bloqueada temporalmente por demasiados intentos fallidos.
-                Intenta de nuevo en 15 minutos.
-              </p>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -238,7 +211,6 @@ export default function Auth() {
                   required
                   maxLength={255}
                   className="pl-9"
-                  disabled={blocked}
                 />
               </div>
             </div>
@@ -259,7 +231,6 @@ export default function Auth() {
                   minLength={8}
                   maxLength={100}
                   className="pl-9"
-                  disabled={blocked}
                 />
               </div>
             </div>
@@ -269,7 +240,7 @@ export default function Auth() {
 
             <Button
               type="submit"
-              disabled={loading || blocked}
+              disabled={loading}
               className="w-full gap-2 h-11 text-sm font-semibold"
               style={{ background: 'hsl(var(--primary))' }}
             >
