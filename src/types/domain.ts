@@ -46,6 +46,7 @@ export type Notificacion = Tables['notificaciones']['Row'];
 // Tareas con joins frecuentes
 export type TareaConJoins = Tarea & {
   profiles?: { nombre_completo: string | null } | null;
+  categorias_tareas?: { nombre: string; color: string | null } | null;
 };
 
 // ── Resúmenes y joins usados en selectores y formularios ───────────────────
@@ -53,6 +54,7 @@ export type TareaConJoins = Tarea & {
 export type EmpresaResumen = Pick<Empresa, 'id' | 'razon_social'>;
 /** Consultor tal como lo devuelven los selectores (`select('id, nombre_completo')`). */
 export type ConsultorResumen = Pick<Profile, 'id' | 'nombre_completo'>;
+export type CategoriaTarea = Tables['categorias_tareas']['Row'];
 /** Archivo adjunto de una tarea, tal como se guarda en `tareas.archivos_adjuntos`. */
 // `type` (no `interface`) para que sea asignable a `Json` al guardarlo en `archivos_adjuntos`.
 export type TareaAdjunto = {
@@ -62,11 +64,12 @@ export type TareaAdjunto = {
   type: string;
 };
 
-/** Tarea abierta en el detalle: fila + joins de `select('*, empresas(...)')`. */
+/** Tarea abierta en el detalle: fila + joins de `select('*, empresas(...), categorias_tareas(...)')`. */
 export type TareaDetalle = Omit<Tarea, 'archivos_adjuntos'> & {
   /** Ya validados con `getAdjuntos` al cargar (en BD es `Json`). */
   archivos_adjuntos: TareaAdjunto[] | null;
   empresas?: { razon_social: string } | null;
+  categorias_tareas?: { id?: string; nombre: string; color: string | null } | null;
   consultor_profile?: ConsultorResumen | null;
   creador_profile?: ConsultorResumen | null;
   /** Variante del diálogo: consultor asignado y creador. */
@@ -116,6 +119,7 @@ export type ObligacionConEmpresa = Obligacion & { empresas?: { razon_social: str
 export type TareaListado = Omit<Tarea, 'archivos_adjuntos'> & {
   archivos_adjuntos: TareaAdjunto[] | null;
   empresas?: { razon_social: string } | null;
+  categorias_tareas?: { nombre: string; color: string | null } | null;
   consultor_profile?: ConsultorResumen | null;
 };
 

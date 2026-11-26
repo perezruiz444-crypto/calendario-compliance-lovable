@@ -31,6 +31,7 @@ const REPORTE_VACIO: ReporteData = {
   tareasPorPrioridad: [],
   tareasPorConsultor: [],
   tareasPorEmpresa: [],
+  tareasPorCategoria: [],
   tareasTimeline: [],
   empresasConVencimientos: [],
   certificacionesVencimiento: [],
@@ -58,12 +59,14 @@ export default function Reportes() {
   const [selectedPeriod, setSelectedPeriod] = useState('mes_actual');
   const [selectedEmpresa, setSelectedEmpresa] = useState<string>('todas');
   const [selectedConsultor, setSelectedConsultor] = useState<string>('todos');
+  const [selectedCategoria, setSelectedCategoria] = useState<string>('todas');
   const [selectedEstado, setSelectedEstado] = useState<string>('todos');
   const [loadingCategoria, setLoadingCategoria] = useState<string | null>(null);
   const [conteosPorCategoria, setConteosPorCategoria] = useState<Record<string, number>>({});
 
   const [empresas, setEmpresas] = useState<{ id: string; razon_social: string }[]>([]);
   const [consultores, setConsultores] = useState<{ id: string; nombre_completo: string }[]>([]);
+  const [categorias, setCategorias] = useState<{ id: string; nombre: string }[]>([]);
   
   const [reporteData, setReporteData] = useState<ReporteData>(REPORTE_VACIO);
 
@@ -80,6 +83,7 @@ export default function Reportes() {
     if (user && role) {
       fetchEmpresas();
       fetchConsultores();
+      fetchCategorias();
     }
   }, [user, role]);
 
@@ -88,7 +92,7 @@ export default function Reportes() {
       fetchReportData();
     }
     return () => { reportRequestId.current += 1; };
-  }, [selectedPeriod, selectedEmpresa, selectedConsultor, selectedEstado, empresas, user, role, loading]);
+  }, [selectedPeriod, selectedEmpresa, selectedConsultor, selectedCategoria, selectedEstado, empresas, user, role, loading]);
 
   useEffect(() => {
     if (!selectedEmpresa || selectedEmpresa === 'todas') {
@@ -150,7 +154,21 @@ export default function Reportes() {
     }
   };
 
-  const reportKey = JSON.stringify([user?.id, role, selectedPeriod, selectedEmpresa, selectedConsultor, selectedEstado]);
+  const fetchCategorias = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categorias_tareas')
+        .select('id, nombre')
+        .order('nombre');
+
+      if (error) throw error;
+      setCategorias(data || []);
+    } catch (error) {
+      logger.error('Error fetching categorias:', error);
+    }
+  };
+
+  const reportKey = JSON.stringify([user?.id, role, selectedPeriod, selectedEmpresa, selectedConsultor, selectedCategoria, selectedEstado]);
   const getDateRange = () => getReportDateRange(selectedPeriod, reportNow);
   const { startDate: periodStart, endDate: periodEnd } = getDateRange();
   const periodLabel = `${format(periodStart, 'dd/MM/yyyy')} – ${format(periodEnd, 'dd/MM/yyyy')}`;
@@ -186,6 +204,11 @@ export default function Reportes() {
       if (selectedConsultor !== 'todos') {
         tareasDelPeriodoQuery = tareasDelPeriodoQuery.eq('consultor_asignado_id', selectedConsultor);
         tareasPendientesQuery = tareasPendientesQuery.eq('consultor_asignado_id', selectedConsultor);
+      }
+
+      if (selectedCategoria !== 'todas') {
+        tareasDelPeriodoQuery = tareasDelPeriodoQuery.eq('categoria_id', selectedCategoria);
+        tareasPendientesQuery = tareasPendientesQuery.eq('categoria_id', selectedCategoria);
       }
 
       if (selectedEstado !== 'todos') {
@@ -244,6 +267,23 @@ export default function Reportes() {
         
         empresaMap = empresas?.reduce((acc, e) => {
           acc[e.id] = e.razon_social;
+          return acc;
+        }, {} as Record<string, string>) || {};
+      }
+
+      // Fetch categoria names
+      const categoriaIds = [...new Set(tareas?.map(t => t.categoria_id).filter((id): id is string => Boolean(id)))];
+      let categoriaMap: Record<string, string> = {};
+      
+      if (categoriaIds.length > 0) {
+        const { data: cats, error: categoriesError } = await supabase
+          .from('categorias_tareas')
+          .select('id, nombre')
+          .in('id', categoriaIds);
+        if (categoriesError) throw categoriesError;
+        
+        categoriaMap = cats?.reduce((acc, c) => {
+          acc[c.id] = c.nombre;
           return acc;
         }, {} as Record<string, string>) || {};
       }
@@ -326,6 +366,20 @@ export default function Reportes() {
         .sort((a, b) => b.value - a.value)
         .slice(0, 10);
 
+      // Process tareas por categoría
+      const categoriaCounts: Record<string, number> = {};
+      tareas?.forEach(t => {
+        if (t.categoria_id) {
+          const nombre = categoriaMap[t.categoria_id] || 'Sin categoría';
+          categoriaCounts[nombre] = (categoriaCounts[nombre] || 0) + 1;
+        }
+      });
+
+      const tareasPorCategoria = Object.entries(categoriaCounts).map(([name, value]) => ({
+        name,
+        value
+      }));
+
       // Rendimiento de consultores
       const rendimientoConsultores = Object.keys(consultorCounts).map(nombre => {
         const tareasConsultor = tareas?.filter(t =>
@@ -379,6 +433,7 @@ export default function Reportes() {
         estado: t.estado || 'pendiente',
         fecha_vencimiento: t.fecha_vencimiento,
         created_at: t.created_at,
+        categoria: t.categoria_id ? (categoriaMap[t.categoria_id] || '-') : '-',
       }));
 
       // Fase 2: obligaciones pendientes = OCURRENCIAS sin cumplimiento vigente completado.
@@ -425,6 +480,7 @@ export default function Reportes() {
         empresasConVencimientos: empresasData || [],
         certificacionesVencimiento: allVencimientos,
         rendimientoConsultores,
+        tareasPorCategoria,
         tareasDetalle,
         obligacionesPendientesDetalle,
         resumen: {
@@ -701,6 +757,25 @@ export default function Reportes() {
                     {consultores.map(cons => (
                       <SelectItem key={cons.id} value={cons.id}>
                         {cons.nombre_completo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label htmlFor="reporte-categoria" className="text-sm font-heading font-medium mb-2 block">
+                  Categoría
+                </label>
+                <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
+                  <SelectTrigger id="reporte-categoria">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas</SelectItem>
+                    {categorias.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.nombre}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -993,6 +1068,36 @@ export default function Reportes() {
 
           <TabsContent value="categoria" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="font-heading">Tareas por Categoría</CardTitle>
+                  <CardDescription className="font-body">Distribución por categorías</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <PieChart>
+                      <Pie
+                        data={reporteData.tareasPorCategoria}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={120}
+                        paddingAngle={3}
+                        dataKey="value"
+                        strokeWidth={2}
+                        stroke="hsl(var(--background))"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {reporteData.tareasPorCategoria.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={CATEGORY_CHART_COLORS[index % CATEGORY_CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
               <Card className="shadow-card">
                 <CardHeader>
                   <CardTitle className="font-heading">Timeline de Tareas</CardTitle>

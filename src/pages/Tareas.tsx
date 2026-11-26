@@ -146,8 +146,21 @@ function TareaCard({
             </p>
           )}
 
-          {/* Metadata Row 1: Status */}
+          {/* Metadata Row 1: Category and Status */}
           <div className="flex flex-wrap items-center gap-2 mb-2">
+            {tarea.categorias_tareas && (
+              <Badge
+                variant="outline"
+                className="text-xs gap-1.5"
+                style={{ borderColor: tarea.categorias_tareas.color ?? undefined }}
+              >
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: tarea.categorias_tareas.color ?? undefined }}
+                />
+                {tarea.categorias_tareas.nombre}
+              </Badge>
+            )}
             <Badge className={`text-xs ${getEstadoColor(tarea.estado ?? 'pendiente')}`}>
               {estadoLabels[tarea.estado ?? 'pendiente']}
             </Badge>
@@ -456,7 +469,7 @@ export default function Tareas() {
       const filas = await loadAllPages((offset, pageSize) => {
         let query = supabase
           .from('tareas')
-          .select('*, empresas(razon_social)')
+          .select('*, empresas(razon_social), categorias_tareas(nombre, color)')
           .order('created_at', { ascending: false })
           .order('id', { ascending: false });
         if (selectedEmpresaId && selectedEmpresaId !== 'all') {

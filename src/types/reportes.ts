@@ -34,6 +34,7 @@ export interface TareaDetalleReporte {
   estado: string;
   fecha_vencimiento: string | null;
   created_at: string | null;
+  categoria: string;
 }
 
 export interface ObligacionPendienteDetalle {
@@ -57,6 +58,7 @@ export interface ReporteData {
   tareasPorPrioridad: DatoNombreValor[];
   tareasPorConsultor: DatoNombreValor[];
   tareasPorEmpresa: DatoNombreValor[];
+  tareasPorCategoria: DatoNombreValor[];
   tareasTimeline: PuntoTimeline[];
   empresasConVencimientos: Empresa[];
   certificacionesVencimiento: VencimientoCertificacion[];
