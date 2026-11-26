@@ -140,12 +140,8 @@ export default function Empresas() {
         supabase.from('tareas').delete().eq('empresa_id', deleteEmpresaId),
         supabase.from('agentes_aduanales').delete().eq('empresa_id', deleteEmpresaId),
         supabase.from('consultor_empresa_asignacion').delete().eq('empresa_id', deleteEmpresaId),
-        supabase.from('documentos').delete().eq('empresa_id', deleteEmpresaId),
         supabase.from('apoderados_legales').delete().eq('empresa_id', deleteEmpresaId),
         supabase.from('domicilios_operacion').delete().eq('empresa_id', deleteEmpresaId),
-        supabase.from('miembros_socios').delete().eq('empresa_id', deleteEmpresaId),
-        supabase.from('solicitudes_servicio').delete().eq('empresa_id', deleteEmpresaId),
-        supabase.from('client_invitations').delete().eq('empresa_id', deleteEmpresaId),
       ]);
       const { error } = await supabase.from('empresas').delete().eq('id', deleteEmpresaId);
       if (error) throw error;

@@ -7,7 +7,7 @@ const build=(sources)=>{assert.equal(typeof adapter.buildOverviewData,'function'
 const parent={id:'o',empresa_id:'a',catalogo_id:'catalog',nombre:'Control inventarios',categoria:'immex',descripcion:null,presentacion:'En todo momento',activa:true,responsable_id:null,responsable_tipo:null};
 const occurrence={id:'oc',obligacion_id:'o',empresa_id:'a',periodo_key:'2026-10',fecha_vencimiento:'2026-10-20',estado:'pendiente'};
 const rule={id:'r',catalogo_id:'catalog',obligacion_id:null,version:1,tipo_control:'condicion',clasificacion_estado:'aprobada',normativa_estado:'pendiente',aplicabilidad:{}};
-const source=(extras={})=>({empresa:{id:'a',razon_social:'Empresa ficticia',cert_iva_ieps_rubro:null},obligaciones:[parent],ocurrencias:[occurrence],cumplimientos:[],reglas:[],revisiones:[],eventos:[],relaciones:[],documentos:[],tareas:[],asignaciones:[],perfiles:[],metadataReady:true,...extras});
+const source=(extras={})=>({empresa:{id:'a',razon_social:'Empresa ficticia',cert_iva_ieps_rubro:null},obligaciones:[parent],ocurrencias:[occurrence],cumplimientos:[],reglas:[],revisiones:[],eventos:[],relaciones:[],tareas:[],asignaciones:[],perfiles:[],metadataReady:true,...extras});
 test('control sin revisión no se convierte en verificado por un cumplimiento antiguo',()=>{
  const result=build(source({reglas:[rule],cumplimientos:[{ocurrencia_id:'oc',obligacion_id:'o',empresa_id:'a',periodo_key:'2026-10',completada:true,vigente:true,evidencia_url:null}]}));
  assert.equal(result.secciones.condiciones.length,1);

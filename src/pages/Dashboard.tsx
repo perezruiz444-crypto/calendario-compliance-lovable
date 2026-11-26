@@ -207,8 +207,8 @@ export default function Dashboard() {
   ] : [
     { title: 'Tareas Pendientes', value: data.tareasPendientes, icon: Clock, tone: 'warning', sub: 'En progreso o pendientes' },
     { title: 'Completadas', value: data.tareasCompletadas, icon: CheckSquare, tone: 'success', sub: `De ${data.totalTareas} totales` },
-    { title: 'Docs. por Vencer', value: data.documentosPorVencer || 0, icon: FileText, tone: 'warning', sub: 'Próximos 30 días' },
-    { title: 'Solicitudes', value: data.solicitudesPendientes || 0, icon: AlertCircle, tone: 'primary', sub: 'Pendientes de respuesta' },
+    { title: 'Obligaciones Pendientes', value: data.obligacionesPendientes || 0, icon: Target, tone: 'primary', sub: 'Sin cumplimiento registrado' },
+    { title: 'Tareas Vencidas', value: data.tareasVencidas, icon: AlertTriangle, tone: 'destructive', sub: 'Requieren atención' },
   ];
 
   const toneClass: Record<string, { num: string; chip: string; accent: string }> = {
@@ -393,8 +393,6 @@ export default function Dashboard() {
             if (type === 'tarea' && data) {
               setSelectedTareaId(data.id);
               setDetailSheetOpen(true);
-            } else if (type === 'documento' && data) {
-              navigate(`/empresas/${data.empresa_id}`);
             }
           }}
         />

@@ -20,8 +20,6 @@ import { Building2, Calendar, FileText, Shield, AlertCircle, CheckCircle, Clipbo
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AgentesAduanalesCard } from '@/components/empresas/AgentesAduanalesCard';
-import { DocumentosManager } from '@/components/documentos/DocumentosManager';
-import { SolicitudesServicio } from '@/components/solicitudes/SolicitudesServicio';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import { toast } from 'sonner';
 import { getPeriodLabel, CATEGORIA_LABELS, CATEGORIA_COLORS } from '@/lib/obligaciones';
@@ -29,7 +27,6 @@ import { CumplimientoHistorial } from '@/components/obligaciones/CumplimientoHis
 import { EvidenciaCumplimiento } from '@/components/obligaciones/EvidenciaCumplimiento';
 import { ExportarCumplimientoButton } from '@/components/obligaciones/ExportarCumplimientoButton';
 import MisVencimientos from '@/components/empresas/MisVencimientos';
-import MisDocumentos from '@/components/empresas/MisDocumentos';
 import { logger } from '@/lib/logger';
 import type { Empresa, ApoderadoLegal, DomicilioOperacion, AgenteAduanal, Tarea, ObligacionVista } from '@/types/domain';
 
@@ -507,11 +504,10 @@ export default function MiEmpresa() {
 
         </>}
 
-        {/* Tabs - 4 Tabs */}
+        {/* Tabs */}
         <Tabs defaultValue="obligaciones" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-3 h-auto p-1">
             <TabsTrigger value="obligaciones" className="font-heading py-2">Obligaciones</TabsTrigger>
-            <TabsTrigger value="documentos" className="font-heading py-2">Documentos</TabsTrigger>
             <TabsTrigger value="programas" className="font-heading py-2">Programas</TabsTrigger>
             <TabsTrigger value="contactos" className="font-heading py-2">Contactos</TabsTrigger>
           </TabsList>
@@ -677,28 +673,6 @@ export default function MiEmpresa() {
             </>}
           </TabsContent>
 
-          {/* Documentos Tab */}
-          <TabsContent value="documentos" className="space-y-6">
-            <Card className="card-editorial shadow-card">
-              <CardHeader>
-                <CardTitle className="font-heading text-lg">Documentos</CardTitle>
-                <CardDescription>Documentos y archivos de tu empresa</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {empresa && <DocumentosManager empresaId={empresa.id} empresaNombre={empresa.razon_social} />}
-              </CardContent>
-            </Card>
-            <Card className="card-editorial shadow-card">
-              <CardHeader>
-                <CardTitle className="font-heading text-lg">Solicitudes de Servicio</CardTitle>
-                <CardDescription>Crea y gestiona tus solicitudes de atención</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {empresa && <SolicitudesServicio empresaId={empresa.id} />}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Programas Tab (Merged Programas + Certificaciones) */}
           <TabsContent value="programas" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -821,12 +795,7 @@ export default function MiEmpresa() {
             <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform" />
           </summary>
           <div className="p-5 pt-0 border-t border-border/50">
-            <DashboardCalendar height="500px" onEventClick={(event) => {
-              if (event.resource.type === 'documento') {
-                const trigger = document.querySelector('[value="documentos"]') as HTMLElement;
-                if (trigger) trigger.click();
-              }
-            }} />
+            <DashboardCalendar height="500px" />
           </div>
         </details>
       </div>

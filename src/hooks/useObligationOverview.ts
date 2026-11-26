@@ -43,11 +43,10 @@ export function useObligationOverview(empresaId: string | null) {
       const { data: empresa, error: empresaError } = await supabase.from('empresas').select('*').eq('id', empresaId).maybeSingle();
       if (empresaError) throw empresaError;
       if (!empresa) throw new Error('No se encontró la empresa');
-      const [obligaciones, ocurrencias, cumplimientos, documentos, tareas, asignaciones] = await Promise.all([
+      const [obligaciones, ocurrencias, cumplimientos, tareas, asignaciones] = await Promise.all([
         loadAllPages((offset, size) => supabase.from('obligaciones').select('*').eq('empresa_id', empresaId).eq('activa', true).order('id').range(offset, offset + size - 1)),
         loadAllPages((offset, size) => client.from('obligacion_ocurrencias').select('*').eq('empresa_id', empresaId).order('id').range(offset, offset + size - 1)),
         loadAllPages((offset, size) => client.from('obligacion_cumplimientos').select('*').eq('empresa_id', empresaId).eq('vigente', true).order('id').range(offset, offset + size - 1)),
-        loadAllPages((offset, size) => supabase.from('documentos').select('*').eq('empresa_id', empresaId).order('id').range(offset, offset + size - 1)),
         loadAllPages((offset, size) => supabase.from('tareas').select('*').eq('empresa_id', empresaId).order('id').range(offset, offset + size - 1)),
         loadAllPages((offset, size) => supabase.from('obligacion_responsables').select('id, obligacion_id').eq('user_id', user.id).order('id').range(offset, offset + size - 1)),
       ]);
@@ -65,7 +64,7 @@ export function useObligationOverview(empresaId: string | null) {
         const rows = await loadAllPages((offset, size) => supabase.from('profiles').select('id,nombre_completo').in('id', ids).order('id').range(offset, offset + size - 1));
         perfiles.push(...rows);
       }
-      return buildOverviewData({ empresa, obligaciones, ocurrencias, cumplimientos, documentos, tareas,
+      return buildOverviewData({ empresa, obligaciones, ocurrencias, cumplimientos, tareas,
         reglas: metadataReady ? reglas.rows : [], revisiones: metadataReady ? revisiones.rows : [], eventos: metadataReady ? eventos.rows : [], relaciones: metadataReady ? relaciones.rows : [],
         asignaciones: [...asignaciones.map(a => a.obligacion_id),...obligaciones.filter(o=>o.responsable_id===user.id).map(o=>o.id)], perfiles, metadataReady });
     },

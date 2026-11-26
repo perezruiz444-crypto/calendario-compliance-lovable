@@ -4,27 +4,22 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Send, MessageSquare, Calendar as CalendarIcon, Paperclip, Repeat, Check, Pencil, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Paperclip, Repeat, Check, Pencil, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import SendNotificationDialog from './SendNotificationDialog';
 import { FileAttachments } from './FileAttachments';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { MultipleAssignees } from './MultipleAssignees';
 import { logger } from '@/lib/logger';
-import type { TareaDetalle, Comentario, ConsultorResumen, CategoriaTarea } from '@/types/domain';
+import type { TareaDetalle, ConsultorResumen } from '@/types/domain';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 import { getAdjuntos } from '@/lib/adjuntos';
-import { fetchComentariosConPerfiles } from '@/lib/comentarios';
 
 type TareaUpdate = TablesUpdate<'tareas'>;
 type EditableField = 'titulo' | 'descripcion';
@@ -50,14 +45,9 @@ const ESTADOS = [
 ];
 
 export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate }: TareaDetailSheetProps) {
-  const { user } = useAuth();
   const [tarea, setTarea] = useState<TareaDetalle | null>(null);
-  const [comentarios, setComentarios] = useState<Comentario[]>([]);
-  const [nuevoComentario, setNuevoComentario] = useState('');
-  const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [consultores, setConsultores] = useState<ConsultorResumen[]>([]);
-  const [categorias, setCategorias] = useState<CategoriaTarea[]>([]);
 
   const [editingField, setEditingField] = useState<EditableField | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -67,7 +57,6 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
   useEffect(() => {
     if (open && tareaId) {
       fetchTareaData();
-      fetchCategorias();
     }
   }, [open, tareaId]);
 
@@ -81,7 +70,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
     try {
       const { data: tareaData, error } = await supabase
         .from('tareas')
-        .select(`*, empresas(razon_social), categorias_tareas(id, nombre, color)`)
+        .select(`*, empresas(razon_social)`)
         .eq('id', tareaId)
         .maybeSingle();
 
@@ -95,8 +84,6 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
       }
 
       setTarea({ ...tareaData, archivos_adjuntos: getAdjuntos(tareaData.archivos_adjuntos), consultor_profile: consultorData });
-
-      setComentarios(await fetchComentariosConPerfiles(tareaId));
     } catch (error) {
       logger.error('Error fetching tarea:', error);
       toast.error('Error al cargar la tarea');
@@ -111,11 +98,6 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
     if (ids.length === 0) { setConsultores([]); return; }
     const { data } = await supabase.from('profiles').select('id, nombre_completo').in('id', ids).order('nombre_completo');
     setConsultores(data || []);
-  };
-
-  const fetchCategorias = async () => {
-    const { data } = await supabase.from('categorias_tareas').select('*').order('nombre');
-    setCategorias(data || []);
   };
 
   const showSaveIndicator = (field: string) => {
@@ -148,23 +130,6 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
       updateField(field, editValue.trim() || null);
     }
     setEditingField(null);
-  };
-
-  const handleAddComentario = async () => {
-    if (!nuevoComentario.trim()) return;
-    if (!user) { toast.error('Sesión no válida. Vuelve a iniciar sesión.'); return; }
-    setLoading(true);
-    try {
-      const { error } = await supabase.from('comentarios').insert({ tarea_id: tareaId, user_id: user.id, contenido: nuevoComentario });
-      if (error) throw error;
-      toast.success('Comentario agregado');
-      setNuevoComentario('');
-      fetchTareaData();
-    } catch (error) {
-      toast.error('Error al agregar comentario');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const SavedIndicator = ({ field }: { field: string }) => (
@@ -328,45 +293,6 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
               </div>
             </div>
 
-            {/* Asignados adicionales */}
-            <div className="border border-border rounded-lg p-3">
-              <MultipleAssignees
-                tareaId={tareaId}
-                empresaId={tarea?.empresa_id}
-                canEdit={true}
-              />
-            </div>
-
-            {/* Categoría */}
-            <div>
-              <label className="text-xs font-heading text-muted-foreground mb-1.5 block">Categoría</label>
-              <div className="flex items-center gap-2">
-                <Select
-                  value={tarea.categoria_id || ''}
-                  onValueChange={(v) => {
-                    updateField('categoria_id', v || null);
-                    const cat = categorias.find(c => c.id === v);
-                    setTarea(prev => prev && { ...prev, categorias_tareas: cat || null });
-                  }}
-                >
-                  <SelectTrigger className="w-[200px] h-9 text-sm">
-                    <SelectValue placeholder="Sin categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categorias.map(c => (
-                      <SelectItem key={c.id} value={c.id}>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color ?? undefined }} />
-                          {c.nombre}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <SavedIndicator field="categoria_id" />
-              </div>
-            </div>
-
             {/* Descripción */}
             <div>
               <label className="text-xs font-heading text-muted-foreground mb-1.5 block">Descripción</label>
@@ -434,52 +360,8 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
               />
             </div>
 
-            {/* Comentarios */}
             <div className="border-t pt-5">
-              <h3 className="font-heading font-semibold text-sm mb-3 flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Comentarios ({comentarios.length})
-              </h3>
-
-              <div className="space-y-3 mb-4">
-                {comentarios.map((c) => (
-                  <div key={c.id} className="border rounded-lg p-3">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-7 w-7">
-                        <AvatarFallback className="text-[10px]">
-                          {c.profiles?.nombre_completo?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-xs">{c.profiles?.nombre_completo}</span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {c.created_at ? format(new Date(c.created_at), 'dd/MM/yyyy HH:mm') : ''}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{c.contenido}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Agregar comentario..."
-                  value={nuevoComentario}
-                  onChange={(e) => setNuevoComentario(e.target.value)}
-                  rows={2}
-                  className="resize-none"
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleAddComentario} disabled={loading || !nuevoComentario.trim()}>
-                    <Send className="h-3.5 w-3.5 mr-1.5" />
-                    Enviar
-                  </Button>
-                  <SendNotificationDialog tareaId={tareaId} />
-                </div>
-              </div>
+              <SendNotificationDialog tareaId={tareaId} />
             </div>
           </div>
         </ScrollArea>

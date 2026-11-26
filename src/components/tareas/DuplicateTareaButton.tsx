@@ -11,7 +11,6 @@ export interface TareaDuplicada {
   prioridad: TareaPrioridad;
   empresa_id: string;
   consultor_asignado_id: string;
-  categoria_id: string;
   fecha_vencimiento: string;
   es_recurrente: boolean;
   frecuencia_recurrencia: string;
@@ -21,7 +20,7 @@ export interface TareaDuplicada {
 }
 
 interface DuplicateTareaButtonProps {
-  tarea: Pick<Tarea, 'titulo' | 'descripcion' | 'prioridad' | 'empresa_id' | 'consultor_asignado_id' | 'categoria_id'>;
+  tarea: Pick<Tarea, 'titulo' | 'descripcion' | 'prioridad' | 'empresa_id' | 'consultor_asignado_id'>;
   onDuplicate: (data: TareaDuplicada) => void;
 }
 
@@ -33,7 +32,6 @@ export function DuplicateTareaButton({ tarea, onDuplicate }: DuplicateTareaButto
       prioridad: tarea.prioridad ?? 'media',
       empresa_id: tarea.empresa_id,
       consultor_asignado_id: tarea.consultor_asignado_id || '',
-      categoria_id: tarea.categoria_id || '',
       fecha_vencimiento: '',
       es_recurrente: false,
       frecuencia_recurrencia: 'mensual',

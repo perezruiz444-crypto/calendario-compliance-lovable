@@ -15,7 +15,7 @@ import esLocale from '@fullcalendar/core/locales/es';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Calendar, AlertCircle, Building2, ClipboardList, FileText, Scale, CalendarDays, Repeat } from 'lucide-react';
+import { Calendar, AlertCircle, Building2, ClipboardList, Scale, CalendarDays, Repeat } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -37,7 +37,7 @@ interface FcEvent {
   borderColor: string;
   textColor: string;
   extendedProps: {
-    type: 'tarea' | 'documento' | 'obligacion';
+    type: 'tarea' | 'obligacion';
     prioridad?: string;
     estado?: string;
     completada?: boolean;
@@ -48,7 +48,7 @@ interface FcEvent {
     origenFecha?: string;
     empresaId?: string;
     isRecurrente?: boolean;
-    /** Fila de origen (tarea o documento); los consumidores solo leen `id` y `empresa_id`. */
+    /** Fila de origen (tarea); los consumidores solo leen `id` y `empresa_id`. */
     data?: { id: string; empresa_id: string };
   };
 }
@@ -62,21 +62,18 @@ export interface CalendarEventClick {
   resource: FcEvent['extendedProps'];
 }
 
-type EventType = 'tarea' | 'documento' | 'obligacion';
+type EventType = 'tarea' | 'obligacion';
 const TYPE_LABELS: Record<EventType, string> = {
   obligacion: 'Obligaciones',
   tarea: 'Tareas',
-  documento: 'Documentos',
 };
 const TYPE_HELP: Record<EventType, string> = {
   obligacion: 'Trámites legales recurrentes (SAT, INEGI, IMMEX)',
-  documento: 'Pasaportes, certificados y contratos',
   tarea: 'Pendientes operativos del despacho',
 };
 const TYPE_COLORS: Record<EventType, string> = {
   obligacion: 'hsl(262 83% 58%)',
   tarea: 'hsl(25 95% 53%)',
-  documento: 'hsl(221 83% 53%)',
 };
 
 interface DashboardCalendarProps {
@@ -96,14 +93,12 @@ function eventColor(type: string, prioridad?: string, isOverdue?: boolean, isDon
     if (prioridad === 'baja')  return { bg: 'hsl(var(--success) / 0.15)', border: 'hsl(var(--success))' };
     return { bg: 'hsl(var(--primary) / 0.12)', border: 'hsl(var(--primary))' };
   }
-  if (type === 'documento')  return { bg: 'hsl(221 83% 53% / 0.12)', border: 'hsl(221 83% 53%)' };
   if (type === 'obligacion') return { bg: 'hsl(262 83% 58% / 0.12)', border: 'hsl(262 83% 58%)' };
   return { bg: 'hsl(var(--muted))', border: 'hsl(var(--border))' };
 }
 
 const EVENT_ICONS: Record<string, React.ReactNode> = {
   tarea: <ClipboardList className="h-3 w-3 flex-shrink-0 inline-block" />,
-  documento: <FileText className="h-3 w-3 flex-shrink-0 inline-block" />,
   obligacion: <Scale className="h-3 w-3 flex-shrink-0 inline-block" />,
 };
 
@@ -142,8 +137,8 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
   // Por defecto, los clientes no ven Tareas (son operativas internas del despacho)
   const [activeTypes, setActiveTypes] = useState<Set<EventType>>(
     role === 'cliente'
-      ? new Set<EventType>(['obligacion', 'documento'])
-      : new Set<EventType>(['obligacion', 'tarea', 'documento'])
+      ? new Set<EventType>(['obligacion'])
+      : new Set<EventType>(['obligacion', 'tarea'])
   );
 
   const toggleType = (t: EventType) => {
@@ -273,31 +268,6 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
       });
     });
 
-    let docsQuery = supabase
-      .from('documentos')
-      .select('id, nombre, empresa_id, fecha_vencimiento, empresas(razon_social)')
-      .not('fecha_vencimiento', 'is', null)
-      .or(rangeFilter);
-    if (filterEmpresaId && filterEmpresaId !== 'all') {
-      docsQuery = docsQuery.eq('empresa_id', filterEmpresaId);
-    }
-    const docs = await loadAllPages((offset, size) => docsQuery.order('id').range(offset, offset + size - 1));
-
-    (docs || []).forEach(doc => {
-      if (!doc.fecha_vencimiento) return;
-      const { bg, border } = eventColor('documento');
-      allEvents.push({
-        id: `doc-${doc.id}`,
-        title: `${doc.nombre}${doc.empresas?.razon_social ? ` · ${doc.empresas.razon_social}` : ''}`,
-        start: doc.fecha_vencimiento,
-        allDay: true,
-        backgroundColor: bg,
-        borderColor: border,
-        textColor: 'hsl(var(--foreground))',
-        extendedProps: { type: 'documento', rawId: doc.id, empresaId: doc.empresa_id, data: doc },
-      });
-    });
-
     if (currentRequest === requestId.current) setEvents(allEvents);
     } catch {if (currentRequest === requestId.current) {setEvents([]);setFetchError(true);}}
     finally {if (currentRequest === requestId.current) setLoading(false);}
@@ -354,7 +324,7 @@ export default function DashboardCalendar({ onEventClick, height = '580px', filt
                 Calendario de Vencimientos
               </CardTitle>
               <CardDescription className="font-body">
-                Obligaciones, tareas y documentos · click para ver detalle
+                Obligaciones y tareas · click para ver detalle
               </CardDescription>
             </div>
             {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />}

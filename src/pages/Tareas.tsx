@@ -10,15 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { Plus, CheckSquare, MessageSquare, Settings, Repeat, Bell, Search, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, Zap, ClipboardList, GanttChart, ChevronDown, RefreshCw, GripVertical } from 'lucide-react';
+import { Plus, CheckSquare, MessageSquare, Repeat, Bell, Search, X, Building2, Calendar as CalendarIcon, AlertCircle, Paperclip, User, LayoutGrid, List, Calendar as CalendarViewIcon, Trash2, ClipboardList, GanttChart, RefreshCw, GripVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CreateTareaSheet from '@/components/tareas/CreateTareaSheet';
 
 import TareaDetailSheet from '@/components/tareas/TareaDetailSheet';
-import ManageCategoriesDialog from '@/components/tareas/ManageCategoriesDialog';
-import ManageCustomFields from '@/components/tareas/ManageCustomFields';
-import ManageTemplates from '@/components/tareas/ManageTemplates';
-import { ManageAutomations } from '@/components/tareas/ManageAutomations';
 import { TareasTimeline } from '@/components/tareas/TareasTimeline';
 import { ObligacionesActivasTab } from '@/components/obligaciones/ObligacionesActivasTab';
 import FullCalendar from '@fullcalendar/react';
@@ -34,8 +30,6 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { DndContext, DragEndEvent, DragOverlay, closestCorners, PointerSensor, KeyboardSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -152,21 +146,8 @@ function TareaCard({
             </p>
           )}
 
-          {/* Metadata Row 1: Category and Status */}
+          {/* Metadata Row 1: Status */}
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            {tarea.categorias_tareas && (
-              <Badge
-                variant="outline"
-                className="text-xs gap-1.5"
-                style={{ borderColor: tarea.categorias_tareas.color ?? undefined }}
-              >
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: tarea.categorias_tareas.color ?? undefined }}
-                />
-                {tarea.categorias_tareas.nombre}
-              </Badge>
-            )}
             <Badge className={`text-xs ${getEstadoColor(tarea.estado ?? 'pendiente')}`}>
               {estadoLabels[tarea.estado ?? 'pendiente']}
             </Badge>
@@ -377,10 +358,6 @@ export default function Tareas() {
   const [dialogOpen, setDialogOpen] = useState(false);
   
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [categoriesDialogOpen, setCategoriesDialogOpen] = useState(false);
-  const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
-  const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
-  const [automationsDialogOpen, setAutomationsDialogOpen] = useState(false);
   const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
   const [selectedConsultor, setSelectedConsultor] = useState<string>('');
   const [consultores, setConsultores] = useState<ConsultorResumen[]>([]);
@@ -479,7 +456,7 @@ export default function Tareas() {
       const filas = await loadAllPages((offset, pageSize) => {
         let query = supabase
           .from('tareas')
-          .select('*, empresas(razon_social), categorias_tareas(nombre, color)')
+          .select('*, empresas(razon_social)')
           .order('created_at', { ascending: false })
           .order('id', { ascending: false });
         if (selectedEmpresaId && selectedEmpresaId !== 'all') {
@@ -890,28 +867,6 @@ export default function Tareas() {
 
             {(role === 'administrador' || role === 'consultor') && (
               <>
-                {/* Configuración secundaria en dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="font-heading h-11 sm:h-9">
-                      <Settings className="w-4 h-4 sm:mr-1.5" />
-                      <span className="hidden sm:inline">Configurar</span>
-                      <ChevronDown className="w-3 h-3 ml-1 opacity-60" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setCustomFieldsDialogOpen(true)}>
-                      <Settings className="w-4 h-4 mr-2" /> Campos personalizados
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTemplatesDialogOpen(true)}>
-                      <CheckSquare className="w-4 h-4 mr-2" /> Templates
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setAutomationsDialogOpen(true)}>
-                      <Zap className="w-4 h-4 mr-2" /> Automatizaciones
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
                 <Button onClick={() => setDialogOpen(true)} className="font-heading h-11 sm:h-9">
                   <Plus className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Nueva Tarea</span>
@@ -1456,23 +1411,6 @@ export default function Tareas() {
           onUpdate={fetchTareas}
         />
       )}
-      <ManageCategoriesDialog
-        open={categoriesDialogOpen}
-        onOpenChange={setCategoriesDialogOpen}
-      />
-      <ManageCustomFields
-        open={customFieldsDialogOpen}
-        onOpenChange={setCustomFieldsDialogOpen}
-      />
-      <ManageTemplates
-        open={templatesDialogOpen}
-        onOpenChange={setTemplatesDialogOpen}
-      />
-      <Dialog open={automationsDialogOpen} onOpenChange={setAutomationsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <ManageAutomations />
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   );
 }

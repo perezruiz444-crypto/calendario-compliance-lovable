@@ -21,7 +21,6 @@ export interface OverviewSources {
   revisiones: RawReview[];
   eventos: RawEvent[];
   relaciones: NewTables['obligacion_relaciones']['Row'][];
-  documentos: Tables['documentos']['Row'][];
   tareas: OverviewTask[];
   asignaciones: string[];
   perfiles: { id: string; nombre_completo: string }[];
@@ -69,7 +68,7 @@ function applicability(value: Json, company: OverviewCompany): boolean | null {
 /** Ninguna fuente cruzada se transforma en una cifra aparentemente sana. */
 export function buildOverviewData(source: OverviewSources) {
   const { empresa } = source;
-  const allScoped = [...source.obligaciones, ...source.ocurrencias, ...source.revisiones, ...source.eventos, ...source.relaciones, ...source.documentos, ...source.tareas];
+  const allScoped = [...source.obligaciones, ...source.ocurrencias, ...source.revisiones, ...source.eventos, ...source.relaciones, ...source.tareas];
   if (allScoped.some(row => row.empresa_id !== empresa.id) || source.cumplimientos.some(row => row.empresa_id != null && row.empresa_id !== empresa.id)) {
     throw new Error('Los registros no corresponden a la empresa seleccionada');
   }
@@ -118,7 +117,6 @@ export function buildOverviewData(source: OverviewSources) {
   if (empresa.cert_iva_ieps_oficio || empresa.cert_iva_ieps_fecha_vencimiento) vigencias.push({ id: 'empresa-certiva', nombre: 'Certificación IVA/IEPS', programa: 'cert_iva_ieps', fecha: empresa.cert_iva_ieps_fecha_vencimiento ?? null, fechaRenovacion: empresa.cert_iva_ieps_fecha_renovar ?? null });
   if (empresa.immex_numero) vigencias.push({ id: 'empresa-immex', nombre: 'Autorización IMMEX', programa: 'immex', fecha: empresa.immex_fecha_fin ?? null, fechaRenovacion: null });
   if (empresa.prosec_numero) vigencias.push({ id: 'empresa-prosec', nombre: 'Autorización PROSEC', programa: 'prosec', fecha: empresa.prosec_fecha_fin ?? null, fechaRenovacion: empresa.prosec_fecha_siguiente_renovacion ?? null });
-  for (const doc of source.documentos) if (doc.fecha_vencimiento) vigencias.push({ id: `doc:${doc.id}`, nombre: doc.nombre, programa: doc.categoria ?? 'general', fecha: doc.fecha_vencimiento, fechaRenovacion: null });
   const secciones = buildObligationSections(obligations, actions);
   return { empresa, obligaciones: obligations, acciones: actions, secciones, vigencias,
     eventos:source.eventos, tareas: source.tareas.filter(t => t.estado !== 'cancelada'), metadataReady: source.metadataReady };

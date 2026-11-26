@@ -214,33 +214,6 @@ export default function ClienteAnalytics({ data }: ClienteAnalyticsProps) {
         </Card>
       )}
 
-      {/* Documentos próximos a vencer */}
-      {data.documentosVencimiento && data.documentosVencimiento.length > 0 && (
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Documentos Próximos a Vencer
-            </CardTitle>
-            <CardDescription>Documentos que vencen en los próximos 90 días</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {data.documentosVencimiento.map((doc, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:border-primary transition-colors">
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{doc.nombre}</p>
-                    <p className="text-xs text-muted-foreground">{doc.empresa}</p>
-                  </div>
-                  <Badge variant={doc.dias <= 7 ? 'destructive' : doc.dias <= 30 ? 'secondary' : 'default'}>
-                    {doc.dias <= 0 ? 'Vencido' : `${doc.dias} días`}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

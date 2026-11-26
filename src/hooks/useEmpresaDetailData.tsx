@@ -51,7 +51,7 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
       const [tarRes, obsRes] = await Promise.all([
         supabase
           .from('tareas')
-          .select('*, categorias_tareas(nombre, color)')
+          .select('*')
           .eq('empresa_id', empresaId)
           .order('created_at', { ascending: false })
           .limit(10),
@@ -67,9 +67,7 @@ export function useEmpresaDetailData(empresaId: string | undefined, onNotFound?:
       // devolvía 400 y la lista quedaba vacía. El nombre se une aparte con conPerfiles.
       if (tarRes.error) toast.error('No se pudieron cargar las tareas.');
       const tareasConPerfil = await conPerfiles(tarRes.data || [], 'consultor_asignado_id');
-      // El tipo inferido por Supabase para el join de categorias_tareas no se solapa
-      // estructuralmente con TareaConJoins; cast vía unknown: la forma en runtime sí coincide.
-      setTareas(tareasConPerfil as unknown as TareaConJoins[]);
+      setTareas(tareasConPerfil);
       setObligaciones(obsRes.data || []);
 
       const obsIds = (obsRes.data || []).map(o => o.id);

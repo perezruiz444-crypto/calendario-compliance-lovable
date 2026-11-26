@@ -20,10 +20,9 @@ interface ResultadosBusqueda {
   empresas: Pick<Empresa, 'id' | 'razon_social' | 'rfc'>[];
   tareas: Pick<Tarea, 'id' | 'titulo' | 'descripcion' | 'empresa_id'>[];
   mensajes: { id: string; asunto: string; contenido: string }[];
-  documentos: { id: string; nombre: string; descripcion: string | null; empresa_id: string }[];
 }
 
-const SIN_RESULTADOS: ResultadosBusqueda = { empresas: [], tareas: [], mensajes: [], documentos: [] };
+const SIN_RESULTADOS: ResultadosBusqueda = { empresas: [], tareas: [], mensajes: [] };
 
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
@@ -84,25 +83,16 @@ export function GlobalSearch() {
         .or(`asunto.ilike.${searchTerm},contenido.ilike.${searchTerm}`)
         .limit(5);
 
-      // Search documentos
-      const documentosQuery = supabase
-        .from('documentos')
-        .select('id, nombre, descripcion, empresa_id')
-        .or(`nombre.ilike.${searchTerm},descripcion.ilike.${searchTerm}`)
-        .limit(5);
-
-      const [empresasRes, tareasRes, mensajesRes, documentosRes] = await Promise.all([
+      const [empresasRes, tareasRes, mensajesRes] = await Promise.all([
         empresasQuery,
         tareasQuery,
-        mensajesQuery,
-        documentosQuery
+        mensajesQuery
       ]);
 
       setResults({
         empresas: empresasRes.data || [],
         tareas: tareasRes.data || [],
-        mensajes: mensajesRes.data || [],
-        documentos: documentosRes.data || []
+        mensajes: mensajesRes.data || []
       });
     } catch (error) {
       logger.error('Error searching:', error);
@@ -111,7 +101,7 @@ export function GlobalSearch() {
     }
   };
 
-  const handleSelect = (type: string, id: string, empresaId?: string) => {
+  const handleSelect = (type: string, id: string) => {
     setOpen(false);
     setSearchQuery('');
     
@@ -125,18 +115,12 @@ export function GlobalSearch() {
       case 'mensaje':
         navigate('/mensajes');
         break;
-      case 'documento':
-        if (empresaId) {
-          navigate(`/empresas/${empresaId}`);
-        }
-        break;
     }
   };
 
   const hasResults = results.empresas.length > 0 || 
                      results.tareas.length > 0 || 
-                     results.mensajes.length > 0 ||
-                     results.documentos.length > 0;
+                     results.mensajes.length > 0;
 
   return (
     <>
@@ -155,7 +139,7 @@ export function GlobalSearch() {
 
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput
-          placeholder="Buscar empresas, tareas, mensajes, documentos..."
+          placeholder="Buscar empresas, tareas, mensajes..."
           value={searchQuery}
           onValueChange={setSearchQuery}
         />
@@ -193,7 +177,7 @@ export function GlobalSearch() {
                   {results.tareas.map((tarea) => (
                     <CommandItem
                       key={tarea.id}
-                      onSelect={() => handleSelect('tarea', tarea.id, tarea.empresa_id)}
+                      onSelect={() => handleSelect('tarea', tarea.id)}
                       className="cursor-pointer"
                     >
                       <CheckSquare className="mr-2 h-4 w-4" />
@@ -224,28 +208,6 @@ export function GlobalSearch() {
                         {mensaje.contenido && (
                           <div className="text-xs text-muted-foreground line-clamp-1">
                             {mensaje.contenido}
-                          </div>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-
-              {results.documentos.length > 0 && (
-                <CommandGroup heading="Documentos">
-                  {results.documentos.map((doc) => (
-                    <CommandItem
-                      key={doc.id}
-                      onSelect={() => handleSelect('documento', doc.id, doc.empresa_id)}
-                      className="cursor-pointer"
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      <div className="flex-1">
-                        <div className="font-medium">{doc.nombre}</div>
-                        {doc.descripcion && (
-                          <div className="text-xs text-muted-foreground line-clamp-1">
-                            {doc.descripcion}
                           </div>
                         )}
                       </div>

@@ -49,8 +49,6 @@ export interface AnalyticsData {
   tareasPorEstado?: Array<{ estado: string; cantidad: number }>;
   
   // Cliente specific
-  documentosPorVencer?: number;
-  solicitudesPendientes?: number;
   proximosVencimientos?: Array<{ tipo: string; fecha: string; dias: number }>;
   empresaCliente?: {
     id: string;
@@ -61,7 +59,6 @@ export interface AnalyticsData {
   };
   
   // Common
-  documentosVencimiento?: Array<{ nombre: string; empresa: string; dias: number }>;
   actividadReciente?: Array<{ tipo: string; descripcion: string; fecha: string }>;
   
   // Obligaciones
@@ -306,23 +303,6 @@ export function useAnalytics(empresaId?: string | null) {
       })).filter(t => t.total > 0);
     }
 
-    // Documentos próximos a vencer
-    const { data: documentos } = await supabase
-      .from('documentos')
-      .select('nombre, fecha_vencimiento, empresas(razon_social)')
-      .not('fecha_vencimiento', 'is', null)
-      .order('fecha_vencimiento', { ascending: true })
-      .limit(5);
-
-    const documentosVencimiento = documentos?.map(doc => {
-      const empresaData = doc.empresas as { razon_social: string } | null;
-      return {
-        nombre: doc.nombre,
-        empresa: empresaData?.razon_social || 'N/A',
-        dias: calendarDaysUntil(doc.fecha_vencimiento!, today),
-      };
-    }).filter(d => d.dias >= 0 && d.dias <= 90) || [];
-
     const proximasTareas = await fetchProximasTareas(tareas);
 
     // Fetch obligaciones pendientes
@@ -345,7 +325,6 @@ export function useAnalytics(empresaId?: string | null) {
       empresasActivas: empresasRes.count || 0,
       tareasPerformance,
       tareasPorConsultor,
-      documentosVencimiento,
       proximasTareas: allProximas,
       obligacionesPendientes: obData.pendientes,
       obligacionesActivas: obData.activas,
@@ -401,24 +380,6 @@ export function useAnalytics(empresaId?: string | null) {
       cantidad: tareas?.filter(t => t.estado === estado).length || 0
     })).filter(e => e.cantidad > 0);
 
-    let documentosVencimiento: Array<{ nombre: string; empresa: string; dias: number }> = [];
-    if (empresaIds.length > 0) {
-      const { data: docs } = await supabase
-        .from('documentos')
-        .select('nombre, fecha_vencimiento, empresas(razon_social)')
-        .in('empresa_id', empresaIds)
-        .not('fecha_vencimiento', 'is', null)
-        .order('fecha_vencimiento', { ascending: true })
-        .limit(5);
-      documentosVencimiento = (docs || []).map(doc => {
-        const empresaData = doc.empresas as { razon_social: string } | null;
-        return {
-          nombre: doc.nombre,
-          empresa: empresaData?.razon_social || 'N/A',
-          dias: calendarDaysUntil(doc.fecha_vencimiento!, today),
-        };
-      }).filter(d => d.dias >= 0 && d.dias <= 90);
-    }
 
     const proximasTareas = await fetchProximasTareas(tareas || []);
 
@@ -440,7 +401,6 @@ export function useAnalytics(empresaId?: string | null) {
       tareasAsignadas,
       performanceMensual,
       tareasPorEstado,
-      documentosVencimiento,
       proximasTareas: allProximas,
       obligacionesPendientes: obData.pendientes,
       obligacionesActivas: obData.activas,
@@ -453,15 +413,12 @@ export function useAnalytics(empresaId?: string | null) {
       return;
     }
 
-    const [tareasRes, docsRes, solicitudesRes, empresaRes] = await Promise.all([
+    const [tareasRes, empresaRes] = await Promise.all([
       supabase.from('tareas').select('id, titulo, estado, prioridad, fecha_vencimiento, empresa_id, consultor_asignado_id, created_at, updated_at').eq('empresa_id', common.empresa_id),
-      supabase.from('documentos').select('id, nombre, fecha_vencimiento').eq('empresa_id', common.empresa_id).not('fecha_vencimiento', 'is', null),
-      supabase.from('solicitudes_servicio').select('id', { count: 'exact', head: true }).eq('empresa_id', common.empresa_id).eq('estado', 'pendiente'),
       supabase.from('empresas').select('id, razon_social, cert_iva_ieps_fecha_vencimiento, matriz_seguridad_fecha_vencimiento, immex_fecha_fin').eq('id', common.empresa_id).maybeSingle(),
     ]);
 
     const tareas = tareasRes.data || [];
-    const documentos = docsRes.data || [];
     const empresa = empresaRes.data;
     const today = new Date();
 
@@ -471,11 +428,6 @@ export function useAnalytics(empresaId?: string | null) {
     const tareasVencidas = tareas.filter(t => {
       if (!t.fecha_vencimiento || t.estado === 'completada') return false;
       return calendarDaysUntil(t.fecha_vencimiento, today) < 0;
-    }).length;
-
-    const documentosPorVencer = documentos.filter(doc => {
-      const dias = calendarDaysUntil(doc.fecha_vencimiento!, today);
-      return dias >= 0 && dias <= 30;
     }).length;
 
     const proximosVencimientos: Array<{ tipo: string; fecha: string; dias: number }> = [];
@@ -495,12 +447,6 @@ export function useAnalytics(empresaId?: string | null) {
       });
     }
 
-    const documentosVencimiento = documentos.map(doc => ({
-      nombre: doc.nombre,
-      empresa: empresa?.razon_social || 'N/A',
-      dias: calendarDaysUntil(doc.fecha_vencimiento!, today)
-    })).filter(d => d.dias >= 0 && d.dias <= 90).slice(0, 5);
-
     const proximasTareas = await fetchProximasTareas(tareas);
 
     // Fetch obligaciones pendientes for this empresa
@@ -516,10 +462,7 @@ export function useAnalytics(empresaId?: string | null) {
       tareasPendientes: tareasPendientes + obData.pendientes,
       tareasCompletadas,
       tareasVencidas,
-      documentosPorVencer,
-      solicitudesPendientes: solicitudesRes.count || 0,
       proximosVencimientos,
-      documentosVencimiento,
       proximasTareas: allProximas,
       empresaCliente: empresa ?? undefined,
       obligacionesPendientes: obData.pendientes,
