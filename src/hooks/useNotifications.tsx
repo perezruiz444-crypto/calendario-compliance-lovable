@@ -134,7 +134,7 @@ export function useNotifications() {
     fetchNotifications();
     if (obligationsV2Enabled) {
       // El servidor deriva identidad, permisos y claves únicas; el navegador no elige destinatarios.
-      void obligationOverviewClient.rpc('generar_mis_avisos_obligaciones',{}).then(({error})=>{if(error)logger.error('No se pudieron actualizar los avisos',error);else void fetchNotifications();});
+      void obligationOverviewClient.rpc('generar_mis_avisos_obligaciones').then(({error})=>{if(error)logger.error('No se pudieron actualizar los avisos',error);else void fetchNotifications();});
     } else insertVencimientoAlerts(user.id);
 
     const channel = supabase
