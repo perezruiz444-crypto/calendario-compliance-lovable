@@ -17,7 +17,7 @@ import { FileAttachments } from './FileAttachments';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
-import type { TareaDetalle, ConsultorResumen } from '@/types/domain';
+import type { TareaDetalle, ConsultorResumen, CategoriaTarea } from '@/types/domain';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 import { getAdjuntos } from '@/lib/adjuntos';
 
@@ -48,6 +48,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
   const [tarea, setTarea] = useState<TareaDetalle | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [consultores, setConsultores] = useState<ConsultorResumen[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaTarea[]>([]);
 
   const [editingField, setEditingField] = useState<EditableField | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -57,6 +58,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
   useEffect(() => {
     if (open && tareaId) {
       fetchTareaData();
+      fetchCategorias();
     }
   }, [open, tareaId]);
 
@@ -70,7 +72,7 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
     try {
       const { data: tareaData, error } = await supabase
         .from('tareas')
-        .select(`*, empresas(razon_social)`)
+        .select(`*, empresas(razon_social), categorias_tareas(id, nombre, color)`)
         .eq('id', tareaId)
         .maybeSingle();
 
@@ -90,6 +92,11 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
     } finally {
       setLoadingData(false);
     }
+  };
+
+  const fetchCategorias = async () => {
+    const { data } = await supabase.from('categorias_tareas').select('*').order('nombre');
+    setCategorias(data || []);
   };
 
   const fetchConsultores = async (empresaId: string) => {
@@ -290,6 +297,36 @@ export default function TareaDetailSheet({ open, onOpenChange, tareaId, onUpdate
                   </SelectContent>
                 </Select>
                 <SavedIndicator field="consultor_asignado_id" />
+              </div>
+            </div>
+
+            {/* Categoría */}
+            <div>
+              <label className="text-xs font-heading text-muted-foreground mb-1.5 block">Categoría</label>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={tarea.categoria_id || ''}
+                  onValueChange={(v) => {
+                    updateField('categoria_id', v || null);
+                    const cat = categorias.find(c => c.id === v);
+                    setTarea(prev => prev && { ...prev, categorias_tareas: cat || null });
+                  }}
+                >
+                  <SelectTrigger className="w-[200px] h-9 text-sm">
+                    <SelectValue placeholder="Sin categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categorias.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color ?? undefined }} />
+                          {c.nombre}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <SavedIndicator field="categoria_id" />
               </div>
             </div>
 

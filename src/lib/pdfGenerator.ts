@@ -41,6 +41,7 @@ interface TareaDetalle {
   estado: string;
   fecha_vencimiento: string | null;
   created_at: string | null;
+  categoria: string;
 }
 
 interface ReportData {
@@ -511,31 +512,33 @@ export async function generateReportPDF(
     autoTable(doc, {
       startY: y,
       margin: { left: 10, right: 10 },
-      head: [['Tarea', 'Empresa', 'Consultor', 'Prioridad', 'Estado', 'Vencimiento']],
+      head: [['Tarea', 'Empresa', 'Consultor', 'Categoría', 'Prioridad', 'Estado', 'Vencimiento']],
       body: tareas.map(t => [
         t.titulo,
         t.empresa || '—',
         t.consultor || 'Sin asignar',
+        t.categoria || '—',
         t.prioridad ? t.prioridad.charAt(0).toUpperCase() + t.prioridad.slice(1) : '—',
         ESTADO_LABELS[t.estado] || t.estado,
         t.fecha_vencimiento ? parseCalendarDate(t.fecha_vencimiento).toLocaleDateString('es-MX') : '—',
       ]),
       columnStyles: {
-        0: { cellWidth: 85 },
-        1: { cellWidth: 55 },
-        2: { cellWidth: 42 },
-        3: { cellWidth: 22, halign: 'center' },
-        4: { cellWidth: 28, halign: 'center' },
-        5: { cellWidth: 25, halign: 'center' },
+        0: { cellWidth: 65 },
+        1: { cellWidth: 45 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 32 },
+        4: { cellWidth: 22, halign: 'center' },
+        5: { cellWidth: 28, halign: 'center' },
+        6: { cellWidth: 25, halign: 'center' },
       },
       ...tableStyles(),
       didDrawCell: (data) => {
         if (data.section === 'body') {
           const raw = String(data.cell.raw);
-          if (data.column.index === 3) {
+          if (data.column.index === 4) {
             doc.setTextColor(...(priColors2[raw.toLowerCase()] || C.gray));
           }
-          if (data.column.index === 4) {
+          if (data.column.index === 5) {
             const key = Object.keys(ESTADO_LABELS).find(k => ESTADO_LABELS[k] === raw) || raw;
             doc.setTextColor(...(estadoColors[key] || C.gray));
           }

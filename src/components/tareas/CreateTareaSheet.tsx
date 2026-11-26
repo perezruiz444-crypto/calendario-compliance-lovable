@@ -20,12 +20,13 @@ import { cn } from '@/lib/utils';
 import { format, addDays, addWeeks, addMonths, addYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
-  CalendarIcon, ChevronDown, Repeat, Paperclip, Search, Check, X,
+  CalendarIcon, ChevronDown, Repeat, Paperclip, Tag, Search, Check, X,
   Sparkles, Building2, User, FileText, Clock
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
 import type { EmpresaResumen, ConsultorResumen, TareaAdjunto } from '@/types/domain';
 import type { TareaDuplicada } from './DuplicateTareaButton';
+import { CategorySelector } from './CategorySelector';
 
 interface CreateTareaSheetProps {
   open: boolean;
@@ -153,6 +154,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
     fecha_vencimiento: '',
     empresa_id: defaultEmpresaId || '',
     consultor_asignado_id: '',
+    categoria_id: '',
     es_recurrente: false,
     frecuencia_recurrencia: 'mensual',
     intervalo_recurrencia: 1,
@@ -242,6 +244,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
 
   const detailsSummary = useMemo(() => {
     const parts: string[] = [];
+    if (formData.categoria_id) parts.push('🏷️ Categoría');
     if (formData.descripcion) parts.push('📝 Con descripción');
     if (formData.consultor_asignado_id) {
       const c = consultores.find(c => c.id === formData.consultor_asignado_id);
@@ -249,7 +252,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
     }
     if (attachments.length > 0) parts.push(`📎 ${attachments.length}`);
     return parts.join(' · ');
-  }, [formData.descripcion, formData.consultor_asignado_id, attachments, consultores]);
+  }, [formData.descripcion, formData.consultor_asignado_id, formData.categoria_id, attachments, consultores]);
 
   const setQuickDate = (type: 'today' | 'tomorrow' | 'nextWeek') => {
     const now = new Date();
@@ -270,7 +273,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
   const resetForm = () => {
     setFormData({
       titulo: '', descripcion: '', prioridad: 'media', fecha_vencimiento: '',
-      empresa_id: defaultEmpresaId || '', consultor_asignado_id: '',
+      empresa_id: defaultEmpresaId || '', consultor_asignado_id: '', categoria_id: '',
       es_recurrente: false, frecuencia_recurrencia: 'mensual', intervalo_recurrencia: 1,
       fecha_inicio_recurrencia: '', fecha_fin_recurrencia: '',
     });
@@ -301,6 +304,7 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
         prioridad: formData.prioridad,
         empresa_id: eid,
         consultor_asignado_id: formData.consultor_asignado_id || null,
+        categoria_id: formData.categoria_id || null,
         fecha_vencimiento: formData.fecha_vencimiento || null,
         archivos_adjuntos: attachments.length > 0 ? attachments : null,
         creado_por: user.id,
@@ -694,6 +698,18 @@ export default function CreateTareaSheet({ open, onOpenChange, onTareaCreated, d
                       </Select>
                     </div>
                   )}
+
+                  {/* Categoría */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">
+                      <Tag className="h-3 w-3 inline mr-1" />
+                      Categoría
+                    </Label>
+                    <CategorySelector
+                      value={formData.categoria_id}
+                      onValueChange={(v) => setFormData(prev => ({ ...prev, categoria_id: v }))}
+                    />
+                  </div>
 
                   {/* Archivos */}
                   <div>
