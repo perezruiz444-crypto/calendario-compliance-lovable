@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -726,30 +726,6 @@ export type Database = {
         }
         Relationships: []
       }
-      login_attempts: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          ip_address: unknown
-          success: boolean
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          ip_address?: unknown
-          success?: boolean
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          ip_address?: unknown
-          success?: boolean
-        }
-        Relationships: []
-      }
       mensajes: {
         Row: {
           asunto: string
@@ -944,6 +920,7 @@ export type Database = {
           completada_por: string | null
           created_at: string
           empresa_id: string | null
+          evento_id: string | null
           evidencia_url: string | null
           id: string
           notas: string | null
@@ -960,6 +937,7 @@ export type Database = {
           completada_por?: string | null
           created_at?: string
           empresa_id?: string | null
+          evento_id?: string | null
           evidencia_url?: string | null
           id?: string
           notas?: string | null
@@ -976,6 +954,7 @@ export type Database = {
           completada_por?: string | null
           created_at?: string
           empresa_id?: string | null
+          evento_id?: string | null
           evidencia_url?: string | null
           id?: string
           notas?: string | null
@@ -987,6 +966,20 @@ export type Database = {
           vigente?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "cumplimientos_evento_empresa_v2"
+            columns: ["evento_id", "obligacion_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "obligacion_eventos"
+            referencedColumns: ["id", "obligacion_id", "empresa_id"]
+          },
+          {
+            foreignKeyName: "obligacion_cumplimientos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "obligacion_eventos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "obligacion_cumplimientos_obligacion_id_fkey"
             columns: ["obligacion_id"]
@@ -1010,6 +1003,57 @@ export type Database = {
           },
         ]
       }
+      obligacion_eventos: {
+        Row: {
+          creado_por: string
+          created_at: string
+          empresa_id: string
+          evidencia_path: string | null
+          fecha_evento: string
+          id: string
+          idempotency_key: string
+          obligacion_id: string
+          tipo_evento: string
+        }
+        Insert: {
+          creado_por?: string
+          created_at?: string
+          empresa_id: string
+          evidencia_path?: string | null
+          fecha_evento: string
+          id?: string
+          idempotency_key: string
+          obligacion_id: string
+          tipo_evento: string
+        }
+        Update: {
+          creado_por?: string
+          created_at?: string
+          empresa_id?: string
+          evidencia_path?: string | null
+          fecha_evento?: string
+          id?: string
+          idempotency_key?: string
+          obligacion_id?: string
+          tipo_evento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligacion_eventos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obligacion_eventos_obligacion_id_empresa_id_fkey"
+            columns: ["obligacion_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "obligaciones"
+            referencedColumns: ["id", "empresa_id"]
+          },
+        ]
+      }
       obligacion_ocurrencias: {
         Row: {
           articulos_snapshot: string | null
@@ -1017,10 +1061,15 @@ export type Database = {
           created_at: string
           empresa_id: string
           estado: string
+          evento_id: string | null
+          fecha_objetivo_interna: string | null
           fecha_vencimiento: string
           id: string
           obligacion_id: string
+          origen_fecha: string
           periodo_key: string
+          regla_id: string | null
+          regla_snapshot: Json | null
           updated_at: string
         }
         Insert: {
@@ -1029,10 +1078,15 @@ export type Database = {
           created_at?: string
           empresa_id: string
           estado?: string
+          evento_id?: string | null
+          fecha_objetivo_interna?: string | null
           fecha_vencimiento: string
           id?: string
           obligacion_id: string
+          origen_fecha?: string
           periodo_key: string
+          regla_id?: string | null
+          regla_snapshot?: Json | null
           updated_at?: string
         }
         Update: {
@@ -1041,10 +1095,15 @@ export type Database = {
           created_at?: string
           empresa_id?: string
           estado?: string
+          evento_id?: string | null
+          fecha_objetivo_interna?: string | null
           fecha_vencimiento?: string
           id?: string
           obligacion_id?: string
+          origen_fecha?: string
           periodo_key?: string
+          regla_id?: string | null
+          regla_snapshot?: Json | null
           updated_at?: string
         }
         Relationships: [
@@ -1056,11 +1115,159 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "obligacion_ocurrencias_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "obligacion_eventos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "obligacion_ocurrencias_obligacion_id_fkey"
             columns: ["obligacion_id"]
             isOneToOne: false
             referencedRelation: "obligaciones"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obligacion_ocurrencias_regla_id_fkey"
+            columns: ["regla_id"]
+            isOneToOne: false
+            referencedRelation: "obligacion_reglas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ocurrencias_evento_empresa_v2"
+            columns: ["evento_id", "obligacion_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "obligacion_eventos"
+            referencedColumns: ["id", "obligacion_id", "empresa_id"]
+          },
+        ]
+      }
+      obligacion_reglas: {
+        Row: {
+          aplicabilidad: Json
+          catalogo_id: string | null
+          clasificacion_estado: string
+          created_at: string
+          created_by: string | null
+          fuente_referencia: string | null
+          fuente_url: string | null
+          id: string
+          importacion_referencia: string | null
+          normativa_estado: string
+          obligacion_id: string | null
+          origen_control: string
+          parametros: Json
+          tipo_control: string
+          validada_en: string | null
+          validada_por: string | null
+          version: number
+        }
+        Insert: {
+          aplicabilidad?: Json
+          catalogo_id?: string | null
+          clasificacion_estado?: string
+          created_at?: string
+          created_by?: string | null
+          fuente_referencia?: string | null
+          fuente_url?: string | null
+          id?: string
+          importacion_referencia?: string | null
+          normativa_estado?: string
+          obligacion_id?: string | null
+          origen_control: string
+          parametros?: Json
+          tipo_control: string
+          validada_en?: string | null
+          validada_por?: string | null
+          version: number
+        }
+        Update: {
+          aplicabilidad?: Json
+          catalogo_id?: string | null
+          clasificacion_estado?: string
+          created_at?: string
+          created_by?: string | null
+          fuente_referencia?: string | null
+          fuente_url?: string | null
+          id?: string
+          importacion_referencia?: string | null
+          normativa_estado?: string
+          obligacion_id?: string | null
+          origen_control?: string
+          parametros?: Json
+          tipo_control?: string
+          validada_en?: string | null
+          validada_por?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligacion_reglas_catalogo_id_fkey"
+            columns: ["catalogo_id"]
+            isOneToOne: false
+            referencedRelation: "obligaciones_catalogo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obligacion_reglas_obligacion_id_fkey"
+            columns: ["obligacion_id"]
+            isOneToOne: false
+            referencedRelation: "obligaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obligacion_relaciones: {
+        Row: {
+          created_at: string
+          created_by: string
+          empresa_id: string
+          id: string
+          obligacion_destino_id: string
+          obligacion_origen_id: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          empresa_id: string
+          id?: string
+          obligacion_destino_id: string
+          obligacion_origen_id: string
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          empresa_id?: string
+          id?: string
+          obligacion_destino_id?: string
+          obligacion_origen_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligacion_relaciones_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obligacion_relaciones_obligacion_destino_id_empresa_id_fkey"
+            columns: ["obligacion_destino_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "obligaciones"
+            referencedColumns: ["id", "empresa_id"]
+          },
+          {
+            foreignKeyName: "obligacion_relaciones_obligacion_origen_id_empresa_id_fkey"
+            columns: ["obligacion_origen_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "obligaciones"
+            referencedColumns: ["id", "empresa_id"]
           },
         ]
       }
@@ -1093,6 +1300,57 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "obligaciones"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      obligacion_revisiones: {
+        Row: {
+          empresa_id: string
+          evidencia_path: string | null
+          id: string
+          notas: string | null
+          obligacion_id: string
+          proxima_revision: string | null
+          resultado: string
+          revisada_en: string
+          revisada_por: string
+        }
+        Insert: {
+          empresa_id: string
+          evidencia_path?: string | null
+          id?: string
+          notas?: string | null
+          obligacion_id: string
+          proxima_revision?: string | null
+          resultado: string
+          revisada_en?: string
+          revisada_por?: string
+        }
+        Update: {
+          empresa_id?: string
+          evidencia_path?: string | null
+          id?: string
+          notas?: string | null
+          obligacion_id?: string
+          proxima_revision?: string | null
+          resultado?: string
+          revisada_en?: string
+          revisada_por?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligacion_revisiones_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obligacion_revisiones_obligacion_id_empresa_id_fkey"
+            columns: ["obligacion_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "obligaciones"
+            referencedColumns: ["id", "empresa_id"]
           },
         ]
       }
@@ -1372,6 +1630,35 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revision_programas_envios: {
+        Row: {
+          enviado_en: string | null
+          estado: string
+          iniciado_en: string
+          mensaje_id: string
+        }
+        Insert: {
+          enviado_en?: string | null
+          estado: string
+          iniciado_en?: string
+          mensaje_id: string
+        }
+        Update: {
+          enviado_en?: string | null
+          estado?: string
+          iniciado_en?: string
+          mensaje_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revision_programas_envios_mensaje_id_fkey"
+            columns: ["mensaje_id"]
+            isOneToOne: true
+            referencedRelation: "mensajes"
             referencedColumns: ["id"]
           },
         ]
@@ -1986,6 +2273,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      anexo30_calcular_plazo: {
+        Args: { p_calendario?: Json; p_frecuencia: string; p_origen: string }
+        Returns: Json
+      }
+      asegurar_horizonte_calendario: {
+        Args: { p_empresa_id?: string }
+        Returns: number
+      }
+      asignar_obligaciones_base: {
+        Args: { p_empresa_id: string }
+        Returns: undefined
+      }
       calcular_periodo_key: {
         Args: { p_fecha: string; p_frecuencia: string }
         Returns: string
@@ -1998,18 +2297,23 @@ export type Database = {
         }
         Returns: string
       }
-      crear_organizacion_inicial: {
-        Args: {
-          p_nombre_cuenta: string
-          p_programas: Json
-          p_razon_social: string
-          p_rfc: string
-        }
-        Returns: Json
+      dias_recordatorio_calendario: {
+        Args: { p_empresa_id?: string }
+        Returns: {
+          dias_antes: number[]
+          empresa_id: string
+          tipo: string
+        }[]
       }
       expand_existing_obligaciones: { Args: never; Returns: number }
+      generar_mis_avisos_obligaciones: { Args: never; Returns: number }
+      generar_ocurrencias_anio: { Args: { p_year: number }; Returns: number }
       generar_ocurrencias_obligacion: {
         Args: { p_obligacion_id: string }
+        Returns: undefined
+      }
+      generar_ocurrencias_obligacion_anio: {
+        Args: { p_obligacion_id: string; p_year: number }
         Returns: undefined
       }
       get_consultor_visible_user_ids: {
@@ -2018,10 +2322,6 @@ export type Database = {
       }
       get_my_empresa_id: { Args: never; Returns: string }
       get_my_role: { Args: never; Returns: string }
-      nombres_perfiles: {
-        Args: { ids: string[] }
-        Returns: { id: string; nombre_completo: string }[]
-      }
       get_subtareas_progress: { Args: { p_tarea_id: string }; Returns: Json }
       get_total_time_spent: { Args: { p_tarea_id: string }; Returns: number }
       get_user_empresa_id: { Args: { _user_id: string }; Returns: string }
@@ -2036,14 +2336,127 @@ export type Database = {
         Args: { template_id: string }
         Returns: undefined
       }
-      is_login_blocked: {
-        Args: { p_email: string; p_ip?: unknown }
+      is_tarea_blocked: { Args: { p_tarea_id: string }; Returns: boolean }
+      nombres_perfiles: {
+        Args: { ids: string[] }
+        Returns: {
+          id: string
+          nombre_completo: string
+        }[]
+      }
+      obligacion_v2_calcular_fecha: {
+        Args: {
+          p_evento?: boolean
+          p_origen: string
+          p_parametros: Json
+          p_validada: boolean
+        }
+        Returns: Json
+      }
+      obligacion_v2_es_admin: { Args: never; Returns: boolean }
+      obligacion_v2_puede_leer: {
+        Args: { p_obligacion_id: string }
         Returns: boolean
       }
-      is_tarea_blocked: { Args: { p_tarea_id: string }; Returns: boolean }
-      record_login_attempt: {
-        Args: { p_email: string; p_ip?: unknown; p_success?: boolean }
+      obligacion_v2_puede_registrar: {
+        Args: { p_obligacion_id: string }
+        Returns: boolean
+      }
+      obligacion_v2_puede_subir_evidencia: {
+        Args: { p_path: string }
+        Returns: boolean
+      }
+      obligacion_v2_regla: {
+        Args: { p_obligacion_id: string }
+        Returns: {
+          aplicabilidad: Json
+          catalogo_id: string | null
+          clasificacion_estado: string
+          created_at: string
+          created_by: string | null
+          fuente_referencia: string | null
+          fuente_url: string | null
+          id: string
+          importacion_referencia: string | null
+          normativa_estado: string
+          obligacion_id: string | null
+          origen_control: string
+          parametros: Json
+          tipo_control: string
+          validada_en: string | null
+          validada_por: string | null
+          version: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "obligacion_reglas"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      obligacion_v2_tipo: { Args: { p_obligacion_id: string }; Returns: string }
+      obligacion_v2_validar_soporte: {
+        Args: { p_empresa: string; p_obligacion: string; p_path: string }
         Returns: undefined
+      }
+      previsualizar_anexo30: {
+        Args: {
+          p_frecuencia: string
+          p_obligacion_id: string
+          p_origen: string
+        }
+        Returns: Json
+      }
+      programar_anexo30: {
+        Args: {
+          p_frecuencia: string
+          p_obligacion_id: string
+          p_origen: string
+        }
+        Returns: string
+      }
+      puede_gestionar_empresa: {
+        Args: { _empresa_id: string }
+        Returns: boolean
+      }
+      registrar_cumplimiento_obligacion: {
+        Args: {
+          p_evento_id?: string
+          p_evidencia_path?: string
+          p_notas?: string
+          p_obligacion_id: string
+          p_ocurrencia_id?: string
+          p_periodo_key: string
+        }
+        Returns: string
+      }
+      registrar_evento_obligacion: {
+        Args: {
+          p_evidencia_path?: string
+          p_fecha_evento: string
+          p_idempotency_key: string
+          p_obligacion_id: string
+          p_tipo_evento: string
+        }
+        Returns: string
+      }
+      registrar_fecha_manual_obligacion: {
+        Args: { p_obligacion_id: string }
+        Returns: undefined
+      }
+      registrar_revision_obligacion: {
+        Args: {
+          p_evidencia_path?: string
+          p_notas?: string
+          p_obligacion_id: string
+          p_proxima_revision?: string
+          p_resultado: string
+        }
+        Returns: string
+      }
+      reminder_days: {
+        Args: { p_defaults?: number[]; p_empresa_id: string; p_tipo: string }
+        Returns: number[]
       }
     }
     Enums: {
