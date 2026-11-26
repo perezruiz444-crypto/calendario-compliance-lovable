@@ -1,3 +1,4 @@
+-- Aplicada en producción el 2026-11-26 (versión 20261126143533).
 -- Endurecimiento de seguridad y limpieza de políticas.
 -- 1. Versiona políticas que existían en producción solo por scripts sueltos de la raíz
 --    y reemplaza el `LIMIT 1` sin orden por get_my_role() (rol de mayor jerarquía).

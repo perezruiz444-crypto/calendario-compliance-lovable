@@ -1,3 +1,4 @@
+-- PENDIENTE: aplicar solo después de publicar en Lovable la versión que ya no usa estas tablas.
 -- Retira las tablas de funciones que se quitaron de la app (todas con 0 filas en producción).
 -- Falla sin tocar nada si alguna tabla tiene datos.
 DO $$
